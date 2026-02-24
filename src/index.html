@@ -1,0 +1,2047 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PPP Flow Desktop</title>
+  <style>
+    :root {
+      --bg: #f5f6f2;
+      --panel: #ffffff;
+      --ink: #1d2529;
+      --muted: #5c6a70;
+      --line: #d7ddd8;
+      --accent: #0f6b5a;
+      --accent-light: #effaf7;
+      --accent-2: #d88f2d;
+      --warn: #b2412e;
+      --done: #2f8f4e;
+      --done-light: #e8f8ee;
+      --shadow: 0 8px 30px rgba(29,37,41,.08);
+      --radius: 14px;
+      --gold: #f0c040;
+      --deep: #1a5276;
+      --deep-light: #eaf2f8;
+      --wig-color: #7d3c98;
+      --wig-light: #f4ecf7;
+    }
+    * { box-sizing: border-box; margin: 0; }
+    body {
+      font-family: "Avenir Next","Segoe UI",Roboto,sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(1200px 500px at 10% -20%,#d8ece5 0%,transparent 60%),
+        radial-gradient(1000px 500px at 110% 20%,#f4e4cc 0%,transparent 65%),
+        var(--bg);
+    }
+    .wrap { max-width:1300px; margin:24px auto 80px; padding:0 16px; display:grid; gap:16px; }
+    .card { background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); box-shadow:var(--shadow); padding:16px; }
+    .titlebar { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+    h1 { font-size:22px; letter-spacing:.2px; }
+    h2 { font-size:18px; }
+    h3 { font-size:16px; }
+    .subtitle { color:var(--muted); font-size:13px; margin-top:4px; }
+    .tiny { font-size:12px; color:var(--muted); }
+
+    /* Sync banner */
+    .sync-banner { padding:10px 16px; border-radius:10px; font-size:13px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+    .sync-banner.file { background:#eaf2f8; border:1px solid #aed6f1; color:var(--deep); }
+    .sync-banner.local { background:#fdf3d7; border:1px solid #e8c84a; color:#8a6d00; }
+    .sync-status { font-weight:600; }
+    .sync-time { font-size:11px; opacity:.8; }
+
+    /* Tab navigation */
+    .tabs { display:flex; gap:4px; background:#f0f2ee; border-radius:10px; padding:3px; }
+    .tab { padding:8px 16px; border-radius:8px; border:none; background:transparent; cursor:pointer; font:inherit; color:var(--muted); font-weight:500; font-size:14px; }
+    .tab.active { background:#fff; color:var(--ink); box-shadow:0 1px 3px rgba(0,0,0,.08); }
+    .tab-content { display:none; }
+    .tab-content.active { display:block; }
+    #tab-execute > section.card { transition:opacity .25s ease, transform .25s ease, max-height .25s ease, padding .25s ease, margin .25s ease; }
+
+    /* Stats */
+    .stats { display:grid; gap:10px; grid-template-columns:repeat(7,1fr); margin-top:12px; }
+    .stat { border:1px solid var(--line); border-radius:10px; padding:10px; background:#fcfdfc; text-align:center; }
+    .stat label { display:block; color:var(--muted); font-size:10px; margin-bottom:4px; text-transform:uppercase; letter-spacing:.6px; }
+    .stat .value { font-size:20px; font-weight:700; }
+    .stat .value.gold { color:var(--accent-2); }
+    .stat .value.green { color:var(--done); }
+    .stat .value.red { color:var(--warn); }
+    .stat .value.deep-color { color:var(--deep); }
+    .stat .value.wig-color { color:var(--wig-color); }
+
+    /* Streak flame */
+    .streak-flame { display:inline-flex; align-items:center; gap:4px; font-size:14px; font-weight:600; }
+
+    /* Active timer pill */
+    .active-pill { padding:6px 10px; border-radius:999px; border:1px solid var(--line); background:#f9fbfa; color:var(--muted); font-size:12px; }
+    .active-pill.running { border-color:#90d2c3; color:var(--accent); background:var(--accent-light); animation:pulse 2s ease-in-out infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.7} }
+
+    /* Three-box */
+    .three-box { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-top:12px; }
+    .box { border:2px solid var(--line); border-radius:12px; padding:12px; min-height:80px; transition:border-color .2s; }
+    .box.has-task { border-color:var(--accent); background:var(--accent-light); }
+    .box.completed { border-color:var(--done); background:var(--done-light); }
+    .box-label { font-size:11px; text-transform:uppercase; letter-spacing:.7px; color:var(--muted); margin-bottom:6px; }
+    .box-task { font-size:14px; font-weight:500; }
+    .box-timer { font-size:12px; color:var(--accent); margin-top:4px; }
+
+    /* Finish track */
+    .finish-track { display:grid; grid-template-columns:1fr auto; gap:12px; align-items:center; margin-top:12px; padding:12px; border:2px dashed var(--accent-2); border-radius:12px; background:#fdf8ef; }
+    .finish-track.locked { border-style:solid; border-color:var(--done); background:var(--done-light); }
+    .ft-label { font-size:12px; text-transform:uppercase; letter-spacing:.7px; color:var(--accent-2); font-weight:600; }
+    .ft-label.locked { color:var(--done); }
+
+    /* Form */
+    .row { display:grid; grid-template-columns:2fr 1fr .8fr .8fr .8fr .8fr auto; gap:8px; }
+    input,select,button,textarea { font:inherit; color:inherit; }
+    input,select,textarea { width:100%; border:1px solid var(--line); border-radius:10px; padding:9px 10px; background:#fff; }
+    textarea { min-height:70px; resize:vertical; }
+    button { border:1px solid var(--line); border-radius:10px; background:#fff; padding:9px 12px; cursor:pointer; transition:all .15s; }
+    button:hover { background:#f7faf9; }
+    button.primary { background:var(--accent); border-color:var(--accent); color:#fff; }
+    button.primary:hover { background:#0d5a4c; }
+    button.warn { background:#fff6f4; border-color:#efc0b7; color:var(--warn); }
+    button.ghost { background:#f7faf9; }
+    button.gold { background:#fdf3d7; border-color:#e8c84a; color:#8a6d00; }
+
+    /* Table */
+    table { width:100%; border-collapse:collapse; font-size:13px; }
+    th,td { text-align:left; border-bottom:1px solid var(--line); padding:9px 6px; vertical-align:middle; }
+    th { color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.6px; position:sticky; top:0; background:#fff; z-index:1; }
+    .tag { display:inline-flex; align-items:center; gap:4px; border:1px solid var(--line); border-radius:999px; padding:2px 8px; font-size:11px; color:var(--muted); background:#f9fbfa; white-space:nowrap; }
+    .tag.strategic { border-color:#b8d8cf; color:var(--accent); background:var(--accent-light); }
+    .tag.maintenance { border-color:#d4c8a8; color:#7a6820; background:#fdf8ef; }
+    .tag.body { border-color:#c8b8d8; color:#5a3d7a; background:#f5f0fa; }
+    .tag.travel { border-color:#b8ccd8; color:#2d5a7a; background:#eef4f8; }
+    .tag.revenue { border-color:#d8c4a8; color:#7a5020; background:#fdf4e8; }
+    .tag.deep { border-color:#aed6f1; color:var(--deep); background:var(--deep-light); }
+    .tag.shallow { border-color:#d5dbdb; color:var(--muted); }
+    .tag.wig { border-color:#d2b4de; color:var(--wig-color); background:var(--wig-light); }
+    .done-text { color:var(--done); font-weight:600; }
+    .controls { display:inline-flex; gap:6px; flex-wrap:wrap; }
+    .table-wrap { max-height:420px; overflow:auto; border:1px solid var(--line); border-radius:10px; margin-top:10px; }
+
+    /* Layout */
+    .layout { display:grid; gap:16px; grid-template-columns:1.3fr 1fr; }
+    .summary-grid { display:grid; gap:10px; grid-template-columns:repeat(2,1fr); }
+    .summary-box { border:1px solid var(--line); border-radius:10px; padding:10px; }
+    .summary-box h4 { margin:0 0 10px; font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.7px; }
+    .bar { display:grid; grid-template-columns:120px 1fr 55px; gap:8px; align-items:center; margin:5px 0; font-size:13px; }
+    .bar-track { height:8px; border-radius:999px; background:#eef2f0; overflow:hidden; }
+    .bar-fill { height:100%; background:linear-gradient(90deg,var(--accent),#58b39f); transition:width .3s; }
+    .bar-fill.gold { background:linear-gradient(90deg,var(--accent-2),#e8c060); }
+    .quadrant { font-size:13px; margin:5px 0; }
+
+    /* Weekly review */
+    .week-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; margin:12px 0; }
+    .day-cell { border:1px solid var(--line); border-radius:8px; padding:8px 4px; text-align:center; font-size:12px; min-height:60px; }
+    .day-cell .day-label { font-weight:600; margin-bottom:4px; }
+    .day-cell .day-hours { font-size:16px; font-weight:700; color:var(--accent); }
+    .day-cell .day-closed { font-size:11px; color:var(--done); margin-top:2px; }
+    .day-cell .day-deep { font-size:10px; color:var(--deep); margin-top:1px; }
+    .day-cell.today { border-color:var(--accent); background:var(--accent-light); }
+    .trend-row { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin:12px 0; }
+
+    /* 4DX Focus Layer */
+    .focus-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:10px; }
+
+    /* Celebration */
+    #celebration { position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:9999; }
+    .confetti { position:absolute; width:8px; height:8px; border-radius:2px; animation:fall linear forwards; }
+    @keyframes fall { 0%{transform:translateY(-20px) rotate(0deg);opacity:1;} 100%{transform:translateY(100vh) rotate(720deg);opacity:0;} }
+
+    /* Closure gate */
+    .gate-banner { padding:10px 16px; border-radius:10px; font-size:13px; font-weight:500; margin-top:12px; display:flex; align-items:center; gap:8px; }
+    .gate-banner.open { background:#fff6f4; border:1px solid #efc0b7; color:var(--warn); }
+    .gate-banner.closed { background:var(--done-light); border:1px solid #a8dbb8; color:var(--done); }
+
+    /* Backup reminder */
+    .backup-reminder { padding:8px 12px; border-radius:8px; background:#fdf3d7; border:1px solid #e8c84a; font-size:12px; color:#8a6d00; margin-top:8px; display:none; }
+    .backup-reminder.show { display:flex; align-items:center; gap:8px; }
+
+    /* Pomodoro */
+    .hero-timer-card { border:2px solid #b9d4cc; background:linear-gradient(180deg,#f7fffc 0%,#f1faf7 100%); }
+    .hero-timer {
+      display:grid;
+      gap:12px;
+      justify-items:center;
+      text-align:center;
+      padding:8px 4px;
+    }
+    .hero-meta {
+      display:flex;
+      gap:10px;
+      align-items:center;
+      justify-content:center;
+      flex-wrap:wrap;
+    }
+    .hero-clock {
+      font-size:84px;
+      line-height:1;
+      font-weight:800;
+      letter-spacing:1px;
+      color:var(--deep);
+      font-variant-numeric:tabular-nums;
+      text-shadow:0 1px 0 rgba(255,255,255,.9);
+    }
+    .hero-task {
+      max-width:840px;
+      font-size:14px;
+      color:var(--muted);
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+    }
+    .hero-controls { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; }
+    .hero-controls button { min-width:90px; }
+
+    /* Focus mode (execution-only state) */
+    body.focus-mode #tab-execute > section.card:not(.hero-timer-card) {
+      opacity: 0;
+      max-height: 0;
+      overflow: hidden;
+      padding-top: 0;
+      padding-bottom: 0;
+      margin-top: 0;
+      margin-bottom: 0;
+      border-width: 0;
+      transform: translateY(-8px);
+      pointer-events: none;
+    }
+    body.focus-mode .tabs,
+    body.focus-mode #tab-focus,
+    body.focus-mode #tab-review,
+    body.focus-mode .sync-banner,
+    body.focus-mode .stats,
+    body.focus-mode #backupReminder { display:none !important; }
+    body.focus-mode .hero-timer-card {
+      min-height: calc(100vh - 160px);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      border-color:#8abfae;
+      box-shadow:0 14px 40px rgba(15,107,90,.18);
+    }
+    body.focus-mode .hero-clock { font-size:140px; }
+    body.focus-mode .hero-task { font-size:18px; color:#2a3b40; }
+    .pomo-grid { display:grid; grid-template-columns:2fr 1fr 1fr auto auto auto auto; gap:10px; align-items:end; }
+    .pomo-clock { font-size:36px; font-weight:700; letter-spacing:1px; color:var(--deep); font-variant-numeric:tabular-nums; }
+    .pomo-meta { display:flex; gap:12px; font-size:12px; color:var(--muted); }
+    .pomo-pill { display:inline-flex; align-items:center; gap:6px; border:1px solid var(--line); border-radius:999px; padding:4px 10px; font-size:12px; }
+    .pomo-pill.work { background:#eef4ff; border-color:#b3ccff; color:#1d4f91; }
+    .pomo-pill.break { background:#ecf8ee; border-color:#b8debf; color:#2f7042; }
+    .pomo-pill.idle { background:#f2f4f0; border-color:#dde3d8; color:#5f6c63; }
+    .pomo-inline { display:flex; gap:10px; align-items:center; margin-top:10px; }
+    .pomo-alerts { display:flex; gap:12px; align-items:center; margin-top:8px; font-size:12px; color:var(--muted); flex-wrap:wrap; }
+    .pomo-alerts button { padding:4px 10px; font-size:12px; }
+    .sprint-log { margin-top:10px; border-top:1px dashed var(--line); padding-top:10px; }
+    .sprint-summary { font-size:12px; color:var(--muted); margin-bottom:6px; }
+    .sprint-list { max-height:130px; overflow:auto; border:1px solid var(--line); border-radius:8px; }
+    .sprint-row { display:grid; grid-template-columns:120px 1fr 80px; gap:8px; padding:6px 8px; border-bottom:1px solid #eef1ec; font-size:12px; }
+    .sprint-row:last-child { border-bottom:none; }
+    .sprint-empty { padding:8px; font-size:12px; color:var(--muted); }
+
+    /* Today focus + life practices */
+    .focus-tools { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+    .focus-chip { font-size:12px; border:1px solid var(--line); border-radius:999px; padding:4px 10px; background:#f5f7f3; color:var(--muted); }
+    .life-grid { display:grid; grid-template-columns:1.3fr 100px auto; gap:10px; align-items:center; }
+    .life-row { padding:8px 0; border-bottom:1px dashed var(--line); }
+    .life-row:last-child { border-bottom:none; }
+    .life-name { font-weight:600; }
+    .life-note { font-size:11px; color:var(--muted); margin-top:2px; }
+    .life-summary { font-size:12px; color:var(--muted); }
+
+    @media (max-width:1080px) {
+      .layout,.stats,.summary-grid,.three-box,.trend-row,.week-grid,.focus-grid { grid-template-columns:1fr; }
+      .row { grid-template-columns:1fr; }
+      .stats { grid-template-columns:repeat(4,1fr); }
+      .hero-clock { font-size:62px; }
+      body.focus-mode .hero-clock { font-size:92px; }
+      .pomo-grid { grid-template-columns:1fr 1fr; }
+      .life-grid { grid-template-columns:1fr; }
+    }
+    @media (max-width:600px) {
+      .stats { grid-template-columns:repeat(2,1fr); }
+      .hero-clock { font-size:50px; }
+      body.focus-mode .hero-clock { font-size:74px; }
+    }
+  </style>
+</head>
+<body>
+  <div id="celebration"></div>
+  <div class="wrap">
+
+    <!-- Header -->
+    <section class="card">
+      <div class="titlebar">
+        <div>
+          <h1>PPP Flow Dashboard <span class="tiny">v3</span></h1>
+          <p class="subtitle">Closure creates freedom. File-synced. Claude is the input layer.</p>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div id="streakDisplay" class="streak-flame"></div>
+          <div id="activePill" class="active-pill">No active timer</div>
+        </div>
+      </div>
+
+      <!-- Sync banner -->
+      <div id="syncBanner" class="sync-banner file" style="margin-top:10px;">
+        <span class="sync-status" id="syncStatus">Data source: File</span>
+        <span class="sync-time" id="syncTime"></span>
+        <div class="controls" style="margin-left:auto;">
+          <button id="loadFileBtn" class="ghost" style="padding:5px 10px;font-size:12px;">Load JSON File</button>
+          <button id="saveFileBtn" class="primary" style="padding:5px 10px;font-size:12px;">Save to File</button>
+          <input type="file" id="loadFileInput" accept=".json" style="display:none;" />
+        </div>
+      </div>
+
+      <div class="stats">
+        <div class="stat"><label>Today</label><div id="todayTracked" class="value">0m</div></div>
+        <div class="stat"><label>This Week</label><div id="weekTracked" class="value">0h</div></div>
+        <div class="stat"><label>Month</label><div id="monthTracked" class="value">0h</div></div>
+        <div class="stat"><label>Closed (Wk)</label><div id="weekClosed" class="value green">0</div></div>
+        <div class="stat"><label>Deep Ratio</label><div id="deepRatio" class="value deep-color">0%</div></div>
+        <div class="stat"><label>WIG Aligned</label><div id="wigRatio" class="value wig-color">0%</div></div>
+        <div class="stat"><label>Leakage</label><div id="leakage" class="value">0%</div></div>
+      </div>
+
+      <div id="backupReminder" class="backup-reminder">
+        <span>No backup in 3+ days.</span>
+        <button id="quickBackupBtn" class="gold" style="padding:4px 10px;font-size:12px;">Save JSON Now</button>
+      </div>
+    </section>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab active" data-tab="execute">Execute</button>
+      <button class="tab" data-tab="focus">4DX Focus</button>
+      <button class="tab" data-tab="review">Weekly Review</button>
+    </div>
+
+    <!-- ═══════════ EXECUTE TAB ═══════════ -->
+    <div id="tab-execute" class="tab-content active">
+
+      <!-- Hero timer -->
+      <section class="card hero-timer-card">
+        <div class="hero-timer">
+          <div class="hero-meta">
+            <div id="heroPomoPhase" class="pomo-pill idle">Idle</div>
+            <span id="heroPomoStatus" class="tiny">Ready</span>
+          </div>
+          <div id="heroPomoClock" class="hero-clock">25:00</div>
+          <div id="heroPomoTask" class="hero-task">No task selected</div>
+          <div class="hero-controls">
+            <button id="heroPomoStartBtn" class="primary" type="button">Start</button>
+            <button id="heroPomoPauseBtn" class="ghost" type="button">Pause</button>
+            <button id="heroPomoSkipBtn" class="ghost" type="button">Skip</button>
+            <button id="heroPomoBreakNowBtn" class="ghost" type="button">Break</button>
+            <button id="heroPomoResetBtn" class="warn" type="button">Reset</button>
+            <button id="focusModeBtn" class="ghost" type="button">Enter Focus</button>
+            <label class="tiny" style="display:inline-flex;align-items:center;gap:6px;padding:0 4px;">
+              <input id="autoFocusToggle" type="checkbox" checked />
+              Auto Focus
+            </label>
+            <span class="tiny">Esc exits focus mode</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Three-Box + Finish Track -->
+      <section class="card">
+        <div class="titlebar">
+          <h2>Today's Whiteboard</h2>
+          <div class="focus-tools">
+            <span id="todayFocusCount" class="focus-chip">Focus: 0</span>
+            <button id="autofillFocusBtn" class="ghost" type="button">Auto-fill Focus</button>
+            <button id="resetTodayFocusBtn" class="ghost" type="button">Reset Today Focus</button>
+            <span class="tiny" id="todayDate"></span>
+          </div>
+        </div>
+        <div class="three-box">
+          <div class="box" id="box-strategic">
+            <div class="box-label">Strategic / Revenue</div>
+            <div class="box-task" id="box-strategic-task">&mdash;</div>
+            <div class="box-timer tiny" id="box-strategic-timer"></div>
+          </div>
+          <div class="box" id="box-maintenance">
+            <div class="box-label">Maintenance / Admin</div>
+            <div class="box-task" id="box-maintenance-task">&mdash;</div>
+            <div class="box-timer tiny" id="box-maintenance-timer"></div>
+          </div>
+          <div class="box" id="box-body">
+            <div class="box-label">Body / Mind</div>
+            <div class="box-task" id="box-body-task">&mdash;</div>
+            <div class="box-timer tiny" id="box-body-timer"></div>
+          </div>
+        </div>
+
+        <div class="finish-track" id="finishTrack">
+          <div>
+            <div class="ft-label" id="ftLabel">Finish Track Commitment (set before expansion work)</div>
+            <div style="display:flex;gap:8px;margin-top:6px;">
+              <input id="ftInput" placeholder="e.g. Submit Paper X revision to Journal Y" style="flex:1;" />
+              <button id="ftSetBtn" class="primary" style="white-space:nowrap;">Lock In</button>
+            </div>
+          </div>
+          <div id="ftStatus" style="text-align:center;"></div>
+        </div>
+
+        <div id="closureGate" class="gate-banner open" style="display:none;">
+          <span id="gateIcon">&#9888;</span>
+          <span id="gateText"></span>
+        </div>
+      </section>
+
+      <!-- Life practices -->
+      <section class="card">
+        <div class="titlebar">
+          <h2>Life Practices</h2>
+          <span id="lifeSummary" class="life-summary">0/0 done</span>
+        </div>
+        <div id="lifePracticesList" style="margin-top:8px;"></div>
+      </section>
+
+      <!-- Add Task -->
+      <section class="card">
+        <div class="titlebar">
+          <h2>Add Task</h2>
+          <div class="controls">
+            <button id="exportCsvBtn" class="ghost">Export CSV</button>
+            <button id="exportJsonBtn" class="ghost">Export JSON</button>
+          </div>
+        </div>
+        <form id="taskForm" style="margin-top:10px;">
+          <div class="row">
+            <input id="titleInput" required placeholder="Task (e.g. Revise abstract for Paper X)" />
+            <select id="categoryInput">
+              <option>Strategic</option>
+              <option>Maintenance</option>
+              <option>Body/Mind</option>
+              <option>Travel/Admin</option>
+              <option>Revenue/Venture</option>
+            </select>
+            <select id="importanceInput">
+              <option value="High">Imp: High</option>
+              <option value="Low">Imp: Low</option>
+            </select>
+            <select id="urgencyInput">
+              <option value="High">Urg: High</option>
+              <option value="Low" selected>Urg: Low</option>
+            </select>
+            <select id="depthInput">
+              <option value="Deep">Deep</option>
+              <option value="Shallow">Shallow</option>
+            </select>
+            <select id="wigInput">
+              <option value="None">WIG: —</option>
+              <option value="WIG1">WIG 1</option>
+              <option value="WIG2">WIG 2</option>
+            </select>
+            <button class="primary" type="submit">Add</button>
+          </div>
+        </form>
+        <p class="tiny" style="margin:8px 0 0;">Deep Work = cognitively demanding, no multitask. Shallow = logistical, low-focus. WIG = Wildly Important Goal alignment.</p>
+      </section>
+
+      <!-- Pomodoro -->
+      <section class="card">
+        <div class="titlebar">
+          <h2>Pomodoro Flow Timer</h2>
+          <span class="tiny">Auto-logs time to selected task</span>
+        </div>
+        <div class="pomo-grid" style="margin-top:10px;">
+          <div>
+            <label class="tiny" style="display:block;margin-bottom:4px;">Task</label>
+            <select id="pomoTaskSelect"></select>
+          </div>
+          <div>
+            <label class="tiny" style="display:block;margin-bottom:4px;">Work (min)</label>
+            <input id="pomoWorkMin" type="number" min="1" max="120" step="1" value="25" />
+          </div>
+          <div>
+            <label class="tiny" style="display:block;margin-bottom:4px;">Break (min)</label>
+            <input id="pomoBreakMin" type="number" min="1" max="60" step="1" value="5" />
+          </div>
+          <button id="pomoStartBtn" class="primary" type="button">Start</button>
+          <button id="pomoPauseBtn" class="ghost" type="button">Pause</button>
+          <button id="pomoSkipBtn" class="ghost" type="button">Skip</button>
+          <button id="pomoBreakNowBtn" class="ghost" type="button">Break Now</button>
+          <button id="pomoResetBtn" class="warn" type="button">Reset</button>
+        </div>
+        <div class="pomo-inline">
+          <div id="pomoPhasePill" class="pomo-pill idle">Idle</div>
+          <div id="pomoClock" class="pomo-clock">25:00</div>
+          <div class="pomo-meta">
+            <span id="pomoStatus">Ready</span>
+            <span id="pomoCompleted">Completed blocks: 0</span>
+          </div>
+        </div>
+        <div class="pomo-alerts">
+          <label><input id="pomoSoundToggle" type="checkbox" checked /> Sound alert</label>
+          <button id="pomoNotifyBtn" class="ghost" type="button">Enable desktop alerts</button>
+          <span id="pomoNotifyStatus" class="tiny">Desktop alerts off</span>
+        </div>
+        <div class="sprint-log">
+          <div id="sprintSummary" class="sprint-summary">Today: 0 sprints, 0m focus</div>
+          <div id="sprintList" class="sprint-list"></div>
+        </div>
+      </section>
+
+      <!-- Task List + Month Summary -->
+      <section class="card layout">
+        <div>
+          <div class="titlebar">
+            <h2>Active Checklist</h2>
+            <button id="clearDoneBtn" class="warn">Clear Completed</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th></th><th>Today</th><th>Task</th><th>Cat</th><th>I/U</th><th>Depth</th><th>WIG</th><th>Time</th><th>Timer</th></tr>
+              </thead>
+              <tbody id="taskTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div style="display:grid;gap:12px;">
+          <div class="summary-box">
+            <div class="titlebar">
+              <h3>Month Summary</h3>
+              <input id="monthPicker" type="month" style="width:auto;" />
+            </div>
+            <div class="summary-grid" style="margin-top:10px;">
+              <div>
+                <h4>By Category</h4>
+                <div id="categoryBars"></div>
+              </div>
+              <div>
+                <h4>Eisenhower Quadrants</h4>
+                <div id="quadrants"></div>
+              </div>
+            </div>
+          </div>
+          <div class="summary-box">
+            <h4>Execution Notes</h4>
+            <textarea id="notesInput" placeholder="Where did time leak today? One sentence."></textarea>
+            <div style="margin-top:8px;" class="controls">
+              <button id="saveNotesBtn" class="primary">Save Note</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ═══════════ 4DX FOCUS TAB ═══════════ -->
+    <div id="tab-focus" class="tab-content">
+      <section class="card">
+        <div class="titlebar">
+          <h2>4DX Focus Layer</h2>
+          <div class="controls">
+            <span class="tiny" id="focusUpdated"></span>
+            <button id="saveFocusBtn" class="primary">Save Focus</button>
+          </div>
+        </div>
+        <p class="subtitle" style="margin-bottom:12px;">
+          Discipline 1: Focus on the Wildly Important. Discipline 2: Act on Lead Measures. Discipline 3: Keep a Compelling Scoreboard. Discipline 4: Create a Cadence of Accountability.
+        </p>
+
+        <div class="focus-grid">
+          <div>
+            <label class="tiny" style="display:block;margin-bottom:4px;">WIG 1 — Primary Wildly Important Goal</label>
+            <input id="wig1Input" placeholder="From X to Y by when (e.g. Submit 3 papers by June 30)" />
+          </div>
+          <div>
+            <label class="tiny" style="display:block;margin-bottom:4px;">WIG 2 — Secondary (optional)</label>
+            <input id="wig2Input" placeholder="Secondary WIG if needed" />
+          </div>
+        </div>
+        <div class="focus-grid" style="margin-top:12px;">
+          <div>
+            <label class="tiny" style="display:block;margin-bottom:4px;">Lead Measures (weekly predictive actions)</label>
+            <textarea id="leadMeasuresInput" placeholder="- 5 deep work blocks per week&#10;- 1 submission package completed&#10;- 2 accountability check-ins"></textarea>
+          </div>
+          <div>
+            <label class="tiny" style="display:block;margin-bottom:4px;">Weekly Commitments (20-min WIG session)</label>
+            <textarea id="weeklyCommitmentsInput" placeholder="- Last week result:&#10;- This week commitments:&#10;- Scoreboard shift target:"></textarea>
+          </div>
+        </div>
+
+        <!-- Scoreboard -->
+        <div style="margin-top:16px;">
+          <h3>WIG Scoreboard</h3>
+          <div class="summary-grid" style="margin-top:10px;">
+            <div class="summary-box">
+              <h4>WIG Time This Month</h4>
+              <div id="wigMonthBars"></div>
+            </div>
+            <div class="summary-box">
+              <h4>Deep Work This Month</h4>
+              <div id="deepMonthBars"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ═══════════ WEEKLY REVIEW TAB ═══════════ -->
+    <div id="tab-review" class="tab-content">
+      <section class="card">
+        <div class="titlebar">
+          <h2>Weekly Review</h2>
+          <div class="controls">
+            <button id="prevWeekBtn" class="ghost">&larr; Prev</button>
+            <span id="weekLabel" style="font-weight:600;padding:8px;"></span>
+            <button id="nextWeekBtn" class="ghost">Next &rarr;</button>
+          </div>
+        </div>
+
+        <div class="week-grid" id="weekGrid"></div>
+
+        <div class="trend-row">
+          <div class="stat"><label>Total Hours</label><div id="weekTotalHours" class="value">0h</div></div>
+          <div class="stat"><label>Tasks Closed</label><div id="weekTotalClosed" class="value green">0</div></div>
+          <div class="stat"><label>Q2 Time (Imp+Not Urg)</label><div id="weekQ2" class="value" style="color:var(--accent);">0%</div></div>
+          <div class="stat"><label>Deep Ratio</label><div id="weekDeepRatio" class="value deep-color">0%</div></div>
+        </div>
+
+        <div class="summary-grid" style="margin-top:12px;">
+          <div class="summary-box">
+            <h4>Category Breakdown</h4>
+            <div id="weekCategoryBars"></div>
+          </div>
+          <div class="summary-box">
+            <h4>Quadrant Split</h4>
+            <div id="weekQuadrants"></div>
+          </div>
+        </div>
+
+        <div class="summary-box" style="margin-top:12px;">
+          <h4>Weekly Notes</h4>
+          <div id="weekNotes" class="tiny"></div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    // ══════════════════════════════════════
+    // STATE MANAGEMENT — Browser + File Sync
+    // ══════════════════════════════════════
+    // Browser state is stored in localStorage for live interaction.
+    // Use "Load JSON File" to import PPP_DATA.json into browser state.
+    // Use "Save JSON Now" to export browser state to PPP_DATA.json.
+    // Browsers cannot silently read/write project files without a previously granted handle.
+
+    const STORAGE_KEY = "ppp_flow_dashboard_v3";
+    const POMO_PREF_KEY = "ppp_pomodoro_prefs_v1";
+    const FS_DB_NAME = "ppp_flow_dashboard_fs";
+    const FS_DB_STORE = "handles";
+    const FS_HANDLE_KEY = "ppp_data_file_handle";
+    let state = loadState();
+    let reviewWeekOffset = 0;
+    let pomoAudioContext = null;
+    let linkedDataFileHandle = null;
+    const pomodoro = {
+      phase: "idle", // idle | work | break
+      running: false,
+      paused: false,
+      taskId: null,
+      workMin: 25,
+      breakMin: 5,
+      remainingSec: 25 * 60,
+      endsAtMs: null,
+      completedBlocks: 0,
+      soundEnabled: true,
+      desktopNotify: false,
+      focusMode: false,
+      autoFocusMode: true
+    };
+    Object.assign(pomodoro, loadPomodoroPrefs());
+
+    function emptyState() {
+      return {
+        schema_version: "3.0.0",
+        last_modified: null,
+        last_modified_by: "dashboard",
+        meta: { owner: "Julian Waters-Lynch", timezone: "+03:00" },
+        focus: { wig1: "", wig2: "", lead_measures: "", weekly_commitments: "", updated_at: null },
+        finish_track: { text: "", locked_at: null, completed_at: null },
+        today_focus: { date: null, task_ids: [] },
+        life_practices: { practices: defaultLifePractices(), daily_log: {} },
+        tasks: [],
+        sessions: [],
+        notes: [],
+        streak_days: [],
+        daily_logs: {},
+        weekly_reviews: {},
+        last_backup: null
+      };
+    }
+
+    function normalizeState(raw) {
+      const base = emptyState();
+      const incoming = raw || {};
+      const normalized = { ...base, ...incoming };
+      normalized.meta = { ...base.meta, ...(incoming.meta || {}) };
+      normalized.focus = { ...base.focus, ...(incoming.focus || {}) };
+      normalized.finish_track = { ...base.finish_track, ...(incoming.finish_track || {}) };
+      normalized.today_focus = { ...base.today_focus, ...(incoming.today_focus || {}) };
+      normalized.life_practices = {
+        practices: Array.isArray(incoming.life_practices?.practices) ? incoming.life_practices.practices : base.life_practices.practices,
+        daily_log: incoming.life_practices && typeof incoming.life_practices.daily_log === "object" ? incoming.life_practices.daily_log : {}
+      };
+      normalized.tasks = Array.isArray(incoming.tasks) ? incoming.tasks : [];
+      normalized.sessions = Array.isArray(incoming.sessions) ? incoming.sessions : [];
+      normalized.notes = Array.isArray(incoming.notes) ? incoming.notes : [];
+      normalized.streak_days = Array.isArray(incoming.streak_days) ? incoming.streak_days : [];
+      normalized.daily_logs = incoming.daily_logs && typeof incoming.daily_logs === "object" ? incoming.daily_logs : {};
+      normalized.weekly_reviews = incoming.weekly_reviews && typeof incoming.weekly_reviews === "object" ? incoming.weekly_reviews : {};
+      return normalized;
+    }
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return emptyState();
+        return normalizeState(JSON.parse(raw));
+      } catch { return emptyState(); }
+    }
+
+    function saveState(source = "dashboard") {
+      state.last_modified = new Date().toISOString();
+      state.last_modified_by = source;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    function loadPomodoroPrefs() {
+      try {
+        const raw = localStorage.getItem(POMO_PREF_KEY);
+        if (!raw) return { soundEnabled: true, desktopNotify: true, focusMode: false, autoFocusMode: true };
+        const pref = JSON.parse(raw);
+        return {
+          soundEnabled: pref.soundEnabled !== false,
+          desktopNotify: pref.desktopNotify !== false,
+          focusMode: pref.focusMode === true,
+          autoFocusMode: pref.autoFocusMode !== false
+        };
+      } catch {
+        return { soundEnabled: true, desktopNotify: true, focusMode: false, autoFocusMode: true };
+      }
+    }
+
+    function savePomodoroPrefs() {
+      localStorage.setItem(POMO_PREF_KEY, JSON.stringify({
+        soundEnabled: !!pomodoro.soundEnabled,
+        desktopNotify: !!pomodoro.desktopNotify,
+        focusMode: !!pomodoro.focusMode,
+        autoFocusMode: !!pomodoro.autoFocusMode
+      }));
+    }
+
+    // ── File System Access: persist linked PPP_DATA.json handle ──
+    function openFsDb() {
+      return new Promise((resolve, reject) => {
+        const req = indexedDB.open(FS_DB_NAME, 1);
+        req.onupgradeneeded = () => {
+          const db = req.result;
+          if (!db.objectStoreNames.contains(FS_DB_STORE)) db.createObjectStore(FS_DB_STORE);
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error || new Error("IndexedDB open failed"));
+      });
+    }
+
+    async function saveLinkedHandle(handle) {
+      const db = await openFsDb();
+      await new Promise((resolve, reject) => {
+        const tx = db.transaction(FS_DB_STORE, "readwrite");
+        tx.objectStore(FS_DB_STORE).put(handle, FS_HANDLE_KEY);
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error || new Error("Failed saving file handle"));
+      });
+      db.close();
+    }
+
+    async function loadLinkedHandle() {
+      const db = await openFsDb();
+      const handle = await new Promise((resolve, reject) => {
+        const tx = db.transaction(FS_DB_STORE, "readonly");
+        const req = tx.objectStore(FS_DB_STORE).get(FS_HANDLE_KEY);
+        req.onsuccess = () => resolve(req.result || null);
+        req.onerror = () => reject(req.error || new Error("Failed loading file handle"));
+      });
+      db.close();
+      return handle;
+    }
+
+    async function readLinkedFileJson(handle) {
+      const file = await handle.getFile();
+      const text = await file.text();
+      return JSON.parse(text);
+    }
+
+    function setSyncBanner(statusText, mode = "file", extra = "") {
+      const banner = document.getElementById("syncBanner");
+      const syncStatus = document.getElementById("syncStatus");
+      const syncTime = document.getElementById("syncTime");
+      if (!banner || !syncStatus || !syncTime) return;
+      banner.className = `sync-banner ${mode}`;
+      syncStatus.textContent = statusText;
+      syncTime.textContent = extra;
+    }
+
+    async function importJsonObject(imported, source = "file_import", announce = true) {
+      state = normalizeState(imported);
+      if (imported.finishTrack && !imported.finish_track) {
+        state.finish_track = {
+          text: imported.finishTrack.text || "",
+          locked_at: imported.finishTrack.lockedAt || imported.finishTrack.locked_at || null,
+          completed_at: imported.finishTrack.completedAt || imported.finishTrack.completed_at || null
+        };
+      }
+      if (imported.streakDays && !imported.streak_days) state.streak_days = imported.streakDays;
+      if (imported.lastBackup && !imported.last_backup) state.last_backup = imported.lastBackup;
+      if (imported.focus) {
+        state.focus.lead_measures = imported.focus.lead_measures || imported.focus.leadMeasures || "";
+        state.focus.weekly_commitments = imported.focus.weekly_commitments || imported.focus.weeklyCommitments || "";
+        state.focus.updated_at = imported.focus.updated_at || imported.focus.updatedAt || null;
+      }
+      saveState(source);
+      render();
+      if (announce) alert(`Loaded: ${state.tasks.length} tasks, ${state.sessions.length} sessions.`);
+    }
+
+    async function tryAutoLoadLinkedFile() {
+      if (!window.showOpenFilePicker) return false;
+      try {
+        const handle = await loadLinkedHandle();
+        if (!handle) return false;
+        const perm = await handle.queryPermission({ mode: "read" });
+        if (perm !== "granted") {
+          setSyncBanner("Data source: Browser cache (link permission needed)", "local", "Click 'Link JSON File' once");
+          return false;
+        }
+        const imported = await readLinkedFileJson(handle);
+        linkedDataFileHandle = handle;
+        await importJsonObject(imported, "file_auto_load", false);
+        setSyncBanner("Data source: Linked file (auto-loaded)", "file", `Updated ${new Date().toLocaleString()}`);
+        return true;
+      } catch {
+        setSyncBanner("Data source: Browser cache (auto-load failed)", "local", "Use Link JSON File");
+        return false;
+      }
+    }
+
+    async function pickAndLinkJsonFile() {
+      if (!window.showOpenFilePicker) {
+        document.getElementById("loadFileInput").click();
+        return;
+      }
+      try {
+        const [handle] = await window.showOpenFilePicker({
+          multiple: false,
+          types: [{ description: "JSON", accept: { "application/json": [".json"] } }],
+          excludeAcceptAllOption: false
+        });
+        if (!handle) return;
+        const imported = await readLinkedFileJson(handle);
+        linkedDataFileHandle = handle;
+        await saveLinkedHandle(handle);
+        await importJsonObject(imported, "file_import", true);
+        setSyncBanner("Data source: Linked file (just loaded)", "file", "Auto-load on next open is enabled");
+      } catch (err) {
+        if (String(err && err.name) === "AbortError") return;
+        alert("Failed to link JSON file: " + (err?.message || err));
+      }
+    }
+
+    async function saveToLinkedFile() {
+      if (!window.showOpenFilePicker) {
+        exportJson();
+        return;
+      }
+      try {
+        let handle = linkedDataFileHandle || await loadLinkedHandle();
+        if (!handle) {
+          alert("No linked JSON file yet. Click 'Link JSON File' once.");
+          return;
+        }
+        let perm = await handle.queryPermission({ mode: "readwrite" });
+        if (perm !== "granted") perm = await handle.requestPermission({ mode: "readwrite" });
+        if (perm !== "granted") {
+          alert("Write permission not granted. Use Export JSON as fallback.");
+          return;
+        }
+        state.last_backup = new Date().toISOString();
+        saveState("dashboard_export");
+        const writable = await handle.createWritable();
+        await writable.write(JSON.stringify(state, null, 2));
+        await writable.close();
+        linkedDataFileHandle = handle;
+        setSyncBanner("Data source: Linked file (saved)", "file", `Saved ${new Date().toLocaleString()}`);
+        render();
+      } catch (err) {
+        alert("Failed to save linked JSON: " + (err?.message || err));
+      }
+    }
+
+    // ── Utilities ──
+    function uid() { return Math.random().toString(36).slice(2,10); }
+    function todayISO() { return new Date().toISOString().slice(0,10); }
+    function nowMonth() { const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`; }
+    function fmtDuration(sec) {
+      const s=Math.max(0,Math.floor(sec||0));
+      const h=Math.floor(s/3600), m=Math.floor((s%3600)/60), r=s%60;
+      if(h>0) return `${h}h ${m}m`;
+      return `${m}m ${r}s`;
+    }
+    function fmtHours(sec) { return `${(sec/3600).toFixed(1)}h`; }
+    function fmtClock(sec) {
+      const s = Math.max(0, Math.floor(sec || 0));
+      const m = Math.floor(s / 60);
+      const r = s % 60;
+      return `${String(m).padStart(2, "0")}:${String(r).padStart(2, "0")}`;
+    }
+    function toInt(value, fallback) {
+      const parsed = Number.parseInt(String(value || ""), 10);
+      return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+    }
+
+    function getWeekDates(offset) {
+      const now=new Date(), day=now.getDay();
+      const monday=new Date(now);
+      monday.setDate(now.getDate()-(day===0?6:day-1)+(offset*7));
+      monday.setHours(0,0,0,0);
+      const dates=[];
+      for(let i=0;i<7;i++){ const d=new Date(monday); d.setDate(monday.getDate()+i); dates.push(d.toISOString().slice(0,10)); }
+      return dates;
+    }
+
+    function sessionsForDates(dates) { const s=new Set(dates); return state.sessions.filter(x=>s.has(x.startAt.slice(0,10))); }
+    function closedTasksForDates(dates) { const s=new Set(dates); return state.tasks.filter(t=>t.completedAt&&s.has(t.completedAt.slice(0,10))); }
+
+    function defaultLifePractices() {
+      return [
+        { id: "meditation", title: "Meditation", minimum_minutes: 10, default_minutes: 10, note: "10 min minimum; frequency beats intensity." },
+        { id: "arabic", title: "Arabic", minimum_minutes: 10, note: "10 min minimum; dinner/transit counts." },
+        { id: "piano", title: "Piano", minimum_minutes: 10, note: "10 min minimum; keep chain alive." },
+        { id: "exercise", title: "Exercise / Gym", minimum_minutes: 30, note: "Minimum viable movement on busy days." }
+      ];
+    }
+
+    function initTodayState() {
+      const today = todayISO();
+      let changed = false;
+      if (!state.today_focus || state.today_focus.date !== today) {
+        state.today_focus = { date: today, task_ids: [] };
+        changed = true;
+      }
+      if (!Array.isArray(state.today_focus.task_ids)) {
+        state.today_focus.task_ids = [];
+        changed = true;
+      }
+      const openIds = new Set(state.tasks.filter(t => !t.completedAt).map(t => t.id));
+      const filtered = state.today_focus.task_ids.filter(id => openIds.has(id));
+      if (filtered.length !== state.today_focus.task_ids.length) {
+        state.today_focus.task_ids = filtered;
+        changed = true;
+      }
+      if (state.activeStartedAt && state.activeStartedAt.slice(0,10) !== today) {
+        state.activeTaskId = null;
+        state.activeStartedAt = null;
+        changed = true;
+      }
+      if (!state.life_practices || !Array.isArray(state.life_practices.practices)) {
+        state.life_practices = { practices: defaultLifePractices(), daily_log: {} };
+        changed = true;
+      }
+      if (!state.life_practices.daily_log || typeof state.life_practices.daily_log !== "object") {
+        state.life_practices.daily_log = {};
+        changed = true;
+      }
+      if (!state.life_practices.daily_log[today]) {
+        state.life_practices.daily_log[today] = {};
+        changed = true;
+      }
+      for (const p of state.life_practices.practices) {
+        if (!state.life_practices.daily_log[today][p.id]) {
+          const defaultMinutes = Number.isFinite(Number(p.default_minutes)) ? Number(p.default_minutes) : null;
+          state.life_practices.daily_log[today][p.id] = { done: false, minutes: defaultMinutes };
+          changed = true;
+        } else if (p.id === "meditation" && state.life_practices.daily_log[today][p.id].minutes == null) {
+          // Keep meditation frictionless: default to 10 minutes when empty.
+          state.life_practices.daily_log[today][p.id].minutes = 10;
+          changed = true;
+        }
+      }
+      if (changed) saveState("dashboard");
+    }
+
+    function getTodayFocusTasks() {
+      const ids = new Set(state.today_focus?.task_ids || []);
+      return state.tasks.filter(t => ids.has(t.id) && !t.completedAt);
+    }
+
+    function setTaskFocusToday(id, enabled) {
+      initTodayState();
+      const ids = new Set(state.today_focus.task_ids || []);
+      if (enabled) ids.add(id); else ids.delete(id);
+      state.today_focus.task_ids = Array.from(ids);
+      saveState();
+      render();
+    }
+
+    function resetTodayFocus() {
+      initTodayState();
+      state.today_focus.task_ids = [];
+      if (state.activeTaskId) {
+        state.activeTaskId = null;
+        state.activeStartedAt = null;
+      }
+      saveState();
+      render();
+    }
+
+    function autofillTodayFocus() {
+      initTodayState();
+      const rank = t => (t.importance === "High" ? 2 : 0) + (t.urgency === "High" ? 1 : 0);
+      const selected = state.tasks
+        .filter(t => !t.completedAt)
+        .sort((a,b) => (rank(b) - rank(a)) || ((b.createdAt || "").localeCompare(a.createdAt || "")))
+        .slice(0, 3)
+        .map(t => t.id);
+      state.today_focus.task_ids = selected;
+      saveState();
+      render();
+    }
+
+    function renderLifePractices() {
+      initTodayState();
+      const today = todayISO();
+      const log = state.life_practices.daily_log[today] || {};
+      const rows = state.life_practices.practices.map(p => {
+        const entry = log[p.id] || { done: false, minutes: null };
+        const mins = entry.minutes == null ? "" : String(entry.minutes);
+        return `<div class="life-row life-grid">
+          <div>
+            <div class="life-name">${p.title}</div>
+            <div class="life-note">${p.note || ""}</div>
+          </div>
+          <input type="text" inputmode="numeric" pattern="[0-9]*" value="${mins}" data-life-minutes="${p.id}" placeholder="${p.minimum_minutes || 10}" />
+          <label class="tiny"><input type="checkbox" data-life-done="${p.id}" ${entry.done ? "checked" : ""} /> Done</label>
+        </div>`;
+      }).join("");
+      document.getElementById("lifePracticesList").innerHTML = rows || '<p class="tiny">No practices configured.</p>';
+      const doneCount = state.life_practices.practices.filter(p => log[p.id]?.done).length;
+      document.getElementById("lifeSummary").textContent = `${doneCount}/${state.life_practices.practices.length} done`;
+    }
+
+    function updateLifePractice(id, patch) {
+      initTodayState();
+      const today = todayISO();
+      const current = state.life_practices.daily_log[today][id] || { done: false, minutes: null };
+      state.life_practices.daily_log[today][id] = { ...current, ...patch };
+      saveState();
+      renderLifePractices();
+    }
+
+    // ── Streak ──
+    function updateStreak() {
+      const today=todayISO();
+      if(!state.streak_days.includes(today)) {
+        if(state.tasks.some(t=>t.completedAt&&t.completedAt.slice(0,10)===today)) {
+          state.streak_days.push(today);
+          state.streak_days.sort();
+        }
+      }
+    }
+
+    function getStreakCount() {
+      if(state.streak_days.length===0) return 0;
+      const sorted=[...new Set(state.streak_days)].sort().reverse();
+      const today=todayISO();
+      const yesterday=new Date(Date.now()-86400000).toISOString().slice(0,10);
+      if(sorted[0]!==today&&sorted[0]!==yesterday) return 0;
+      let count=1;
+      for(let i=1;i<sorted.length;i++){
+        const prev=new Date(sorted[i-1]), curr=new Date(sorted[i]);
+        if((prev-curr)/86400000===1) count++; else break;
+      }
+      return count;
+    }
+
+    // ── Celebration ──
+    function celebrate() {
+      const c=document.getElementById("celebration");
+      const colors=["#0f6b5a","#d88f2d","#2f8f4e","#f0c040","#58b39f","#7d3c98","#1a5276"];
+      for(let i=0;i<40;i++){
+        const el=document.createElement("div");
+        el.className="confetti";
+        el.style.left=Math.random()*100+"%";
+        el.style.top="-10px";
+        el.style.background=colors[Math.floor(Math.random()*colors.length)];
+        el.style.width=(4+Math.random()*8)+"px";
+        el.style.height=(4+Math.random()*8)+"px";
+        el.style.animationDuration=(1.5+Math.random()*2)+"s";
+        el.style.animationDelay=Math.random()*.5+"s";
+        c.appendChild(el);
+      }
+      setTimeout(()=>c.innerHTML="",4000);
+    }
+
+    // ── Core Task Logic ──
+    function getTask(id) { return state.tasks.find(t=>t.id===id); }
+
+    function addTask(title,category,importance,urgency,depth,wig) {
+      const task = {
+        id:uid(), title:title.trim(), category, importance, urgency,
+        depth:depth||"Deep", wig:wig||"None",
+        createdAt:new Date().toISOString(), completedAt:null, elapsedSec:0
+      };
+      state.tasks.unshift(task);
+      initTodayState();
+      if (!state.today_focus.task_ids.includes(task.id)) state.today_focus.task_ids.push(task.id);
+      saveState(); render();
+    }
+
+    function startTask(id) {
+      if(state.activeTaskId&&state.activeTaskId!==id) stopActiveTask();
+      if(state.activeTaskId===id) return;
+      state.activeTaskId=id;
+      state.activeStartedAt=new Date().toISOString();
+      if (pomodoro.phase === "work") pomodoro.taskId = id;
+      saveState(); render();
+    }
+
+    function stopActiveTask() {
+      if(!state.activeTaskId||!state.activeStartedAt) return;
+      const task=getTask(state.activeTaskId);
+      const start=new Date(state.activeStartedAt).getTime();
+      const deltaSec=Math.max(1,Math.round((Date.now()-start)/1000));
+      if(task){
+        task.elapsedSec=(task.elapsedSec||0)+deltaSec;
+        state.sessions.push({
+          id:uid(), taskId:task.id, title:task.title,
+          category:task.category, importance:task.importance, urgency:task.urgency,
+          depth:task.depth||"Deep", wig:task.wig||"None",
+          startAt:new Date(start).toISOString(), endAt:new Date().toISOString(),
+          durationSec:deltaSec
+        });
+        // Log to daily_logs
+        const day=new Date(start).toISOString().slice(0,10);
+        if(!state.daily_logs[day]) state.daily_logs[day]={total_sec:0,deep_sec:0,tasks_closed:0,sessions:0};
+        state.daily_logs[day].total_sec+=deltaSec;
+        if((task.depth||"Deep")==="Deep") state.daily_logs[day].deep_sec+=deltaSec;
+        state.daily_logs[day].sessions++;
+      }
+      state.activeTaskId=null;
+      state.activeStartedAt=null;
+      saveState(); render();
+    }
+
+    function toggleDone(id,done) {
+      const task=getTask(id);
+      if(!task) return;
+      if(state.activeTaskId===id) stopActiveTask();
+      task.completedAt=done?new Date().toISOString():null;
+      if(done){
+        celebrate(); updateStreak();
+        const day=todayISO();
+        if(!state.daily_logs[day]) state.daily_logs[day]={total_sec:0,deep_sec:0,tasks_closed:0,sessions:0};
+        state.daily_logs[day].tasks_closed++;
+      }
+      saveState(); render();
+    }
+
+    function removeDone() {
+      if(state.activeTaskId) stopActiveTask();
+      state.tasks=state.tasks.filter(t=>!t.completedAt);
+      saveState(); render();
+    }
+
+    // ── Pomodoro ──
+    function getOpenTasks() {
+      const focus = getTodayFocusTasks();
+      if (focus.length) return focus;
+      const today = todayISO();
+      const todayOpen = state.tasks.filter(t => !t.completedAt && (t.createdAt || "").slice(0,10) === today);
+      if (todayOpen.length) return todayOpen;
+      return [];
+    }
+
+    function refreshPomodoroTaskSelect(preferredId = null) {
+      const select = document.getElementById("pomoTaskSelect");
+      if (!select) return;
+      const openTasks = getOpenTasks();
+      const current = preferredId || select.value || pomodoro.taskId || state.activeTaskId || "";
+      select.innerHTML = openTasks.map(t => `<option value="${t.id}">${t.title}</option>`).join("");
+      if (!openTasks.length) {
+        select.innerHTML = '<option value="">No open tasks</option>';
+        select.disabled = true;
+        pomodoro.taskId = null;
+        return;
+      }
+      select.disabled = false;
+      const valid = openTasks.some(t => t.id === current) ? current : openTasks[0].id;
+      select.value = valid;
+      pomodoro.taskId = valid;
+    }
+
+    function setActiveTab(tabName) {
+      const tabBtn = document.querySelector(`.tab[data-tab="${tabName}"]`);
+      if (!tabBtn) return;
+      document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+      document.querySelectorAll(".tab-content").forEach(c=>c.classList.remove("active"));
+      tabBtn.classList.add("active");
+      const panel = document.getElementById(`tab-${tabName}`);
+      if (panel) panel.classList.add("active");
+    }
+
+    function setFocusMode(enabled) {
+      pomodoro.focusMode = !!enabled;
+      document.body.classList.toggle("focus-mode", pomodoro.focusMode);
+      if (pomodoro.focusMode) setActiveTab("execute");
+      savePomodoroPrefs();
+    }
+
+    function renderPomodoro() {
+      const phasePill = document.getElementById("pomoPhasePill");
+      const clock = document.getElementById("pomoClock");
+      const status = document.getElementById("pomoStatus");
+      const completed = document.getElementById("pomoCompleted");
+      const startBtn = document.getElementById("pomoStartBtn");
+      const heroPhase = document.getElementById("heroPomoPhase");
+      const heroClock = document.getElementById("heroPomoClock");
+      const heroStatus = document.getElementById("heroPomoStatus");
+      const heroTask = document.getElementById("heroPomoTask");
+      const heroStartBtn = document.getElementById("heroPomoStartBtn");
+      const focusBtn = document.getElementById("focusModeBtn");
+      const autoFocusToggle = document.getElementById("autoFocusToggle");
+      const soundToggle = document.getElementById("pomoSoundToggle");
+      const notifyBtn = document.getElementById("pomoNotifyBtn");
+      const notifyStatus = document.getElementById("pomoNotifyStatus");
+      if (!phasePill || !clock || !status || !completed || !startBtn) return;
+
+      if (pomodoro.running) {
+        if (!pomodoro.endsAtMs) pomodoro.endsAtMs = Date.now() + (pomodoro.remainingSec * 1000);
+        pomodoro.remainingSec = Math.max(0, Math.ceil((pomodoro.endsAtMs - Date.now()) / 1000));
+      }
+
+      const phaseText = pomodoro.phase === "work" ? "Work" : pomodoro.phase === "break" ? "Break" : "Idle";
+      phasePill.className = `pomo-pill ${pomodoro.phase}`;
+      phasePill.textContent = phaseText;
+      clock.textContent = fmtClock(pomodoro.remainingSec);
+      if (heroPhase) {
+        heroPhase.className = `pomo-pill ${pomodoro.phase}`;
+        heroPhase.textContent = phaseText;
+      }
+      if (heroClock) heroClock.textContent = fmtClock(pomodoro.remainingSec);
+
+      if (pomodoro.running) {
+        status.textContent = `Running ${phaseText.toLowerCase()} block`;
+        startBtn.textContent = "Resume";
+        startBtn.disabled = true;
+        if (heroStatus) heroStatus.textContent = `Running ${phaseText.toLowerCase()} block`;
+        if (heroStartBtn) {
+          heroStartBtn.textContent = "Resume";
+          heroStartBtn.disabled = true;
+        }
+      } else if (pomodoro.paused) {
+        status.textContent = `Paused on ${phaseText.toLowerCase()}`;
+        startBtn.textContent = "Resume";
+        startBtn.disabled = false;
+        if (heroStatus) heroStatus.textContent = `Paused on ${phaseText.toLowerCase()}`;
+        if (heroStartBtn) {
+          heroStartBtn.textContent = "Resume";
+          heroStartBtn.disabled = false;
+        }
+      } else {
+        status.textContent = "Ready";
+        startBtn.textContent = "Start";
+        startBtn.disabled = false;
+        if (heroStatus) heroStatus.textContent = "Ready";
+        if (heroStartBtn) {
+          heroStartBtn.textContent = "Start";
+          heroStartBtn.disabled = false;
+        }
+      }
+
+      if (heroTask) {
+        const selectedTask = getTask(pomodoro.taskId) || getTask(state.activeTaskId);
+        heroTask.textContent = selectedTask ? selectedTask.title : "No task selected";
+      }
+      if (focusBtn) focusBtn.textContent = pomodoro.focusMode ? "Exit Focus" : "Enter Focus";
+      if (autoFocusToggle) autoFocusToggle.checked = !!pomodoro.autoFocusMode;
+      document.body.classList.toggle("focus-mode", !!pomodoro.focusMode);
+
+      completed.textContent = `Completed blocks: ${pomodoro.completedBlocks}`;
+      if (soundToggle) soundToggle.checked = !!pomodoro.soundEnabled;
+      if (notifyBtn) {
+        if (!("Notification" in window)) notifyBtn.disabled = true;
+        notifyBtn.textContent = pomodoro.desktopNotify ? "Desktop alerts on" : "Enable desktop alerts";
+      }
+      if (notifyStatus) {
+        const perm = ("Notification" in window) ? Notification.permission : "unsupported";
+        notifyStatus.textContent = pomodoro.desktopNotify
+          ? `Desktop alerts on (${perm})`
+          : `Desktop alerts off (${perm})`;
+      }
+    }
+
+    function startPomodoroPhase(phase) {
+      pomodoro.workMin = toInt(document.getElementById("pomoWorkMin").value, 25);
+      pomodoro.breakMin = toInt(document.getElementById("pomoBreakMin").value, 5);
+      document.getElementById("pomoWorkMin").value = pomodoro.workMin;
+      document.getElementById("pomoBreakMin").value = pomodoro.breakMin;
+
+      const select = document.getElementById("pomoTaskSelect");
+      if (phase === "work") {
+        const chosen = select.value || pomodoro.taskId || state.activeTaskId;
+        if (!chosen) {
+          alert("Add at least one open task before starting Pomodoro.");
+          return;
+        }
+        const task = getTask(chosen);
+        if (!task || task.completedAt) {
+          alert("Selected task is completed. Pick an open task.");
+          refreshPomodoroTaskSelect();
+          return;
+        }
+        pomodoro.taskId = chosen;
+        if (state.activeTaskId !== chosen) startTask(chosen);
+      } else if (state.activeTaskId) {
+        stopActiveTask();
+      }
+
+      pomodoro.phase = phase;
+      if (pomodoro.remainingSec <= 0 || pomodoro.phase === "idle") {
+        pomodoro.remainingSec = (phase === "work" ? pomodoro.workMin : pomodoro.breakMin) * 60;
+      }
+      pomodoro.running = true;
+      pomodoro.paused = false;
+      pomodoro.endsAtMs = Date.now() + (pomodoro.remainingSec * 1000);
+      if (pomodoro.autoFocusMode && (phase === "work" || phase === "break")) setFocusMode(true);
+      renderPomodoro();
+    }
+
+    function completePomodoroPhase(skipped = false) {
+      const fromPhase = pomodoro.phase;
+      if (pomodoro.phase === "work") {
+        if (state.activeTaskId === pomodoro.taskId) stopActiveTask();
+        if (!skipped) pomodoro.completedBlocks += 1;
+        pomodoro.phase = "break";
+        pomodoro.remainingSec = pomodoro.breakMin * 60;
+        pomodoro.running = false;
+        pomodoro.paused = true;
+        pomodoro.endsAtMs = null;
+      } else if (pomodoro.phase === "break") {
+        pomodoro.phase = "work";
+        pomodoro.remainingSec = pomodoro.workMin * 60;
+        pomodoro.running = false;
+        pomodoro.paused = true;
+        pomodoro.endsAtMs = null;
+      } else {
+        pomodoro.phase = "idle";
+        pomodoro.running = false;
+        pomodoro.paused = false;
+        pomodoro.endsAtMs = null;
+      }
+      if (!skipped) {
+        const message = getPhaseTransitionMessage(fromPhase);
+        playPomodoroChime();
+        sendPomodoroNotification(message);
+      }
+      if (pomodoro.focusMode && !pomodoro.running) setFocusMode(false);
+      renderPomodoro();
+      render();
+    }
+
+    function startPomodoro() {
+      if (pomodoro.running) return;
+      ensurePomodoroAudioContext();
+      if (pomodoro.phase === "idle") {
+        pomodoro.remainingSec = toInt(document.getElementById("pomoWorkMin").value, 25) * 60;
+        startPomodoroPhase("work");
+      } else {
+        startPomodoroPhase(pomodoro.phase);
+      }
+    }
+
+    function pausePomodoro() {
+      if (!pomodoro.running) return;
+      if (pomodoro.endsAtMs) {
+        pomodoro.remainingSec = Math.max(0, Math.ceil((pomodoro.endsAtMs - Date.now()) / 1000));
+      }
+      pomodoro.running = false;
+      pomodoro.paused = true;
+      pomodoro.endsAtMs = null;
+      if (pomodoro.phase === "work" && state.activeTaskId === pomodoro.taskId) stopActiveTask();
+      if (pomodoro.focusMode) setFocusMode(false);
+      renderPomodoro();
+      render();
+    }
+
+    function skipPomodoroPhase() {
+      if (pomodoro.phase === "idle") return;
+      completePomodoroPhase(true);
+    }
+
+    function resetPomodoro() {
+      if (state.activeTaskId === pomodoro.taskId) stopActiveTask();
+      pomodoro.phase = "idle";
+      pomodoro.running = false;
+      pomodoro.paused = false;
+      pomodoro.taskId = document.getElementById("pomoTaskSelect").value || null;
+      pomodoro.remainingSec = toInt(document.getElementById("pomoWorkMin").value, 25) * 60;
+      pomodoro.endsAtMs = null;
+      if (pomodoro.focusMode) setFocusMode(false);
+      renderPomodoro();
+    }
+
+    function tickPomodoro() {
+      if (!pomodoro.running) return;
+      if (!pomodoro.endsAtMs) pomodoro.endsAtMs = Date.now() + (pomodoro.remainingSec * 1000);
+      pomodoro.remainingSec = Math.max(0, Math.ceil((pomodoro.endsAtMs - Date.now()) / 1000));
+      if (pomodoro.remainingSec === 0) {
+        completePomodoroPhase(false);
+        return;
+      }
+      renderPomodoro();
+    }
+
+    function startBreakNow() {
+      pomodoro.breakMin = toInt(document.getElementById("pomoBreakMin").value, 5);
+      document.getElementById("pomoBreakMin").value = pomodoro.breakMin;
+      if (state.activeTaskId) stopActiveTask();
+      pomodoro.phase = "break";
+      pomodoro.remainingSec = pomodoro.breakMin * 60;
+      pomodoro.running = true;
+      pomodoro.paused = false;
+      pomodoro.endsAtMs = Date.now() + (pomodoro.remainingSec * 1000);
+      if (pomodoro.autoFocusMode) setFocusMode(true);
+      ensurePomodoroAudioContext();
+      renderPomodoro();
+      render();
+    }
+
+    function formatTimeShort(iso) {
+      const d = new Date(iso);
+      return d.toLocaleTimeString("en-AU", { hour: "2-digit", minute: "2-digit" });
+    }
+
+    function renderSprintLog() {
+      const today = todayISO();
+      const sessionsToday = state.sessions
+        .filter(s => (s.startAt || "").slice(0,10) === today)
+        .sort((a,b) => (a.startAt < b.startAt ? 1 : -1));
+      const totalSec = sessionsToday.reduce((a,s) => a + (s.durationSec || 0), 0);
+      document.getElementById("sprintSummary").textContent = `Today: ${sessionsToday.length} sprints, ${fmtDuration(totalSec)} focus`;
+      const list = document.getElementById("sprintList");
+      if (!sessionsToday.length) {
+        list.innerHTML = '<div class="sprint-empty">No sprints logged yet today.</div>';
+        return;
+      }
+      list.innerHTML = sessionsToday.map(s => {
+        const start = formatTimeShort(s.startAt);
+        const end = formatTimeShort(s.endAt);
+        return `<div class="sprint-row">
+          <div>${start}-${end}</div>
+          <div>${s.title}</div>
+          <div>${fmtDuration(s.durationSec)}</div>
+        </div>`;
+      }).join("");
+    }
+
+    function ensurePomodoroAudioContext() {
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) return null;
+      if (!pomoAudioContext) pomoAudioContext = new Ctx();
+      if (pomoAudioContext.state === "suspended") pomoAudioContext.resume();
+      return pomoAudioContext;
+    }
+
+    function playPomodoroChime() {
+      if (!pomodoro.soundEnabled) return;
+      const ctx = ensurePomodoroAudioContext();
+      if (!ctx) return;
+      const now = ctx.currentTime;
+      const tones = [880, 660, 880];
+      tones.forEach((freq, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.0001, now + i * 0.24);
+        gain.gain.exponentialRampToValueAtTime(0.18, now + i * 0.24 + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.24 + 0.18);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now + i * 0.24);
+        osc.stop(now + i * 0.24 + 0.19);
+      });
+    }
+
+    function getPhaseTransitionMessage(fromPhase) {
+      if (fromPhase === "work") return `Work block complete. Break ready (${pomodoro.breakMin} min).`;
+      if (fromPhase === "break") return `Break complete. Work block ready (${pomodoro.workMin} min).`;
+      return "Pomodoro block complete.";
+    }
+
+    function sendPomodoroNotification(message) {
+      if (!pomodoro.desktopNotify) return;
+      if (!("Notification" in window)) return;
+      if (Notification.permission !== "granted") return;
+      try {
+        new Notification("PPP Flow Timer", { body: message, tag: "ppp-pomodoro" });
+      } catch {}
+    }
+
+    async function requestPomodoroNotifications() {
+      if (!("Notification" in window)) {
+        alert("Desktop notifications are not supported in this browser.");
+        return;
+      }
+      if (Notification.permission === "granted") {
+        pomodoro.desktopNotify = true;
+        savePomodoroPrefs();
+        renderPomodoro();
+        return;
+      }
+      if (Notification.permission === "denied") {
+        alert("Desktop notifications are blocked for this page. Re-enable in browser site settings.");
+        return;
+      }
+      const perm = await Notification.requestPermission();
+      pomodoro.desktopNotify = perm === "granted";
+      savePomodoroPrefs();
+      renderPomodoro();
+    }
+
+    // ── Three-Box ──
+    function categoryToBox(cat) {
+      if(cat==="Strategic"||cat==="Revenue/Venture") return "strategic";
+      if(cat==="Maintenance"||cat==="Travel/Admin") return "maintenance";
+      if(cat==="Body/Mind") return "body";
+      return "strategic";
+    }
+
+    function renderThreeBox() {
+      const boxes={strategic:null,maintenance:null,body:null};
+      const focusTasks = getTodayFocusTasks();
+      for(const task of focusTasks){
+        const box=categoryToBox(task.category);
+        if(!boxes[box]) boxes[box]=task;
+      }
+      document.getElementById("todayFocusCount").textContent = `Focus: ${focusTasks.length}`;
+      ["strategic","maintenance","body"].forEach(box=>{
+        const el=document.getElementById(`box-${box}`);
+        const taskEl=document.getElementById(`box-${box}-task`);
+        const timerEl=document.getElementById(`box-${box}-timer`);
+        const task=boxes[box];
+        el.classList.remove("has-task","completed");
+        if(task){
+          taskEl.textContent=task.title;
+          el.classList.add(task.completedAt?"completed":"has-task");
+          const liveDelta=(state.activeTaskId===task.id&&state.activeStartedAt)?Math.round((Date.now()-new Date(state.activeStartedAt).getTime())/1000):0;
+          timerEl.textContent=fmtDuration((task.elapsedSec||0)+liveDelta);
+        } else { taskEl.textContent="\u2014"; timerEl.textContent=""; }
+      });
+    }
+
+    // ── Finish Track ──
+    function renderFinishTrack() {
+      const ft=state.finish_track;
+      const el=document.getElementById("finishTrack");
+      const label=document.getElementById("ftLabel");
+      const input=document.getElementById("ftInput");
+      const btn=document.getElementById("ftSetBtn");
+      const status=document.getElementById("ftStatus");
+
+      if(ft.completed_at){
+        el.classList.add("locked"); label.classList.add("locked");
+        label.textContent="Finish Track: COMPLETED";
+        input.value=ft.text; input.disabled=true;
+        btn.textContent="Reset"; btn.className="ghost";
+        status.innerHTML='<span style="font-size:24px;">&#10003;</span>';
+      } else if(ft.locked_at){
+        el.classList.remove("locked");
+        label.textContent="Finish Track: LOCKED IN \u2014 complete before expansion";
+        input.value=ft.text; input.disabled=true;
+        btn.textContent="Done!"; btn.className="primary";
+        status.innerHTML='<span style="font-size:20px;">&#9203;</span>';
+      } else {
+        el.classList.remove("locked"); label.classList.remove("locked");
+        label.textContent="Finish Track Commitment (set before expansion work)";
+        input.value=""; input.disabled=false;
+        btn.textContent="Lock In"; btn.className="primary";
+        status.innerHTML="";
+      }
+
+      const gate=document.getElementById("closureGate");
+      const gateText=document.getElementById("gateText");
+      const gateIcon=document.getElementById("gateIcon");
+      if(ft.locked_at&&!ft.completed_at){
+        gate.style.display="flex"; gate.className="gate-banner open";
+        gateIcon.textContent="\u26A0";
+        gateText.textContent="Closure before expansion: finish-track commitment is open. Complete it before starting new Strategic tasks.";
+      } else if(ft.completed_at){
+        gate.style.display="flex"; gate.className="gate-banner closed";
+        gateIcon.textContent="\u2713";
+        gateText.textContent="Finish track completed. Expansion work unlocked.";
+      } else { gate.style.display="none"; }
+    }
+
+    // ── Stats ──
+    function renderStats() {
+      const today=todayISO();
+      const weekDates=getWeekDates(0);
+      const month=document.getElementById("monthPicker").value||nowMonth();
+
+      let todaySec=state.sessions.filter(s=>s.startAt.slice(0,10)===today).reduce((a,s)=>a+s.durationSec,0);
+      if(state.activeTaskId&&state.activeStartedAt&&state.activeStartedAt.slice(0,10)===today)
+        todaySec+=Math.round((Date.now()-new Date(state.activeStartedAt).getTime())/1000);
+
+      const weekSessions=sessionsForDates(weekDates);
+      const weekSec=weekSessions.reduce((a,s)=>a+s.durationSec,0);
+      const monthSessions=state.sessions.filter(s=>s.startAt.slice(0,7)===month);
+      const monthSec=monthSessions.reduce((a,s)=>a+s.durationSec,0);
+      const weekClosedCount=state.tasks.filter(t=>t.completedAt&&weekDates.includes(t.completedAt.slice(0,10))).length;
+
+      // Deep ratio (month)
+      const deepSec=monthSessions.filter(s=>(s.depth||"Deep")==="Deep").reduce((a,s)=>a+s.durationSec,0);
+      const deepPct=monthSec?Math.round((deepSec/monthSec)*100):0;
+
+      // WIG ratio (month)
+      const wigSec=monthSessions.filter(s=>(s.wig||"None")!=="None").reduce((a,s)=>a+s.durationSec,0);
+      const wigPct=monthSec?Math.round((wigSec/monthSec)*100):0;
+
+      // Leakage
+      const lowImp=monthSessions.filter(s=>s.importance==="Low").reduce((a,s)=>a+s.durationSec,0);
+      const leakagePct=monthSec?Math.round((lowImp/monthSec)*100):0;
+
+      document.getElementById("todayTracked").textContent=fmtDuration(todaySec);
+      document.getElementById("weekTracked").textContent=fmtHours(weekSec);
+      document.getElementById("monthTracked").textContent=fmtHours(monthSec);
+      document.getElementById("weekClosed").textContent=weekClosedCount;
+      document.getElementById("deepRatio").textContent=`${deepPct}%`;
+      document.getElementById("wigRatio").textContent=`${wigPct}%`;
+      const leakEl=document.getElementById("leakage");
+      leakEl.textContent=`${leakagePct}%`;
+      leakEl.className=`value ${leakagePct>30?"red":leakagePct>15?"gold":"green"}`;
+
+      // Streak
+      const streak=getStreakCount();
+      const streakEl=document.getElementById("streakDisplay");
+      streakEl.innerHTML=streak>0?`<span style="font-size:20px;">&#128293;</span> ${streak} day${streak>1?"s":""}`:"";
+
+      // Active pill
+      if(state.activeTaskId){
+        const task=getTask(state.activeTaskId);
+        document.getElementById("activePill").className="active-pill running";
+        document.getElementById("activePill").textContent=`Running: ${task?task.title:"?"}`;
+      } else {
+        document.getElementById("activePill").className="active-pill";
+        document.getElementById("activePill").textContent="No active timer";
+      }
+
+      // Backup reminder
+      const lastB=state.last_backup?new Date(state.last_backup):null;
+      const daysSince=lastB?(Date.now()-lastB.getTime())/86400000:999;
+      document.getElementById("backupReminder").classList.toggle("show",daysSince>3&&state.sessions.length>3);
+
+      // Sync time
+      if(state.last_modified){
+        document.getElementById("syncTime").textContent=`Last modified: ${new Date(state.last_modified).toLocaleString()} by ${state.last_modified_by||"unknown"}`;
+      }
+    }
+
+    // ── Tag class helper ──
+    function tagClass(cat){
+      const map={Strategic:"strategic",Maintenance:"maintenance","Body/Mind":"body","Travel/Admin":"travel","Revenue/Venture":"revenue"};
+      return map[cat]||"";
+    }
+
+    // ── Table ──
+    function renderTable() {
+      const now=Date.now();
+      const focusIds = new Set(state.today_focus?.task_ids || []);
+      document.getElementById("taskTableBody").innerHTML=state.tasks.map(task=>{
+        const isRunning=state.activeTaskId===task.id;
+        const isFocus = focusIds.has(task.id);
+        const liveDelta=isRunning&&state.activeStartedAt?Math.round((now-new Date(state.activeStartedAt).getTime())/1000):0;
+        const total=(task.elapsedSec||0)+liveDelta;
+        const depthCls=(task.depth||"Deep")==="Deep"?"deep":"shallow";
+        const wigCls=(task.wig||"None")!=="None"?"wig":"";
+        return `<tr${task.completedAt?' style="opacity:.55;"':''}>
+          <td><input type="checkbox" ${task.completedAt?"checked":""} data-act="done" data-id="${task.id}" /></td>
+          <td><input type="checkbox" ${isFocus?"checked":""} data-act="focus" data-id="${task.id}" ${task.completedAt?"disabled":""} /></td>
+          <td><div>${task.title}</div><div class="tiny">${task.completedAt?'<span class="done-text">Completed</span>':'Open'}</div></td>
+          <td><span class="tag ${tagClass(task.category)}">${task.category}</span></td>
+          <td><span class="tag">${task.importance[0]}/${task.urgency[0]}</span></td>
+          <td><span class="tag ${depthCls}">${task.depth||"Deep"}</span></td>
+          <td><span class="tag ${wigCls}">${task.wig||"\u2014"}</span></td>
+          <td>${fmtDuration(total)}</td>
+          <td><div class="controls">
+            <button data-act="start" data-id="${task.id}" ${isRunning?"disabled":""}>Start</button>
+            <button data-act="stop" data-id="${task.id}" ${isRunning?"":"disabled"}>Stop</button>
+          </div></td>
+        </tr>`;
+      }).join("");
+    }
+
+    // ── Month Summary ──
+    function renderMonthSummary() {
+      const month=document.getElementById("monthPicker").value||nowMonth();
+      const sessions=state.sessions.filter(s=>s.startAt.slice(0,7)===month);
+      const total=sessions.reduce((a,s)=>a+s.durationSec,0);
+
+      const cats={};
+      sessions.forEach(s=>{cats[s.category]=(cats[s.category]||0)+s.durationSec;});
+      const maxCat=Math.max(1,...Object.values(cats));
+      document.getElementById("categoryBars").innerHTML=Object.entries(cats).sort((a,b)=>b[1]-a[1])
+        .map(([n,s])=>`<div class="bar"><div>${n}</div><div class="bar-track"><div class="bar-fill" style="width:${Math.round((s/maxCat)*100)}%"></div></div><div>${fmtHours(s)}</div></div>`)
+        .join("")||'<p class="tiny">No data this month.</p>';
+
+      const q={q1:0,q2:0,q3:0,q4:0};
+      sessions.forEach(s=>{
+        if(s.importance==="High"&&s.urgency==="High") q.q1+=s.durationSec;
+        if(s.importance==="High"&&s.urgency==="Low") q.q2+=s.durationSec;
+        if(s.importance==="Low"&&s.urgency==="High") q.q3+=s.durationSec;
+        if(s.importance==="Low"&&s.urgency==="Low") q.q4+=s.durationSec;
+      });
+      const qT=Object.values(q).reduce((a,b)=>a+b,0)||1;
+      document.getElementById("quadrants").innerHTML=[
+        `<div class="quadrant">Q1 Imp+Urg: <strong>${fmtHours(q.q1)}</strong> (${Math.round((q.q1/qT)*100)}%)</div>`,
+        `<div class="quadrant" style="color:var(--accent);font-weight:600;">Q2 Imp+Not Urg: <strong>${fmtHours(q.q2)}</strong> (${Math.round((q.q2/qT)*100)}%)</div>`,
+        `<div class="quadrant">Q3 Not Imp+Urg: <strong>${fmtHours(q.q3)}</strong> (${Math.round((q.q3/qT)*100)}%)</div>`,
+        `<div class="quadrant" style="color:var(--warn);">Q4 Not Imp+Not Urg: <strong>${fmtHours(q.q4)}</strong> (${Math.round((q.q4/qT)*100)}%)</div>`
+      ].join("");
+    }
+
+    // ── 4DX Focus ──
+    function renderFocusLayer() {
+      document.getElementById("wig1Input").value=state.focus.wig1||"";
+      document.getElementById("wig2Input").value=state.focus.wig2||"";
+      document.getElementById("leadMeasuresInput").value=state.focus.lead_measures||"";
+      document.getElementById("weeklyCommitmentsInput").value=state.focus.weekly_commitments||"";
+      document.getElementById("focusUpdated").textContent=state.focus.updated_at?`Updated: ${new Date(state.focus.updated_at).toLocaleDateString()}`:"";
+
+      // WIG scoreboard
+      const month=nowMonth();
+      const monthSessions=state.sessions.filter(s=>s.startAt.slice(0,7)===month);
+      const monthTotal=monthSessions.reduce((a,s)=>a+s.durationSec,0);
+
+      const wigTotals={WIG1:0,WIG2:0,None:0};
+      monthSessions.forEach(s=>{
+        const w=s.wig||"None";
+        wigTotals[w]=(wigTotals[w]||0)+s.durationSec;
+      });
+      const maxW=Math.max(1,...Object.values(wigTotals));
+      document.getElementById("wigMonthBars").innerHTML=Object.entries(wigTotals)
+        .filter(([k,v])=>v>0)
+        .sort((a,b)=>b[1]-a[1])
+        .map(([n,s])=>`<div class="bar"><div>${n}</div><div class="bar-track"><div class="bar-fill${n!=="None"?" gold":""}" style="width:${Math.round((s/maxW)*100)}%"></div></div><div>${fmtHours(s)}</div></div>`)
+        .join("")||'<p class="tiny">No WIG-aligned sessions this month.</p>';
+
+      const depthTotals={Deep:0,Shallow:0};
+      monthSessions.forEach(s=>{
+        const d=s.depth||"Deep";
+        depthTotals[d]=(depthTotals[d]||0)+s.durationSec;
+      });
+      const maxD=Math.max(1,...Object.values(depthTotals));
+      document.getElementById("deepMonthBars").innerHTML=Object.entries(depthTotals)
+        .filter(([k,v])=>v>0)
+        .sort((a,b)=>b[1]-a[1])
+        .map(([n,s])=>`<div class="bar"><div>${n}</div><div class="bar-track"><div class="bar-fill" style="width:${Math.round((s/maxD)*100)}%"></div></div><div>${fmtHours(s)}</div></div>`)
+        .join("")||'<p class="tiny">No sessions this month.</p>';
+    }
+
+    // ── Weekly Review ──
+    function renderWeeklyReview() {
+      const dates=getWeekDates(reviewWeekOffset);
+      const dayNames=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+      const today=todayISO();
+
+      const fmt=d=>{const p=d.split("-"); return `${p[2]}/${p[1]}`;};
+      document.getElementById("weekLabel").textContent=`${fmt(dates[0])} \u2013 ${fmt(dates[6])}`;
+
+      let totalSec=0, totalClosed=0, totalDeepSec=0;
+      document.getElementById("weekGrid").innerHTML=dates.map((d,i)=>{
+        const daySessions=state.sessions.filter(s=>s.startAt.slice(0,10)===d);
+        const daySec=daySessions.reduce((a,s)=>a+s.durationSec,0);
+        const dayDeep=daySessions.filter(s=>(s.depth||"Deep")==="Deep").reduce((a,s)=>a+s.durationSec,0);
+        const dayClosed=state.tasks.filter(t=>t.completedAt&&t.completedAt.slice(0,10)===d).length;
+        totalSec+=daySec; totalClosed+=dayClosed; totalDeepSec+=dayDeep;
+        const deepPct=daySec?Math.round((dayDeep/daySec)*100):0;
+        return `<div class="day-cell ${d===today?"today":""}">
+          <div class="day-label">${dayNames[i]}</div>
+          <div class="day-hours">${fmtHours(daySec)}</div>
+          <div class="day-closed">${dayClosed} closed</div>
+          <div class="day-deep">${deepPct}% deep</div>
+        </div>`;
+      }).join("");
+
+      document.getElementById("weekTotalHours").textContent=fmtHours(totalSec);
+      document.getElementById("weekTotalClosed").textContent=totalClosed;
+
+      const weekSessions=sessionsForDates(dates);
+      const weekTotal=weekSessions.reduce((a,s)=>a+s.durationSec,0)||1;
+
+      const q2sec=weekSessions.filter(s=>s.importance==="High"&&s.urgency==="Low").reduce((a,s)=>a+s.durationSec,0);
+      document.getElementById("weekQ2").textContent=`${Math.round((q2sec/weekTotal)*100)}%`;
+
+      const weekDeepTotal=weekSessions.filter(s=>(s.depth||"Deep")==="Deep").reduce((a,s)=>a+s.durationSec,0);
+      document.getElementById("weekDeepRatio").textContent=`${Math.round((weekDeepTotal/weekTotal)*100)}%`;
+
+      // Category bars
+      const cats={};
+      weekSessions.forEach(s=>{cats[s.category]=(cats[s.category]||0)+s.durationSec;});
+      const maxC=Math.max(1,...Object.values(cats));
+      document.getElementById("weekCategoryBars").innerHTML=Object.entries(cats).sort((a,b)=>b[1]-a[1])
+        .map(([n,s])=>`<div class="bar"><div>${n}</div><div class="bar-track"><div class="bar-fill" style="width:${Math.round((s/maxC)*100)}%"></div></div><div>${fmtHours(s)}</div></div>`)
+        .join("")||'<p class="tiny">No data this week.</p>';
+
+      // Quadrants
+      const q={q1:0,q2:0,q3:0,q4:0};
+      weekSessions.forEach(s=>{
+        if(s.importance==="High"&&s.urgency==="High") q.q1+=s.durationSec;
+        if(s.importance==="High"&&s.urgency==="Low") q.q2+=s.durationSec;
+        if(s.importance==="Low"&&s.urgency==="High") q.q3+=s.durationSec;
+        if(s.importance==="Low"&&s.urgency==="Low") q.q4+=s.durationSec;
+      });
+      const qT=Object.values(q).reduce((a,b)=>a+b,0)||1;
+      document.getElementById("weekQuadrants").innerHTML=[
+        `<div class="quadrant">Q1 Imp+Urg: <strong>${fmtHours(q.q1)}</strong> (${Math.round((q.q1/qT)*100)}%)</div>`,
+        `<div class="quadrant" style="color:var(--accent);font-weight:600;">Q2 Imp+Not Urg: <strong>${fmtHours(q.q2)}</strong> (${Math.round((q.q2/qT)*100)}%)</div>`,
+        `<div class="quadrant">Q3 Not Imp+Urg: <strong>${fmtHours(q.q3)}</strong> (${Math.round((q.q3/qT)*100)}%)</div>`,
+        `<div class="quadrant" style="color:var(--warn);">Q4 Not Imp+Not Urg: <strong>${fmtHours(q.q4)}</strong> (${Math.round((q.q4/qT)*100)}%)</div>`
+      ].join("");
+
+      // Notes
+      const weekNotes=state.notes.filter(n=>dates.includes(n.at.slice(0,10)));
+      document.getElementById("weekNotes").innerHTML=weekNotes.length
+        ?weekNotes.map(n=>`<div style="margin:4px 0;">${n.at.slice(0,10)}: ${n.note}</div>`).join("")
+        :"No notes this week.";
+    }
+
+    // ── Master Render ──
+    function render() {
+      initTodayState();
+      document.getElementById("todayDate").textContent=new Date().toLocaleDateString("en-AU",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
+      renderStats();
+      renderTable();
+      renderThreeBox();
+      renderLifePractices();
+      renderFinishTrack();
+      renderSprintLog();
+      refreshPomodoroTaskSelect();
+      renderPomodoro();
+      renderMonthSummary();
+      renderFocusLayer();
+      renderWeeklyReview();
+    }
+
+    // ── Export/Import ──
+    function download(name,content,type){
+      const blob=new Blob([content],{type});
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement("a");
+      a.href=url; a.download=name;
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    function exportCsv() {
+      const rows=[["session_id","task_id","title","category","importance","urgency","depth","wig","start_at","end_at","duration_sec","duration_min"]];
+      state.sessions.forEach(s=>{
+        rows.push([s.id,s.taskId,s.title,s.category,s.importance,s.urgency,s.depth||"Deep",s.wig||"None",s.startAt,s.endAt,s.durationSec,(s.durationSec/60).toFixed(2)]);
+      });
+      download(`ppp_sessions_${todayISO()}.csv`, rows.map(r=>r.map(v=>`"${String(v).replaceAll('"','""')}"`).join(",")).join("\n"), "text/csv");
+    }
+
+    function exportJson() {
+      state.last_backup=new Date().toISOString();
+      saveState("dashboard_export");
+      download(`PPP_DATA.json`, JSON.stringify(state,null,2), "application/json");
+      render();
+    }
+
+    function importJson(file) {
+      const reader=new FileReader();
+      reader.onload=(e)=>{
+        try{
+          const imported=JSON.parse(e.target.result);
+          importJsonObject(imported, "file_import", true);
+          setSyncBanner("Data source: File (just loaded)", "file", `Updated ${new Date().toLocaleString()}`);
+        } catch(err) { alert("Invalid JSON file: "+err.message); }
+      };
+      reader.readAsText(file);
+    }
+
+    // ── Events ──
+    document.getElementById("taskForm").addEventListener("submit",e=>{
+      e.preventDefault();
+      addTask(
+        document.getElementById("titleInput").value,
+        document.getElementById("categoryInput").value,
+        document.getElementById("importanceInput").value,
+        document.getElementById("urgencyInput").value,
+        document.getElementById("depthInput").value,
+        document.getElementById("wigInput").value
+      );
+      document.getElementById("titleInput").value="";
+      document.getElementById("titleInput").focus();
+    });
+
+    document.getElementById("taskTableBody").addEventListener("click",e=>{
+      const btn=e.target.closest("button");
+      if(!btn) return;
+      if(btn.dataset.act==="start") startTask(btn.dataset.id);
+      if(btn.dataset.act==="stop") {
+        stopActiveTask();
+        if (pomodoro.running && pomodoro.phase === "work") {
+          pomodoro.running = false;
+          pomodoro.paused = true;
+          renderPomodoro();
+        }
+      }
+    });
+
+    document.getElementById("taskTableBody").addEventListener("change",e=>{
+      const input=e.target.closest("input[data-act='done']");
+      if(input) {
+        toggleDone(input.dataset.id,input.checked);
+        return;
+      }
+      const focus=e.target.closest("input[data-act='focus']");
+      if(focus) setTaskFocusToday(focus.dataset.id, focus.checked);
+    });
+
+    document.getElementById("clearDoneBtn").addEventListener("click",removeDone);
+    document.getElementById("exportCsvBtn").addEventListener("click",exportCsv);
+    document.getElementById("exportJsonBtn").addEventListener("click",exportJson);
+    document.getElementById("quickBackupBtn").addEventListener("click",exportJson);
+    document.getElementById("resetTodayFocusBtn").addEventListener("click",resetTodayFocus);
+    document.getElementById("autofillFocusBtn").addEventListener("click",autofillTodayFocus);
+    document.getElementById("pomoStartBtn").addEventListener("click",startPomodoro);
+    document.getElementById("pomoPauseBtn").addEventListener("click",pausePomodoro);
+    document.getElementById("pomoSkipBtn").addEventListener("click",skipPomodoroPhase);
+    document.getElementById("pomoBreakNowBtn").addEventListener("click",startBreakNow);
+    document.getElementById("pomoResetBtn").addEventListener("click",resetPomodoro);
+    document.getElementById("heroPomoStartBtn").addEventListener("click",startPomodoro);
+    document.getElementById("heroPomoPauseBtn").addEventListener("click",pausePomodoro);
+    document.getElementById("heroPomoSkipBtn").addEventListener("click",skipPomodoroPhase);
+    document.getElementById("heroPomoBreakNowBtn").addEventListener("click",startBreakNow);
+    document.getElementById("heroPomoResetBtn").addEventListener("click",resetPomodoro);
+    document.getElementById("focusModeBtn").addEventListener("click",()=>{ setFocusMode(!pomodoro.focusMode); renderPomodoro(); });
+    document.getElementById("autoFocusToggle").addEventListener("change",e=>{ pomodoro.autoFocusMode = !!e.target.checked; savePomodoroPrefs(); renderPomodoro(); });
+    document.getElementById("pomoNotifyBtn").addEventListener("click",requestPomodoroNotifications);
+    document.getElementById("pomoSoundToggle").addEventListener("change",e=>{
+      pomodoro.soundEnabled = !!e.target.checked;
+      savePomodoroPrefs();
+      renderPomodoro();
+    });
+    document.getElementById("pomoTaskSelect").addEventListener("change",e=>{
+      pomodoro.taskId = e.target.value || null;
+      renderPomodoro();
+    });
+    document.getElementById("lifePracticesList").addEventListener("change",e=>{
+      const doneInput=e.target.closest("input[data-life-done]");
+      if(doneInput){
+        updateLifePractice(doneInput.dataset.lifeDone, { done: !!doneInput.checked });
+        return;
+      }
+      const minInput=e.target.closest("input[data-life-minutes]");
+      if(minInput){
+        const digitsOnly = (minInput.value || "").replace(/[^\d]/g, "");
+        if (minInput.value !== digitsOnly) minInput.value = digitsOnly;
+        const parsed = Number.parseInt(digitsOnly, 10);
+        updateLifePractice(minInput.dataset.lifeMinutes, { minutes: Number.isFinite(parsed) ? parsed : null });
+      }
+    });
+
+    // File sync
+    document.getElementById("loadFileBtn").textContent = "Link JSON File";
+    document.getElementById("loadFileBtn").addEventListener("click",pickAndLinkJsonFile);
+    document.getElementById("loadFileInput").addEventListener("change",e=>{if(e.target.files[0]) importJson(e.target.files[0]);});
+    document.getElementById("saveFileBtn").addEventListener("click",saveToLinkedFile);
+
+    document.getElementById("monthPicker").value=nowMonth();
+    document.getElementById("monthPicker").addEventListener("change",()=>{renderMonthSummary();renderStats();});
+
+    // Finish track
+    document.getElementById("ftSetBtn").addEventListener("click",()=>{
+      const ft=state.finish_track;
+      if(ft.completed_at){
+        state.finish_track={text:"",locked_at:null,completed_at:null};
+      } else if(ft.locked_at){
+        ft.completed_at=new Date().toISOString();
+        celebrate(); updateStreak();
+      } else {
+        const text=document.getElementById("ftInput").value.trim();
+        if(!text) return;
+        ft.text=text; ft.locked_at=new Date().toISOString();
+      }
+      saveState(); render();
+    });
+
+    // Notes
+    document.getElementById("saveNotesBtn").addEventListener("click",()=>{
+      const text=document.getElementById("notesInput").value.trim();
+      if(!text) return;
+      state.notes.unshift({id:uid(),at:new Date().toISOString(),note:text});
+      document.getElementById("notesInput").value="";
+      saveState(); render();
+    });
+
+    // 4DX Focus save
+    document.getElementById("saveFocusBtn").addEventListener("click",()=>{
+      state.focus={
+        wig1:document.getElementById("wig1Input").value.trim(),
+        wig2:document.getElementById("wig2Input").value.trim(),
+        lead_measures:document.getElementById("leadMeasuresInput").value.trim(),
+        weekly_commitments:document.getElementById("weeklyCommitmentsInput").value.trim(),
+        updated_at:new Date().toISOString()
+      };
+      saveState(); render();
+      alert("Focus layer saved.");
+    });
+
+    // Tabs
+    document.querySelectorAll(".tab").forEach(tab=>{
+      tab.addEventListener("click",()=>{
+        setActiveTab(tab.dataset.tab);
+        render();
+      });
+    });
+
+    // Quick exit from focus mode
+    document.addEventListener("keydown",e=>{
+      if (e.key === "Escape" && pomodoro.focusMode) {
+        setFocusMode(false);
+        renderPomodoro();
+      }
+    });
+
+    // Weekly review nav
+    document.getElementById("prevWeekBtn").addEventListener("click",()=>{reviewWeekOffset--;renderWeeklyReview();});
+    document.getElementById("nextWeekBtn").addEventListener("click",()=>{reviewWeekOffset++;renderWeeklyReview();});
+
+    // Live tick
+    setInterval(()=>{
+      tickPomodoro();
+      if(state.activeTaskId) {
+        render();
+      } else {
+        renderPomodoro();
+      }
+    },1000);
+
+    (async () => {
+      await tryAutoLoadLinkedFile();
+      render();
+    })();
+  </script>
+</body>
+</html>
