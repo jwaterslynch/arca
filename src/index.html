@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>PPP Flow Desktop</title>
+  <title>PPP Flow Dashboard v3</title>
   <style>
     :root {
       --bg: #f5f6f2;
@@ -139,8 +139,82 @@
     .day-cell .day-label { font-weight:600; margin-bottom:4px; }
     .day-cell .day-hours { font-size:16px; font-weight:700; color:var(--accent); }
     .day-cell .day-closed { font-size:11px; color:var(--done); margin-top:2px; }
+    .day-cell .day-closed-btn {
+      border:none;
+      background:transparent;
+      color:var(--done);
+      font-size:11px;
+      margin-top:2px;
+      text-decoration:underline;
+      cursor:pointer;
+      padding:0;
+    }
+    .day-cell .day-closed-btn:disabled {
+      text-decoration:none;
+      opacity:.6;
+      cursor:default;
+    }
     .day-cell .day-deep { font-size:10px; color:var(--deep); margin-top:1px; }
     .day-cell.today { border-color:var(--accent); background:var(--accent-light); }
+    .week-closed-btn {
+      border:none;
+      background:transparent;
+      cursor:pointer;
+      padding:0;
+      text-decoration:underline;
+    }
+
+    /* Closure modal */
+    .modal-backdrop {
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,.45);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      z-index:12000;
+      padding:18px;
+    }
+    .modal-backdrop[hidden] { display:none; }
+    .modal-panel {
+      width:min(760px,100%);
+      max-height:85vh;
+      overflow:auto;
+      border-radius:12px;
+      border:1px solid var(--line);
+      background:#fff;
+      box-shadow:0 14px 42px rgba(0,0,0,.18);
+      padding:14px;
+    }
+    .modal-head {
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:8px;
+      margin-bottom:10px;
+    }
+    .modal-list {
+      border:1px solid var(--line);
+      border-radius:8px;
+      overflow:hidden;
+    }
+    .modal-row {
+      display:grid;
+      grid-template-columns:120px 1fr;
+      gap:10px;
+      padding:8px 10px;
+      border-bottom:1px solid #eef1ec;
+      font-size:13px;
+    }
+    .modal-row:last-child { border-bottom:none; }
+    .modal-time { color:var(--muted); font-variant-numeric:tabular-nums; }
+    .modal-hint {
+      margin-top:10px;
+      font-size:12px;
+      color:var(--muted);
+      border-left:3px solid #e6c26c;
+      padding-left:8px;
+    }
     .trend-row { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin:12px 0; }
 
     /* 4DX Focus Layer */
@@ -195,6 +269,43 @@
     }
     .hero-controls { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; }
     .hero-controls button { min-width:90px; }
+    .hero-complete {
+      display:flex;
+      justify-content:center;
+      margin-top:16px;
+      width:100%;
+    }
+    .hero-complete-btn {
+      width:100%;
+      max-width:420px;
+      padding:16px 24px;
+      font-size:17px;
+      font-weight:700;
+      letter-spacing:0.3px;
+      background:#1a7a4a;
+      color:#fff;
+      border:none;
+      border-radius:12px;
+      cursor:pointer;
+      transition:background 0.15s, transform 0.1s;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:10px;
+    }
+    .hero-complete-btn:hover:not(:disabled) { background:#15623c; }
+    .hero-complete-btn:active:not(:disabled) { transform:scale(0.97); }
+    .hero-complete-btn:disabled {
+      background:#c8d8c8;
+      color:#8aa88a;
+      cursor:not-allowed;
+    }
+    @keyframes doneFlash {
+      0%   { background:#1a7a4a; transform:scale(1); }
+      40%  { background:#22a05e; transform:scale(1.03); }
+      100% { background:#1a7a4a; transform:scale(1); }
+    }
+    .hero-complete-btn.flash { animation:doneFlash 0.35s ease; }
 
     /* Focus mode (execution-only state) */
     body.focus-mode #tab-execute > section.card:not(.hero-timer-card) {
@@ -344,6 +455,11 @@
             </label>
             <span class="tiny">Esc exits focus mode</span>
           </div>
+          <div class="hero-complete">
+            <button id="heroCompleteBtn" class="hero-complete-btn" type="button" disabled>
+              ✓ &nbsp;Mark Complete
+            </button>
+          </div>
         </div>
       </section>
 
@@ -393,15 +509,6 @@
         </div>
       </section>
 
-      <!-- Life practices -->
-      <section class="card">
-        <div class="titlebar">
-          <h2>Life Practices</h2>
-          <span id="lifeSummary" class="life-summary">0/0 done</span>
-        </div>
-        <div id="lifePracticesList" style="margin-top:8px;"></div>
-      </section>
-
       <!-- Add Task -->
       <section class="card">
         <div class="titlebar">
@@ -444,6 +551,15 @@
         <p class="tiny" style="margin:8px 0 0;">Deep Work = cognitively demanding, no multitask. Shallow = logistical, low-focus. WIG = Wildly Important Goal alignment.</p>
       </section>
 
+      <!-- Life practices -->
+      <section class="card">
+        <div class="titlebar">
+          <h2>Life Practices</h2>
+          <span id="lifeSummary" class="life-summary">0/0 done</span>
+        </div>
+        <div id="lifePracticesList" style="margin-top:8px;"></div>
+      </section>
+
       <!-- Pomodoro -->
       <section class="card">
         <div class="titlebar">
@@ -479,6 +595,20 @@
         </div>
         <div class="pomo-alerts">
           <label><input id="pomoSoundToggle" type="checkbox" checked /> Sound alert</label>
+          <label>Volume
+            <select id="pomoSoundProfile" style="margin-left:6px;">
+              <option value="soft">Soft</option>
+              <option value="normal" selected>Normal</option>
+              <option value="loud">Loud</option>
+            </select>
+          </label>
+          <label>Length
+            <select id="pomoChimeLength" style="margin-left:6px;">
+              <option value="short" selected>Short</option>
+              <option value="long">Long</option>
+            </select>
+          </label>
+          <button id="pomoTestSoundBtn" class="ghost" type="button">Test alarm</button>
           <button id="pomoNotifyBtn" class="ghost" type="button">Enable desktop alerts</button>
           <span id="pomoNotifyStatus" class="tiny">Desktop alerts off</span>
         </div>
@@ -600,7 +730,7 @@
 
         <div class="trend-row">
           <div class="stat"><label>Total Hours</label><div id="weekTotalHours" class="value">0h</div></div>
-          <div class="stat"><label>Tasks Closed</label><div id="weekTotalClosed" class="value green">0</div></div>
+          <div class="stat"><label>Tasks Closed</label><button id="weekTotalClosed" class="value green week-closed-btn" type="button">0</button></div>
           <div class="stat"><label>Q2 Time (Imp+Not Urg)</label><div id="weekQ2" class="value" style="color:var(--accent);">0%</div></div>
           <div class="stat"><label>Deep Ratio</label><div id="weekDeepRatio" class="value deep-color">0%</div></div>
         </div>
@@ -620,7 +750,25 @@
           <h4>Weekly Notes</h4>
           <div id="weekNotes" class="tiny"></div>
         </div>
+        <div class="summary-box" style="margin-top:12px;">
+          <h4>Closed Task Log</h4>
+          <div id="weekClosedLog" class="tiny"></div>
+        </div>
       </section>
+    </div>
+  </div>
+
+  <div id="closureModal" class="modal-backdrop" hidden aria-hidden="true">
+    <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="closureModalTitle">
+      <div class="modal-head">
+        <div>
+          <h3 id="closureModalTitle">Closed Tasks</h3>
+          <div id="closureModalMeta" class="tiny"></div>
+        </div>
+        <button id="closureModalCloseBtn" class="ghost" type="button">Close</button>
+      </div>
+      <div id="closureModalList" class="modal-list"></div>
+      <div id="closureModalHint" class="modal-hint" hidden></div>
     </div>
   </div>
 
@@ -653,6 +801,8 @@
       endsAtMs: null,
       completedBlocks: 0,
       soundEnabled: true,
+      soundProfile: "normal", // soft | normal | loud
+      chimeLength: "short", // short | long
       desktopNotify: false,
       focusMode: false,
       autoFocusMode: true
@@ -672,6 +822,7 @@
         tasks: [],
         sessions: [],
         notes: [],
+        closed_task_log: [],
         streak_days: [],
         daily_logs: {},
         weekly_reviews: {},
@@ -691,9 +842,36 @@
         practices: Array.isArray(incoming.life_practices?.practices) ? incoming.life_practices.practices : base.life_practices.practices,
         daily_log: incoming.life_practices && typeof incoming.life_practices.daily_log === "object" ? incoming.life_practices.daily_log : {}
       };
-      normalized.tasks = Array.isArray(incoming.tasks) ? incoming.tasks : [];
+      normalized.tasks = Array.isArray(incoming.tasks)
+        ? incoming.tasks.map(t => {
+            const createdAt = t.createdAt || t.created_at || t.startAt || new Date().toISOString();
+            const completedAt =
+              t.completedAt ||
+              t.completed_at ||
+              t.doneAt ||
+              t.done_at ||
+              ((t.done === true || t.completed === true) ? (t.updatedAt || t.modifiedAt || createdAt) : null);
+            return {
+              id: t.id || uid(),
+              title: t.title || t.text || t.task || "Untitled task",
+              category: t.category || "Maintenance",
+              importance: t.importance || "Low",
+              urgency: t.urgency || "Low",
+              depth: t.depth || "Deep",
+              wig: t.wig || "None",
+              createdAt,
+              completedAt,
+              elapsedSec: Number.isFinite(t.elapsedSec) ? t.elapsedSec : (Number.isFinite(t.elapsed_sec) ? t.elapsed_sec : 0)
+            };
+          })
+        : [];
       normalized.sessions = Array.isArray(incoming.sessions) ? incoming.sessions : [];
       normalized.notes = Array.isArray(incoming.notes) ? incoming.notes : [];
+      normalized.closed_task_log = Array.isArray(incoming.closed_task_log)
+        ? incoming.closed_task_log
+        : Array.isArray(incoming.closedTaskLog)
+          ? incoming.closedTaskLog
+          : [];
       normalized.streak_days = Array.isArray(incoming.streak_days) ? incoming.streak_days : [];
       normalized.daily_logs = incoming.daily_logs && typeof incoming.daily_logs === "object" ? incoming.daily_logs : {};
       normalized.weekly_reviews = incoming.weekly_reviews && typeof incoming.weekly_reviews === "object" ? incoming.weekly_reviews : {};
@@ -717,22 +895,26 @@
     function loadPomodoroPrefs() {
       try {
         const raw = localStorage.getItem(POMO_PREF_KEY);
-        if (!raw) return { soundEnabled: true, desktopNotify: true, focusMode: false, autoFocusMode: true };
+        if (!raw) return { soundEnabled: true, soundProfile: "normal", chimeLength: "short", desktopNotify: true, focusMode: false, autoFocusMode: true };
         const pref = JSON.parse(raw);
         return {
           soundEnabled: pref.soundEnabled !== false,
+          soundProfile: ["soft","normal","loud"].includes(pref.soundProfile) ? pref.soundProfile : "normal",
+          chimeLength: pref.chimeLength === "long" ? "long" : "short",
           desktopNotify: pref.desktopNotify !== false,
           focusMode: pref.focusMode === true,
           autoFocusMode: pref.autoFocusMode !== false
         };
       } catch {
-        return { soundEnabled: true, desktopNotify: true, focusMode: false, autoFocusMode: true };
+        return { soundEnabled: true, soundProfile: "normal", chimeLength: "short", desktopNotify: true, focusMode: false, autoFocusMode: true };
       }
     }
 
     function savePomodoroPrefs() {
       localStorage.setItem(POMO_PREF_KEY, JSON.stringify({
         soundEnabled: !!pomodoro.soundEnabled,
+        soundProfile: pomodoro.soundProfile || "normal",
+        chimeLength: pomodoro.chimeLength || "short",
         desktopNotify: !!pomodoro.desktopNotify,
         focusMode: !!pomodoro.focusMode,
         autoFocusMode: !!pomodoro.autoFocusMode
@@ -888,8 +1070,35 @@
 
     // ── Utilities ──
     function uid() { return Math.random().toString(36).slice(2,10); }
-    function todayISO() { return new Date().toISOString().slice(0,10); }
-    function nowMonth() { const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`; }
+    function localDateKey(date = new Date()) {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, "0");
+      const d = String(date.getDate()).padStart(2, "0");
+      return `${y}-${m}-${d}`;
+    }
+    function localMonthKey(date = new Date()) {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, "0");
+      return `${y}-${m}`;
+    }
+    function isoToLocalDateKey(iso) {
+      const d = new Date(iso);
+      return Number.isNaN(d.getTime()) ? String(iso || "").slice(0, 10) : localDateKey(d);
+    }
+    function isoToLocalMonthKey(iso) {
+      const d = new Date(iso);
+      return Number.isNaN(d.getTime()) ? String(iso || "").slice(0, 7) : localMonthKey(d);
+    }
+    function parseLocalDateKey(dateKey) {
+      const [y, m, d] = String(dateKey || "").split("-").map(n => Number(n));
+      if (!Number.isFinite(y) || !Number.isFinite(m) || !Number.isFinite(d)) return new Date();
+      return new Date(y, m - 1, d);
+    }
+    function weekdayShort(dateKey) {
+      return new Intl.DateTimeFormat(undefined, { weekday: "short" }).format(parseLocalDateKey(dateKey));
+    }
+    function todayISO() { return localDateKey(new Date()); }
+    function nowMonth() { return localMonthKey(new Date()); }
     function fmtDuration(sec) {
       const s=Math.max(0,Math.floor(sec||0));
       const h=Math.floor(s/3600), m=Math.floor((s%3600)/60), r=s%60;
@@ -909,17 +1118,120 @@
     }
 
     function getWeekDates(offset) {
-      const now=new Date(), day=now.getDay();
-      const monday=new Date(now);
-      monday.setDate(now.getDate()-(day===0?6:day-1)+(offset*7));
+      const today = parseLocalDateKey(todayISO());
+      const day = today.getDay();
+      const monday = new Date(today);
+      monday.setDate(today.getDate() - (day === 0 ? 6 : day - 1) + (offset * 7));
       monday.setHours(0,0,0,0);
       const dates=[];
-      for(let i=0;i<7;i++){ const d=new Date(monday); d.setDate(monday.getDate()+i); dates.push(d.toISOString().slice(0,10)); }
+      for(let i=0;i<7;i++){ const d=new Date(monday); d.setDate(monday.getDate()+i); dates.push(localDateKey(d)); }
       return dates;
     }
 
-    function sessionsForDates(dates) { const s=new Set(dates); return state.sessions.filter(x=>s.has(x.startAt.slice(0,10))); }
-    function closedTasksForDates(dates) { const s=new Set(dates); return state.tasks.filter(t=>t.completedAt&&s.has(t.completedAt.slice(0,10))); }
+    function sessionsForDates(dates) { const s=new Set(dates); return state.sessions.filter(x=>s.has(isoToLocalDateKey(x.startAt))); }
+    function closedTasksForDates(dates) { const s=new Set(dates); return state.tasks.filter(t=>t.completedAt&&s.has(isoToLocalDateKey(t.completedAt))); }
+    function closureEventsForDates(dates) {
+      const set = new Set(dates);
+      const fromLog = (state.closed_task_log || [])
+        .filter(e => e.completedAt && set.has(isoToLocalDateKey(e.completedAt)))
+        .map(e => ({
+          id: e.id || uid(),
+          taskId: e.taskId || null,
+          title: e.title || "Completed task",
+          completedAt: e.completedAt
+        }));
+      const fromTasks = state.tasks
+        .filter(t => t.completedAt && set.has(isoToLocalDateKey(t.completedAt)))
+        .map(t => ({
+          id: `task_${t.id}_${t.completedAt}`,
+          taskId: t.id,
+          title: t.title,
+          completedAt: t.completedAt
+        }));
+      const merged = new Map();
+      [...fromLog, ...fromTasks].forEach(item => {
+        const key = `${item.taskId || item.title}__${item.completedAt}`;
+        if (!merged.has(key)) merged.set(key, item);
+      });
+      return Array.from(merged.values()).sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt));
+    }
+    function closedCountForDate(dateKey) {
+      const fromTasks = state.tasks.filter(t => t.completedAt && isoToLocalDateKey(t.completedAt) === dateKey).length;
+      const fromLog = (state.closed_task_log || []).filter(e => e.completedAt && isoToLocalDateKey(e.completedAt) === dateKey).length;
+      const fromDailyLog = Number(state.daily_logs?.[dateKey]?.tasks_closed || 0);
+      return Math.max(fromTasks, fromLog, fromDailyLog);
+    }
+    function closureSummaryForDates(dates) {
+      const dateList = Array.from(new Set((dates || []).filter(Boolean)));
+      const events = closureEventsForDates(dateList);
+      const byDayEventCounts = {};
+      events.forEach(e => {
+        const day = isoToLocalDateKey(e.completedAt);
+        byDayEventCounts[day] = (byDayEventCounts[day] || 0) + 1;
+      });
+      const missing = dateList
+        .map(day => {
+          const total = closedCountForDate(day);
+          const known = byDayEventCounts[day] || 0;
+          const unavailable = Math.max(0, total - known);
+          return { day, unavailable };
+        })
+        .filter(x => x.unavailable > 0);
+      const totalCount = dateList.reduce((acc, day) => acc + closedCountForDate(day), 0);
+      return { events, missing, totalCount };
+    }
+    function openClosureModal(dates, title) {
+      const modal = document.getElementById("closureModal");
+      const titleEl = document.getElementById("closureModalTitle");
+      const metaEl = document.getElementById("closureModalMeta");
+      const listEl = document.getElementById("closureModalList");
+      const hintEl = document.getElementById("closureModalHint");
+      if (!modal || !titleEl || !metaEl || !listEl || !hintEl) return;
+
+      const { events, missing, totalCount } = closureSummaryForDates(dates);
+      titleEl.textContent = title || "Closed Tasks";
+      metaEl.textContent = `${totalCount} closure${totalCount === 1 ? "" : "s"} in selected period`;
+
+      listEl.innerHTML = "";
+      if (!events.length) {
+        const empty = document.createElement("div");
+        empty.className = "modal-row";
+        empty.innerHTML = `<div class="modal-time">-</div><div>No titled closure events found for this period.</div>`;
+        listEl.appendChild(empty);
+      } else {
+        events.forEach(e => {
+          const row = document.createElement("div");
+          row.className = "modal-row";
+          const when = document.createElement("div");
+          when.className = "modal-time";
+          when.textContent = `${isoToLocalDateKey(e.completedAt)} ${formatTimeShort(e.completedAt)}`;
+          const task = document.createElement("div");
+          task.textContent = e.title || "Completed task";
+          row.appendChild(when);
+          row.appendChild(task);
+          listEl.appendChild(row);
+        });
+      }
+
+      if (missing.length) {
+        hintEl.hidden = false;
+        hintEl.textContent = missing
+          .map(x => `${weekdayShort(x.day)} ${x.day}: ${x.unavailable} closure${x.unavailable === 1 ? "" : "s"} counted from daily totals (task title unavailable).`)
+          .join(" ");
+      } else {
+        hintEl.hidden = true;
+        hintEl.textContent = "";
+      }
+
+      modal.hidden = false;
+      modal.setAttribute("aria-hidden", "false");
+    }
+    function closeClosureModal() {
+      const modal = document.getElementById("closureModal");
+      if (!modal) return;
+      modal.hidden = true;
+      modal.setAttribute("aria-hidden", "true");
+    }
 
     function defaultLifePractices() {
       return [
@@ -931,6 +1243,19 @@
     }
 
     function initTodayState() {
+      if (!Array.isArray(state.closed_task_log)) state.closed_task_log = [];
+      if (state.closed_task_log.length === 0) {
+        const seeded = state.tasks
+          .filter(t => !!t.completedAt)
+          .map(t => ({
+            id: uid(),
+            taskId: t.id,
+            title: t.title,
+            completedAt: t.completedAt
+          }))
+          .sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt));
+        if (seeded.length) state.closed_task_log = seeded.slice(0, 2000);
+      }
       const today = todayISO();
       let changed = false;
       if (!state.today_focus || state.today_focus.date !== today) {
@@ -947,7 +1272,7 @@
         state.today_focus.task_ids = filtered;
         changed = true;
       }
-      if (state.activeStartedAt && state.activeStartedAt.slice(0,10) !== today) {
+      if (state.activeStartedAt && isoToLocalDateKey(state.activeStartedAt) !== today) {
         state.activeTaskId = null;
         state.activeStartedAt = null;
         changed = true;
@@ -1050,7 +1375,7 @@
     function updateStreak() {
       const today=todayISO();
       if(!state.streak_days.includes(today)) {
-        if(state.tasks.some(t=>t.completedAt&&t.completedAt.slice(0,10)===today)) {
+        if(state.tasks.some(t=>t.completedAt&&isoToLocalDateKey(t.completedAt)===today)) {
           state.streak_days.push(today);
           state.streak_days.sort();
         }
@@ -1061,7 +1386,9 @@
       if(state.streak_days.length===0) return 0;
       const sorted=[...new Set(state.streak_days)].sort().reverse();
       const today=todayISO();
-      const yesterday=new Date(Date.now()-86400000).toISOString().slice(0,10);
+      const yd = new Date();
+      yd.setDate(yd.getDate()-1);
+      const yesterday = localDateKey(yd);
       if(sorted[0]!==today&&sorted[0]!==yesterday) return 0;
       let count=1;
       for(let i=1;i<sorted.length;i++){
@@ -1101,7 +1428,8 @@
       };
       state.tasks.unshift(task);
       initTodayState();
-      if (!state.today_focus.task_ids.includes(task.id)) state.today_focus.task_ids.push(task.id);
+      // Do not auto-add new tasks into today's focus.
+      // Capture tasks should not displace an active deep-work task.
       saveState(); render();
     }
 
@@ -1129,7 +1457,7 @@
           durationSec:deltaSec
         });
         // Log to daily_logs
-        const day=new Date(start).toISOString().slice(0,10);
+        const day=localDateKey(new Date(start));
         if(!state.daily_logs[day]) state.daily_logs[day]={total_sec:0,deep_sec:0,tasks_closed:0,sessions:0};
         state.daily_logs[day].total_sec+=deltaSec;
         if((task.depth||"Deep")==="Deep") state.daily_logs[day].deep_sec+=deltaSec;
@@ -1144,8 +1472,17 @@
       const task=getTask(id);
       if(!task) return;
       if(state.activeTaskId===id) stopActiveTask();
-      task.completedAt=done?new Date().toISOString():null;
+      const completedAt = done ? new Date().toISOString() : null;
+      task.completedAt = completedAt;
       if(done){
+        if (!Array.isArray(state.closed_task_log)) state.closed_task_log = [];
+        state.closed_task_log.unshift({
+          id: uid(),
+          taskId: task.id,
+          title: task.title,
+          completedAt
+        });
+        if (state.closed_task_log.length > 2000) state.closed_task_log = state.closed_task_log.slice(0, 2000);
         celebrate(); updateStreak();
         const day=todayISO();
         if(!state.daily_logs[day]) state.daily_logs[day]={total_sec:0,deep_sec:0,tasks_closed:0,sessions:0};
@@ -1162,12 +1499,23 @@
 
     // ── Pomodoro ──
     function getOpenTasks() {
+      const openAll = state.tasks.filter(t => !t.completedAt);
+      const currentId = state.activeTaskId || pomodoro.taskId;
+      const currentTask = currentId ? getTask(currentId) : null;
+      const includeCurrent = !!(currentTask && !currentTask.completedAt);
+
       const focus = getTodayFocusTasks();
-      if (focus.length) return focus;
+      if (focus.length) {
+        if (includeCurrent && !focus.some(t => t.id === currentTask.id)) return [currentTask, ...focus];
+        return focus;
+      }
       const today = todayISO();
-      const todayOpen = state.tasks.filter(t => !t.completedAt && (t.createdAt || "").slice(0,10) === today);
-      if (todayOpen.length) return todayOpen;
-      return [];
+      const todayOpen = state.tasks.filter(t => !t.completedAt && isoToLocalDateKey(t.createdAt || "") === today);
+      if (todayOpen.length) {
+        if (includeCurrent && !todayOpen.some(t => t.id === currentTask.id)) return [currentTask, ...todayOpen];
+        return todayOpen;
+      }
+      return includeCurrent ? [currentTask, ...openAll.filter(t => t.id !== currentTask.id)] : openAll;
     }
 
     function refreshPomodoroTaskSelect(preferredId = null) {
@@ -1215,10 +1563,14 @@
       const heroClock = document.getElementById("heroPomoClock");
       const heroStatus = document.getElementById("heroPomoStatus");
       const heroTask = document.getElementById("heroPomoTask");
+      const heroCompleteBtn = document.getElementById("heroCompleteBtn");
+      const heroCompleteLabel = document.getElementById("heroCompleteLabel");
       const heroStartBtn = document.getElementById("heroPomoStartBtn");
       const focusBtn = document.getElementById("focusModeBtn");
       const autoFocusToggle = document.getElementById("autoFocusToggle");
       const soundToggle = document.getElementById("pomoSoundToggle");
+      const soundProfile = document.getElementById("pomoSoundProfile");
+      const chimeLength = document.getElementById("pomoChimeLength");
       const notifyBtn = document.getElementById("pomoNotifyBtn");
       const notifyStatus = document.getElementById("pomoNotifyStatus");
       if (!phasePill || !clock || !status || !completed || !startBtn) return;
@@ -1267,9 +1619,19 @@
         }
       }
 
+      const selectedTask = getTask(pomodoro.taskId) || getTask(state.activeTaskId);
       if (heroTask) {
-        const selectedTask = getTask(pomodoro.taskId) || getTask(state.activeTaskId);
         heroTask.textContent = selectedTask ? selectedTask.title : "No task selected";
+      }
+      if (heroCompleteBtn) {
+        heroCompleteBtn.disabled = !selectedTask || !!selectedTask.completedAt;
+      }
+      if (heroCompleteLabel) {
+        heroCompleteLabel.textContent = !selectedTask
+          ? "Mark task complete"
+          : selectedTask.completedAt
+            ? "Task already completed"
+            : "Mark task complete";
       }
       if (focusBtn) focusBtn.textContent = pomodoro.focusMode ? "Exit Focus" : "Enter Focus";
       if (autoFocusToggle) autoFocusToggle.checked = !!pomodoro.autoFocusMode;
@@ -1277,6 +1639,8 @@
 
       completed.textContent = `Completed blocks: ${pomodoro.completedBlocks}`;
       if (soundToggle) soundToggle.checked = !!pomodoro.soundEnabled;
+      if (soundProfile) soundProfile.value = pomodoro.soundProfile || "normal";
+      if (chimeLength) chimeLength.value = pomodoro.chimeLength || "short";
       if (notifyBtn) {
         if (!("Notification" in window)) notifyBtn.disabled = true;
         notifyBtn.textContent = pomodoro.desktopNotify ? "Desktop alerts on" : "Enable desktop alerts";
@@ -1332,9 +1696,10 @@
         if (!skipped) pomodoro.completedBlocks += 1;
         pomodoro.phase = "break";
         pomodoro.remainingSec = pomodoro.breakMin * 60;
-        pomodoro.running = false;
-        pomodoro.paused = true;
-        pomodoro.endsAtMs = null;
+        // Auto-run breaks so break-end alerts are guaranteed.
+        pomodoro.running = true;
+        pomodoro.paused = false;
+        pomodoro.endsAtMs = Date.now() + (pomodoro.remainingSec * 1000);
       } else if (pomodoro.phase === "break") {
         pomodoro.phase = "work";
         pomodoro.remainingSec = pomodoro.workMin * 60;
@@ -1399,6 +1764,14 @@
       renderPomodoro();
     }
 
+    function completeTaskFromHeroCheckbox() {
+      const task = getTask(pomodoro.taskId) || getTask(state.activeTaskId);
+      if (!task || task.completedAt) return;
+      toggleDone(task.id, true);
+      resetPomodoro();
+      renderPomodoro();
+    }
+
     function tickPomodoro() {
       if (!pomodoro.running) return;
       if (!pomodoro.endsAtMs) pomodoro.endsAtMs = Date.now() + (pomodoro.remainingSec * 1000);
@@ -1433,7 +1806,7 @@
     function renderSprintLog() {
       const today = todayISO();
       const sessionsToday = state.sessions
-        .filter(s => (s.startAt || "").slice(0,10) === today)
+        .filter(s => isoToLocalDateKey(s.startAt || "") === today)
         .sort((a,b) => (a.startAt < b.startAt ? 1 : -1));
       const totalSec = sessionsToday.reduce((a,s) => a + (s.durationSec || 0), 0);
       document.getElementById("sprintSummary").textContent = `Today: ${sessionsToday.length} sprints, ${fmtDuration(totalSec)} focus`;
@@ -1466,20 +1839,29 @@
       const ctx = ensurePomodoroAudioContext();
       if (!ctx) return;
       const now = ctx.currentTime;
+      const volumeByProfile = { soft: 0.10, normal: 0.20, loud: 0.32 };
+      const peak = volumeByProfile[pomodoro.soundProfile] || volumeByProfile.normal;
+      const loops = pomodoro.chimeLength === "long" ? 2 : 1;
       const tones = [880, 660, 880];
-      tones.forEach((freq, i) => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = "sine";
-        osc.frequency.value = freq;
-        gain.gain.setValueAtTime(0.0001, now + i * 0.24);
-        gain.gain.exponentialRampToValueAtTime(0.18, now + i * 0.24 + 0.01);
-        gain.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.24 + 0.18);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start(now + i * 0.24);
-        osc.stop(now + i * 0.24 + 0.19);
-      });
+      const step = 0.24;
+      const ringDuration = 0.19;
+      for (let loop = 0; loop < loops; loop++) {
+        const baseOffset = loop * (tones.length * step + 0.30);
+        tones.forEach((freq, i) => {
+          const t0 = now + baseOffset + i * step;
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = "sine";
+          osc.frequency.value = freq;
+          gain.gain.setValueAtTime(0.0001, t0);
+          gain.gain.exponentialRampToValueAtTime(peak, t0 + 0.01);
+          gain.gain.exponentialRampToValueAtTime(0.0001, t0 + ringDuration);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(t0);
+          osc.stop(t0 + ringDuration + 0.01);
+        });
+      }
     }
 
     function getPhaseTransitionMessage(fromPhase) {
@@ -1598,15 +1980,15 @@
       const weekDates=getWeekDates(0);
       const month=document.getElementById("monthPicker").value||nowMonth();
 
-      let todaySec=state.sessions.filter(s=>s.startAt.slice(0,10)===today).reduce((a,s)=>a+s.durationSec,0);
-      if(state.activeTaskId&&state.activeStartedAt&&state.activeStartedAt.slice(0,10)===today)
+      let todaySec=state.sessions.filter(s=>isoToLocalDateKey(s.startAt)===today).reduce((a,s)=>a+s.durationSec,0);
+      if(state.activeTaskId&&state.activeStartedAt&&isoToLocalDateKey(state.activeStartedAt)===today)
         todaySec+=Math.round((Date.now()-new Date(state.activeStartedAt).getTime())/1000);
 
       const weekSessions=sessionsForDates(weekDates);
       const weekSec=weekSessions.reduce((a,s)=>a+s.durationSec,0);
-      const monthSessions=state.sessions.filter(s=>s.startAt.slice(0,7)===month);
+      const monthSessions=state.sessions.filter(s=>isoToLocalMonthKey(s.startAt)===month);
       const monthSec=monthSessions.reduce((a,s)=>a+s.durationSec,0);
-      const weekClosedCount=state.tasks.filter(t=>t.completedAt&&weekDates.includes(t.completedAt.slice(0,10))).length;
+      const weekClosedCount = weekDates.reduce((acc, d) => acc + closedCountForDate(d), 0);
 
       // Deep ratio (month)
       const deepSec=monthSessions.filter(s=>(s.depth||"Deep")==="Deep").reduce((a,s)=>a+s.durationSec,0);
@@ -1666,7 +2048,16 @@
     function renderTable() {
       const now=Date.now();
       const focusIds = new Set(state.today_focus?.task_ids || []);
-      document.getElementById("taskTableBody").innerHTML=state.tasks.map(task=>{
+      const orderedTasks = [...state.tasks].sort((a,b) => {
+        const aDone = !!a.completedAt;
+        const bDone = !!b.completedAt;
+        if (aDone !== bDone) return aDone ? 1 : -1; // open tasks first
+        if (!aDone) return 0; // preserve current order for open tasks
+        const aWhen = a.completedAt || a.createdAt || "";
+        const bWhen = b.completedAt || b.createdAt || "";
+        return bWhen.localeCompare(aWhen); // recently completed first within done section
+      });
+      document.getElementById("taskTableBody").innerHTML=orderedTasks.map(task=>{
         const isRunning=state.activeTaskId===task.id;
         const isFocus = focusIds.has(task.id);
         const liveDelta=isRunning&&state.activeStartedAt?Math.round((now-new Date(state.activeStartedAt).getTime())/1000):0;
@@ -1693,7 +2084,7 @@
     // ── Month Summary ──
     function renderMonthSummary() {
       const month=document.getElementById("monthPicker").value||nowMonth();
-      const sessions=state.sessions.filter(s=>s.startAt.slice(0,7)===month);
+      const sessions=state.sessions.filter(s=>isoToLocalMonthKey(s.startAt)===month);
       const total=sessions.reduce((a,s)=>a+s.durationSec,0);
 
       const cats={};
@@ -1729,7 +2120,7 @@
 
       // WIG scoreboard
       const month=nowMonth();
-      const monthSessions=state.sessions.filter(s=>s.startAt.slice(0,7)===month);
+      const monthSessions=state.sessions.filter(s=>isoToLocalMonthKey(s.startAt)===month);
       const monthTotal=monthSessions.reduce((a,s)=>a+s.durationSec,0);
 
       const wigTotals={WIG1:0,WIG2:0,None:0};
@@ -1760,7 +2151,6 @@
     // ── Weekly Review ──
     function renderWeeklyReview() {
       const dates=getWeekDates(reviewWeekOffset);
-      const dayNames=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
       const today=todayISO();
 
       const fmt=d=>{const p=d.split("-"); return `${p[2]}/${p[1]}`;};
@@ -1768,22 +2158,23 @@
 
       let totalSec=0, totalClosed=0, totalDeepSec=0;
       document.getElementById("weekGrid").innerHTML=dates.map((d,i)=>{
-        const daySessions=state.sessions.filter(s=>s.startAt.slice(0,10)===d);
+        const daySessions=state.sessions.filter(s=>isoToLocalDateKey(s.startAt)===d);
         const daySec=daySessions.reduce((a,s)=>a+s.durationSec,0);
         const dayDeep=daySessions.filter(s=>(s.depth||"Deep")==="Deep").reduce((a,s)=>a+s.durationSec,0);
-        const dayClosed=state.tasks.filter(t=>t.completedAt&&t.completedAt.slice(0,10)===d).length;
+        const dayClosed = closedCountForDate(d);
         totalSec+=daySec; totalClosed+=dayClosed; totalDeepSec+=dayDeep;
         const deepPct=daySec?Math.round((dayDeep/daySec)*100):0;
         return `<div class="day-cell ${d===today?"today":""}">
-          <div class="day-label">${dayNames[i]}</div>
+          <div class="day-label">${weekdayShort(d)}</div>
           <div class="day-hours">${fmtHours(daySec)}</div>
-          <div class="day-closed">${dayClosed} closed</div>
+          <button class="day-closed day-closed-btn" type="button" data-closed-day="${d}" ${dayClosed === 0 ? "disabled" : ""}>${dayClosed} closed</button>
           <div class="day-deep">${deepPct}% deep</div>
         </div>`;
       }).join("");
 
       document.getElementById("weekTotalHours").textContent=fmtHours(totalSec);
       document.getElementById("weekTotalClosed").textContent=totalClosed;
+      document.getElementById("weekTotalClosed").disabled = totalClosed === 0;
 
       const weekSessions=sessionsForDates(dates);
       const weekTotal=weekSessions.reduce((a,s)=>a+s.durationSec,0)||1;
@@ -1819,10 +2210,26 @@
       ].join("");
 
       // Notes
-      const weekNotes=state.notes.filter(n=>dates.includes(n.at.slice(0,10)));
+      const weekNotes=state.notes.filter(n=>dates.includes(isoToLocalDateKey(n.at)));
       document.getElementById("weekNotes").innerHTML=weekNotes.length
-        ?weekNotes.map(n=>`<div style="margin:4px 0;">${n.at.slice(0,10)}: ${n.note}</div>`).join("")
+        ?weekNotes.map(n=>`<div style="margin:4px 0;">${isoToLocalDateKey(n.at)}: ${n.note}</div>`).join("")
         :"No notes this week.";
+
+      const closureEvents = closureEventsForDates(dates);
+      const weekClosedLogEl = document.getElementById("weekClosedLog");
+      if (weekClosedLogEl) {
+        if (closureEvents.length) {
+          weekClosedLogEl.innerHTML = closureEvents
+            .slice(0, 50)
+            .map(e => `<div style="margin:4px 0;">${isoToLocalDateKey(e.completedAt)} ${formatTimeShort(e.completedAt)} - ${e.title}</div>`)
+            .join("");
+        } else {
+          const hasAggregateClosures = dates.some(d => closedCountForDate(d) > 0);
+          weekClosedLogEl.innerHTML = hasAggregateClosures
+            ? "Closures counted from daily logs. Task titles unavailable because completed tasks were cleared before event logging was enabled."
+            : "No task closures logged this week.";
+        }
+      }
     }
 
     // ── Master Render ──
@@ -1934,6 +2341,12 @@
     document.getElementById("heroPomoSkipBtn").addEventListener("click",skipPomodoroPhase);
     document.getElementById("heroPomoBreakNowBtn").addEventListener("click",startBreakNow);
     document.getElementById("heroPomoResetBtn").addEventListener("click",resetPomodoro);
+    document.getElementById("heroCompleteBtn").addEventListener("click",e=>{
+      const btn = e.currentTarget;
+      btn.classList.add("flash");
+      btn.addEventListener("animationend", () => btn.classList.remove("flash"), { once: true });
+      completeTaskFromHeroCheckbox();
+    });
     document.getElementById("focusModeBtn").addEventListener("click",()=>{ setFocusMode(!pomodoro.focusMode); renderPomodoro(); });
     document.getElementById("autoFocusToggle").addEventListener("change",e=>{ pomodoro.autoFocusMode = !!e.target.checked; savePomodoroPrefs(); renderPomodoro(); });
     document.getElementById("pomoNotifyBtn").addEventListener("click",requestPomodoroNotifications);
@@ -1941,6 +2354,20 @@
       pomodoro.soundEnabled = !!e.target.checked;
       savePomodoroPrefs();
       renderPomodoro();
+    });
+    document.getElementById("pomoSoundProfile").addEventListener("change",e=>{
+      pomodoro.soundProfile = e.target.value;
+      savePomodoroPrefs();
+      renderPomodoro();
+    });
+    document.getElementById("pomoChimeLength").addEventListener("change",e=>{
+      pomodoro.chimeLength = e.target.value;
+      savePomodoroPrefs();
+      renderPomodoro();
+    });
+    document.getElementById("pomoTestSoundBtn").addEventListener("click",()=>{
+      ensurePomodoroAudioContext();
+      playPomodoroChime();
     });
     document.getElementById("pomoTaskSelect").addEventListener("change",e=>{
       pomodoro.taskId = e.target.value || null;
@@ -2016,8 +2443,32 @@
       });
     });
 
+    // Closure modal interactions
+    document.getElementById("weekGrid").addEventListener("click",e=>{
+      const btn = e.target.closest("[data-closed-day]");
+      if (!btn) return;
+      const day = btn.getAttribute("data-closed-day");
+      if (!day) return;
+      openClosureModal([day], `${weekdayShort(day)} ${day} closures`);
+    });
+    document.getElementById("weekTotalClosed").addEventListener("click",()=>{
+      const dates = getWeekDates(reviewWeekOffset);
+      openClosureModal(dates, `Week closures (${dates[0]} - ${dates[6]})`);
+    });
+    document.getElementById("closureModalCloseBtn").addEventListener("click", closeClosureModal);
+    document.getElementById("closureModal").addEventListener("click",e=>{
+      if (e.target && e.target.id === "closureModal") closeClosureModal();
+    });
+
     // Quick exit from focus mode
     document.addEventListener("keydown",e=>{
+      if (e.key === "Escape") {
+        const modal = document.getElementById("closureModal");
+        if (modal && !modal.hidden) {
+          closeClosureModal();
+          return;
+        }
+      }
       if (e.key === "Escape" && pomodoro.focusMode) {
         setFocusMode(false);
         renderPomodoro();

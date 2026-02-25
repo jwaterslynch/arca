@@ -1,44 +1,39 @@
-# PPP Flow Desktop (Tauri Shell)
+# PPP Flow Desktop
 
-Desktop shell for the PPP Flow Dashboard (`v3`) using Tauri v2.
+Desktop app shell for the PPP Flow Dashboard (`v3`) built with Tauri v2.
 
-## Current status
+## What it does
 
-- Frontend: `src/index.html` is the live PPP dashboard UI.
-- Runtime: Tauri desktop shell scaffolded and configured.
-- Data behavior: dashboard keeps browser-like local state; linked-file mode remains available in the UI.
+- Runs the PPP dashboard as a desktop app.
+- Supports deep-work timer, focus mode, weekly review, and closure tracking.
+- Keeps local state and supports linked-file JSON save/load for explicit backups.
 
-## Run locally
+## Quick start
 
 ```bash
 npm install
-npm run tauri dev
+npm run dev
 ```
 
-## Build
+## Build installers
 
 ```bash
-npm run tauri build
+npm run build
 ```
 
-## macOS prerequisite
+## Requirements
 
-Tauri on macOS requires full Xcode (not just Command Line Tools).
+- Node.js 18+
+- Rust toolchain
+- Tauri prerequisites for your OS
+- macOS: full Xcode app (not only Command Line Tools)
 
-Current environment check showed:
-- `rustc`/`cargo`: installed
-- Xcode Command Line Tools: installed
-- **Xcode app: not installed**
+## Project layout
 
-Install Xcode from the App Store before running `tauri dev` or `tauri build` on macOS.
+- `src/index.html` — dashboard UI
+- `src-tauri/` — Tauri (Rust) shell + bundling config
 
-## Project structure
+## Productization docs
 
-- `src/index.html` — PPP dashboard UI (single-file app view)
-- `src-tauri/` — Rust/Tauri shell config and entrypoint
-
-## Next productification steps
-
-1. Add native app data persistence (silent read/write to app data dir).
-2. Add branded app icons.
-3. Add signed release builds and GitHub Releases.
+- `PRODUCTIZATION_ROADMAP.md`
+- `RELEASE_CHECKLIST.md`
