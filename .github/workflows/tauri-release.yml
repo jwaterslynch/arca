@@ -16,8 +16,11 @@ jobs:
       matrix:
         include:
           - platform: macos-latest
+            args: ""
           - platform: ubuntu-22.04
+            args: ""
           - platform: windows-latest
+            args: "--bundles nsis"
 
     runs-on: ${{ matrix.platform }}
 
@@ -59,3 +62,4 @@ jobs:
             - Productization baseline docs and release checklist
           releaseDraft: false
           prerelease: ${{ contains(github.ref_name, '-') }}
+          args: ${{ matrix.args }}
