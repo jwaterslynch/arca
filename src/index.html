@@ -774,18 +774,25 @@
 
   <script>
     // ══════════════════════════════════════
-    // STATE MANAGEMENT — Browser + File Sync
+    // STATE MANAGEMENT — Local + App Storage + File Sync
     // ══════════════════════════════════════
-    // Browser state is stored in localStorage for live interaction.
-    // Use "Load JSON File" to import PPP_DATA.json into browser state.
-    // Use "Save JSON Now" to export browser state to PPP_DATA.json.
-    // Browsers cannot silently read/write project files without a previously granted handle.
+    // localStorage is used for instant in-session state.
+    // In desktop (Tauri), app storage autosaves/loads PPP_DATA.json without relinking.
+    // File import/export remains available for explicit backups and migrations.
 
     const STORAGE_KEY = "ppp_flow_dashboard_v3";
     const POMO_PREF_KEY = "ppp_pomodoro_prefs_v1";
     const FS_DB_NAME = "ppp_flow_dashboard_fs";
     const FS_DB_STORE = "handles";
     const FS_HANDLE_KEY = "ppp_data_file_handle";
+    const nativeStore = {
+      available: false,
+      saving: false,
+      pending: false,
+      lastSerialized: "",
+      path: "",
+      error: ""
+    };
     let state = loadState();
     let reviewWeekOffset = 0;
     let pomoAudioContext = null;
@@ -886,10 +893,65 @@
       } catch { return emptyState(); }
     }
 
+    function getTauriInvoke() {
+      return window.__TAURI__?.core?.invoke || null;
+    }
+
+    async function detectNativeStore() {
+      const invoke = getTauriInvoke();
+      nativeStore.available = !!invoke;
+      if (!nativeStore.available) return false;
+      try {
+        nativeStore.path = await invoke("app_state_path");
+      } catch {
+        nativeStore.path = "";
+      }
+      return true;
+    }
+
+    async function flushNativePersist() {
+      const invoke = getTauriInvoke();
+      if (!invoke || !nativeStore.available) {
+        nativeStore.saving = false;
+        nativeStore.pending = false;
+        return;
+      }
+      while (nativeStore.pending) {
+        nativeStore.pending = false;
+        const payload = JSON.stringify(state, null, 2);
+        if (payload === nativeStore.lastSerialized) continue;
+        try {
+          await invoke("save_app_state", { content: payload });
+          nativeStore.lastSerialized = payload;
+          nativeStore.error = "";
+          setSyncBanner(
+            "Data source: App local storage (autosave)",
+            "file",
+            nativeStore.path
+              ? `${nativeStore.path} · ${new Date().toLocaleTimeString()}`
+              : `Saved ${new Date().toLocaleTimeString()}`
+          );
+        } catch (err) {
+          nativeStore.error = String(err?.message || err);
+          setSyncBanner("Data source: Browser cache (app save failed)", "local", nativeStore.error);
+        }
+      }
+      nativeStore.saving = false;
+    }
+
+    function queueNativePersist() {
+      if (!nativeStore.available) return;
+      nativeStore.pending = true;
+      if (nativeStore.saving) return;
+      nativeStore.saving = true;
+      Promise.resolve().then(flushNativePersist);
+    }
+
     function saveState(source = "dashboard") {
       state.last_modified = new Date().toISOString();
       state.last_modified_by = source;
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      if (nativeStore.available) queueNativePersist();
     }
 
     function loadPomodoroPrefs() {
@@ -994,6 +1056,39 @@
       if (announce) alert(`Loaded: ${state.tasks.length} tasks, ${state.sessions.length} sessions.`);
     }
 
+    async function tryAutoLoadNativeState() {
+      const invoke = getTauriInvoke();
+      if (!invoke) return false;
+      try {
+        const raw = await invoke("load_app_state");
+        if (raw) {
+          const imported = JSON.parse(raw);
+          await importJsonObject(imported, "app_auto_load", false);
+          nativeStore.lastSerialized = JSON.stringify(state, null, 2);
+          setSyncBanner(
+            "Data source: App local storage (auto-loaded)",
+            "file",
+            nativeStore.path || `Updated ${new Date().toLocaleString()}`
+          );
+        } else {
+          saveState("app_seed");
+          setSyncBanner(
+            "Data source: App local storage (new)",
+            "file",
+            nativeStore.path || "First save will happen automatically"
+          );
+        }
+        return true;
+      } catch (err) {
+        setSyncBanner(
+          "Data source: Browser cache (native load failed)",
+          "local",
+          String(err?.message || err)
+        );
+        return false;
+      }
+    }
+
     async function tryAutoLoadLinkedFile() {
       if (!window.showOpenFilePicker) return false;
       try {
@@ -1046,7 +1141,8 @@
       try {
         let handle = linkedDataFileHandle || await loadLinkedHandle();
         if (!handle) {
-          alert("No linked JSON file yet. Click 'Link JSON File' once.");
+          exportJson();
+          setSyncBanner("Data source: App local storage (autosave)", "file", "Exported JSON backup");
           return;
         }
         let perm = await handle.queryPermission({ mode: "readwrite" });
@@ -2490,7 +2586,18 @@
     },1000);
 
     (async () => {
-      await tryAutoLoadLinkedFile();
+      const nativeDetected = await detectNativeStore();
+      if (nativeDetected) {
+        document.getElementById("loadFileBtn").textContent = "Import JSON File";
+        document.getElementById("saveFileBtn").textContent = "Export JSON Backup";
+      }
+
+      let loaded = false;
+      if (nativeDetected) loaded = await tryAutoLoadNativeState();
+      if (!loaded) loaded = await tryAutoLoadLinkedFile();
+      if (!loaded && !nativeDetected) {
+        setSyncBanner("Data source: Browser cache", "local", "Use Link JSON File for persistence");
+      }
       render();
     })();
   </script>
