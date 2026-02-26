@@ -6,7 +6,9 @@ Desktop app shell for the PPP Flow Dashboard (`v3`) built with Tauri v2.
 
 - Runs the PPP dashboard as a desktop app.
 - Supports deep-work timer, focus mode, weekly review, and closure tracking.
-- Uses app-managed local persistence (auto-load + auto-save in desktop app storage).
+- Uses app-managed local persistence with SQLite as the source of truth.
+- Writes immutable event ledger entries (task/session lifecycle events) for auditable history.
+- Creates automatic daily JSON snapshot backups in app storage.
 - Supports linked-file JSON import/export for explicit backups and migration.
 
 ## Quick start
@@ -39,3 +41,13 @@ npm run build
 - `PRODUCTIZATION_ROADMAP.md`
 - `RELEASE_CHECKLIST.md`
 - `RELEASE_NOTES_v0.1.0-beta.1.md`
+- `RELEASE_NOTES_v0.1.0-beta.2.md`
+
+## Local data locations (macOS)
+
+- Current mirrored JSON state:
+  - `~/Library/Application Support/com.jwaterslynch.pppflow/PPP_DATA.json`
+- SQLite ledger + app state:
+  - `~/Library/Application Support/com.jwaterslynch.pppflow/PPP_LEDGER.sqlite3`
+- Daily backup snapshots:
+  - `~/Library/Application Support/com.jwaterslynch.pppflow/backups/`

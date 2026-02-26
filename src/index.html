@@ -267,8 +267,25 @@
       overflow:hidden;
       text-overflow:ellipsis;
     }
-    .hero-controls { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; }
+    .hero-controls { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; align-items:center; }
     .hero-controls button { min-width:90px; }
+    .focus-toggle-stack {
+      display:inline-flex;
+      flex-direction:column;
+      align-items:flex-start;
+      gap:2px;
+      padding:0 4px;
+    }
+    .auto-focus-label {
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      line-height:1.2;
+    }
+    .auto-focus-hint {
+      line-height:1.2;
+      white-space:nowrap;
+    }
     .hero-complete {
       display:flex;
       justify-content:center;
@@ -449,11 +466,13 @@
             <button id="heroPomoBreakNowBtn" class="ghost" type="button">Break</button>
             <button id="heroPomoResetBtn" class="warn" type="button">Reset</button>
             <button id="focusModeBtn" class="ghost" type="button">Enter Focus</button>
-            <label class="tiny" style="display:inline-flex;align-items:center;gap:6px;padding:0 4px;">
-              <input id="autoFocusToggle" type="checkbox" checked />
-              Auto Focus
-            </label>
-            <span class="tiny">Esc exits focus mode</span>
+            <div class="focus-toggle-stack">
+              <label class="tiny auto-focus-label">
+                <input id="autoFocusToggle" type="checkbox" checked />
+                Auto Focus
+              </label>
+              <span class="tiny auto-focus-hint">Esc exits focus mode</span>
+            </div>
           </div>
           <div class="hero-complete">
             <button id="heroCompleteBtn" class="hero-complete-btn" type="button" disabled>
@@ -791,8 +810,12 @@
       pending: false,
       lastSerialized: "",
       path: "",
+      ledgerPath: "",
+      backupPath: "",
       error: ""
     };
+    const ledgerEventsQueue = [];
+    let ledgerEventsFlushing = false;
     let state = loadState();
     let reviewWeekOffset = 0;
     let pomoAudioContext = null;
@@ -906,7 +929,70 @@
       } catch {
         nativeStore.path = "";
       }
+      try {
+        nativeStore.ledgerPath = await invoke("ledger_path");
+      } catch {
+        nativeStore.ledgerPath = "";
+      }
+      try {
+        nativeStore.backupPath = await invoke("backup_path");
+      } catch {
+        nativeStore.backupPath = "";
+      }
       return true;
+    }
+
+    function queueLedgerEvent(eventType, entityType, entityId, occurredAt, payload, eventId = null) {
+      if (!nativeStore.available) return;
+      let payloadJson = "{}";
+      try {
+        payloadJson = JSON.stringify(payload || {});
+      } catch {
+        payloadJson = "{}";
+      }
+      ledgerEventsQueue.push({
+        eventId: eventId || uid(),
+        eventType,
+        entityType: entityType || null,
+        entityId: entityId || null,
+        occurredAt: occurredAt || new Date().toISOString(),
+        payloadJson
+      });
+      flushLedgerEventsSoon();
+    }
+
+    function flushLedgerEventsSoon() {
+      if (!nativeStore.available) return;
+      if (ledgerEventsFlushing) return;
+      ledgerEventsFlushing = true;
+      Promise.resolve().then(flushLedgerEvents);
+    }
+
+    async function flushLedgerEvents() {
+      const invoke = getTauriInvoke();
+      if (!invoke || !nativeStore.available) {
+        ledgerEventsFlushing = false;
+        return;
+      }
+      while (ledgerEventsQueue.length) {
+        const batch = ledgerEventsQueue.splice(0, 100).map(e => ({
+          eventId: e.eventId,
+          eventType: e.eventType,
+          entityType: e.entityType,
+          entityId: e.entityId,
+          occurredAt: e.occurredAt,
+          payloadJson: e.payloadJson
+        }));
+        try {
+          await invoke("append_events", { events: batch });
+        } catch (err) {
+          // Re-queue if backend write fails; keep app usable and retry on next state change.
+          ledgerEventsQueue.unshift(...batch);
+          nativeStore.error = String(err?.message || err);
+          break;
+        }
+      }
+      ledgerEventsFlushing = false;
     }
 
     async function flushNativePersist() {
@@ -951,7 +1037,11 @@
       state.last_modified = new Date().toISOString();
       state.last_modified_by = source;
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-      if (nativeStore.available) queueNativePersist();
+      ledgerClosuresRangeKey = "";
+      if (nativeStore.available) {
+        queueNativePersist();
+        flushLedgerEventsSoon();
+      }
     }
 
     function loadPomodoroPrefs() {
@@ -1224,8 +1314,70 @@
       return dates;
     }
 
+    let ledgerClosureCountsByDay = {};
+    let ledgerClosuresRangeKey = "";
+    let ledgerClosureEventsCache = [];
+
     function sessionsForDates(dates) { const s=new Set(dates); return state.sessions.filter(x=>s.has(isoToLocalDateKey(x.startAt))); }
     function closedTasksForDates(dates) { const s=new Set(dates); return state.tasks.filter(t=>t.completedAt&&s.has(isoToLocalDateKey(t.completedAt))); }
+
+    function listDateRangeBounds(dates) {
+      const unique = Array.from(new Set((dates || []).filter(Boolean))).sort();
+      if (!unique.length) return null;
+      const startIso = `${unique[0]}T00:00:00.000Z`;
+      const endIso = `${unique[unique.length - 1]}T23:59:59.999Z`;
+      return { unique, startIso, endIso };
+    }
+
+    async function listNativeEvents(eventType, startIso, endIso, limit = 2000) {
+      const invoke = getTauriInvoke();
+      if (!invoke || !nativeStore.available) return [];
+      try {
+        const rows = await invoke("list_events", {
+          eventType: eventType || null,
+          startIso: startIso || null,
+          endIso: endIso || null,
+          limit
+        });
+        return Array.isArray(rows) ? rows : [];
+      } catch {
+        return [];
+      }
+    }
+
+    async function refreshLedgerClosuresForDates(dates) {
+      const bounds = listDateRangeBounds(dates);
+      if (!bounds || !nativeStore.available) return false;
+      const rangeKey = `${bounds.unique[0]}__${bounds.unique[bounds.unique.length - 1]}`;
+      if (rangeKey === ledgerClosuresRangeKey) return false;
+
+      const rows = await listNativeEvents("task_completed", bounds.startIso, bounds.endIso, 5000);
+      const set = new Set(bounds.unique);
+      const normalized = rows
+        .map(r => {
+          let payload = {};
+          try { payload = JSON.parse(r.payloadJson || "{}"); } catch {}
+          return {
+            id: r.eventId || r.event_id || uid(),
+            taskId: r.entityId || r.entity_id || payload.taskId || null,
+            title: payload.title || "Completed task",
+            completedAt: r.occurredAt || r.occurred_at
+          };
+        })
+        .filter(e => e.completedAt && set.has(isoToLocalDateKey(e.completedAt)));
+
+      const byDay = {};
+      normalized.forEach(e => {
+        const day = isoToLocalDateKey(e.completedAt);
+        byDay[day] = (byDay[day] || 0) + 1;
+      });
+
+      ledgerClosuresRangeKey = rangeKey;
+      ledgerClosureCountsByDay = byDay;
+      ledgerClosureEventsCache = normalized;
+      return true;
+    }
+
     function closureEventsForDates(dates) {
       const set = new Set(dates);
       const fromLog = (state.closed_task_log || [])
@@ -1255,11 +1407,19 @@
       const fromTasks = state.tasks.filter(t => t.completedAt && isoToLocalDateKey(t.completedAt) === dateKey).length;
       const fromLog = (state.closed_task_log || []).filter(e => e.completedAt && isoToLocalDateKey(e.completedAt) === dateKey).length;
       const fromDailyLog = Number(state.daily_logs?.[dateKey]?.tasks_closed || 0);
-      return Math.max(fromTasks, fromLog, fromDailyLog);
+      const fromLedger = Number(ledgerClosureCountsByDay?.[dateKey] || 0);
+      return Math.max(fromTasks, fromLog, fromDailyLog, fromLedger);
     }
-    function closureSummaryForDates(dates) {
+    async function closureSummaryForDates(dates) {
       const dateList = Array.from(new Set((dates || []).filter(Boolean)));
-      const events = closureEventsForDates(dateList);
+      await refreshLedgerClosuresForDates(dateList);
+      const localEvents = closureEventsForDates(dateList);
+      const merged = new Map();
+      [...(ledgerClosureEventsCache || []), ...localEvents].forEach(item => {
+        const key = `${item.taskId || item.title}__${item.completedAt}`;
+        if (!merged.has(key)) merged.set(key, item);
+      });
+      const events = Array.from(merged.values()).sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt));
       const byDayEventCounts = {};
       events.forEach(e => {
         const day = isoToLocalDateKey(e.completedAt);
@@ -1276,7 +1436,7 @@
       const totalCount = dateList.reduce((acc, day) => acc + closedCountForDate(day), 0);
       return { events, missing, totalCount };
     }
-    function openClosureModal(dates, title) {
+    async function openClosureModal(dates, title) {
       const modal = document.getElementById("closureModal");
       const titleEl = document.getElementById("closureModalTitle");
       const metaEl = document.getElementById("closureModalMeta");
@@ -1284,7 +1444,15 @@
       const hintEl = document.getElementById("closureModalHint");
       if (!modal || !titleEl || !metaEl || !listEl || !hintEl) return;
 
-      const { events, missing, totalCount } = closureSummaryForDates(dates);
+      titleEl.textContent = title || "Closed Tasks";
+      metaEl.textContent = "Loading closures...";
+      listEl.innerHTML = '<div class="modal-row"><div class="modal-time">-</div><div>Loading...</div></div>';
+      hintEl.hidden = true;
+      hintEl.textContent = "";
+      modal.hidden = false;
+      modal.setAttribute("aria-hidden", "false");
+
+      const { events, missing, totalCount } = await closureSummaryForDates(dates);
       titleEl.textContent = title || "Closed Tasks";
       metaEl.textContent = `${totalCount} closure${totalCount === 1 ? "" : "s"} in selected period`;
 
@@ -1523,6 +1691,21 @@
         createdAt:new Date().toISOString(), completedAt:null, elapsedSec:0
       };
       state.tasks.unshift(task);
+      queueLedgerEvent(
+        "task_created",
+        "task",
+        task.id,
+        task.createdAt,
+        {
+          title: task.title,
+          category: task.category,
+          importance: task.importance,
+          urgency: task.urgency,
+          depth: task.depth || "Deep",
+          wig: task.wig || "None"
+        },
+        `task_created_${task.id}`
+      );
       initTodayState();
       // Do not auto-add new tasks into today's focus.
       // Capture tasks should not displace an active deep-work task.
@@ -1532,8 +1715,25 @@
     function startTask(id) {
       if(state.activeTaskId&&state.activeTaskId!==id) stopActiveTask();
       if(state.activeTaskId===id) return;
+      const task = getTask(id);
       state.activeTaskId=id;
       state.activeStartedAt=new Date().toISOString();
+      if (task && !task.completedAt) {
+        queueLedgerEvent(
+          "session_started",
+          "task",
+          task.id,
+          state.activeStartedAt,
+          {
+            taskId: task.id,
+            title: task.title,
+            category: task.category,
+            depth: task.depth || "Deep",
+            wig: task.wig || "None"
+          },
+          `session_started_${task.id}_${state.activeStartedAt}`
+        );
+      }
       if (pomodoro.phase === "work") pomodoro.taskId = id;
       saveState(); render();
     }
@@ -1544,14 +1744,31 @@
       const start=new Date(state.activeStartedAt).getTime();
       const deltaSec=Math.max(1,Math.round((Date.now()-start)/1000));
       if(task){
+        const sessionId = uid();
         task.elapsedSec=(task.elapsedSec||0)+deltaSec;
-        state.sessions.push({
-          id:uid(), taskId:task.id, title:task.title,
+        const session = {
+          id:sessionId, taskId:task.id, title:task.title,
           category:task.category, importance:task.importance, urgency:task.urgency,
           depth:task.depth||"Deep", wig:task.wig||"None",
           startAt:new Date(start).toISOString(), endAt:new Date().toISOString(),
           durationSec:deltaSec
-        });
+        };
+        state.sessions.push(session);
+        queueLedgerEvent(
+          "session_stopped",
+          "session",
+          sessionId,
+          session.endAt,
+          {
+            sessionId,
+            taskId: task.id,
+            title: task.title,
+            startAt: session.startAt,
+            endAt: session.endAt,
+            durationSec: deltaSec
+          },
+          `session_stopped_${sessionId}`
+        );
         // Log to daily_logs
         const day=localDateKey(new Date(start));
         if(!state.daily_logs[day]) state.daily_logs[day]={total_sec:0,deep_sec:0,tasks_closed:0,sessions:0};
@@ -1579,10 +1796,34 @@
           completedAt
         });
         if (state.closed_task_log.length > 2000) state.closed_task_log = state.closed_task_log.slice(0, 2000);
+        queueLedgerEvent(
+          "task_completed",
+          "task",
+          task.id,
+          completedAt,
+          {
+            taskId: task.id,
+            title: task.title,
+            category: task.category,
+            elapsedSec: task.elapsedSec || 0
+          },
+          `task_completed_${task.id}_${completedAt}`
+        );
         celebrate(); updateStreak();
         const day=todayISO();
         if(!state.daily_logs[day]) state.daily_logs[day]={total_sec:0,deep_sec:0,tasks_closed:0,sessions:0};
         state.daily_logs[day].tasks_closed++;
+      } else {
+        queueLedgerEvent(
+          "task_reopened",
+          "task",
+          task.id,
+          new Date().toISOString(),
+          {
+            taskId: task.id,
+            title: task.title
+          }
+        );
       }
       saveState(); render();
     }
@@ -2248,6 +2489,11 @@
     function renderWeeklyReview() {
       const dates=getWeekDates(reviewWeekOffset);
       const today=todayISO();
+      if (nativeStore.available) {
+        refreshLedgerClosuresForDates(dates).then(changed => {
+          if (changed) renderWeeklyReview();
+        });
+      }
 
       const fmt=d=>{const p=d.split("-"); return `${p[2]}/${p[1]}`;};
       document.getElementById("weekLabel").textContent=`${fmt(dates[0])} \u2013 ${fmt(dates[6])}`;
@@ -2311,7 +2557,14 @@
         ?weekNotes.map(n=>`<div style="margin:4px 0;">${isoToLocalDateKey(n.at)}: ${n.note}</div>`).join("")
         :"No notes this week.";
 
-      const closureEvents = closureEventsForDates(dates);
+      const daySet = new Set(dates);
+      const localClosureEvents = closureEventsForDates(dates);
+      const closureMerge = new Map();
+      [...(ledgerClosureEventsCache || []).filter(e => e.completedAt && daySet.has(isoToLocalDateKey(e.completedAt))), ...localClosureEvents].forEach(item => {
+        const key = `${item.taskId || item.title}__${item.completedAt}`;
+        if (!closureMerge.has(key)) closureMerge.set(key, item);
+      });
+      const closureEvents = Array.from(closureMerge.values()).sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt));
       const weekClosedLogEl = document.getElementById("weekClosedLog");
       if (weekClosedLogEl) {
         if (closureEvents.length) {
