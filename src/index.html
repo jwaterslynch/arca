@@ -219,6 +219,51 @@
 
     /* 4DX Focus Layer */
     .focus-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:10px; }
+    .focus-targets-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:8px; }
+    .score-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:10px; }
+    .score-card {
+      border:1px solid var(--line);
+      border-radius:10px;
+      padding:10px;
+      background:#fcfdfc;
+      display:grid;
+      gap:5px;
+    }
+    .score-title { font-size:11px; text-transform:uppercase; letter-spacing:.6px; color:var(--muted); }
+    .score-value { font-size:20px; font-weight:700; line-height:1; }
+    .score-target { font-size:12px; color:var(--muted); }
+    .score-status {
+      justify-self:start;
+      font-size:11px;
+      font-weight:600;
+      border:1px solid var(--line);
+      border-radius:999px;
+      padding:2px 8px;
+      text-transform:uppercase;
+      letter-spacing:.4px;
+      background:#f6f8f4;
+      color:var(--muted);
+    }
+    .score-status.rag-green { background:var(--done-light); border-color:#a8dbb8; color:var(--done); }
+    .score-status.rag-amber { background:#fdf3d7; border-color:#e8c84a; color:#8a6d00; }
+    .score-status.rag-red { background:#fff6f4; border-color:#efc0b7; color:var(--warn); }
+    .commitment-add-grid { display:grid; grid-template-columns:2fr 110px 1fr auto auto; gap:8px; margin-top:8px; align-items:center; }
+    .commitments-list { border:1px solid var(--line); border-radius:10px; margin-top:10px; overflow:hidden; }
+    .commitment-row {
+      display:grid;
+      grid-template-columns:auto 1fr auto;
+      gap:10px;
+      align-items:center;
+      padding:8px 10px;
+      border-bottom:1px solid #eef1ec;
+      font-size:13px;
+      background:#fff;
+    }
+    .commitment-row:last-child { border-bottom:none; }
+    .commitment-main { min-width:0; }
+    .commitment-title { font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .commitment-actions { display:flex; gap:6px; flex-wrap:wrap; }
+    .commitment-empty { padding:10px; font-size:12px; color:var(--muted); }
 
     /* Celebration */
     #celebration { position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:9999; }
@@ -267,6 +312,15 @@
       overflow:hidden;
       text-overflow:ellipsis;
     }
+    .hero-task-switch {
+      width:100%;
+      max-width:840px;
+      display:grid;
+      gap:6px;
+      text-align:left;
+    }
+    .hero-task-switch label { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; }
+    .hero-task-switch select { width:100%; }
     .hero-controls { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; align-items:center; }
     .hero-controls button { min-width:90px; }
     .focus-toggle-stack {
@@ -381,13 +435,14 @@
     .life-summary { font-size:12px; color:var(--muted); }
 
     @media (max-width:1080px) {
-      .layout,.stats,.summary-grid,.three-box,.trend-row,.week-grid,.focus-grid { grid-template-columns:1fr; }
+      .layout,.stats,.summary-grid,.three-box,.trend-row,.week-grid,.focus-grid,.score-grid,.focus-targets-grid { grid-template-columns:1fr; }
       .row { grid-template-columns:1fr; }
       .stats { grid-template-columns:repeat(4,1fr); }
       .hero-clock { font-size:62px; }
       body.focus-mode .hero-clock { font-size:92px; }
       .pomo-grid { grid-template-columns:1fr 1fr; }
       .life-grid { grid-template-columns:1fr; }
+      .commitment-add-grid { grid-template-columns:1fr; }
     }
     @media (max-width:600px) {
       .stats { grid-template-columns:repeat(2,1fr); }
@@ -459,6 +514,10 @@
           </div>
           <div id="heroPomoClock" class="hero-clock">25:00</div>
           <div id="heroPomoTask" class="hero-task">No task selected</div>
+          <div class="hero-task-switch">
+            <label for="pomoTaskSelect">Current Task</label>
+            <select id="pomoTaskSelect"></select>
+          </div>
           <div class="hero-controls">
             <button id="heroPomoStartBtn" class="primary" type="button">Start</button>
             <button id="heroPomoPauseBtn" class="ghost" type="button">Pause</button>
@@ -587,10 +646,6 @@
         </div>
         <div class="pomo-grid" style="margin-top:10px;">
           <div>
-            <label class="tiny" style="display:block;margin-bottom:4px;">Task</label>
-            <select id="pomoTaskSelect"></select>
-          </div>
-          <div>
             <label class="tiny" style="display:block;margin-bottom:4px;">Work (min)</label>
             <input id="pomoWorkMin" type="number" min="1" max="120" step="1" value="25" />
           </div>
@@ -709,16 +764,42 @@
           <div>
             <label class="tiny" style="display:block;margin-bottom:4px;">Lead Measures (weekly predictive actions)</label>
             <textarea id="leadMeasuresInput" placeholder="- 5 deep work blocks per week&#10;- 1 submission package completed&#10;- 2 accountability check-ins"></textarea>
+            <label class="tiny" style="display:block;margin:10px 0 4px;">Weekly Targets (for scoreboard)</label>
+            <div class="focus-targets-grid">
+              <input id="targetWig1HoursInput" type="number" min="0" step="0.5" placeholder="WIG1 Deep h/wk" />
+              <input id="targetWig1SessionsInput" type="number" min="0" step="1" placeholder="WIG1 sessions/wk" />
+              <input id="targetCommitmentsInput" type="number" min="0" step="1" placeholder="Commitments done/wk" />
+            </div>
           </div>
           <div>
-            <label class="tiny" style="display:block;margin-bottom:4px;">Weekly Commitments (20-min WIG session)</label>
-            <textarea id="weeklyCommitmentsInput" placeholder="- Last week result:&#10;- This week commitments:&#10;- Scoreboard shift target:"></textarea>
+            <label class="tiny" style="display:block;margin-bottom:4px;">Weekly Commitments (structured)</label>
+            <div class="commitment-add-grid">
+              <input id="commitmentTitleInput" placeholder="Commitment (specific, this week)" />
+              <select id="commitmentWigInput">
+                <option value="WIG1">WIG1</option>
+                <option value="WIG2">WIG2</option>
+                <option value="None">Whirlwind</option>
+              </select>
+              <select id="commitmentTaskInput">
+                <option value="">Link task (optional)</option>
+              </select>
+              <label class="tiny" style="display:inline-flex;align-items:center;gap:6px;">
+                <input id="commitmentUseFinishInput" type="checkbox" checked />
+                Use FT
+              </label>
+              <button id="addCommitmentBtn" class="primary" type="button">Add</button>
+            </div>
+            <div id="commitmentsMeta" class="tiny" style="margin-top:8px;"></div>
+            <div id="commitmentsList" class="commitments-list"></div>
+            <label class="tiny" style="display:block;margin:10px 0 4px;">Weekly Commitments Notes (optional)</label>
+            <textarea id="weeklyCommitmentsInput" placeholder="- Last week result&#10;- This week intent&#10;- Risks to execution"></textarea>
           </div>
         </div>
 
         <!-- Scoreboard -->
         <div style="margin-top:16px;">
           <h3>WIG Scoreboard</h3>
+          <div id="weekScoreCards" class="score-grid"></div>
           <div class="summary-grid" style="margin-top:10px;">
             <div class="summary-box">
               <h4>WIG Time This Month</h4>
@@ -845,7 +926,19 @@
         last_modified: null,
         last_modified_by: "dashboard",
         meta: { owner: "Julian Waters-Lynch", timezone: "+03:00" },
-        focus: { wig1: "", wig2: "", lead_measures: "", weekly_commitments: "", updated_at: null },
+        focus: {
+          wig1: "",
+          wig2: "",
+          lead_measures: "",
+          weekly_commitments: "",
+          targets: {
+            wig1_deep_hours_weekly: 0,
+            wig1_deep_sessions_weekly: 0,
+            commitments_done_weekly: 0
+          },
+          commitments: [],
+          updated_at: null
+        },
         finish_track: { text: "", locked_at: null, completed_at: null },
         today_focus: { date: null, task_ids: [] },
         life_practices: { practices: defaultLifePractices(), daily_log: {} },
@@ -866,6 +959,22 @@
       const normalized = { ...base, ...incoming };
       normalized.meta = { ...base.meta, ...(incoming.meta || {}) };
       normalized.focus = { ...base.focus, ...(incoming.focus || {}) };
+      normalized.focus.targets = {
+        ...base.focus.targets,
+        ...(incoming.focus?.targets || {})
+      };
+      normalized.focus.commitments = Array.isArray(incoming.focus?.commitments)
+        ? incoming.focus.commitments.map(c => ({
+            id: c.id || uid(),
+            title: c.title || c.text || "Untitled commitment",
+            wig: c.wig || "WIG1",
+            linked_task_id: c.linked_task_id || c.linkedTaskId || null,
+            due_week_start: c.due_week_start || c.dueWeekStart || getWeekDates(0)[0],
+            created_at: c.created_at || c.createdAt || new Date().toISOString(),
+            status: c.status === "done" || c.completed_at || c.completedAt ? "done" : "open",
+            completed_at: c.completed_at || c.completedAt || null
+          }))
+        : [];
       normalized.finish_track = { ...base.finish_track, ...(incoming.finish_track || {}) };
       normalized.today_focus = { ...base.today_focus, ...(incoming.today_focus || {}) };
       normalized.life_practices = {
@@ -1594,7 +1703,17 @@
 
     function autofillTodayFocus() {
       initTodayState();
-      const rank = t => (t.importance === "High" ? 2 : 0) + (t.urgency === "High" ? 1 : 0);
+      const rank = t => {
+        let score = 0;
+        if (t.wig === "WIG1") score += 5;
+        else if (t.wig === "WIG2") score += 3;
+        if ((t.depth || "Deep") === "Deep") score += 2;
+        if (t.importance === "High") score += 2;
+        else score -= 1;
+        if (t.urgency === "High") score += 1;
+        if (t.category === "Strategic") score += 1;
+        return score;
+      };
       const selected = state.tasks
         .filter(t => !t.completedAt)
         .sort((a,b) => (rank(b) - rank(a)) || ((b.createdAt || "").localeCompare(a.createdAt || "")))
@@ -1603,6 +1722,128 @@
       state.today_focus.task_ids = selected;
       saveState();
       render();
+    }
+
+    function currentWeekStart() {
+      return getWeekDates(0)[0];
+    }
+
+    function commitmentsForWeek(weekStart = currentWeekStart()) {
+      const all = Array.isArray(state.focus?.commitments) ? state.focus.commitments : [];
+      return all.filter(c => c.due_week_start === weekStart);
+    }
+
+    function findCommitment(commitmentId) {
+      const all = Array.isArray(state.focus?.commitments) ? state.focus.commitments : [];
+      return all.find(c => c.id === commitmentId);
+    }
+
+    function isCommitmentDone(commitment) {
+      return !!commitment && (commitment.status === "done" || !!commitment.completed_at);
+    }
+
+    function parseNumberInput(value, fallback = 0) {
+      const parsed = Number.parseFloat(String(value ?? "").trim());
+      return Number.isFinite(parsed) && parsed >= 0 ? parsed : fallback;
+    }
+
+    function addWeeklyCommitment() {
+      const titleEl = document.getElementById("commitmentTitleInput");
+      const wigEl = document.getElementById("commitmentWigInput");
+      const taskEl = document.getElementById("commitmentTaskInput");
+      const ftEl = document.getElementById("commitmentUseFinishInput");
+      if (!titleEl || !wigEl || !taskEl || !ftEl) return;
+
+      const title = (titleEl.value || "").trim();
+      if (!title) return;
+      const nowIso = new Date().toISOString();
+      const commitment = {
+        id: uid(),
+        title,
+        wig: wigEl.value || "WIG1",
+        linked_task_id: taskEl.value || null,
+        due_week_start: currentWeekStart(),
+        created_at: nowIso,
+        status: "open",
+        completed_at: null
+      };
+      if (!Array.isArray(state.focus.commitments)) state.focus.commitments = [];
+      state.focus.commitments.unshift(commitment);
+
+      queueLedgerEvent(
+        "commitment_created",
+        "commitment",
+        commitment.id,
+        nowIso,
+        {
+          title: commitment.title,
+          wig: commitment.wig,
+          linkedTaskId: commitment.linked_task_id,
+          dueWeekStart: commitment.due_week_start
+        },
+        `commitment_created_${commitment.id}`
+      );
+
+      if (ftEl.checked) {
+        state.finish_track = {
+          text: commitment.title,
+          locked_at: nowIso,
+          completed_at: null
+        };
+      }
+
+      titleEl.value = "";
+      taskEl.value = "";
+      saveState("focus_commitment_add");
+      render();
+    }
+
+    function toggleCommitmentDone(commitmentId, done) {
+      const commitment = findCommitment(commitmentId);
+      if (!commitment) return;
+      const nowIso = new Date().toISOString();
+      commitment.status = done ? "done" : "open";
+      commitment.completed_at = done ? nowIso : null;
+
+      queueLedgerEvent(
+        done ? "commitment_completed" : "commitment_reopened",
+        "commitment",
+        commitment.id,
+        nowIso,
+        {
+          title: commitment.title,
+          wig: commitment.wig,
+          linkedTaskId: commitment.linked_task_id,
+          dueWeekStart: commitment.due_week_start
+        },
+        `${done ? "commitment_completed" : "commitment_reopened"}_${commitment.id}_${nowIso}`
+      );
+
+      if (done && state.finish_track?.locked_at && !state.finish_track.completed_at && state.finish_track.text === commitment.title) {
+        state.finish_track.completed_at = nowIso;
+      } else if (!done && state.finish_track?.text === commitment.title) {
+        state.finish_track.locked_at = state.finish_track.locked_at || nowIso;
+        state.finish_track.completed_at = null;
+      }
+
+      saveState("focus_commitment_toggle");
+      render();
+    }
+
+    function setCommitmentAsFinishTrack(commitmentId) {
+      const commitment = findCommitment(commitmentId);
+      if (!commitment) return;
+      state.finish_track = {
+        text: commitment.title,
+        locked_at: new Date().toISOString(),
+        completed_at: null
+      };
+      saveState("focus_commitment_finish_track");
+      render();
+    }
+
+    function isFinishTrackBlockingStrategic() {
+      return !!(state.finish_track?.locked_at && !state.finish_track?.completed_at);
     }
 
     function renderLifePractices() {
@@ -1685,6 +1926,10 @@
     function getTask(id) { return state.tasks.find(t=>t.id===id); }
 
     function addTask(title,category,importance,urgency,depth,wig) {
+      if (category === "Strategic" && isFinishTrackBlockingStrategic()) {
+        alert(`Finish Track is open: "${state.finish_track.text}". Complete or reset it before adding new Strategic tasks.`);
+        return;
+      }
       const task = {
         id:uid(), title:title.trim(), category, importance, urgency,
         depth:depth||"Deep", wig:wig||"None",
@@ -1805,6 +2050,8 @@
             taskId: task.id,
             title: task.title,
             category: task.category,
+            wig: task.wig || "None",
+            depth: task.depth || "Deep",
             elapsedSec: task.elapsedSec || 0
           },
           `task_completed_${task.id}_${completedAt}`
@@ -2447,42 +2694,130 @@
       ].join("");
     }
 
+    function ragStatus(actual, target) {
+      if (!target || target <= 0) return { cls: "", label: "No Target" };
+      const ratio = actual / target;
+      if (ratio >= 1) return { cls: "rag-green", label: "On Track" };
+      if (ratio >= 0.7) return { cls: "rag-amber", label: "At Risk" };
+      return { cls: "rag-red", label: "Off Track" };
+    }
+
+    function weeklyRangeLabel(dates) {
+      if (!dates || !dates.length) return "";
+      const fmt = d => {
+        const p = d.split("-");
+        return `${p[2]}/${p[1]}`;
+      };
+      return `${fmt(dates[0])} - ${fmt(dates[6])}`;
+    }
+
     // ── 4DX Focus ──
     function renderFocusLayer() {
-      document.getElementById("wig1Input").value=state.focus.wig1||"";
-      document.getElementById("wig2Input").value=state.focus.wig2||"";
-      document.getElementById("leadMeasuresInput").value=state.focus.lead_measures||"";
-      document.getElementById("weeklyCommitmentsInput").value=state.focus.weekly_commitments||"";
-      document.getElementById("focusUpdated").textContent=state.focus.updated_at?`Updated: ${new Date(state.focus.updated_at).toLocaleDateString()}`:"";
+      document.getElementById("wig1Input").value = state.focus.wig1 || "";
+      document.getElementById("wig2Input").value = state.focus.wig2 || "";
+      document.getElementById("leadMeasuresInput").value = state.focus.lead_measures || "";
+      document.getElementById("weeklyCommitmentsInput").value = state.focus.weekly_commitments || "";
+      document.getElementById("targetWig1HoursInput").value = state.focus.targets?.wig1_deep_hours_weekly || "";
+      document.getElementById("targetWig1SessionsInput").value = state.focus.targets?.wig1_deep_sessions_weekly || "";
+      document.getElementById("targetCommitmentsInput").value = state.focus.targets?.commitments_done_weekly || "";
+      document.getElementById("focusUpdated").textContent = state.focus.updated_at ? `Updated: ${new Date(state.focus.updated_at).toLocaleDateString()}` : "";
 
-      // WIG scoreboard
-      const month=nowMonth();
-      const monthSessions=state.sessions.filter(s=>isoToLocalMonthKey(s.startAt)===month);
-      const monthTotal=monthSessions.reduce((a,s)=>a+s.durationSec,0);
+      const weekDates = getWeekDates(0);
+      const weekSessions = sessionsForDates(weekDates);
+      const wig1DeepSessions = weekSessions.filter(s => (s.wig || "None") === "WIG1" && (s.depth || "Deep") === "Deep");
+      const wig1DeepHours = wig1DeepSessions.reduce((a, s) => a + (s.durationSec || 0), 0) / 3600;
+      const wig1DeepCount = wig1DeepSessions.length;
+      const weekCommitments = commitmentsForWeek(currentWeekStart());
+      const commitmentsDone = weekCommitments.filter(isCommitmentDone).length;
 
-      const wigTotals={WIG1:0,WIG2:0,None:0};
-      monthSessions.forEach(s=>{
-        const w=s.wig||"None";
-        wigTotals[w]=(wigTotals[w]||0)+s.durationSec;
+      const targets = state.focus.targets || {};
+      const hoursTarget = Number(targets.wig1_deep_hours_weekly || 0);
+      const sessionsTarget = Number(targets.wig1_deep_sessions_weekly || 0);
+      const commitmentsTarget = Number(targets.commitments_done_weekly || 0);
+
+      const hoursStatus = ragStatus(wig1DeepHours, hoursTarget);
+      const sessionsStatus = ragStatus(wig1DeepCount, sessionsTarget);
+      const commitmentsStatus = ragStatus(commitmentsDone, commitmentsTarget);
+
+      document.getElementById("weekScoreCards").innerHTML = [
+        `<div class="score-card">
+          <div class="score-title">WIG1 Deep Hours (Week)</div>
+          <div class="score-value">${wig1DeepHours.toFixed(1)}h</div>
+          <div class="score-target">Target: ${hoursTarget > 0 ? `${hoursTarget}h` : "not set"}</div>
+          <div class="score-status ${hoursStatus.cls}">${hoursStatus.label}</div>
+        </div>`,
+        `<div class="score-card">
+          <div class="score-title">WIG1 Deep Sessions (Week)</div>
+          <div class="score-value">${wig1DeepCount}</div>
+          <div class="score-target">Target: ${sessionsTarget > 0 ? sessionsTarget : "not set"}</div>
+          <div class="score-status ${sessionsStatus.cls}">${sessionsStatus.label}</div>
+        </div>`,
+        `<div class="score-card">
+          <div class="score-title">Commitments Done (Week)</div>
+          <div class="score-value">${commitmentsDone}/${weekCommitments.length}</div>
+          <div class="score-target">Target: ${commitmentsTarget > 0 ? commitmentsTarget : "not set"}</div>
+          <div class="score-status ${commitmentsStatus.cls}">${commitmentsStatus.label}</div>
+        </div>`
+      ].join("");
+
+      const commitmentTaskSelect = document.getElementById("commitmentTaskInput");
+      const selectedTaskBefore = commitmentTaskSelect.value || "";
+      const openTasks = state.tasks.filter(t => !t.completedAt);
+      commitmentTaskSelect.innerHTML = `<option value="">Link task (optional)</option>${openTasks
+        .map(t => `<option value="${t.id}">${t.title}</option>`)
+        .join("")}`;
+      if (selectedTaskBefore && openTasks.some(t => t.id === selectedTaskBefore)) {
+        commitmentTaskSelect.value = selectedTaskBefore;
+      }
+
+      document.getElementById("commitmentsMeta").textContent = `${weeklyRangeLabel(weekDates)} - ${commitmentsDone}/${weekCommitments.length} commitments done`;
+      const commitmentsList = document.getElementById("commitmentsList");
+      if (!weekCommitments.length) {
+        commitmentsList.innerHTML = '<div class="commitment-empty">No structured commitments set for this week.</div>';
+      } else {
+        commitmentsList.innerHTML = weekCommitments.map(c => {
+          const linkedTask = c.linked_task_id ? getTask(c.linked_task_id) : null;
+          const wigLabel = c.wig === "None" ? "Whirlwind" : c.wig;
+          const statusTag = isCommitmentDone(c) ? '<span class="tag" style="border-color:#a8dbb8;color:var(--done);background:var(--done-light);">Done</span>' : '<span class="tag">Open</span>';
+          return `<div class="commitment-row">
+            <label><input type="checkbox" data-commit-done="${c.id}" ${isCommitmentDone(c) ? "checked" : ""} /></label>
+            <div class="commitment-main">
+              <div class="commitment-title">${c.title}</div>
+              <div class="tiny">${wigLabel} ${linkedTask ? `- linked: ${linkedTask.title}` : "- no linked task"} ${statusTag}</div>
+            </div>
+            <div class="commitment-actions">
+              <button class="ghost" type="button" data-commit-ft="${c.id}">Set FT</button>
+            </div>
+          </div>`;
+        }).join("");
+      }
+
+      // WIG scoreboard (month trends)
+      const month = nowMonth();
+      const monthSessions = state.sessions.filter(s => isoToLocalMonthKey(s.startAt) === month);
+      const wigTotals = { WIG1: 0, WIG2: 0, None: 0 };
+      monthSessions.forEach(s => {
+        const w = s.wig || "None";
+        wigTotals[w] = (wigTotals[w] || 0) + s.durationSec;
       });
-      const maxW=Math.max(1,...Object.values(wigTotals));
-      document.getElementById("wigMonthBars").innerHTML=Object.entries(wigTotals)
-        .filter(([k,v])=>v>0)
-        .sort((a,b)=>b[1]-a[1])
-        .map(([n,s])=>`<div class="bar"><div>${n}</div><div class="bar-track"><div class="bar-fill${n!=="None"?" gold":""}" style="width:${Math.round((s/maxW)*100)}%"></div></div><div>${fmtHours(s)}</div></div>`)
-        .join("")||'<p class="tiny">No WIG-aligned sessions this month.</p>';
+      const maxW = Math.max(1, ...Object.values(wigTotals));
+      document.getElementById("wigMonthBars").innerHTML = Object.entries(wigTotals)
+        .filter(([, v]) => v > 0)
+        .sort((a, b) => b[1] - a[1])
+        .map(([n, s]) => `<div class="bar"><div>${n === "None" ? "Whirlwind" : n}</div><div class="bar-track"><div class="bar-fill${n !== "None" ? " gold" : ""}" style="width:${Math.round((s / maxW) * 100)}%"></div></div><div>${fmtHours(s)}</div></div>`)
+        .join("") || '<p class="tiny">No WIG-aligned sessions this month.</p>';
 
-      const depthTotals={Deep:0,Shallow:0};
-      monthSessions.forEach(s=>{
-        const d=s.depth||"Deep";
-        depthTotals[d]=(depthTotals[d]||0)+s.durationSec;
+      const depthTotals = { Deep: 0, Shallow: 0 };
+      monthSessions.forEach(s => {
+        const d = s.depth || "Deep";
+        depthTotals[d] = (depthTotals[d] || 0) + s.durationSec;
       });
-      const maxD=Math.max(1,...Object.values(depthTotals));
-      document.getElementById("deepMonthBars").innerHTML=Object.entries(depthTotals)
-        .filter(([k,v])=>v>0)
-        .sort((a,b)=>b[1]-a[1])
-        .map(([n,s])=>`<div class="bar"><div>${n}</div><div class="bar-track"><div class="bar-fill" style="width:${Math.round((s/maxD)*100)}%"></div></div><div>${fmtHours(s)}</div></div>`)
-        .join("")||'<p class="tiny">No sessions this month.</p>';
+      const maxD = Math.max(1, ...Object.values(depthTotals));
+      document.getElementById("deepMonthBars").innerHTML = Object.entries(depthTotals)
+        .filter(([, v]) => v > 0)
+        .sort((a, b) => b[1] - a[1])
+        .map(([n, s]) => `<div class="bar"><div>${n}</div><div class="bar-track"><div class="bar-fill" style="width:${Math.round((s / maxD) * 100)}%"></div></div><div>${fmtHours(s)}</div></div>`)
+        .join("") || '<p class="tiny">No sessions this month.</p>';
     }
 
     // ── Weekly Review ──
@@ -2736,6 +3071,23 @@
         updateLifePractice(minInput.dataset.lifeMinutes, { minutes: Number.isFinite(parsed) ? parsed : null });
       }
     });
+    document.getElementById("addCommitmentBtn").addEventListener("click", addWeeklyCommitment);
+    document.getElementById("commitmentTitleInput").addEventListener("keydown", e => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        addWeeklyCommitment();
+      }
+    });
+    document.getElementById("commitmentsList").addEventListener("change", e => {
+      const doneInput = e.target.closest("input[data-commit-done]");
+      if (!doneInput) return;
+      toggleCommitmentDone(doneInput.dataset.commitDone, !!doneInput.checked);
+    });
+    document.getElementById("commitmentsList").addEventListener("click", e => {
+      const btn = e.target.closest("button[data-commit-ft]");
+      if (!btn) return;
+      setCommitmentAsFinishTrack(btn.dataset.commitFt);
+    });
 
     // File sync
     document.getElementById("loadFileBtn").textContent = "Link JSON File";
@@ -2773,11 +3125,18 @@
 
     // 4DX Focus save
     document.getElementById("saveFocusBtn").addEventListener("click",()=>{
-      state.focus={
+      state.focus = {
+        ...(state.focus || {}),
         wig1:document.getElementById("wig1Input").value.trim(),
         wig2:document.getElementById("wig2Input").value.trim(),
         lead_measures:document.getElementById("leadMeasuresInput").value.trim(),
         weekly_commitments:document.getElementById("weeklyCommitmentsInput").value.trim(),
+        targets: {
+          wig1_deep_hours_weekly: parseNumberInput(document.getElementById("targetWig1HoursInput").value, 0),
+          wig1_deep_sessions_weekly: parseNumberInput(document.getElementById("targetWig1SessionsInput").value, 0),
+          commitments_done_weekly: parseNumberInput(document.getElementById("targetCommitmentsInput").value, 0)
+        },
+        commitments: Array.isArray(state.focus?.commitments) ? state.focus.commitments : [],
         updated_at:new Date().toISOString()
       };
       saveState(); render();
