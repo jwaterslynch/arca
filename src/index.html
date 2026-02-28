@@ -748,8 +748,8 @@
             </select>
             <select id="wigInput">
               <option value="None">Goal: —</option>
-              <option value="WIG1">Primary Goal</option>
-              <option value="WIG2">Secondary Goal</option>
+              <option value="PG1">Primary Goal</option>
+              <option value="PG2">Secondary Goal</option>
             </select>
             <button class="primary" type="submit">Add</button>
           </div>
@@ -926,8 +926,8 @@
             <div class="commitment-add-grid">
               <input id="commitmentTitleInput" placeholder="Commitment (specific, this week)" />
               <select id="commitmentWigInput">
-                <option value="WIG1">Primary Goal</option>
-                <option value="WIG2">Secondary Goal</option>
+              <option value="PG1">Primary Goal</option>
+              <option value="PG2">Secondary Goal</option>
                 <option value="None">Day-to-day</option>
               </select>
               <select id="commitmentTaskInput">
@@ -1053,14 +1053,14 @@
           </p>
           <p class="tiny" style="margin-top:14px;font-size:11px;opacity:.75;">
             Inspired by several execution and productivity frameworks including the Eisenhower matrix, deep work principles, and goal-focused execution methods.
-            <a href="https://en.wikipedia.org/wiki/The_4_Disciplines_of_Execution" target="_blank" rel="noopener" style="color:var(--accent);">Further reading →</a>
+            <a href="https://en.wikipedia.org/wiki/Eisenhower_matrix" target="_blank" rel="noopener" style="color:var(--accent);">Further reading →</a>
           </p>
         </div>
 
         <div id="onboardStep2" class="onboard-screen" hidden>
           <p><strong>How It Works</strong></p>
           <p class="tiny" style="margin-top:10px;">PPP Flow is built on four principles:</p>
-          <p class="tiny" style="margin-top:12px;"><strong>1. Focus on one primary goal (sometimes called a WIG: Wildly Important Goal).</strong> Instead of spreading effort across everything, pick the one goal where success would change everything else. Most goals fail not because of bad planning but because the day-to-day crowds them out. Narrowing your focus is the first discipline.</p>
+          <p class="tiny" style="margin-top:12px;"><strong>1. Focus on one primary goal (PG).</strong> Instead of spreading effort across everything, pick the one goal where success would change everything else. Most goals fail not because of bad planning but because the day-to-day crowds them out. Narrowing your focus is the first discipline.</p>
           <p class="tiny" style="margin-top:10px;"><strong>2. Track inputs, not just results.</strong> There are two kinds of measures. Results tell you whether you achieved the goal after the fact — you can't control them directly. Inputs are the activities that <em>predict</em> the result: the deep-work sessions, the drafts written, the experiments run. Track what you can control this week.</p>
           <p class="tiny" style="margin-top:10px;"><strong>3. Keep a visible scoreboard.</strong> If you can't tell at a glance whether you're winning or losing, you'll lose focus. PPP Flow is your scoreboard. It tracks your deep ratio — how much of your time goes to focused, high-value work versus shallow logistics — plus tasks closed, streaks, and weekly trends. All updated automatically as you work.</p>
           <p class="tiny" style="margin-top:10px;"><strong>4. Review weekly.</strong> Once a week, look at your scoreboard. What worked? What didn't? What will you commit to this week? The weekly review is what sustains the other three principles over time. Without it, goals drift.</p>
@@ -1265,6 +1265,13 @@
       };
     }
 
+    function normalizeGoalCode(value) {
+      if (value === "WIG1") return "PG1";
+      if (value === "WIG2") return "PG2";
+      if (value === "PG1" || value === "PG2" || value === "None") return value;
+      return "None";
+    }
+
     function normalizeState(raw) {
       const base = emptyState();
       const incoming = raw || {};
@@ -1283,7 +1290,7 @@
         ? incoming.focus.commitments.map(c => ({
             id: c.id || uid(),
             title: c.title || c.text || "Untitled commitment",
-            wig: c.wig || "WIG1",
+            wig: normalizeGoalCode(c.wig || "PG1"),
             linked_task_id: c.linked_task_id || c.linkedTaskId || null,
             due_week_start: c.due_week_start || c.dueWeekStart || getWeekDates(0)[0],
             created_at: c.created_at || c.createdAt || new Date().toISOString(),
@@ -1317,14 +1324,16 @@
               importance: t.importance || "Low",
               urgency: t.urgency || "Low",
               depth: t.depth || "Deep",
-              wig: t.wig || "None",
+              wig: normalizeGoalCode(t.wig || "None"),
               createdAt,
               completedAt,
               elapsedSec: Number.isFinite(t.elapsedSec) ? t.elapsedSec : (Number.isFinite(t.elapsed_sec) ? t.elapsed_sec : 0)
             };
           })
         : [];
-      normalized.sessions = Array.isArray(incoming.sessions) ? incoming.sessions : [];
+      normalized.sessions = Array.isArray(incoming.sessions)
+        ? incoming.sessions.map(s => ({ ...s, wig: normalizeGoalCode(s.wig || "None") }))
+        : [];
       normalized.notes = Array.isArray(incoming.notes) ? incoming.notes : [];
       normalized.closed_task_log = Array.isArray(incoming.closed_task_log)
         ? incoming.closed_task_log
@@ -2072,8 +2081,8 @@
       initTodayState();
       const rank = t => {
         let score = 0;
-        if (t.wig === "WIG1") score += 5;
-        else if (t.wig === "WIG2") score += 3;
+        if (normalizeGoalCode(t.wig) === "PG1") score += 5;
+        else if (normalizeGoalCode(t.wig) === "PG2") score += 3;
         if ((t.depth || "Deep") === "Deep") score += 2;
         if (t.importance === "High") score += 2;
         else score -= 1;
@@ -2127,7 +2136,7 @@
       const commitment = {
         id: uid(),
         title,
-        wig: wigEl.value || "WIG1",
+        wig: wigEl.value || "PG1",
         linked_task_id: taskEl.value || null,
         due_week_start: currentWeekStart(),
         created_at: nowIso,
@@ -2848,7 +2857,7 @@
         importance: "High",
         urgency: "Low",
         depth: "Deep",
-        wig: seed.category === "Strategic" ? "WIG1" : "None",
+        wig: seed.category === "Strategic" ? "PG1" : "None",
         createdAt: nowIso,
         completedAt: null,
         elapsedSec: 0,
@@ -3436,14 +3445,14 @@
     }
 
     function goalLabelShort(wig){
-      if (wig === "WIG1") return "Primary";
-      if (wig === "WIG2") return "Secondary";
+      if (normalizeGoalCode(wig) === "PG1") return "Primary";
+      if (normalizeGoalCode(wig) === "PG2") return "Secondary";
       return "—";
     }
 
     function goalLabelLong(wig){
-      if (wig === "WIG1") return "Primary Goal";
-      if (wig === "WIG2") return "Secondary Goal";
+      if (normalizeGoalCode(wig) === "PG1") return "Primary Goal";
+      if (normalizeGoalCode(wig) === "PG2") return "Secondary Goal";
       return "Day-to-day";
     }
 
@@ -3560,7 +3569,7 @@
 
       const weekDates = getWeekDates(0);
       const weekSessions = sessionsForDates(weekDates);
-      const wig1DeepSessions = weekSessions.filter(s => (s.wig || "None") === "WIG1" && (s.depth || "Deep") === "Deep");
+      const wig1DeepSessions = weekSessions.filter(s => normalizeGoalCode(s.wig || "None") === "PG1" && (s.depth || "Deep") === "Deep");
       const wig1DeepHours = wig1DeepSessions.reduce((a, s) => a + (s.durationSec || 0), 0) / 3600;
       const wig1DeepCount = wig1DeepSessions.length;
       const weekCommitments = commitmentsForWeek(currentWeekStart());
@@ -3631,9 +3640,9 @@
       // Goal scoreboard (month trends)
       const month = nowMonth();
       const monthSessions = state.sessions.filter(s => isoToLocalMonthKey(s.startAt) === month);
-      const wigTotals = { WIG1: 0, WIG2: 0, None: 0 };
+      const wigTotals = { PG1: 0, PG2: 0, None: 0 };
       monthSessions.forEach(s => {
-        const w = s.wig || "None";
+        const w = normalizeGoalCode(s.wig || "None");
         wigTotals[w] = (wigTotals[w] || 0) + s.durationSec;
       });
       const maxW = Math.max(1, ...Object.values(wigTotals));
