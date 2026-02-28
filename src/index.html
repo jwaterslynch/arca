@@ -267,7 +267,7 @@
     }
     .trend-row { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin:12px 0; }
 
-    /* 4DX Focus Layer */
+    /* Focus Layer */
     .focus-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:10px; }
     .focus-targets-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:8px; }
     .score-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:10px; }
@@ -613,7 +613,7 @@
         <div class="stat"><label>Month</label><div id="monthTracked" class="value">0h</div></div>
         <div class="stat hero"><label>Closed (Wk)</label><div id="weekClosed" class="value green">0</div></div>
         <div class="stat hero"><label>Deep Ratio</label><div id="deepRatio" class="value deep-color">0%</div></div>
-        <div class="stat"><label>WIG Aligned</label><div id="wigRatio" class="value wig-color">0%</div></div>
+        <div class="stat"><label>Goal Aligned</label><div id="wigRatio" class="value wig-color">0%</div></div>
         <div class="stat"><label>Leakage</label><div id="leakage" class="value">0%</div></div>
       </div>
 
@@ -626,7 +626,7 @@
     <!-- Tabs -->
     <div class="tabs">
       <button class="tab active" data-tab="execute">Execute</button>
-      <button class="tab" data-tab="focus">4DX Focus</button>
+      <button class="tab" data-tab="focus">Focus Layer</button>
       <button class="tab" data-tab="review">Weekly Review</button>
     </div>
 
@@ -747,14 +747,14 @@
               <option value="Shallow">Shallow</option>
             </select>
             <select id="wigInput">
-              <option value="None">WIG: —</option>
-              <option value="WIG1">WIG 1</option>
-              <option value="WIG2">WIG 2</option>
+              <option value="None">Goal: —</option>
+              <option value="WIG1">Primary Goal</option>
+              <option value="WIG2">Secondary Goal</option>
             </select>
             <button class="primary" type="submit">Add</button>
           </div>
         </form>
-        <p class="tiny" style="margin:8px 0 0;">Deep Work = cognitively demanding, no multitask. Shallow = logistical, low-focus. WIG = Wildly Important Goal alignment.</p>
+        <p class="tiny" style="margin:8px 0 0;">Deep Work = cognitively demanding, no multitask. Shallow = logistical, low-focus. Goal = alignment to your primary or secondary goal.</p>
       </section>
 
       <!-- Life practices -->
@@ -852,7 +852,7 @@
           <div class="table-wrap">
             <table>
               <thead>
-                <tr><th></th><th>Today</th><th>Task</th><th>Cat</th><th>I/U</th><th>Depth</th><th>WIG</th><th>Time</th><th>Timer</th></tr>
+                <tr><th></th><th>Today</th><th>Task</th><th>Cat</th><th>I/U</th><th>Depth</th><th>Goal</th><th>Time</th><th>Timer</th></tr>
               </thead>
               <tbody id="taskTableBody"></tbody>
             </table>
@@ -886,38 +886,38 @@
       </section>
     </div>
 
-    <!-- ═══════════ 4DX FOCUS TAB ═══════════ -->
+    <!-- ═══════════ FOCUS TAB ═══════════ -->
     <div id="tab-focus" class="tab-content">
       <section class="card">
         <div class="titlebar">
-          <h2>4DX Focus Layer</h2>
+          <h2>Focus Layer</h2>
           <div class="controls">
             <span class="tiny" id="focusUpdated"></span>
             <button id="saveFocusBtn" class="primary">Save Focus</button>
           </div>
         </div>
         <p class="subtitle" style="margin-bottom:12px;">
-          Discipline 1: Focus on the Wildly Important. Discipline 2: Act on Lead Measures. Discipline 3: Keep a Compelling Scoreboard. Discipline 4: Create a Cadence of Accountability.
+          Focus on one primary goal. Track input measures you control. Keep a visible scoreboard. Review weekly and adjust.
         </p>
 
         <div class="focus-grid">
           <div>
-            <label class="tiny" style="display:block;margin-bottom:4px;">WIG 1 — Primary Wildly Important Goal</label>
+            <label class="tiny" style="display:block;margin-bottom:4px;">Primary Goal</label>
             <input id="wig1Input" placeholder="From X to Y by when (e.g. Submit 3 papers by June 30)" />
           </div>
           <div>
-            <label class="tiny" style="display:block;margin-bottom:4px;">WIG 2 — Secondary (optional)</label>
-            <input id="wig2Input" placeholder="Secondary WIG if needed" />
+            <label class="tiny" style="display:block;margin-bottom:4px;">Secondary Goal (optional)</label>
+            <input id="wig2Input" placeholder="Secondary goal if needed" />
           </div>
         </div>
         <div class="focus-grid" style="margin-top:12px;">
           <div>
-            <label class="tiny" style="display:block;margin-bottom:4px;">Lead Measures (weekly predictive actions)</label>
+            <label class="tiny" style="display:block;margin-bottom:4px;">Input Measures (weekly predictive actions)</label>
             <textarea id="leadMeasuresInput" placeholder="- 5 deep work blocks per week&#10;- 1 submission package completed&#10;- 2 accountability check-ins"></textarea>
             <label class="tiny" style="display:block;margin:10px 0 4px;">Weekly Targets (for scoreboard)</label>
             <div class="focus-targets-grid">
-              <input id="targetWig1HoursInput" type="number" min="0" step="0.5" placeholder="WIG1 Deep h/wk" />
-              <input id="targetWig1SessionsInput" type="number" min="0" step="1" placeholder="WIG1 sessions/wk" />
+              <input id="targetWig1HoursInput" type="number" min="0" step="0.5" placeholder="Primary deep h/wk" />
+              <input id="targetWig1SessionsInput" type="number" min="0" step="1" placeholder="Primary sessions/wk" />
               <input id="targetCommitmentsInput" type="number" min="0" step="1" placeholder="Commitments done/wk" />
             </div>
           </div>
@@ -926,9 +926,9 @@
             <div class="commitment-add-grid">
               <input id="commitmentTitleInput" placeholder="Commitment (specific, this week)" />
               <select id="commitmentWigInput">
-                <option value="WIG1">WIG1</option>
-                <option value="WIG2">WIG2</option>
-                <option value="None">Whirlwind</option>
+                <option value="WIG1">Primary Goal</option>
+                <option value="WIG2">Secondary Goal</option>
+                <option value="None">Day-to-day</option>
               </select>
               <select id="commitmentTaskInput">
                 <option value="">Link task (optional)</option>
@@ -948,11 +948,11 @@
 
         <!-- Scoreboard -->
         <div style="margin-top:16px;">
-          <h3>WIG Scoreboard</h3>
+          <h3>Goal Scoreboard</h3>
           <div id="weekScoreCards" class="score-grid"></div>
           <div class="summary-grid" style="margin-top:10px;">
             <div class="summary-box">
-              <h4>WIG Time This Month</h4>
+              <h4>Goal-Aligned Time This Month</h4>
               <div id="wigMonthBars"></div>
             </div>
             <div class="summary-box">
@@ -3385,7 +3385,7 @@
       const deepSec=monthSessions.filter(s=>(s.depth||"Deep")==="Deep").reduce((a,s)=>a+s.durationSec,0);
       const deepPct=monthSec?Math.round((deepSec/monthSec)*100):0;
 
-      // WIG ratio (month)
+      // Goal alignment ratio (month)
       const wigSec=monthSessions.filter(s=>(s.wig||"None")!=="None").reduce((a,s)=>a+s.durationSec,0);
       const wigPct=monthSec?Math.round((wigSec/monthSec)*100):0;
 
@@ -3435,6 +3435,18 @@
       return map[cat]||"";
     }
 
+    function goalLabelShort(wig){
+      if (wig === "WIG1") return "Primary";
+      if (wig === "WIG2") return "Secondary";
+      return "—";
+    }
+
+    function goalLabelLong(wig){
+      if (wig === "WIG1") return "Primary Goal";
+      if (wig === "WIG2") return "Secondary Goal";
+      return "Day-to-day";
+    }
+
     // ── Table ──
     function renderTable() {
       const now=Date.now();
@@ -3479,7 +3491,7 @@
           <td><span class="tag ${tagClass(task.category)}">${task.category}</span></td>
           <td><span class="tag">${task.importance[0]}/${task.urgency[0]}</span></td>
           <td><span class="tag ${depthCls}">${task.depth||"Deep"}</span></td>
-          <td><span class="tag ${wigCls}">${task.wig||"\u2014"}</span></td>
+          <td><span class="tag ${wigCls}">${goalLabelShort(task.wig||"None")}</span></td>
           <td>${fmtDuration(total)}</td>
           <td><div class="controls">
             <button data-act="start" data-id="${task.id}" ${isRunning?"disabled":""}>Start</button>
@@ -3535,7 +3547,7 @@
       return `${fmt(dates[0])} - ${fmt(dates[6])}`;
     }
 
-    // ── 4DX Focus ──
+    // ── Focus Layer ──
     function renderFocusLayer() {
       document.getElementById("wig1Input").value = state.focus.wig1 || "";
       document.getElementById("wig2Input").value = state.focus.wig2 || "";
@@ -3565,13 +3577,13 @@
 
       document.getElementById("weekScoreCards").innerHTML = [
         `<div class="score-card">
-          <div class="score-title">WIG1 Deep Hours (Week)</div>
+          <div class="score-title">Primary Deep Hours (Week)</div>
           <div class="score-value">${wig1DeepHours.toFixed(1)}h</div>
           <div class="score-target">Target: ${hoursTarget > 0 ? `${hoursTarget}h` : "not set"}</div>
           <div class="score-status ${hoursStatus.cls}">${hoursStatus.label}</div>
         </div>`,
         `<div class="score-card">
-          <div class="score-title">WIG1 Deep Sessions (Week)</div>
+          <div class="score-title">Primary Deep Sessions (Week)</div>
           <div class="score-value">${wig1DeepCount}</div>
           <div class="score-target">Target: ${sessionsTarget > 0 ? sessionsTarget : "not set"}</div>
           <div class="score-status ${sessionsStatus.cls}">${sessionsStatus.label}</div>
@@ -3601,7 +3613,7 @@
       } else {
         commitmentsList.innerHTML = weekCommitments.map(c => {
           const linkedTask = c.linked_task_id ? getTask(c.linked_task_id) : null;
-          const wigLabel = c.wig === "None" ? "Whirlwind" : c.wig;
+          const wigLabel = goalLabelLong(c.wig || "None");
           const statusTag = isCommitmentDone(c) ? '<span class="tag" style="border-color:#a8dbb8;color:var(--done);background:var(--done-light);">Done</span>' : '<span class="tag">Open</span>';
           return `<div class="commitment-row">
             <label><input type="checkbox" data-commit-done="${c.id}" ${isCommitmentDone(c) ? "checked" : ""} /></label>
@@ -3616,7 +3628,7 @@
         }).join("");
       }
 
-      // WIG scoreboard (month trends)
+      // Goal scoreboard (month trends)
       const month = nowMonth();
       const monthSessions = state.sessions.filter(s => isoToLocalMonthKey(s.startAt) === month);
       const wigTotals = { WIG1: 0, WIG2: 0, None: 0 };
@@ -3628,8 +3640,8 @@
       document.getElementById("wigMonthBars").innerHTML = Object.entries(wigTotals)
         .filter(([, v]) => v > 0)
         .sort((a, b) => b[1] - a[1])
-        .map(([n, s]) => `<div class="bar"><div>${n === "None" ? "Whirlwind" : n}</div><div class="bar-track"><div class="bar-fill${n !== "None" ? " gold" : ""}" style="width:${Math.round((s / maxW) * 100)}%"></div></div><div>${fmtHours(s)}</div></div>`)
-        .join("") || '<p class="tiny">No WIG-aligned sessions this month.</p>';
+        .map(([n, s]) => `<div class="bar"><div>${goalLabelLong(n)}</div><div class="bar-track"><div class="bar-fill${n !== "None" ? " gold" : ""}" style="width:${Math.round((s / maxW) * 100)}%"></div></div><div>${fmtHours(s)}</div></div>`)
+        .join("") || '<p class="tiny">No goal-aligned sessions this month.</p>';
 
       const depthTotals = { Deep: 0, Shallow: 0 };
       monthSessions.forEach(s => {
@@ -4003,7 +4015,7 @@
       saveState(); render();
     });
 
-    // 4DX Focus save
+    // Focus layer save
     document.getElementById("saveFocusBtn").addEventListener("click",()=>{
       state.focus = {
         ...(state.focus || {}),
