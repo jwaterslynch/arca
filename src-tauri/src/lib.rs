@@ -281,6 +281,62 @@ fn backup_path(app: AppHandle) -> Result<String, String> {
     Ok(path.to_string_lossy().to_string())
 }
 
+#[tauri::command]
+fn play_native_chime(
+    sound_profile: Option<String>,
+    chime_length: Option<String>,
+    tone: Option<String>,
+) -> Result<bool, String> {
+    #[cfg(target_os = "macos")]
+    {
+        let profile = sound_profile
+            .unwrap_or_else(|| "normal".to_string())
+            .to_lowercase();
+        let length = chime_length
+            .unwrap_or_else(|| "short".to_string())
+            .to_lowercase();
+        let tone_key = tone.unwrap_or_else(|| "glass".to_string()).to_lowercase();
+
+        let volume = match profile.as_str() {
+            "soft" => 0.35_f32,
+            "loud" => 1.0_f32,
+            _ => 0.70_f32,
+        };
+
+        let loops: usize = if length == "long" { 2 } else { 1 };
+
+        let file_name = match tone_key.as_str() {
+            "ping" => "Ping.aiff",
+            "funk" => "Funk.aiff",
+            "hero" => "Hero.aiff",
+            "purr" => "Purr.aiff",
+            _ => "Glass.aiff",
+        };
+
+        let sound_path = format!("/System/Library/Sounds/{file_name}");
+        if !std::path::Path::new(&sound_path).exists() {
+            return Ok(false);
+        }
+
+        std::thread::spawn(move || {
+            for _ in 0..loops {
+                let _ = std::process::Command::new("/usr/bin/afplay")
+                    .arg("-v")
+                    .arg(format!("{volume:.2}"))
+                    .arg(&sound_path)
+                    .status();
+            }
+        });
+        return Ok(true);
+    }
+
+    #[cfg(not(target_os = "macos"))]
+    {
+        let _ = (sound_profile, chime_length, tone);
+        Ok(false)
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -292,7 +348,8 @@ pub fn run() {
             list_events,
             app_state_path,
             ledger_path,
-            backup_path
+            backup_path,
+            play_native_chime
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

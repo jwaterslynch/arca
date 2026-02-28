@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PPP Onboarding Preview v2</title>
+  <style>
+    :root {
+      --bg: #f5f6f2;
+      --panel: #ffffff;
+      --ink: #1d2529;
+      --muted: #5c6a70;
+      --line: #d7ddd8;
+      --accent: #0f6b5a;
+      --accent-light: #effaf7;
+    }
+    * { box-sizing:border-box; margin:0; }
+    body {
+      font-family: "Inter","Avenir Next","Segoe UI",Roboto,sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(1200px 500px at 10% -20%,#d8ece5 0%,transparent 60%),
+        radial-gradient(1000px 500px at 110% 20%,#f4e4cc 0%,transparent 65%),
+        var(--bg);
+      min-height: 100vh;
+      padding: 0;
+    }
+    .preview-note {
+      position: fixed;
+      top: 12px;
+      left: 12px;
+      z-index: 2;
+      font-size: 12px;
+      color: #2b4d43;
+      background: #eefaf5;
+      border: 1px solid #b8ddd4;
+      border-radius: 8px;
+      padding: 6px 10px;
+    }
+    .modal-backdrop {
+      position:fixed;
+      inset:0;
+      background:rgba(0,0,0,.45);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:0;
+    }
+    .modal-panel {
+      width:100vw;
+      height:100vh;
+      background:#fff;
+      padding:24px 28px;
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+    }
+    .modal-head {
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:8px;
+    }
+    h3 { font-size:34px; line-height:1.1; }
+    .tiny { font-size:16px; color:#33464d; }
+    button {
+      border:1px solid var(--line);
+      border-radius:10px;
+      background:#fff;
+      padding:8px 12px;
+      cursor:pointer;
+      font:inherit;
+      color:inherit;
+    }
+    button.primary { background:var(--accent); border-color:var(--accent); color:#fff; }
+    .onboard-steps { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px; }
+    .onboard-step-pill {
+      font-size:13px;
+      border:1px solid var(--line);
+      border-radius:999px;
+      padding:5px 10px;
+      color:var(--muted);
+      background:#f7faf8;
+    }
+    .onboard-step-pill.active {
+      border-color:#9acdbf;
+      color:var(--accent);
+      background:var(--accent-light);
+      font-weight:600;
+    }
+    .onboard-body { flex:1; overflow:auto; padding-right:4px; display:grid; gap:10px; }
+    .onboard-screen { display:none; }
+    .onboard-screen.active { display:block; }
+    .onboard-screen p { font-size:18px; line-height:1.65; }
+    .onboard-screen p.tiny { font-size:16px; }
+    .onboard-practice-grid,.onboard-task-grid,.onboard-confirm-box {
+      display:grid;
+      grid-template-columns:1fr;
+      gap:8px;
+      border:1px solid var(--line);
+      border-radius:10px;
+      padding:10px;
+      background:#fafcf9;
+      margin-top:10px;
+    }
+    .onboard-row {
+      display:grid;
+      grid-template-columns:1.3fr 100px 1.4fr;
+      gap:8px;
+      align-items:center;
+    }
+    .onboard-row.task { grid-template-columns:1.4fr 130px auto; }
+    input,select,label { font:inherit; }
+    input,select {
+      width:100%;
+      border:1px solid var(--line);
+      border-radius:10px;
+      padding:9px 10px;
+      background:#fff;
+    }
+    .onboard-danger {
+      border:1px solid #efc0b7;
+      background:#fff6f4;
+      color:#7d2f22;
+      border-radius:10px;
+      padding:10px;
+      font-size:14px;
+      margin-top:10px;
+    }
+    .onboard-foot {
+      display:flex;
+      justify-content:space-between;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-top:0;
+      padding-top:8px;
+      border-top:1px solid var(--line);
+    }
+    .controls { display:flex; gap:8px; }
+    @media (max-width:1080px) {
+      .onboard-row,.onboard-row.task { grid-template-columns:1fr; }
+      h3 { font-size: 28px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="preview-note">Preview mode only. No real data changes are made.</div>
+  <div class="modal-backdrop">
+    <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="onboardingTitle">
+      <div class="modal-head">
+        <div>
+          <h3 id="onboardingTitle">Set Up New Board</h3>
+          <div id="onboardingMeta" class="tiny">Preview the setup first. Reset requires double confirmation and auto-backup.</div>
+        </div>
+        <button type="button">Cancel</button>
+      </div>
+      <div class="onboard-steps">
+        <span id="pill1" class="onboard-step-pill active">1. Welcome</span>
+        <span id="pill2" class="onboard-step-pill">2. Framework</span>
+        <span id="pill3" class="onboard-step-pill">3. Your WIG</span>
+        <span id="pill4" class="onboard-step-pill">4. Life practices</span>
+        <span id="pill5" class="onboard-step-pill">5. First tasks</span>
+        <span id="pill6" class="onboard-step-pill">6. Confirm reset</span>
+      </div>
+      <div class="onboard-body">
+        <div id="step1" class="onboard-screen active">
+          <p><strong>Welcome to PPP Flow</strong></p>
+          <p class="tiny" style="margin-top:10px;">PPP stands for <strong>Prioritisation, Productivity, and Procrastination Flow</strong>.</p>
+          <p class="tiny" style="margin-top:10px;">Most days are consumed by the whirlwind: urgent requests, logistics, and reactive work. PPP Flow protects time for what actually matters.</p>
+          <p class="tiny" style="margin-top:10px;">You’ll set a clear goal, track lead measures, and run a weekly review cadence from one scoreboard.</p>
+        </div>
+
+        <div id="step2" class="onboard-screen">
+          <p><strong>The Framework</strong></p>
+          <p class="tiny" style="margin-top:10px;"><strong>1) WIG (Wildly Important Goal):</strong> one priority goal where success changes everything else.</p>
+          <p class="tiny" style="margin-top:6px;"><strong>2) Lead measures:</strong> inputs you control this week.</p>
+          <p class="tiny" style="margin-top:6px;"><strong>3) Scoreboard:</strong> visible proof of progress.</p>
+          <p class="tiny" style="margin-top:6px;"><strong>4) Cadence:</strong> weekly accountability rhythm.</p>
+        </div>
+
+        <div id="step3" class="onboard-screen">
+          <p><strong>Your Wildly Important Goal</strong></p>
+          <p class="tiny" style="margin-top:8px;">From X to Y by DATE.</p>
+          <div class="onboard-practice-grid">
+            <input placeholder="WIG title (required)" value="Submit paper revision to Journal X" />
+            <input type="date" value="2026-05-31" />
+            <input placeholder="How will you measure success?" value="Submission confirmation received" />
+          </div>
+        </div>
+
+        <div id="step4" class="onboard-screen">
+          <p><strong>Daily Life Practices</strong></p>
+          <p class="tiny" style="margin-top:8px;">Set minimum viable personal practices.</p>
+          <div class="onboard-practice-grid">
+            <div class="onboard-row">
+              <input value="Meditation" />
+              <input type="number" value="10" />
+              <input value="Consistency over duration." />
+            </div>
+            <div class="onboard-row">
+              <input value="Exercise" />
+              <input type="number" value="30" />
+              <input value="Minimum viable movement." />
+            </div>
+            <div class="onboard-row">
+              <input value="Piano" />
+              <input type="number" value="10" />
+              <input value="Keep chain alive." />
+            </div>
+          </div>
+        </div>
+
+        <div id="step5" class="onboard-screen">
+          <p><strong>Your First Tasks</strong></p>
+          <p class="tiny" style="margin-top:8px;">Strategic tasks advance the WIG. Maintenance tasks run the whirlwind.</p>
+          <div class="onboard-task-grid">
+            <div class="onboard-row task">
+              <input value="Draft methods section" />
+              <select><option>Strategic</option></select>
+              <label class="tiny"><input type="checkbox" checked /> Today focus</label>
+            </div>
+            <div class="onboard-row task">
+              <input value="Clear priority inbox" />
+              <select><option>Maintenance</option></select>
+              <label class="tiny"><input type="checkbox" checked /> Today focus</label>
+            </div>
+            <div class="onboard-row task">
+              <input value="Run robustness checks" />
+              <select><option>Strategic</option></select>
+              <label class="tiny"><input type="checkbox" /> Today focus</label>
+            </div>
+          </div>
+        </div>
+
+        <div id="step6" class="onboard-screen">
+          <p><strong>Review and Start</strong></p>
+          <div class="onboard-confirm-box">
+            <div class="tiny">WIG: Submit paper revision to Journal X · Deadline: 31 May 2026</div>
+            <div class="tiny">Life practices (3): Meditation, Exercise, Piano</div>
+            <div class="tiny">First tasks (3): Draft methods | Clear inbox | Run checks</div>
+          </div>
+          <div class="onboard-danger"><strong>Reset warning:</strong> this will replace tasks, sessions, notes, daily logs, weekly reviews, and streak history with a fresh board.</div>
+          <div class="onboard-confirm-box">
+            <label class="tiny"><input type="checkbox" /> I understand this replaces current board data.</label>
+            <input placeholder="Type RESET to enable reset" value="" />
+            <div class="tiny">A JSON backup is exported automatically before reset. Restore via Import JSON File.</div>
+          </div>
+        </div>
+      </div>
+      <div class="onboard-foot">
+        <button id="prevBtn" type="button" disabled>Back</button>
+        <div class="controls">
+          <button id="nextBtn" class="primary" type="button">Next</button>
+          <button id="finishBtn" class="primary" type="button" style="display:none;">Reset Board and Apply Setup</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    let step = 1;
+    function renderStep() {
+      [1,2,3,4,5,6].forEach(n => {
+        document.getElementById(`step${n}`).classList.toggle("active", n === step);
+        document.getElementById(`pill${n}`).classList.toggle("active", n === step);
+      });
+      document.getElementById("prevBtn").disabled = step === 1;
+      document.getElementById("nextBtn").style.display = step === 6 ? "none" : "inline-block";
+      document.getElementById("finishBtn").style.display = step === 6 ? "inline-block" : "none";
+    }
+    document.getElementById("prevBtn").addEventListener("click", () => { step = Math.max(1, step - 1); renderStep(); });
+    document.getElementById("nextBtn").addEventListener("click", () => { step = Math.min(6, step + 1); renderStep(); });
+    document.getElementById("finishBtn").addEventListener("click", () => { alert("Preview only. No data changed."); });
+  </script>
+</body>
+</html>
