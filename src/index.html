@@ -1033,8 +1033,8 @@
       </div>
       <div class="onboard-steps">
         <span id="onboardStepPill1" class="onboard-step-pill active">1. Welcome</span>
-        <span id="onboardStepPill2" class="onboard-step-pill">2. Framework</span>
-        <span id="onboardStepPill3" class="onboard-step-pill">3. Your WIG</span>
+        <span id="onboardStepPill2" class="onboard-step-pill">2. How it works</span>
+        <span id="onboardStepPill3" class="onboard-step-pill">3. Primary goal</span>
         <span id="onboardStepPill4" class="onboard-step-pill">4. Life practices</span>
         <span id="onboardStepPill5" class="onboard-step-pill">5. First tasks</span>
         <span id="onboardStepPill6" class="onboard-step-pill">6. Start</span>
@@ -1043,45 +1043,47 @@
         <div id="onboardStep1" class="onboard-screen">
           <p><strong>Welcome to PPP Flow</strong></p>
           <p class="tiny" style="margin-top:10px;">
-            PPP stands for <strong>Prioritisation, Productivity, and Procrastination Flow</strong>.
+            PPP Flow — <strong>Prioritisation, Productivity &amp; Procrastination</strong> — is a single dashboard for focusing your effort on the goals that actually matter, both work and personal.
           </p>
           <p class="tiny" style="margin-top:10px;">
-            Most of us spend our days reacting: emails, requests, and operational noise. 4DX calls this the <strong>whirlwind</strong>.
-            The whirlwind is real and necessary, but if unmanaged it consumes the time needed for meaningful progress.
+            Most days are consumed by reactive work: emails, meetings, logistics, other people's priorities. This day-to-day has to happen — but left unchecked, it devours all the time you needed for the things that move the needle.
           </p>
           <p class="tiny" style="margin-top:10px;">
-            PPP Flow gives you one execution surface to protect strategic time, track whether you actually used it, and review progress weekly.
+            PPP Flow gives you a system to protect time for high-value work, track whether you're actually spending that time, and build a weekly rhythm of accountability to yourself.
           </p>
-          <p class="tiny" style="margin-top:10px;">
-            Foundation: <a href="https://www.franklincovey.com/create-breakthrough-results/the-4-disciplines-of-execution-4dx-system/" target="_blank" rel="noopener">FranklinCovey 4DX</a>
-            · <a href="https://www.amazon.com/Disciplines-Execution-Achieving-Wildly-Important/dp/145162705X" target="_blank" rel="noopener">Book</a>.
+          <p class="tiny" style="margin-top:14px;font-size:11px;opacity:.75;">
+            Inspired by several execution and productivity frameworks including the Eisenhower matrix, deep work principles, and goal-focused execution methods.
+            <a href="https://en.wikipedia.org/wiki/The_4_Disciplines_of_Execution" target="_blank" rel="noopener" style="color:var(--accent);">Further reading →</a>
           </p>
         </div>
 
         <div id="onboardStep2" class="onboard-screen" hidden>
-          <p><strong>The Framework</strong></p>
-          <p class="tiny" style="margin-top:10px;"><strong>1) WIG (Wildly Important Goal):</strong> focus on one priority goal where success changes everything else.</p>
-          <p class="tiny" style="margin-top:6px;"><strong>2) Lead measures:</strong> track inputs you control, not just lag outcomes you report later.</p>
-          <p class="tiny" style="margin-top:6px;"><strong>3) Scoreboard:</strong> keep a visible score so you can tell if you are winning this week.</p>
-          <p class="tiny" style="margin-top:6px;"><strong>4) Cadence:</strong> review weekly, adjust commitments, and repeat.</p>
+          <p><strong>How It Works</strong></p>
+          <p class="tiny" style="margin-top:10px;">PPP Flow is built on four principles:</p>
+          <p class="tiny" style="margin-top:12px;"><strong>1. Focus on one primary goal (sometimes called a WIG: Wildly Important Goal).</strong> Instead of spreading effort across everything, pick the one goal where success would change everything else. Most goals fail not because of bad planning but because the day-to-day crowds them out. Narrowing your focus is the first discipline.</p>
+          <p class="tiny" style="margin-top:10px;"><strong>2. Track inputs, not just results.</strong> There are two kinds of measures. Results tell you whether you achieved the goal after the fact — you can't control them directly. Inputs are the activities that <em>predict</em> the result: the deep-work sessions, the drafts written, the experiments run. Track what you can control this week.</p>
+          <p class="tiny" style="margin-top:10px;"><strong>3. Keep a visible scoreboard.</strong> If you can't tell at a glance whether you're winning or losing, you'll lose focus. PPP Flow is your scoreboard. It tracks your deep ratio — how much of your time goes to focused, high-value work versus shallow logistics — plus tasks closed, streaks, and weekly trends. All updated automatically as you work.</p>
+          <p class="tiny" style="margin-top:10px;"><strong>4. Review weekly.</strong> Once a week, look at your scoreboard. What worked? What didn't? What will you commit to this week? The weekly review is what sustains the other three principles over time. Without it, goals drift.</p>
         </div>
 
         <div id="onboardStep3" class="onboard-screen" hidden>
-          <p><strong>Your Wildly Important Goal (WIG)</strong></p>
+          <p><strong>Set Your Primary Goal</strong></p>
           <p class="tiny" style="margin-top:8px;">
-            If you could achieve one thing in the next 30–90 days that makes everything else easier or more meaningful, what is it?
-            Use: <strong>From X to Y by DATE</strong>.
+            If you could only achieve <em>one thing</em> in the next 30–90 days that would make everything else easier or more meaningful — what would it be?
+          </p>
+          <p class="tiny" style="margin-top:8px;">
+            A good goal is <strong>specific</strong> (not vague), <strong>measurable</strong> (you'll know when it's done), and <strong>time-bound</strong> (has a deadline). Think of it as: <em>"From X to Y by when."</em>
           </p>
           <div class="onboard-practice-grid" style="margin-top:10px;">
-            <input id="onboardWigTitle" placeholder="WIG title (required)" />
+            <input id="onboardWigTitle" placeholder="Goal (required) — e.g. Submit paper revision to Nature by 15 April" />
             <input id="onboardWigDeadline" type="date" />
-            <input id="onboardWigMeasure" placeholder="How will you measure success? (required)" />
+            <input id="onboardWigMeasure" placeholder="How will you measure success? — e.g. Submission confirmed" />
           </div>
         </div>
 
         <div id="onboardStep4" class="onboard-screen" hidden>
           <p><strong>Daily Life Practices</strong></p>
-          <p class="tiny" style="margin-top:8px;">Set minimum viable personal practices. Frequency beats ambition.</p>
+          <p class="tiny" style="margin-top:8px;">Not everything important is a work goal. These are recurring personal practices — the daily habits that keep you grounded. Frequency matters more than ambition. Set a minimum target you can actually hit every day.</p>
           <div class="onboard-practice-grid" style="margin-top:10px;">
             <div class="onboard-row">
               <input id="onboardPractice1" placeholder="Practice 1 (e.g. Meditation)" />
@@ -1103,10 +1105,9 @@
 
         <div id="onboardStep5" class="onboard-screen" hidden>
           <p><strong>Your First Tasks</strong></p>
-          <p class="tiny" style="margin-top:8px;">
-            Strategic tasks move your WIG. Maintenance tasks keep the whirlwind running.
-            Important work rarely feels urgent, and urgent work is rarely important.
-          </p>
+          <p class="tiny" style="margin-top:8px;">Now break your goal into concrete tasks you can work on this week. Each maps to one of two types:</p>
+          <p class="tiny" style="margin-top:8px;"><strong>Strategic</strong> — tasks that directly advance your primary goal. These are your inputs: the work that predicts whether you'll hit the target. Protect time for these.</p>
+          <p class="tiny" style="margin-top:6px;"><strong>Maintenance</strong> — everything else. Emails, admin, meetings, logistics. The day-to-day. It needs doing, but it shouldn't crowd out strategic work. This is the Eisenhower principle: important work rarely feels urgent, and urgent work is rarely important.</p>
           <div class="onboard-task-grid" style="margin-top:10px;">
             <div class="onboard-row task">
               <input id="onboardTask1" placeholder="Task 1" />
@@ -2614,8 +2615,8 @@
       const practicesEl = document.getElementById("onboardSummaryPractices");
       const tasksEl = document.getElementById("onboardSummaryTasks");
       if (wigEl) wigEl.textContent = wig.title
-        ? `WIG: ${wig.title} · Deadline: ${formatDateLong(wig.deadline)} · Measure: ${wig.measure || "Not set"}`
-        : "WIG: not set";
+        ? `Primary goal: ${wig.title} · Deadline: ${formatDateLong(wig.deadline)} · Measure: ${wig.measure || "Not set"}`
+        : "Primary goal: not set";
       if (practicesEl) practicesEl.textContent = practices.length
         ? `Life practices (${practices.length}): ${practices.map(p => p.title).join(", ")}`
         : "Life practices: none configured";
@@ -2640,11 +2641,11 @@
       if (Number(step) !== 3) return true;
       const wig = collectOnboardingWig();
       if (!wig.title) {
-        alert("Please enter your WIG title.");
+        alert("Please enter your primary goal.");
         return false;
       }
       if (!wig.deadline) {
-        alert("Please choose a WIG deadline.");
+        alert("Please choose a deadline for your goal.");
         return false;
       }
       if (!wig.measure) {
@@ -2811,7 +2812,7 @@
 
       const wig = collectOnboardingWig();
       if (!wig.title || !wig.deadline || !wig.measure) {
-        alert("Please complete the WIG fields before creating the board.");
+        alert("Please complete the primary goal fields before creating the board.");
         setOnboardingStep(3);
         return;
       }
