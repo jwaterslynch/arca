@@ -28,6 +28,9 @@ Send compact board context on every model call:
 
 1. `focus`: primary goal, secondary goal, lead/input notes, weekly notes.
 2. `tasks_open`: each task with `id,title,category,importance,urgency,depth,goal,stage`.
+   - `stage` in this object is restricted to open stages only: `backlog | next_up | today`.
+   - Completed tasks are intentionally excluded from `tasks_open`.
+   - Optional extension: provide separate `tasks_done_recent` for model reference only (read-only context).
 3. `life_practices`: each with `id,title,minimum_minutes,note,done_today,minutes_today`.
 4. `weekly_commitments`: each with `id,title,goal,linked_task_id,is_done`.
 5. `limits`: `today_limit=5`, `next_up_soft_limit=10`.
@@ -78,6 +81,8 @@ interface AIProvider {
 
 ```ts
 type Stage = "backlog" | "next_up" | "today";
+// Note: "done" is intentionally excluded from action stage enums.
+// Completion/reopen must go through task.complete to preserve closure logic.
 type Goal = "None" | "PG1" | "PG2";
 type Importance = "High" | "Low";
 type Urgency = "High" | "Low";
@@ -232,4 +237,4 @@ Behavior:
 2. Silent auto-apply.
 3. Long-term autonomous memory beyond board state.
 4. Multi-user collaboration semantics.
-
+5. Native Google Gemini provider integration (target for v1.1+; not in MVP).
