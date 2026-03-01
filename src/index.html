@@ -354,9 +354,26 @@
       display:grid;
       gap:6px;
       cursor:grab;
+      user-select:none;
+      -webkit-user-select:none;
+      -webkit-user-drag:element;
     }
+    .pipeline-card * { -webkit-user-drag:none; }
     .pipeline-card:active { cursor:grabbing; }
-    .pipeline-card.dragging { opacity:.55; }
+    .pipeline-card.dragging { opacity:.55; pointer-events:none; }
+    .pipeline-card.pointer-source { opacity:.35; }
+    .pipeline-card.pointer-ghost {
+      position:fixed;
+      z-index:10000;
+      pointer-events:none;
+      box-shadow:0 12px 28px rgba(0,0,0,.20);
+      transform:rotate(1.2deg);
+    }
+    body.pipeline-pointer-dragging {
+      cursor:grabbing;
+      user-select:none;
+      -webkit-user-select:none;
+    }
     .pipeline-card-title {
       font-weight:600;
       font-size:13px;
@@ -1387,6 +1404,17 @@
     const NEXT_UP_SOFT_LIMIT = 10;
     const PIPELINE_STAGES = ["backlog", "next_up", "today", "done"];
     let pipelineDragTaskId = null;
+    const pointerPipelineDrag = {
+      taskId: "",
+      startX: 0,
+      startY: 0,
+      offsetX: 0,
+      offsetY: 0,
+      moved: false,
+      sourceCard: null,
+      targetList: null,
+      ghost: null
+    };
 
     function emptyState() {
       return {
@@ -3705,6 +3733,120 @@
     function clearPipelineDragClasses() {
       document.querySelectorAll(".pipeline-list.drag-over").forEach(el => el.classList.remove("drag-over"));
       document.querySelectorAll(".pipeline-card.dragging").forEach(el => el.classList.remove("dragging"));
+      document.querySelectorAll(".pipeline-card.pointer-source").forEach(el => el.classList.remove("pointer-source"));
+    }
+
+    function clearPointerPipelineDrag() {
+      if (pointerPipelineDrag.ghost && pointerPipelineDrag.ghost.parentNode) {
+        pointerPipelineDrag.ghost.parentNode.removeChild(pointerPipelineDrag.ghost);
+      }
+      pointerPipelineDrag.taskId = "";
+      pointerPipelineDrag.moved = false;
+      pointerPipelineDrag.sourceCard = null;
+      pointerPipelineDrag.targetList = null;
+      pointerPipelineDrag.ghost = null;
+      document.body.classList.remove("pipeline-pointer-dragging");
+      clearPipelineDragClasses();
+    }
+
+    function pointerPipelineMoveGhost(clientX, clientY) {
+      if (!pointerPipelineDrag.ghost) return;
+      pointerPipelineDrag.ghost.style.left = `${clientX - pointerPipelineDrag.offsetX}px`;
+      pointerPipelineDrag.ghost.style.top = `${clientY - pointerPipelineDrag.offsetY}px`;
+    }
+
+    function pointerPipelineTargetAt(clientX, clientY) {
+      const targetEl = document.elementFromPoint(clientX, clientY);
+      if (!(targetEl instanceof Element)) return { list: null, card: null };
+      const list = targetEl.closest(".pipeline-list");
+      const card = targetEl.closest(".pipeline-card");
+      return { list, card };
+    }
+
+    function onPointerPipelineMouseMove(e) {
+      if (!pointerPipelineDrag.sourceCard || !pointerPipelineDrag.taskId) return;
+      const dx = Math.abs(e.clientX - pointerPipelineDrag.startX);
+      const dy = Math.abs(e.clientY - pointerPipelineDrag.startY);
+      if (!pointerPipelineDrag.moved && dx + dy < 6) return;
+
+      if (!pointerPipelineDrag.moved) {
+        pointerPipelineDrag.moved = true;
+        const sourceRect = pointerPipelineDrag.sourceCard.getBoundingClientRect();
+        const ghost = pointerPipelineDrag.sourceCard.cloneNode(true);
+        ghost.classList.add("pointer-ghost");
+        ghost.style.width = `${Math.max(140, sourceRect.width)}px`;
+        ghost.style.left = `${sourceRect.left}px`;
+        ghost.style.top = `${sourceRect.top}px`;
+        document.body.appendChild(ghost);
+        pointerPipelineDrag.ghost = ghost;
+        pointerPipelineDrag.sourceCard.classList.add("pointer-source");
+        document.body.classList.add("pipeline-pointer-dragging");
+      }
+
+      pointerPipelineMoveGhost(e.clientX, e.clientY);
+
+      const { list } = pointerPipelineTargetAt(e.clientX, e.clientY);
+      clearPipelineDragClasses();
+      if (list && list.dataset.stage !== "done") {
+        list.classList.add("drag-over");
+        pointerPipelineDrag.targetList = list;
+      } else {
+        pointerPipelineDrag.targetList = null;
+      }
+    }
+
+    function onPointerPipelineMouseUp(e) {
+      window.removeEventListener("mousemove", onPointerPipelineMouseMove);
+      window.removeEventListener("mouseup", onPointerPipelineMouseUp, true);
+      window.removeEventListener("blur", onPointerPipelineWindowBlur);
+
+      if (pointerPipelineDrag.moved && pointerPipelineDrag.taskId && pointerPipelineDrag.targetList) {
+        const { card } = pointerPipelineTargetAt(e.clientX, e.clientY);
+        const beforeTaskId =
+          card &&
+          card.closest(".pipeline-list") === pointerPipelineDrag.targetList &&
+          card.dataset.taskId !== pointerPipelineDrag.taskId
+            ? card.dataset.taskId
+            : "";
+        moveTaskToStage(pointerPipelineDrag.taskId, pointerPipelineDrag.targetList.dataset.stage || "backlog", beforeTaskId);
+        e.preventDefault();
+      }
+
+      clearPointerPipelineDrag();
+    }
+
+    function onPointerPipelineWindowBlur() {
+      window.removeEventListener("mousemove", onPointerPipelineMouseMove);
+      window.removeEventListener("mouseup", onPointerPipelineMouseUp, true);
+      window.removeEventListener("blur", onPointerPipelineWindowBlur);
+      clearPointerPipelineDrag();
+    }
+
+    function resolvePipelineDropTarget(event) {
+      const path = typeof event.composedPath === "function" ? event.composedPath() : [];
+      const fromPath = path.find(node => node instanceof Element && node.classList?.contains("pipeline-list"));
+      if (fromPath) {
+        const cardFromPath = path.find(node => node instanceof Element && node.classList?.contains("pipeline-card")) || null;
+        return { list: fromPath, card: cardFromPath };
+      }
+      const targetEl = event.target instanceof Element ? event.target : null;
+      if (!targetEl) return { list: null, card: null };
+      const card = targetEl.closest(".pipeline-card");
+      let list = targetEl.closest(".pipeline-list");
+      if (!list) {
+        const col = targetEl.closest(".pipeline-col");
+        list = col ? col.querySelector(".pipeline-list") : null;
+      }
+      if (!list && card) list = card.closest(".pipeline-list");
+      return { list, card };
+    }
+
+    function resolvePipelineCard(event) {
+      const path = typeof event.composedPath === "function" ? event.composedPath() : [];
+      const cardFromPath = path.find(node => node instanceof Element && node.classList?.contains("pipeline-card"));
+      if (cardFromPath) return cardFromPath;
+      const targetEl = event.target instanceof Element ? event.target : null;
+      return targetEl ? targetEl.closest(".pipeline-card") : null;
     }
 
     function moveTaskToStage(taskId, targetStage, beforeTaskId = "") {
@@ -3805,7 +3947,7 @@
           const canLeft = stageIndex > 0;
           const canRight = stageIndex < PIPELINE_STAGES.length - 1;
           const depth = task.depth || "Deep";
-          return `<div class="pipeline-card" draggable="${col.done ? "false" : "true"}" data-task-id="${task.id}" data-stage="${col.stage}">
+          return `<div class="pipeline-card" draggable="false" data-task-id="${task.id}" data-stage="${col.stage}">
             <div class="pipeline-card-title">${task.title}</div>
             <div class="pipeline-card-meta">
               <span class="tag ${tagClass(task.category)}">${task.category}</span>
@@ -4370,51 +4512,88 @@
         moveTaskWithinStage(orderBtn.dataset.taskId, orderBtn.dataset.pipeOrder);
       }
     });
+    document.getElementById("pipelineBoard").addEventListener("mousedown",e=>{
+      if (e.button !== 0) return;
+      const targetEl = e.target instanceof Element ? e.target : null;
+      if (!targetEl) return;
+      if (targetEl.closest("button, input, select, textarea, a, label")) return;
+      const card = targetEl.closest(".pipeline-card");
+      if (!card) return;
+      const stage = normalizePipelineStage(card.dataset.stage || "");
+      if (!stage || stage === "done") return;
+      const taskId = card.dataset.taskId || "";
+      if (!taskId) return;
+      pointerPipelineDrag.taskId = taskId;
+      pointerPipelineDrag.startX = e.clientX;
+      pointerPipelineDrag.startY = e.clientY;
+      const rect = card.getBoundingClientRect();
+      pointerPipelineDrag.offsetX = e.clientX - rect.left;
+      pointerPipelineDrag.offsetY = e.clientY - rect.top;
+      pointerPipelineDrag.moved = false;
+      pointerPipelineDrag.sourceCard = card;
+      pointerPipelineDrag.targetList = card.closest(".pipeline-list");
+      pointerPipelineDrag.ghost = null;
+      window.addEventListener("mousemove", onPointerPipelineMouseMove);
+      window.addEventListener("mouseup", onPointerPipelineMouseUp, true);
+      window.addEventListener("blur", onPointerPipelineWindowBlur);
+    });
     document.getElementById("pipelineBoard").addEventListener("dragstart",e=>{
-      const card = e.target.closest(".pipeline-card");
+      const card = resolvePipelineCard(e);
       if (!card) return;
       pipelineDragTaskId = card.dataset.taskId || null;
       card.classList.add("dragging");
       if (e.dataTransfer) {
         e.dataTransfer.effectAllowed = "move";
         e.dataTransfer.setData("text/plain", pipelineDragTaskId || "");
+        e.dataTransfer.setData("text", pipelineDragTaskId || "");
       }
     });
     document.getElementById("pipelineBoard").addEventListener("dragend",()=>{
       pipelineDragTaskId = null;
       clearPipelineDragClasses();
     });
-    document.getElementById("pipelineBoard").addEventListener("dragover",e=>{
-      if (!pipelineDragTaskId) return;
-      const list = e.target.closest(".pipeline-list");
-      const card = e.target.closest(".pipeline-card");
-      const targetList = list || card?.closest(".pipeline-list");
-      if (!targetList) return;
-      if (targetList.dataset.stage === "done") return;
-      e.preventDefault();
-      clearPipelineDragClasses();
-      targetList.classList.add("drag-over");
-    });
-    document.getElementById("pipelineBoard").addEventListener("drop",e=>{
-      if (!pipelineDragTaskId) return;
-      e.preventDefault();
-      const card = e.target.closest(".pipeline-card");
-      const list = e.target.closest(".pipeline-list") || card?.closest(".pipeline-list");
-      if (!list) {
+    document.querySelectorAll(".pipeline-list").forEach(listEl => {
+      listEl.addEventListener("dragenter", e => {
+        if (!pipelineDragTaskId) return;
+        if (listEl.dataset.stage === "done") return;
+        e.preventDefault();
         clearPipelineDragClasses();
-        pipelineDragTaskId = null;
-        return;
-      }
-      const targetStage = list.dataset.stage;
-      if (targetStage === "done") {
+        listEl.classList.add("drag-over");
+      });
+      listEl.addEventListener("dragover", e => {
+        if (!pipelineDragTaskId) return;
+        if (listEl.dataset.stage === "done") return;
+        e.preventDefault();
+        if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+        clearPipelineDragClasses();
+        listEl.classList.add("drag-over");
+      });
+      listEl.addEventListener("dragleave", e => {
+        if (!listEl.contains(e.relatedTarget)) {
+          listEl.classList.remove("drag-over");
+        }
+      });
+      listEl.addEventListener("drop", e => {
+        const dragTaskId =
+          pipelineDragTaskId ||
+          (e.dataTransfer ? (e.dataTransfer.getData("text/plain") || e.dataTransfer.getData("text")) : "");
+        if (!dragTaskId) return;
+        if (listEl.dataset.stage === "done") {
+          e.preventDefault();
+          pipelineDragTaskId = null;
+          clearPipelineDragClasses();
+          return;
+        }
+        e.preventDefault();
+        const card = resolvePipelineCard(e);
+        const beforeTaskId =
+          card && card.closest(".pipeline-list") === listEl && card.dataset.taskId !== dragTaskId
+            ? card.dataset.taskId
+            : "";
+        moveTaskToStage(dragTaskId, listEl.dataset.stage || "backlog", beforeTaskId);
         pipelineDragTaskId = null;
         clearPipelineDragClasses();
-        return;
-      }
-      const beforeTaskId = card && card.dataset.taskId !== pipelineDragTaskId ? card.dataset.taskId : "";
-      moveTaskToStage(pipelineDragTaskId, targetStage, beforeTaskId);
-      pipelineDragTaskId = null;
-      clearPipelineDragClasses();
+      });
     });
 
     // File sync
