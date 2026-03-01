@@ -1253,6 +1253,9 @@
             <select id="aiProviderInput">
               <option value="openai">OpenAI</option>
               <option value="anthropic">Anthropic</option>
+              <option value="gemini">Google Gemini</option>
+              <option value="grok">xAI / Grok</option>
+              <option value="deepseek">DeepSeek</option>
               <option value="openai_compatible">OpenAI-compatible</option>
             </select>
           </label>
@@ -1265,7 +1268,7 @@
             <input id="aiApiKeyInput" type="password" autocomplete="off" placeholder="sk-... / sk-ant-..." />
           </label>
           <label class="tiny" style="display:grid;gap:4px;">
-            <span>Base URL (for OpenAI-compatible providers)</span>
+            <span>Base URL (optional override)</span>
             <input id="aiBaseUrlInput" placeholder="https://api.openai.com/v1" />
           </label>
         </div>
@@ -1567,7 +1570,7 @@
     const NEXT_UP_SOFT_LIMIT = 10;
     const PIPELINE_STAGES = ["backlog", "next_up", "today", "done"];
     const AI_PREF_KEY = "PPP_AI_PREFS_V1";
-    const AI_ALLOWED_PROVIDERS = ["openai", "anthropic", "openai_compatible"];
+    const AI_ALLOWED_PROVIDERS = ["openai", "anthropic", "gemini", "grok", "deepseek", "openai_compatible"];
     const AI_ALLOWED_STAGES = ["backlog", "next_up", "today"];
     const AI_ALLOWED_GOALS = ["None", "PG1", "PG2"];
     const AI_ALLOWED_IMPORTANCE = ["High", "Low"];
@@ -2116,14 +2119,31 @@
         .replaceAll('"', "&quot;")
         .replaceAll("'", "&#39;");
     }
+    function aiDefaultBaseUrl(provider) {
+      if (provider === "anthropic") return "https://api.anthropic.com/v1";
+      if (provider === "gemini") return "https://generativelanguage.googleapis.com/v1beta";
+      if (provider === "grok") return "https://api.x.ai/v1";
+      if (provider === "deepseek") return "https://api.deepseek.com/v1";
+      return "https://api.openai.com/v1";
+    }
+    function aiDefaultModel(provider) {
+      if (provider === "anthropic") return "claude-3-5-sonnet-latest";
+      if (provider === "gemini") return "gemini-1.5-pro";
+      if (provider === "grok") return "grok-2-latest";
+      if (provider === "deepseek") return "deepseek-chat";
+      return "gpt-4.1-mini";
+    }
+    function aiIsOpenAiCompatibleProvider(provider) {
+      return provider === "openai" || provider === "openai_compatible" || provider === "grok" || provider === "deepseek";
+    }
     function defaultAiPrefs() {
       return {
         enabled: false,
         hideUiWhenDisabled: true,
         provider: "openai",
-        model: "gpt-4.1-mini",
+        model: aiDefaultModel("openai"),
         apiKey: "",
-        baseUrl: ""
+        baseUrl: aiDefaultBaseUrl("openai")
       };
     }
     function normalizeAiPrefs(raw) {
@@ -2135,12 +2155,11 @@
         enabled: input.enabled === true,
         hideUiWhenDisabled: input.hideUiWhenDisabled !== false,
         provider,
-        model: String(input.model || "").trim() || (provider === "anthropic" ? "claude-3-5-sonnet-latest" : base.model),
+        model: String(input.model || "").trim() || aiDefaultModel(provider),
         apiKey: String(input.apiKey || "").trim(),
         baseUrl: String(input.baseUrl || "").trim()
       };
-      if (provider === "openai" && !normalized.baseUrl) normalized.baseUrl = "https://api.openai.com/v1";
-      if (provider === "anthropic") normalized.baseUrl = "https://api.anthropic.com/v1";
+      if (!normalized.baseUrl) normalized.baseUrl = aiDefaultBaseUrl(provider);
       return normalized;
     }
     function loadAiPrefs() {
@@ -2501,7 +2520,7 @@
       if (keyInput) keyInput.value = aiPrefs.apiKey || "";
       if (baseInput) {
         baseInput.value = aiPrefs.baseUrl || "";
-        baseInput.disabled = aiPrefs.provider === "anthropic";
+        baseInput.placeholder = aiDefaultBaseUrl(aiPrefs.provider || "openai");
       }
 
       const disabledNotice = document.getElementById("aiDisabledNotice");
@@ -2525,8 +2544,7 @@
       renderAiProposal();
     }
     function aiBaseUrlForPrefs() {
-      if (aiPrefs.provider === "anthropic") return "https://api.anthropic.com/v1";
-      const raw = String(aiPrefs.baseUrl || "").trim() || "https://api.openai.com/v1";
+      const raw = String(aiPrefs.baseUrl || "").trim() || aiDefaultBaseUrl(aiPrefs.provider || "openai");
       return raw.replace(/\/+$/, "");
     }
     async function aiCallProvider(systemPrompt, userPrompt) {
@@ -2556,6 +2574,42 @@
           : "";
         if (!text.trim()) throw new Error("Anthropic returned empty content.");
         return text;
+      }
+      if (aiPrefs.provider === "gemini") {
+        const modelName = model.startsWith("models/") ? model.slice("models/".length) : model;
+        const res = await fetch(`${baseUrl}/models/${encodeURIComponent(modelName)}:generateContent`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-goog-api-key": aiPrefs.apiKey
+          },
+          body: JSON.stringify({
+            generationConfig: {
+              temperature: 0.2,
+              maxOutputTokens: 1400
+            },
+            contents: [
+              {
+                role: "user",
+                parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }]
+              }
+            ]
+          })
+        });
+        if (!res.ok) throw new Error(`Gemini API error ${res.status}: ${await res.text()}`);
+        const data = await res.json();
+        const text = Array.isArray(data?.candidates)
+          ? data.candidates
+              .flatMap(candidate => (Array.isArray(candidate?.content?.parts) ? candidate.content.parts : []))
+              .map(part => (typeof part?.text === "string" ? part.text : ""))
+              .join("\n")
+              .trim()
+          : "";
+        if (!text) throw new Error("Gemini returned empty content.");
+        return text;
+      }
+      if (!aiIsOpenAiCompatibleProvider(aiPrefs.provider)) {
+        throw new Error(`Unsupported provider: ${aiPrefs.provider}`);
       }
       const res = await fetch(`${baseUrl}/chat/completions`, {
         method: "POST",
@@ -5563,12 +5617,13 @@
     document.getElementById("aiProviderInput").addEventListener("change",e=>{
       const provider = String(e.target.value || "");
       if (!AI_ALLOWED_PROVIDERS.includes(provider)) return;
+      const prevProvider = aiPrefs.provider || "openai";
       aiPrefs.provider = provider;
-      if (provider === "anthropic") {
-        aiPrefs.baseUrl = "https://api.anthropic.com/v1";
-        if (!aiPrefs.model || aiPrefs.model === "gpt-4.1-mini") aiPrefs.model = "claude-3-5-sonnet-latest";
-      } else if (!aiPrefs.baseUrl) {
-        aiPrefs.baseUrl = "https://api.openai.com/v1";
+      if (!aiPrefs.baseUrl || aiPrefs.baseUrl === aiDefaultBaseUrl(prevProvider)) {
+        aiPrefs.baseUrl = aiDefaultBaseUrl(provider);
+      }
+      if (!aiPrefs.model || aiPrefs.model === aiDefaultModel(prevProvider)) {
+        aiPrefs.model = aiDefaultModel(provider);
       }
       renderAiAssistant();
     });

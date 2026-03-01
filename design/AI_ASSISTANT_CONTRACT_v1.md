@@ -41,7 +41,13 @@ Target payload size: 2-5KB JSON for normal boards.
 ## 4) Provider abstraction
 
 ```ts
-type ProviderId = "openai" | "anthropic" | "openai_compatible";
+type ProviderId =
+  | "openai"
+  | "anthropic"
+  | "gemini"
+  | "grok"
+  | "deepseek"
+  | "openai_compatible";
 
 type ProviderConfig = {
   provider: ProviderId;
@@ -195,10 +201,10 @@ Notes:
 Settings fields:
 
 1. `Enable AI Assistant` toggle.
-2. `Provider` select: OpenAI, Anthropic, OpenAI-compatible.
+2. `Provider` select: OpenAI, Anthropic, Google Gemini, xAI/Grok, DeepSeek, OpenAI-compatible.
 3. `API Key` input (store in OS keychain only).
 4. `Model` input/select.
-5. `Base URL` input (only for OpenAI-compatible).
+5. `Base URL` input (optional override; required for custom OpenAI-compatible endpoints).
 6. `Test connection` button.
 7. `Hide AI UI when disabled` toggle (default ON).
 
@@ -237,4 +243,3 @@ Behavior:
 2. Silent auto-apply.
 3. Long-term autonomous memory beyond board state.
 4. Multi-user collaboration semantics.
-5. Native Google Gemini provider integration (target for v1.1+; not in MVP).
