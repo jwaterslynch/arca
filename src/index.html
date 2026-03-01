@@ -392,6 +392,88 @@
     }
     .pipeline-actions .controls { gap:4px; }
     .pipeline-actions button { padding:3px 7px; font-size:11px; }
+    .ai-config-grid {
+      display:grid;
+      grid-template-columns:repeat(2,minmax(260px,1fr));
+      gap:10px;
+      margin-top:10px;
+      align-items:end;
+    }
+    .ai-chat-box {
+      border:1px solid var(--line);
+      border-radius:12px;
+      background:#fcfdfc;
+      padding:10px;
+      display:grid;
+      gap:8px;
+      margin-top:12px;
+    }
+    .ai-messages {
+      border:1px solid #e8ede8;
+      border-radius:10px;
+      background:#fff;
+      min-height:180px;
+      max-height:360px;
+      overflow:auto;
+      padding:10px;
+      display:grid;
+      gap:8px;
+      align-content:start;
+    }
+    .ai-msg {
+      border:1px solid var(--line);
+      border-radius:10px;
+      padding:8px 10px;
+      font-size:13px;
+      line-height:1.4;
+      white-space:pre-wrap;
+    }
+    .ai-msg.user { background:#eef8f4; border-color:#cbe3da; }
+    .ai-msg.assistant { background:#fff; }
+    .ai-note {
+      border:1px solid #d7e4dd;
+      background:#f6fbf9;
+      color:#38555a;
+      border-radius:10px;
+      font-size:13px;
+      padding:10px 12px;
+      margin-top:10px;
+    }
+    .ai-proposal {
+      border:1px solid var(--line);
+      border-radius:12px;
+      background:#fff;
+      padding:10px;
+      margin-top:12px;
+      display:grid;
+      gap:8px;
+    }
+    .ai-actions-list {
+      border:1px solid #e8ede8;
+      border-radius:10px;
+      background:#fcfdfc;
+      max-height:260px;
+      overflow:auto;
+      padding:8px;
+      display:grid;
+      gap:6px;
+    }
+    .ai-action-item {
+      display:grid;
+      grid-template-columns:auto 1fr;
+      gap:8px;
+      align-items:start;
+      border:1px solid #e5ece6;
+      border-radius:8px;
+      background:#fff;
+      padding:6px 8px;
+      font-size:12px;
+    }
+    .ai-action-item.invalid {
+      border-color:#efc0b7;
+      background:#fff6f4;
+    }
+    .ai-action-meta { color:var(--muted); font-size:11px; }
     .score-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:10px; }
     .score-card {
       border:1px solid var(--line);
@@ -567,6 +649,7 @@
     body.focus-mode .tabs,
     body.focus-mode #tab-focus,
     body.focus-mode #tab-review,
+    body.focus-mode #tab-assistant,
     body.focus-mode .sync-banner,
     body.focus-mode .stats,
     body.focus-mode #backupReminder { display:none !important; }
@@ -683,7 +766,7 @@
     }
 
     @media (max-width:1080px) {
-      .layout,.stats,.summary-grid,.three-box,.trend-row,.week-grid,.focus-grid,.score-grid,.focus-targets-grid,.pipeline-board { grid-template-columns:1fr; }
+      .layout,.stats,.summary-grid,.three-box,.trend-row,.week-grid,.focus-grid,.score-grid,.focus-targets-grid,.pipeline-board,.ai-config-grid { grid-template-columns:1fr; }
       .row { grid-template-columns:1fr; }
       .stats { grid-template-columns:repeat(4,1fr); }
       .hero-clock { font-size:62px; }
@@ -733,6 +816,7 @@
         <span class="sync-status" id="syncStatus">Data source: File</span>
         <span class="sync-time" id="syncTime"></span>
         <div class="controls" style="margin-left:auto;">
+          <button id="aiSetupBtn" class="ghost" style="padding:5px 10px;font-size:12px;">AI Setup</button>
           <button id="setupBoardBtn" class="warn" style="padding:5px 10px;font-size:12px;">Set Up New Board</button>
           <button id="loadFileBtn" class="ghost" style="padding:5px 10px;font-size:12px;">Load JSON File</button>
           <button id="saveFileBtn" class="primary" style="padding:5px 10px;font-size:12px;">Save to File</button>
@@ -761,6 +845,7 @@
       <button class="tab active" data-tab="execute">Execute</button>
       <button class="tab" data-tab="focus">Focus Layer</button>
       <button class="tab" data-tab="review">Weekly Review</button>
+      <button class="tab" data-tab="assistant">AI Assistant</button>
     </div>
 
     <!-- ═══════════ EXECUTE TAB ═══════════ -->
@@ -1140,6 +1225,84 @@
       </section>
     </div>
 
+    <!-- ═══════════ AI ASSISTANT TAB ═══════════ -->
+    <div id="tab-assistant" class="tab-content">
+      <section class="card">
+        <div class="titlebar">
+          <h2>AI Assistant</h2>
+          <div class="controls">
+            <span id="aiStatusBadge" class="tiny">Disabled</span>
+            <button id="aiSaveConfigBtn" class="primary" type="button">Save AI Settings</button>
+          </div>
+        </div>
+        <p class="subtitle" style="margin-bottom:10px;">
+          Optional feature: chat naturally, review proposed board changes, then apply only what you approve.
+        </p>
+
+        <div class="ai-config-grid">
+          <label class="tiny" style="display:grid;gap:4px;">
+            <span>Enable AI Assistant</span>
+            <input id="aiEnabledInput" type="checkbox" />
+          </label>
+          <label class="tiny" style="display:grid;gap:4px;">
+            <span>Hide AI tab when disabled</span>
+            <input id="aiHideDisabledInput" type="checkbox" checked />
+          </label>
+          <label class="tiny" style="display:grid;gap:4px;">
+            <span>Provider</span>
+            <select id="aiProviderInput">
+              <option value="openai">OpenAI</option>
+              <option value="anthropic">Anthropic</option>
+              <option value="openai_compatible">OpenAI-compatible</option>
+            </select>
+          </label>
+          <label class="tiny" style="display:grid;gap:4px;">
+            <span>Model</span>
+            <input id="aiModelInput" placeholder="e.g. gpt-4.1-mini / claude-3-5-sonnet-latest" />
+          </label>
+          <label class="tiny" style="display:grid;gap:4px;">
+            <span>API Key (stored locally on this machine)</span>
+            <input id="aiApiKeyInput" type="password" autocomplete="off" placeholder="sk-... / sk-ant-..." />
+          </label>
+          <label class="tiny" style="display:grid;gap:4px;">
+            <span>Base URL (for OpenAI-compatible providers)</span>
+            <input id="aiBaseUrlInput" placeholder="https://api.openai.com/v1" />
+          </label>
+        </div>
+        <div class="controls" style="margin-top:8px;">
+          <button id="aiTestBtn" class="ghost" type="button">Test connection</button>
+          <span id="aiTestStatus" class="tiny"></span>
+        </div>
+
+        <div id="aiDisabledNotice" class="ai-note" hidden>
+          AI Assistant is currently off. Enable it above when you want chat-assisted board updates.
+        </div>
+
+        <div id="aiChatWrap" class="ai-chat-box" hidden>
+          <div id="aiMessages" class="ai-messages"></div>
+          <textarea id="aiUserInput" placeholder="Example: I just finished the methods section. Move Boycott robustness checks into Today and add a commitment to draft intro by Friday."></textarea>
+          <div class="controls">
+            <button id="aiSendBtn" class="primary" type="button">Ask AI</button>
+            <button id="aiClearChatBtn" class="ghost" type="button">Clear Chat</button>
+            <span id="aiBusyStatus" class="tiny"></span>
+          </div>
+        </div>
+
+        <div id="aiProposalWrap" class="ai-proposal" hidden>
+          <h3 style="margin:0;">Proposed Changes</h3>
+          <div id="aiProposalSummary" class="tiny"></div>
+          <div id="aiProposalAssumptions" class="tiny"></div>
+          <div id="aiProposalQuestions" class="tiny"></div>
+          <div id="aiActionsList" class="ai-actions-list"></div>
+          <div class="controls">
+            <button id="aiApplyBtn" class="primary" type="button">Apply Selected Changes</button>
+            <button id="aiUndoBtn" class="ghost" type="button">Undo Last AI Batch</button>
+            <span id="aiApplyStatus" class="tiny"></span>
+          </div>
+        </div>
+      </section>
+    </div>
+
     <!-- ═══════════ WEEKLY REVIEW TAB ═══════════ -->
     <div id="tab-review" class="tab-content">
       <section class="card">
@@ -1403,7 +1566,21 @@
     const TODAY_STAGE_LIMIT = 5;
     const NEXT_UP_SOFT_LIMIT = 10;
     const PIPELINE_STAGES = ["backlog", "next_up", "today", "done"];
+    const AI_PREF_KEY = "PPP_AI_PREFS_V1";
+    const AI_ALLOWED_PROVIDERS = ["openai", "anthropic", "openai_compatible"];
+    const AI_ALLOWED_STAGES = ["backlog", "next_up", "today"];
+    const AI_ALLOWED_GOALS = ["None", "PG1", "PG2"];
+    const AI_ALLOWED_IMPORTANCE = ["High", "Low"];
+    const AI_ALLOWED_URGENCY = ["High", "Low"];
+    const AI_ALLOWED_DEPTH = ["Deep", "Shallow"];
+    const AI_ALLOWED_CATEGORIES = ["Strategic", "Maintenance", "Body/Mind", "Travel/Admin", "Revenue/Venture"];
     let pipelineDragTaskId = null;
+    let aiPrefs = loadAiPrefs();
+    let aiMessages = [];
+    let aiProposal = null;
+    let aiUndoBatch = null;
+    let aiPanelForcedVisible = false;
+    let aiBusy = false;
     const pointerPipelineDrag = {
       taskId: "",
       startX: 0,
@@ -1704,6 +1881,9 @@
     }
 
     function saveState(source = "dashboard") {
+      if (String(source || "").startsWith("ai_") === false) {
+        aiUndoBatch = null;
+      }
       state.last_modified = new Date().toISOString();
       state.last_modified_by = source;
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
@@ -1935,6 +2115,729 @@
         .replaceAll(">", "&gt;")
         .replaceAll('"', "&quot;")
         .replaceAll("'", "&#39;");
+    }
+    function defaultAiPrefs() {
+      return {
+        enabled: false,
+        hideUiWhenDisabled: true,
+        provider: "openai",
+        model: "gpt-4.1-mini",
+        apiKey: "",
+        baseUrl: ""
+      };
+    }
+    function normalizeAiPrefs(raw) {
+      const base = defaultAiPrefs();
+      const input = raw && typeof raw === "object" ? raw : {};
+      const provider = AI_ALLOWED_PROVIDERS.includes(input.provider) ? input.provider : base.provider;
+      const normalized = {
+        ...base,
+        enabled: input.enabled === true,
+        hideUiWhenDisabled: input.hideUiWhenDisabled !== false,
+        provider,
+        model: String(input.model || "").trim() || (provider === "anthropic" ? "claude-3-5-sonnet-latest" : base.model),
+        apiKey: String(input.apiKey || "").trim(),
+        baseUrl: String(input.baseUrl || "").trim()
+      };
+      if (provider === "openai" && !normalized.baseUrl) normalized.baseUrl = "https://api.openai.com/v1";
+      if (provider === "anthropic") normalized.baseUrl = "https://api.anthropic.com/v1";
+      return normalized;
+    }
+    function loadAiPrefs() {
+      try {
+        const raw = localStorage.getItem(AI_PREF_KEY);
+        if (!raw) return defaultAiPrefs();
+        return normalizeAiPrefs(JSON.parse(raw));
+      } catch {
+        return defaultAiPrefs();
+      }
+    }
+    function saveAiPrefs() {
+      localStorage.setItem(AI_PREF_KEY, JSON.stringify(aiPrefs));
+    }
+    function aiShouldShowTab() {
+      return aiPrefs.enabled || !aiPrefs.hideUiWhenDisabled || aiPanelForcedVisible;
+    }
+    function normalizeEnumValue(value, allowed) {
+      const input = String(value ?? "").trim();
+      if (!input) return "";
+      if (allowed.includes(input)) return input;
+      const folded = input.toLowerCase();
+      return allowed.find(v => v.toLowerCase() === folded) || "";
+    }
+    function aiBuildContext() {
+      const openTasks = state.tasks
+        .filter(t => !t.completedAt)
+        .map(t => ({
+          id: t.id,
+          title: t.title,
+          category: t.category,
+          importance: t.importance,
+          urgency: t.urgency,
+          depth: t.depth || "Deep",
+          goal: normalizeGoalCode(t.wig || "None"),
+          stage: normalizePipelineStage(t.stage) || "backlog"
+        }));
+      const today = todayISO();
+      const lifeLog = state.life_practices?.daily_log?.[today] || {};
+      const practices = (state.life_practices?.practices || []).map(p => ({
+        id: p.id,
+        title: p.title,
+        minimum_minutes: Number(p.minimum_minutes) || 10,
+        note: p.note || "",
+        done_today: !!lifeLog[p.id]?.done,
+        minutes_today: Number.isFinite(Number(lifeLog[p.id]?.minutes)) ? Number(lifeLog[p.id].minutes) : null
+      }));
+      const commitments = commitmentsForWeek(currentWeekStart()).map(c => ({
+        id: c.id,
+        title: c.title,
+        goal: normalizeGoalCode(c.wig || "None"),
+        linked_task_id: c.linked_task_id || null,
+        is_done: isCommitmentDone(c)
+      }));
+      return {
+        focus: {
+          primary_goal: state.focus?.wig?.title || state.focus?.wig1 || "",
+          secondary_goal: state.focus?.wig2 || "",
+          input_measures: state.focus?.lead_measures || "",
+          weekly_notes: state.focus?.weekly_commitments || ""
+        },
+        tasks_open: openTasks,
+        life_practices: practices,
+        weekly_commitments: commitments,
+        limits: { today_limit: TODAY_STAGE_LIMIT, next_up_soft_limit: NEXT_UP_SOFT_LIMIT },
+        clock: {
+          date: today,
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC",
+          now_iso: new Date().toISOString()
+        }
+      };
+    }
+    function aiBuildSystemPrompt() {
+      return [
+        "You are an assistant for PPP Flow Desktop.",
+        "Convert user intent into structured board actions only.",
+        "Return valid JSON only, no markdown, no prose outside JSON.",
+        "Output object keys: summary, actions, assumptions, questions.",
+        "Use only supported action types and enum values provided in user prompt."
+      ].join(" ");
+    }
+    function aiBuildUserPrompt(userInput) {
+      const context = aiBuildContext();
+      const recent = aiMessages.slice(-8).map(m => ({ role: m.role, content: m.content }));
+      const schemaHint = {
+        action_types: [
+          "task.create",
+          "task.update",
+          "task.move",
+          "task.complete",
+          "life_practice.create",
+          "life_practice.update",
+          "commitment.create",
+          "commitment.update",
+          "focus.update_primary_goal"
+        ],
+        enums: {
+          stage: AI_ALLOWED_STAGES,
+          goal: AI_ALLOWED_GOALS,
+          importance: AI_ALLOWED_IMPORTANCE,
+          urgency: AI_ALLOWED_URGENCY,
+          depth: AI_ALLOWED_DEPTH,
+          category: AI_ALLOWED_CATEGORIES
+        }
+      };
+      return [
+        `BOARD_CONTEXT_JSON:\n${JSON.stringify(context)}`,
+        `RECENT_CHAT_JSON:\n${JSON.stringify(recent)}`,
+        `SCHEMA_HINT_JSON:\n${JSON.stringify(schemaHint)}`,
+        `USER_REQUEST:\n${userInput}`,
+        "Return JSON object with keys summary (string), actions (array), assumptions (array of strings), questions (array of strings)."
+      ].join("\n\n");
+    }
+    function extractJsonObject(rawText) {
+      const text = String(rawText || "").trim();
+      if (!text) throw new Error("Empty model response.");
+      try {
+        return JSON.parse(text);
+      } catch {
+        const first = text.indexOf("{");
+        const last = text.lastIndexOf("}");
+        if (first >= 0 && last > first) {
+          const slice = text.slice(first, last + 1);
+          return JSON.parse(slice);
+        }
+      }
+      throw new Error("Model response is not valid JSON.");
+    }
+    function normalizeAiAction(rawAction) {
+      if (!rawAction || typeof rawAction !== "object") return { error: "Action is not an object." };
+      const type = String(rawAction.type || "").trim();
+      if (!type) return { error: "Missing action type." };
+      if (type === "task.create") {
+        const task = rawAction.task && typeof rawAction.task === "object" ? rawAction.task : {};
+        const place = rawAction.place && typeof rawAction.place === "object" ? rawAction.place : {};
+        const title = String(task.title || "").trim();
+        if (!title) return { error: "task.create requires task.title." };
+        const category = normalizeEnumValue(task.category, AI_ALLOWED_CATEGORIES);
+        if (!category) return { error: "task.create has invalid category." };
+        const importance = normalizeEnumValue(task.importance, AI_ALLOWED_IMPORTANCE);
+        const urgency = normalizeEnumValue(task.urgency, AI_ALLOWED_URGENCY);
+        const depth = normalizeEnumValue(task.depth, AI_ALLOWED_DEPTH);
+        const goal = normalizeEnumValue(task.goal, AI_ALLOWED_GOALS);
+        const stage = normalizeEnumValue(place.stage, AI_ALLOWED_STAGES) || "backlog";
+        if (!importance || !urgency || !depth || !goal) return { error: "task.create has invalid enums." };
+        return {
+          action: {
+            type,
+            client_ref: String(rawAction.client_ref || uid()),
+            task: { title, category, importance, urgency, depth, goal },
+            place: { stage, before_task_id: String(place.before_task_id || "").trim() || undefined }
+          }
+        };
+      }
+      if (type === "task.update") {
+        const taskId = String(rawAction.task_id || "").trim();
+        if (!taskId) return { error: "task.update requires task_id." };
+        const patchIn = rawAction.patch && typeof rawAction.patch === "object" ? rawAction.patch : {};
+        const patch = {};
+        if (patchIn.title != null && String(patchIn.title).trim()) patch.title = String(patchIn.title).trim();
+        const category = normalizeEnumValue(patchIn.category, AI_ALLOWED_CATEGORIES);
+        const importance = normalizeEnumValue(patchIn.importance, AI_ALLOWED_IMPORTANCE);
+        const urgency = normalizeEnumValue(patchIn.urgency, AI_ALLOWED_URGENCY);
+        const depth = normalizeEnumValue(patchIn.depth, AI_ALLOWED_DEPTH);
+        const goal = normalizeEnumValue(patchIn.goal, AI_ALLOWED_GOALS);
+        if (category) patch.category = category;
+        if (importance) patch.importance = importance;
+        if (urgency) patch.urgency = urgency;
+        if (depth) patch.depth = depth;
+        if (goal) patch.goal = goal;
+        if (!Object.keys(patch).length) return { error: "task.update patch is empty or invalid." };
+        return { action: { type, task_id: taskId, patch } };
+      }
+      if (type === "task.move") {
+        const taskId = String(rawAction.task_id || "").trim();
+        const toStage = normalizeEnumValue(rawAction.to_stage, AI_ALLOWED_STAGES);
+        if (!taskId || !toStage) return { error: "task.move requires valid task_id and to_stage." };
+        const beforeTaskId = String(rawAction.before_task_id || "").trim();
+        return { action: { type, task_id: taskId, to_stage: toStage, before_task_id: beforeTaskId || undefined } };
+      }
+      if (type === "task.complete") {
+        const taskId = String(rawAction.task_id || "").trim();
+        if (!taskId || typeof rawAction.completed !== "boolean") return { error: "task.complete requires task_id and completed boolean." };
+        return { action: { type, task_id: taskId, completed: rawAction.completed } };
+      }
+      if (type === "life_practice.create") {
+        const p = rawAction.practice && typeof rawAction.practice === "object" ? rawAction.practice : {};
+        const title = String(p.title || "").trim();
+        const min = Number.parseInt(String(p.minimum_minutes || ""), 10);
+        if (!title || !Number.isFinite(min) || min <= 0) return { error: "life_practice.create requires title and minimum_minutes > 0." };
+        return { action: { type, client_ref: String(rawAction.client_ref || uid()), practice: { title, minimum_minutes: min, note: String(p.note || "").trim() } } };
+      }
+      if (type === "life_practice.update") {
+        const practiceId = String(rawAction.practice_id || "").trim();
+        if (!practiceId) return { error: "life_practice.update requires practice_id." };
+        const patchIn = rawAction.patch && typeof rawAction.patch === "object" ? rawAction.patch : {};
+        const patch = {};
+        if (patchIn.title != null && String(patchIn.title).trim()) patch.title = String(patchIn.title).trim();
+        if (patchIn.note != null) patch.note = String(patchIn.note || "").trim();
+        if (patchIn.minimum_minutes != null) {
+          const min = Number.parseInt(String(patchIn.minimum_minutes), 10);
+          if (Number.isFinite(min) && min > 0) patch.minimum_minutes = min;
+        }
+        if (!Object.keys(patch).length) return { error: "life_practice.update patch is empty or invalid." };
+        return { action: { type, practice_id: practiceId, patch } };
+      }
+      if (type === "commitment.create") {
+        const c = rawAction.commitment && typeof rawAction.commitment === "object" ? rawAction.commitment : {};
+        const title = String(c.title || "").trim();
+        const goal = normalizeEnumValue(c.goal, AI_ALLOWED_GOALS);
+        if (!title || !goal) return { error: "commitment.create requires title and valid goal." };
+        return {
+          action: {
+            type,
+            client_ref: String(rawAction.client_ref || uid()),
+            commitment: {
+              title,
+              goal,
+              linked_task_id: String(c.linked_task_id || "").trim() || undefined,
+              use_finish_track: c.use_finish_track === true
+            }
+          }
+        };
+      }
+      if (type === "commitment.update") {
+        const commitmentId = String(rawAction.commitment_id || "").trim();
+        if (!commitmentId) return { error: "commitment.update requires commitment_id." };
+        const patchIn = rawAction.patch && typeof rawAction.patch === "object" ? rawAction.patch : {};
+        const patch = {};
+        if (patchIn.title != null && String(patchIn.title).trim()) patch.title = String(patchIn.title).trim();
+        const goal = normalizeEnumValue(patchIn.goal, AI_ALLOWED_GOALS);
+        if (goal) patch.goal = goal;
+        if (patchIn.linked_task_id === null) patch.linked_task_id = null;
+        if (patchIn.linked_task_id != null && String(patchIn.linked_task_id).trim()) patch.linked_task_id = String(patchIn.linked_task_id).trim();
+        if (typeof patchIn.is_done === "boolean") patch.is_done = patchIn.is_done;
+        if (!Object.keys(patch).length) return { error: "commitment.update patch is empty or invalid." };
+        return { action: { type, commitment_id: commitmentId, patch } };
+      }
+      if (type === "focus.update_primary_goal") {
+        const title = String(rawAction.title || "").trim();
+        if (!title) return { error: "focus.update_primary_goal requires title." };
+        const deadline = String(rawAction.deadline || "").trim();
+        const measure = String(rawAction.measure || "").trim();
+        return { action: { type, title, deadline: deadline || undefined, measure: measure || undefined } };
+      }
+      return { error: `Unsupported action type: ${type}` };
+    }
+    function describeAiAction(action) {
+      if (!action || !action.type) return "Unknown action";
+      if (action.type === "task.create") return `Create task: ${action.task.title} -> ${action.place.stage}`;
+      if (action.type === "task.update") return `Update task ${action.task_id}`;
+      if (action.type === "task.move") return `Move task ${action.task_id} -> ${action.to_stage}`;
+      if (action.type === "task.complete") return `${action.completed ? "Complete" : "Reopen"} task ${action.task_id}`;
+      if (action.type === "life_practice.create") return `Add life practice: ${action.practice.title}`;
+      if (action.type === "life_practice.update") return `Update life practice ${action.practice_id}`;
+      if (action.type === "commitment.create") return `Add commitment: ${action.commitment.title}`;
+      if (action.type === "commitment.update") return `Update commitment ${action.commitment_id}`;
+      if (action.type === "focus.update_primary_goal") return `Update primary goal`;
+      return action.type;
+    }
+    function buildAiProposal(raw) {
+      const actionsRaw = Array.isArray(raw?.actions) ? raw.actions : [];
+      const items = actionsRaw.map((entry, index) => {
+        const normalized = normalizeAiAction(entry);
+        if (normalized.error) {
+          return {
+            id: uid(),
+            index,
+            selected: false,
+            valid: false,
+            error: normalized.error,
+            action: null,
+            label: normalized.error
+          };
+        }
+        return {
+          id: uid(),
+          index,
+          selected: true,
+          valid: true,
+          error: "",
+          action: normalized.action,
+          label: describeAiAction(normalized.action)
+        };
+      });
+      aiProposal = {
+        summary: String(raw?.summary || "").trim() || "No summary returned.",
+        assumptions: Array.isArray(raw?.assumptions) ? raw.assumptions.map(v => String(v || "").trim()).filter(Boolean) : [],
+        questions: Array.isArray(raw?.questions) ? raw.questions.map(v => String(v || "").trim()).filter(Boolean) : [],
+        items,
+        createdAt: new Date().toISOString()
+      };
+    }
+    function renderAiMessages() {
+      const el = document.getElementById("aiMessages");
+      if (!el) return;
+      if (!aiMessages.length) {
+        el.innerHTML = '<div class="tiny">No messages yet. Ask for changes in plain language.</div>';
+        return;
+      }
+      el.innerHTML = aiMessages.map(m => `<div class="ai-msg ${m.role === "user" ? "user" : "assistant"}"><strong>${m.role === "user" ? "You" : "Assistant"}:</strong> ${escapeHtml(m.content)}</div>`).join("");
+      el.scrollTop = el.scrollHeight;
+    }
+    function renderAiProposal() {
+      const wrap = document.getElementById("aiProposalWrap");
+      if (!wrap) return;
+      if (!aiProposal) {
+        wrap.hidden = true;
+        return;
+      }
+      wrap.hidden = false;
+      const summaryEl = document.getElementById("aiProposalSummary");
+      const assumptionsEl = document.getElementById("aiProposalAssumptions");
+      const questionsEl = document.getElementById("aiProposalQuestions");
+      const actionsEl = document.getElementById("aiActionsList");
+      if (summaryEl) summaryEl.textContent = aiProposal.summary;
+      if (assumptionsEl) assumptionsEl.textContent = aiProposal.assumptions.length ? `Assumptions: ${aiProposal.assumptions.join(" | ")}` : "";
+      if (questionsEl) questionsEl.textContent = aiProposal.questions.length ? `Questions: ${aiProposal.questions.join(" | ")}` : "";
+      if (actionsEl) {
+        if (!aiProposal.items.length) {
+          actionsEl.innerHTML = '<div class="tiny">No actions were proposed.</div>';
+        } else {
+          actionsEl.innerHTML = aiProposal.items.map(item => `
+            <label class="ai-action-item ${item.valid ? "" : "invalid"}">
+              <input type="checkbox" data-ai-action-id="${item.id}" ${item.selected ? "checked" : ""} ${item.valid ? "" : "disabled"} />
+              <span>
+                <div>${escapeHtml(item.label)}</div>
+                <div class="ai-action-meta">${item.valid ? "Valid" : `Invalid: ${escapeHtml(item.error)}`}</div>
+              </span>
+            </label>
+          `).join("");
+        }
+      }
+      const undoBtn = document.getElementById("aiUndoBtn");
+      if (undoBtn) undoBtn.disabled = !aiUndoBatch;
+    }
+    function renderAiAssistant() {
+      const tabBtn = document.querySelector('.tab[data-tab="assistant"]');
+      const showTab = aiShouldShowTab();
+      if (tabBtn) tabBtn.style.display = showTab ? "" : "none";
+      if (!showTab) {
+        const assistantTab = document.getElementById("tab-assistant");
+        if (assistantTab && assistantTab.classList.contains("active")) setActiveTab("focus");
+      }
+      const setupBtn = document.getElementById("aiSetupBtn");
+      if (setupBtn) setupBtn.textContent = aiPrefs.enabled ? "AI" : "AI Setup";
+
+      const enabledInput = document.getElementById("aiEnabledInput");
+      const hideInput = document.getElementById("aiHideDisabledInput");
+      const providerInput = document.getElementById("aiProviderInput");
+      const modelInput = document.getElementById("aiModelInput");
+      const keyInput = document.getElementById("aiApiKeyInput");
+      const baseInput = document.getElementById("aiBaseUrlInput");
+      if (enabledInput) enabledInput.checked = !!aiPrefs.enabled;
+      if (hideInput) hideInput.checked = !!aiPrefs.hideUiWhenDisabled;
+      if (providerInput) providerInput.value = aiPrefs.provider;
+      if (modelInput) modelInput.value = aiPrefs.model || "";
+      if (keyInput) keyInput.value = aiPrefs.apiKey || "";
+      if (baseInput) {
+        baseInput.value = aiPrefs.baseUrl || "";
+        baseInput.disabled = aiPrefs.provider === "anthropic";
+      }
+
+      const disabledNotice = document.getElementById("aiDisabledNotice");
+      const chatWrap = document.getElementById("aiChatWrap");
+      const statusBadge = document.getElementById("aiStatusBadge");
+      const busyStatus = document.getElementById("aiBusyStatus");
+      const keyMissing = !String(aiPrefs.apiKey || "").trim();
+      if (statusBadge) statusBadge.textContent = aiPrefs.enabled ? (keyMissing ? "Enabled (missing key)" : "Enabled") : "Disabled";
+      if (disabledNotice) {
+        disabledNotice.hidden = !!aiPrefs.enabled;
+        if (aiPrefs.enabled && keyMissing) {
+          disabledNotice.hidden = false;
+          disabledNotice.textContent = "AI is enabled but API key is missing. Add key and save settings.";
+        } else if (!aiPrefs.enabled) {
+          disabledNotice.textContent = "AI Assistant is currently off. Enable it above when you want chat-assisted board updates.";
+        }
+      }
+      if (chatWrap) chatWrap.hidden = !aiPrefs.enabled || keyMissing;
+      if (busyStatus) busyStatus.textContent = aiBusy ? "Working..." : "";
+      renderAiMessages();
+      renderAiProposal();
+    }
+    function aiBaseUrlForPrefs() {
+      if (aiPrefs.provider === "anthropic") return "https://api.anthropic.com/v1";
+      const raw = String(aiPrefs.baseUrl || "").trim() || "https://api.openai.com/v1";
+      return raw.replace(/\/+$/, "");
+    }
+    async function aiCallProvider(systemPrompt, userPrompt) {
+      const model = String(aiPrefs.model || "").trim();
+      if (!model) throw new Error("Model is required.");
+      const baseUrl = aiBaseUrlForPrefs();
+      if (aiPrefs.provider === "anthropic") {
+        const res = await fetch(`${baseUrl}/messages`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-api-key": aiPrefs.apiKey,
+            "anthropic-version": "2023-06-01"
+          },
+          body: JSON.stringify({
+            model,
+            max_tokens: 1400,
+            temperature: 0.2,
+            system: systemPrompt,
+            messages: [{ role: "user", content: userPrompt }]
+          })
+        });
+        if (!res.ok) throw new Error(`Anthropic API error ${res.status}: ${await res.text()}`);
+        const data = await res.json();
+        const text = Array.isArray(data?.content)
+          ? data.content.filter(part => part?.type === "text").map(part => part.text || "").join("\n")
+          : "";
+        if (!text.trim()) throw new Error("Anthropic returned empty content.");
+        return text;
+      }
+      const res = await fetch(`${baseUrl}/chat/completions`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${aiPrefs.apiKey}`
+        },
+        body: JSON.stringify({
+          model,
+          temperature: 0.2,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt }
+          ]
+        })
+      });
+      if (!res.ok) throw new Error(`API error ${res.status}: ${await res.text()}`);
+      const data = await res.json();
+      const content = data?.choices?.[0]?.message?.content;
+      if (typeof content === "string" && content.trim()) return content;
+      if (Array.isArray(content)) {
+        const joined = content.map(part => (typeof part?.text === "string" ? part.text : "")).join("\n").trim();
+        if (joined) return joined;
+      }
+      throw new Error("Model returned empty content.");
+    }
+    async function testAiConnection() {
+      const statusEl = document.getElementById("aiTestStatus");
+      if (!aiPrefs.apiKey) {
+        if (statusEl) statusEl.textContent = "Add API key first.";
+        return;
+      }
+      if (statusEl) statusEl.textContent = "Testing...";
+      try {
+        const started = Date.now();
+        const raw = await aiCallProvider(
+          "Return exactly this JSON: {\"ok\":true}",
+          "Return exactly this JSON: {\"ok\":true}"
+        );
+        const parsed = extractJsonObject(raw);
+        if (statusEl) statusEl.textContent = parsed.ok === true ? `Connected (${Date.now() - started}ms)` : "Connected, unexpected response.";
+      } catch (err) {
+        if (statusEl) statusEl.textContent = `Failed: ${err?.message || err}`;
+      }
+    }
+    async function requestAiProposal() {
+      if (aiBusy) return;
+      if (!aiPrefs.enabled) {
+        alert("Enable AI Assistant first.");
+        return;
+      }
+      if (!aiPrefs.apiKey) {
+        alert("Add an API key first.");
+        return;
+      }
+      const input = document.getElementById("aiUserInput");
+      const text = String(input?.value || "").trim();
+      if (!text) return;
+      aiMessages.push({ role: "user", content: text, at: new Date().toISOString() });
+      if (input) input.value = "";
+      aiBusy = true;
+      renderAiAssistant();
+      try {
+        const raw = await aiCallProvider(aiBuildSystemPrompt(), aiBuildUserPrompt(text));
+        const parsed = extractJsonObject(raw);
+        buildAiProposal(parsed);
+        aiMessages.push({ role: "assistant", content: aiProposal.summary, at: new Date().toISOString() });
+      } catch (err) {
+        aiProposal = null;
+        aiMessages.push({
+          role: "assistant",
+          content: `I couldn't generate a valid proposal: ${err?.message || err}`,
+          at: new Date().toISOString()
+        });
+      } finally {
+        aiBusy = false;
+        renderAiAssistant();
+      }
+    }
+    function aiMoveTaskInternal(taskId, targetStage, beforeTaskId = "") {
+      const stage = normalizePipelineStage(targetStage);
+      if (!stage || stage === "done") return "Invalid target stage.";
+      const fromIndex = state.tasks.findIndex(t => t.id === taskId);
+      if (fromIndex < 0) return `Task not found: ${taskId}`;
+      const task = state.tasks[fromIndex];
+      if (!task || task.completedAt) return `Task is completed or missing: ${taskId}`;
+      const currentStage = normalizePipelineStage(task.stage) || defaultStageForNewTask();
+      if (stage === "today" && currentStage !== "today" && countOpenTasksInStage("today") >= TODAY_STAGE_LIMIT) {
+        return `Today is capped at ${TODAY_STAGE_LIMIT} tasks.`;
+      }
+      state.tasks.splice(fromIndex, 1);
+      task.stage = stage;
+      let insertIndex = state.tasks.length;
+      if (beforeTaskId) {
+        const beforeIndex = state.tasks.findIndex(t => t.id === beforeTaskId && !t.completedAt && normalizePipelineStage(t.stage) === stage);
+        if (beforeIndex >= 0) insertIndex = beforeIndex;
+      } else {
+        const stageIndexes = state.tasks
+          .map((t, idx) => ({ t, idx }))
+          .filter(entry => !entry.t.completedAt && normalizePipelineStage(entry.t.stage) === stage)
+          .map(entry => entry.idx);
+        if (stageIndexes.length) insertIndex = stageIndexes[stageIndexes.length - 1] + 1;
+      }
+      state.tasks.splice(insertIndex, 0, task);
+      if (stage !== "today" && Array.isArray(state.today_focus?.task_ids)) {
+        state.today_focus.task_ids = state.today_focus.task_ids.filter(id => id !== task.id);
+      }
+      return "";
+    }
+    function applySingleAiAction(action) {
+      if (!action || !action.type) return "Invalid action payload.";
+      if (action.type === "task.create") {
+        const task = {
+          id: uid(),
+          title: action.task.title.trim(),
+          category: action.task.category,
+          importance: action.task.importance,
+          urgency: action.task.urgency,
+          depth: action.task.depth || "Deep",
+          wig: action.task.goal || "None",
+          stage: action.place.stage || "backlog",
+          createdAt: new Date().toISOString(),
+          completedAt: null,
+          elapsedSec: 0
+        };
+        state.tasks.unshift(task);
+        if (action.place.before_task_id) {
+          const moveErr = aiMoveTaskInternal(task.id, task.stage, action.place.before_task_id);
+          if (moveErr) return moveErr;
+        } else if (task.stage === "today" && countOpenTasksInStage("today") > TODAY_STAGE_LIMIT) {
+          state.tasks = state.tasks.filter(t => t.id !== task.id);
+          return `Today is capped at ${TODAY_STAGE_LIMIT} tasks.`;
+        }
+        return "";
+      }
+      if (action.type === "task.update") {
+        const task = getTask(action.task_id);
+        if (!task || task.completedAt) return `Task not found or already completed: ${action.task_id}`;
+        if (action.patch.title) task.title = action.patch.title;
+        if (action.patch.category) task.category = action.patch.category;
+        if (action.patch.importance) task.importance = action.patch.importance;
+        if (action.patch.urgency) task.urgency = action.patch.urgency;
+        if (action.patch.depth) task.depth = action.patch.depth;
+        if (action.patch.goal) task.wig = action.patch.goal;
+        return "";
+      }
+      if (action.type === "task.move") {
+        return aiMoveTaskInternal(action.task_id, action.to_stage, action.before_task_id || "");
+      }
+      if (action.type === "task.complete") {
+        const task = getTask(action.task_id);
+        if (!task) return `Task not found: ${action.task_id}`;
+        if (action.completed) {
+          if (!task.completedAt) {
+            task.completedAt = new Date().toISOString();
+            task.stage = "done";
+            if (Array.isArray(state.today_focus?.task_ids)) {
+              state.today_focus.task_ids = state.today_focus.task_ids.filter(id => id !== task.id);
+            }
+            if (!Array.isArray(state.closed_task_log)) state.closed_task_log = [];
+            state.closed_task_log.unshift({
+              id: uid(),
+              taskId: task.id,
+              title: task.title,
+              completedAt: task.completedAt
+            });
+          }
+        } else {
+          task.completedAt = null;
+          task.stage = "next_up";
+        }
+        return "";
+      }
+      if (action.type === "life_practice.create") {
+        const title = action.practice.title.trim();
+        const minimum = Number.parseInt(String(action.practice.minimum_minutes), 10);
+        if (!title || !Number.isFinite(minimum) || minimum <= 0) return "Invalid life practice payload.";
+        const baseId = lifePracticeIdFromTitle(title, "practice");
+        let id = baseId;
+        const existing = new Set((state.life_practices.practices || []).map(p => p.id));
+        while (existing.has(id)) id = `${baseId}_${uid().slice(0, 4)}`;
+        state.life_practices.practices.push({
+          id,
+          title,
+          minimum_minutes: minimum,
+          default_minutes: minimum,
+          note: String(action.practice.note || "").trim()
+        });
+        return "";
+      }
+      if (action.type === "life_practice.update") {
+        const practice = (state.life_practices.practices || []).find(p => p.id === action.practice_id);
+        if (!practice) return `Life practice not found: ${action.practice_id}`;
+        if (action.patch.title) practice.title = action.patch.title;
+        if (action.patch.note != null) practice.note = action.patch.note;
+        if (action.patch.minimum_minutes != null) practice.minimum_minutes = Number(action.patch.minimum_minutes);
+        return "";
+      }
+      if (action.type === "commitment.create") {
+        const nowIso = new Date().toISOString();
+        if (!Array.isArray(state.focus.commitments)) state.focus.commitments = [];
+        state.focus.commitments.unshift({
+          id: uid(),
+          title: action.commitment.title,
+          wig: action.commitment.goal,
+          linked_task_id: action.commitment.linked_task_id || null,
+          due_week_start: currentWeekStart(),
+          created_at: nowIso,
+          status: "open",
+          completed_at: null
+        });
+        if (action.commitment.use_finish_track) {
+          state.finish_track = { text: action.commitment.title, locked_at: nowIso, completed_at: null };
+        }
+        return "";
+      }
+      if (action.type === "commitment.update") {
+        const commitment = findCommitment(action.commitment_id);
+        if (!commitment) return `Commitment not found: ${action.commitment_id}`;
+        if (action.patch.title) commitment.title = action.patch.title;
+        if (action.patch.goal) commitment.wig = action.patch.goal;
+        if ("linked_task_id" in action.patch) commitment.linked_task_id = action.patch.linked_task_id || null;
+        if (typeof action.patch.is_done === "boolean") {
+          commitment.status = action.patch.is_done ? "done" : "open";
+          commitment.completed_at = action.patch.is_done ? new Date().toISOString() : null;
+        }
+        return "";
+      }
+      if (action.type === "focus.update_primary_goal") {
+        const nowIso = new Date().toISOString();
+        state.focus.wig = {
+          ...(state.focus.wig || {}),
+          title: action.title,
+          deadline: action.deadline || "",
+          measure: action.measure || "",
+          created_at: state.focus.wig?.created_at || nowIso
+        };
+        state.focus.wig1 = action.title;
+        state.focus.updated_at = nowIso;
+        return "";
+      }
+      return `Unsupported action type: ${action.type}`;
+    }
+    function applyAiSelectedActions() {
+      if (!aiProposal) return;
+      const selected = aiProposal.items.filter(item => item.selected && item.valid && item.action).map(item => item.action);
+      if (!selected.length) {
+        alert("No valid selected actions to apply.");
+        return;
+      }
+      const snapshot = JSON.stringify(state);
+      for (const action of selected) {
+        const err = applySingleAiAction(action);
+        if (err) {
+          state = normalizeState(JSON.parse(snapshot));
+          saveState("ai_apply_reverted");
+          render();
+          alert(`AI apply failed: ${err}`);
+          return;
+        }
+      }
+      aiUndoBatch = {
+        beforeStateJson: snapshot,
+        createdAt: new Date().toISOString(),
+        actionCount: selected.length
+      };
+      saveState("ai_apply_batch");
+      const status = document.getElementById("aiApplyStatus");
+      if (status) status.textContent = `Applied ${selected.length} change(s).`;
+      render();
+    }
+    function undoAiBatch() {
+      if (!aiUndoBatch?.beforeStateJson) return;
+      state = normalizeState(JSON.parse(aiUndoBatch.beforeStateJson));
+      aiUndoBatch = null;
+      saveState("ai_undo_batch");
+      render();
+    }
+    function clearAiChat() {
+      aiMessages = [];
+      aiProposal = null;
+      renderAiAssistant();
     }
     function localDateKey(date = new Date()) {
       const y = date.getFullYear();
@@ -4284,6 +5187,7 @@
       renderPomodoro();
       renderMonthSummary();
       renderFocusLayer();
+      renderAiAssistant();
       renderWeeklyReview();
     }
 
@@ -4648,6 +5552,57 @@
       };
       saveState(); render();
       alert("Focus layer saved.");
+    });
+
+    // AI assistant controls
+    document.getElementById("aiSetupBtn").addEventListener("click",()=>{
+      aiPanelForcedVisible = true;
+      setActiveTab("assistant");
+      renderAiAssistant();
+    });
+    document.getElementById("aiProviderInput").addEventListener("change",e=>{
+      const provider = String(e.target.value || "");
+      if (!AI_ALLOWED_PROVIDERS.includes(provider)) return;
+      aiPrefs.provider = provider;
+      if (provider === "anthropic") {
+        aiPrefs.baseUrl = "https://api.anthropic.com/v1";
+        if (!aiPrefs.model || aiPrefs.model === "gpt-4.1-mini") aiPrefs.model = "claude-3-5-sonnet-latest";
+      } else if (!aiPrefs.baseUrl) {
+        aiPrefs.baseUrl = "https://api.openai.com/v1";
+      }
+      renderAiAssistant();
+    });
+    document.getElementById("aiSaveConfigBtn").addEventListener("click",()=>{
+      aiPrefs = normalizeAiPrefs({
+        enabled: document.getElementById("aiEnabledInput").checked,
+        hideUiWhenDisabled: document.getElementById("aiHideDisabledInput").checked,
+        provider: document.getElementById("aiProviderInput").value,
+        model: document.getElementById("aiModelInput").value,
+        apiKey: document.getElementById("aiApiKeyInput").value,
+        baseUrl: document.getElementById("aiBaseUrlInput").value
+      });
+      saveAiPrefs();
+      aiPanelForcedVisible = false;
+      renderAiAssistant();
+      alert("AI settings saved.");
+    });
+    document.getElementById("aiTestBtn").addEventListener("click",()=>{ void testAiConnection(); });
+    document.getElementById("aiSendBtn").addEventListener("click",()=>{ void requestAiProposal(); });
+    document.getElementById("aiUserInput").addEventListener("keydown",e=>{
+      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+        e.preventDefault();
+        void requestAiProposal();
+      }
+    });
+    document.getElementById("aiClearChatBtn").addEventListener("click",clearAiChat);
+    document.getElementById("aiApplyBtn").addEventListener("click",applyAiSelectedActions);
+    document.getElementById("aiUndoBtn").addEventListener("click",undoAiBatch);
+    document.getElementById("aiActionsList").addEventListener("change",e=>{
+      const input = e.target.closest("input[data-ai-action-id]");
+      if (!input || !aiProposal) return;
+      const item = aiProposal.items.find(x => x.id === input.dataset.aiActionId);
+      if (!item || !item.valid) return;
+      item.selected = !!input.checked;
     });
 
     // Tabs
