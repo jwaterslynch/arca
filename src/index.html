@@ -208,18 +208,43 @@
     #onboardingModal .modal-panel {
       display:flex;
       flex-direction:column;
-      gap:8px;
+      gap:14px;
     }
-    #onboardingModal .modal-head h3 { font-size:34px; line-height:1.1; }
-    #onboardingModal .modal-head .tiny { font-size:16px; }
+    #onboardingModal .modal-head h3 { font-size:clamp(44px,4.4vw,68px); line-height:1.08; }
+    #onboardingModal .modal-head .tiny { font-size:clamp(22px,2vw,30px); }
     #onboardingModal .onboard-step-pill {
-      font-size:13px;
-      padding:5px 10px;
+      font-size:18px;
+      padding:8px 14px;
     }
     #onboardingModal .onboard-body { flex:1; overflow:auto; padding-right:4px; }
-    #onboardingModal .onboard-body p { font-size:18px; line-height:1.65; }
-    #onboardingModal .onboard-body p.tiny { font-size:16px; color:#33464d; }
-    #onboardingModal .onboard-foot { margin-top:0; padding-top:8px; border-top:1px solid var(--line); }
+    #onboardingModal .onboard-screen { max-width:1300px; margin:0 auto; display:grid; gap:18px; align-content:start; }
+    #onboardingModal .onboard-screen > p:first-child { margin:0; font-size:clamp(40px,3.8vw,56px); line-height:1.15; }
+    #onboardingModal .onboard-body p { margin:0; font-size:clamp(26px,2.4vw,38px); line-height:1.4; }
+    #onboardingModal .onboard-body p.tiny { font-size:clamp(22px,2vw,32px); line-height:1.42; color:#2f4248; }
+    #onboardingModal .onboard-practice-grid,
+    #onboardingModal .onboard-task-grid,
+    #onboardingModal .onboard-confirm-box { padding:16px; gap:12px; border-radius:14px; }
+    #onboardingModal .onboard-row { grid-template-columns:1.3fr 150px 1.4fr; }
+    #onboardingModal .onboard-row.task { grid-template-columns:1.4fr 210px auto; }
+    #onboardingModal input,
+    #onboardingModal select,
+    #onboardingModal textarea { font-size:22px; padding:14px 16px; border-radius:12px; }
+    #onboardingModal .onboard-danger { font-size:20px; padding:14px; border-radius:14px; }
+    #onboardingModal .onboard-confirm-box .tiny,
+    #onboardingModal .onboard-row label.tiny { font-size:18px; }
+    #onboardingModal .onboard-footnote {
+      max-width:1300px;
+      width:100%;
+      margin:0 auto;
+      padding:12px 0 8px;
+      border-top:1px solid var(--line);
+      font-size:16px;
+      line-height:1.45;
+      color:#5a6b71;
+    }
+    #onboardingModal .onboard-footnote a { color:var(--accent); }
+    #onboardingModal .onboard-foot { margin-top:0; padding-top:6px; border-top:none; }
+    #onboardingModal .onboard-foot button { font-size:22px; padding:12px 20px; border-radius:14px; }
     .onboard-danger {
       border:1px solid #efc0b7;
       background:#fff6f4;
@@ -270,6 +295,86 @@
     /* Focus Layer */
     .focus-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:10px; }
     .focus-targets-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:8px; }
+    .pipeline-board {
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      gap:10px;
+      margin-top:10px;
+    }
+    .pipeline-col {
+      border:1px solid var(--line);
+      border-radius:12px;
+      background:#fcfdfc;
+      min-height:240px;
+      display:flex;
+      flex-direction:column;
+    }
+    .pipeline-col.today {
+      border-color:#9acdbf;
+      background:#f7fcfa;
+    }
+    .pipeline-head {
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:10px;
+      border-bottom:1px solid #eef1ec;
+      font-size:12px;
+      text-transform:uppercase;
+      letter-spacing:.6px;
+      color:var(--muted);
+      font-weight:600;
+    }
+    .pipeline-list {
+      padding:8px;
+      display:grid;
+      gap:8px;
+      flex:1;
+      align-content:start;
+      min-height:180px;
+    }
+    .pipeline-list.drag-over {
+      background:#eef8f4;
+      border-radius:10px;
+    }
+    .pipeline-empty {
+      border:1px dashed #cfd8d2;
+      border-radius:10px;
+      color:var(--muted);
+      font-size:12px;
+      padding:10px;
+      text-align:center;
+      background:#f9fbfa;
+    }
+    .pipeline-card {
+      border:1px solid var(--line);
+      border-radius:10px;
+      padding:8px;
+      background:#fff;
+      display:grid;
+      gap:6px;
+      cursor:grab;
+    }
+    .pipeline-card:active { cursor:grabbing; }
+    .pipeline-card.dragging { opacity:.55; }
+    .pipeline-card-title {
+      font-weight:600;
+      font-size:13px;
+      line-height:1.35;
+    }
+    .pipeline-card-meta {
+      display:flex;
+      gap:6px;
+      flex-wrap:wrap;
+    }
+    .pipeline-actions {
+      display:flex;
+      justify-content:space-between;
+      gap:6px;
+      align-items:center;
+    }
+    .pipeline-actions .controls { gap:4px; }
+    .pipeline-actions button { padding:3px 7px; font-size:11px; }
     .score-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:10px; }
     .score-card {
       border:1px solid var(--line);
@@ -475,7 +580,7 @@
     .sprint-row:last-child { border-bottom:none; }
     .sprint-empty { padding:8px; font-size:12px; color:var(--muted); }
 
-    /* Today focus + life practices */
+    /* Today queue + life practices */
     .focus-tools { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
     .focus-chip { font-size:12px; border:1px solid var(--line); border-radius:999px; padding:4px 10px; background:#f5f7f3; color:var(--muted); }
     .life-grid { display:grid; grid-template-columns:1.3fr 100px auto; gap:10px; align-items:center; }
@@ -561,7 +666,7 @@
     }
 
     @media (max-width:1080px) {
-      .layout,.stats,.summary-grid,.three-box,.trend-row,.week-grid,.focus-grid,.score-grid,.focus-targets-grid { grid-template-columns:1fr; }
+      .layout,.stats,.summary-grid,.three-box,.trend-row,.week-grid,.focus-grid,.score-grid,.focus-targets-grid,.pipeline-board { grid-template-columns:1fr; }
       .row { grid-template-columns:1fr; }
       .stats { grid-template-columns:repeat(4,1fr); }
       .hero-clock { font-size:62px; }
@@ -570,6 +675,17 @@
       .life-grid { grid-template-columns:1fr; }
       .life-add-grid,.life-config-row,.onboard-row,.onboard-row.task { grid-template-columns:1fr; }
       .commitment-add-grid { grid-template-columns:1fr; }
+      #onboardingModal .modal-head h3 { font-size:34px; }
+      #onboardingModal .modal-head .tiny { font-size:18px; }
+      #onboardingModal .onboard-step-pill { font-size:14px; padding:6px 10px; }
+      #onboardingModal .onboard-screen > p:first-child { font-size:32px; }
+      #onboardingModal .onboard-body p { font-size:22px; }
+      #onboardingModal .onboard-body p.tiny { font-size:19px; }
+      #onboardingModal input,
+      #onboardingModal select,
+      #onboardingModal textarea { font-size:18px; }
+      #onboardingModal .onboard-foot button { font-size:18px; }
+      #onboardingModal .onboard-footnote { font-size:14px; }
     }
     @media (max-width:600px) {
       .stats { grid-template-columns:repeat(2,1fr); }
@@ -674,9 +790,9 @@
         <div class="titlebar">
           <h2>Today's Whiteboard</h2>
           <div class="focus-tools">
-            <span id="todayFocusCount" class="focus-chip">Focus: 0</span>
-            <button id="autofillFocusBtn" class="ghost" type="button">Auto-fill Focus</button>
-            <button id="resetTodayFocusBtn" class="ghost" type="button">Reset Today Focus</button>
+            <span id="todayFocusCount" class="focus-chip">Today Queue: 0</span>
+            <button id="autofillFocusBtn" class="ghost" type="button">Auto-fill Today</button>
+            <button id="resetTodayFocusBtn" class="ghost" type="button">Clear Today</button>
             <span class="tiny" id="todayDate"></span>
           </div>
         </div>
@@ -847,12 +963,15 @@
         <div>
           <div class="titlebar">
             <h2>Active Checklist</h2>
-            <button id="clearDoneBtn" class="warn">Clear Completed</button>
+            <div class="controls">
+              <span class="tiny">Today queue (max 5)</span>
+              <button id="clearDoneBtn" class="warn">Clear Completed</button>
+            </div>
           </div>
           <div class="table-wrap">
             <table>
               <thead>
-                <tr><th></th><th>Today</th><th>Task</th><th>Cat</th><th>I/U</th><th>Depth</th><th>Goal</th><th>Time</th><th>Timer</th></tr>
+                <tr><th></th><th>Task</th><th>Cat</th><th>I/U</th><th>Depth</th><th>Goal</th><th>Time</th><th>Timer</th></tr>
               </thead>
               <tbody id="taskTableBody"></tbody>
             </table>
@@ -943,6 +1062,46 @@
             <div id="commitmentsList" class="commitments-list"></div>
             <label class="tiny" style="display:block;margin:10px 0 4px;">Weekly Commitments Notes (optional)</label>
             <textarea id="weeklyCommitmentsInput" placeholder="- Last week result&#10;- This week intent&#10;- Risks to execution"></textarea>
+          </div>
+        </div>
+
+        <div style="margin-top:16px;">
+          <div class="titlebar">
+            <h3>Task Funnel</h3>
+            <span id="pipelineMeta" class="tiny"></span>
+          </div>
+          <p class="tiny" style="margin:6px 0 0;">
+            Drag tasks between columns. Today is capped at 5 open tasks.
+          </p>
+          <div id="pipelineBoard" class="pipeline-board">
+            <div class="pipeline-col" data-stage="backlog">
+              <div class="pipeline-head">
+                <span>Backlog</span>
+                <span id="pipelineBacklogCount">0</span>
+              </div>
+              <div id="pipelineBacklog" class="pipeline-list" data-stage="backlog"></div>
+            </div>
+            <div class="pipeline-col" data-stage="next_up">
+              <div class="pipeline-head">
+                <span>Next Up</span>
+                <span id="pipelineNextCount">0</span>
+              </div>
+              <div id="pipelineNext" class="pipeline-list" data-stage="next_up"></div>
+            </div>
+            <div class="pipeline-col today" data-stage="today">
+              <div class="pipeline-head">
+                <span>Today</span>
+                <span id="pipelineTodayCount">0 / 5</span>
+              </div>
+              <div id="pipelineToday" class="pipeline-list" data-stage="today"></div>
+            </div>
+            <div class="pipeline-col" data-stage="done">
+              <div class="pipeline-head">
+                <span>Done (Week)</span>
+                <span id="pipelineDoneCount">0</span>
+              </div>
+              <div id="pipelineDone" class="pipeline-list" data-stage="done"></div>
+            </div>
           </div>
         </div>
 
@@ -1051,10 +1210,6 @@
           <p class="tiny" style="margin-top:10px;">
             PPP Flow gives you a system to protect time for high-value work, track whether you're actually spending that time, and build a weekly rhythm of accountability to yourself.
           </p>
-          <p class="tiny" style="margin-top:14px;font-size:11px;opacity:.75;">
-            Inspired by several execution and productivity frameworks including the Eisenhower matrix, deep work principles, and goal-focused execution methods.
-            <a href="https://en.wikipedia.org/wiki/Eisenhower_matrix" target="_blank" rel="noopener" style="color:var(--accent);">Further reading →</a>
-          </p>
         </div>
 
         <div id="onboardStep2" class="onboard-screen" hidden>
@@ -1118,7 +1273,7 @@
                 <option>Travel/Admin</option>
                 <option>Revenue/Venture</option>
               </select>
-              <label class="tiny"><input id="onboardTask1Focus" type="checkbox" checked /> Today focus</label>
+              <label class="tiny"><input id="onboardTask1Focus" type="checkbox" checked /> Add to Today</label>
             </div>
             <div class="onboard-row task">
               <input id="onboardTask2" placeholder="Task 2" />
@@ -1129,7 +1284,7 @@
                 <option>Travel/Admin</option>
                 <option>Revenue/Venture</option>
               </select>
-              <label class="tiny"><input id="onboardTask2Focus" type="checkbox" checked /> Today focus</label>
+              <label class="tiny"><input id="onboardTask2Focus" type="checkbox" checked /> Add to Today</label>
             </div>
             <div class="onboard-row task">
               <input id="onboardTask3" placeholder="Task 3" />
@@ -1140,7 +1295,7 @@
                 <option>Travel/Admin</option>
                 <option>Revenue/Venture</option>
               </select>
-              <label class="tiny"><input id="onboardTask3Focus" type="checkbox" checked /> Today focus</label>
+              <label class="tiny"><input id="onboardTask3Focus" type="checkbox" checked /> Add to Today</label>
             </div>
           </div>
         </div>
@@ -1161,6 +1316,10 @@
             <div id="onboardBackupHint" class="tiny">A JSON backup is exported automatically before reset. Restore via Import JSON File.</div>
           </div>
         </div>
+      </div>
+      <div id="onboardingFootnote" class="onboard-footnote">
+        Inspired by several execution and productivity frameworks including the Eisenhower matrix, deep work principles, and goal-focused execution methods.
+        <a href="https://en.wikipedia.org/wiki/Eisenhower_matrix" target="_blank" rel="noopener">Further reading →</a>
       </div>
       <div class="onboard-foot">
         <button id="onboardingPrevBtn" class="ghost" type="button" disabled>Back</button>
@@ -1224,6 +1383,10 @@
       autoFocusMode: true
     };
     Object.assign(pomodoro, loadPomodoroPrefs());
+    const TODAY_STAGE_LIMIT = 5;
+    const NEXT_UP_SOFT_LIMIT = 10;
+    const PIPELINE_STAGES = ["backlog", "next_up", "today", "done"];
+    let pipelineDragTaskId = null;
 
     function emptyState() {
       return {
@@ -1270,6 +1433,45 @@
       if (value === "WIG2") return "PG2";
       if (value === "PG1" || value === "PG2" || value === "None") return value;
       return "None";
+    }
+
+    function normalizePipelineStage(value) {
+      if (value === "pipeline") return "next_up";
+      if (value === "execute") return "today";
+      if (PIPELINE_STAGES.includes(value)) return value;
+      return "";
+    }
+
+    function countOpenTasksInStage(stage) {
+      return state.tasks.filter(t => !t.completedAt && normalizePipelineStage(t.stage) === stage).length;
+    }
+
+    function defaultStageForNewTask() {
+      return "backlog";
+    }
+
+    function assignPipelineDefaults(tasks) {
+      let todayAssigned = 0;
+      tasks.forEach(task => {
+        if (!task) return;
+        const stage = normalizePipelineStage(task.stage);
+        if (task.completedAt) {
+          task.stage = "done";
+          return;
+        }
+        if (!stage || stage === "done") {
+          task.stage = "backlog";
+          return;
+        }
+        if (stage === "today") {
+          todayAssigned += 1;
+          if (todayAssigned > TODAY_STAGE_LIMIT) {
+            task.stage = "next_up";
+          }
+        } else {
+          task.stage = stage;
+        }
+      });
     }
 
     function normalizeState(raw) {
@@ -1325,12 +1527,14 @@
               urgency: t.urgency || "Low",
               depth: t.depth || "Deep",
               wig: normalizeGoalCode(t.wig || "None"),
+              stage: normalizePipelineStage(t.stage || t.pipeline_stage || ""),
               createdAt,
               completedAt,
               elapsedSec: Number.isFinite(t.elapsedSec) ? t.elapsedSec : (Number.isFinite(t.elapsed_sec) ? t.elapsed_sec : 0)
             };
           })
         : [];
+      assignPipelineDefaults(normalized.tasks);
       normalized.sessions = Array.isArray(incoming.sessions)
         ? incoming.sessions.map(s => ({ ...s, wig: normalizeGoalCode(s.wig || "None") }))
         : [];
@@ -2007,10 +2211,11 @@
         state.today_focus.task_ids = [];
         changed = true;
       }
-      const openIds = new Set(state.tasks.filter(t => !t.completedAt).map(t => t.id));
-      const filtered = state.today_focus.task_ids.filter(id => openIds.has(id));
-      if (filtered.length !== state.today_focus.task_ids.length) {
-        state.today_focus.task_ids = filtered;
+      const todayStageIds = state.tasks
+        .filter(t => !t.completedAt && normalizePipelineStage(t.stage) === "today")
+        .map(t => t.id);
+      if (JSON.stringify(state.today_focus.task_ids) !== JSON.stringify(todayStageIds)) {
+        state.today_focus.task_ids = todayStageIds;
         changed = true;
       }
       if (state.activeStartedAt && isoToLocalDateKey(state.activeStartedAt) !== today) {
@@ -2053,22 +2258,31 @@
     }
 
     function getTodayFocusTasks() {
-      const ids = new Set(state.today_focus?.task_ids || []);
-      return state.tasks.filter(t => ids.has(t.id) && !t.completedAt);
+      return state.tasks.filter(t => !t.completedAt && normalizePipelineStage(t.stage) === "today");
     }
 
     function setTaskFocusToday(id, enabled) {
-      initTodayState();
-      const ids = new Set(state.today_focus.task_ids || []);
-      if (enabled) ids.add(id); else ids.delete(id);
-      state.today_focus.task_ids = Array.from(ids);
+      const task = getTask(id);
+      if (!task || task.completedAt) return;
+      if (enabled) {
+        if (normalizePipelineStage(task.stage) !== "today" && countOpenTasksInStage("today") >= TODAY_STAGE_LIMIT) {
+          alert(`Today is capped at ${TODAY_STAGE_LIMIT} tasks.`);
+          return;
+        }
+        task.stage = "today";
+      } else if (normalizePipelineStage(task.stage) === "today") {
+        task.stage = "next_up";
+      }
       saveState();
       render();
     }
 
     function resetTodayFocus() {
-      initTodayState();
-      state.today_focus.task_ids = [];
+      state.tasks.forEach(task => {
+        if (!task.completedAt && normalizePipelineStage(task.stage) === "today") {
+          task.stage = "next_up";
+        }
+      });
       if (state.activeTaskId) {
         state.activeTaskId = null;
         state.activeStartedAt = null;
@@ -2091,11 +2305,20 @@
         return score;
       };
       const selected = state.tasks
-        .filter(t => !t.completedAt)
+        .filter(t => !t.completedAt && normalizePipelineStage(t.stage) !== "done")
         .sort((a,b) => (rank(b) - rank(a)) || ((b.createdAt || "").localeCompare(a.createdAt || "")))
-        .slice(0, 3)
+        .slice(0, TODAY_STAGE_LIMIT)
         .map(t => t.id);
-      state.today_focus.task_ids = selected;
+      const todayIds = new Set(selected);
+      state.tasks.forEach(task => {
+        if (task.completedAt) return;
+        const stage = normalizePipelineStage(task.stage);
+        if (todayIds.has(task.id)) {
+          task.stage = "today";
+        } else if (stage === "today") {
+          task.stage = "next_up";
+        }
+      });
       saveState();
       render();
     }
@@ -2388,14 +2611,15 @@
     // ── Core Task Logic ──
     function getTask(id) { return state.tasks.find(t=>t.id===id); }
 
-    function addTask(title,category,importance,urgency,depth,wig) {
+    function addTask(title,category,importance,urgency,depth,wig,stageOverride = "") {
       if (category === "Strategic" && isFinishTrackBlockingStrategic()) {
         alert(`Finish Track is open: "${state.finish_track.text}". Complete or reset it before adding new Strategic tasks.`);
         return;
       }
+      const assignedStage = normalizePipelineStage(stageOverride) || defaultStageForNewTask();
       const task = {
         id:uid(), title:title.trim(), category, importance, urgency,
-        depth:depth||"Deep", wig:wig||"None",
+        depth:depth||"Deep", wig:wig||"None", stage: assignedStage,
         createdAt:new Date().toISOString(), completedAt:null, elapsedSec:0
       };
       state.tasks.unshift(task);
@@ -2410,7 +2634,8 @@
           importance: task.importance,
           urgency: task.urgency,
           depth: task.depth || "Deep",
-          wig: task.wig || "None"
+          wig: task.wig || "None",
+          stage: task.stage || "backlog"
         },
         `task_created_${task.id}`
       );
@@ -2496,6 +2721,10 @@
       const completedAt = done ? new Date().toISOString() : null;
       task.completedAt = completedAt;
       if(done){
+        task.stage = "done";
+        if (Array.isArray(state.today_focus?.task_ids)) {
+          state.today_focus.task_ids = state.today_focus.task_ids.filter(taskId => taskId !== id);
+        }
         if (!Array.isArray(state.closed_task_log)) state.closed_task_log = [];
         state.closed_task_log.unshift({
           id: uid(),
@@ -2524,6 +2753,7 @@
         if(!state.daily_logs[day]) state.daily_logs[day]={total_sec:0,deep_sec:0,tasks_closed:0,sessions:0};
         state.daily_logs[day].tasks_closed++;
       } else {
+        task.stage = "next_up";
         queueLedgerEvent(
           "task_reopened",
           "task",
@@ -2547,22 +2777,24 @@
     // ── Pomodoro ──
     function getOpenTasks() {
       const openAll = state.tasks.filter(t => !t.completedAt);
+      const todayOpen = openAll.filter(t => normalizePipelineStage(t.stage) === "today");
+      const baseOpen = todayOpen.length ? todayOpen : openAll;
       const currentId = state.activeTaskId || pomodoro.taskId;
       const currentTask = currentId ? getTask(currentId) : null;
       const includeCurrent = !!(currentTask && !currentTask.completedAt);
 
-      const focus = getTodayFocusTasks();
+      const focus = getTodayFocusTasks().filter(t => normalizePipelineStage(t.stage) === "today");
       if (focus.length) {
         if (includeCurrent && !focus.some(t => t.id === currentTask.id)) return [currentTask, ...focus];
         return focus;
       }
       const today = todayISO();
-      const todayOpen = state.tasks.filter(t => !t.completedAt && isoToLocalDateKey(t.createdAt || "") === today);
-      if (todayOpen.length) {
-        if (includeCurrent && !todayOpen.some(t => t.id === currentTask.id)) return [currentTask, ...todayOpen];
-        return todayOpen;
+      const todayCreated = baseOpen.filter(t => isoToLocalDateKey(t.createdAt || "") === today);
+      if (todayCreated.length) {
+        if (includeCurrent && !todayCreated.some(t => t.id === currentTask.id)) return [currentTask, ...todayCreated];
+        return todayCreated;
       }
-      return includeCurrent ? [currentTask, ...openAll.filter(t => t.id !== currentTask.id)] : openAll;
+      return includeCurrent ? [currentTask, ...baseOpen.filter(t => t.id !== currentTask.id)] : baseOpen;
     }
 
     function refreshPomodoroTaskSelect(preferredId = null) {
@@ -2690,8 +2922,10 @@
       const resetWarning = document.getElementById("onboardResetWarning");
       const resetBox = document.getElementById("onboardResetConfirmBox");
       const backupHint = document.getElementById("onboardBackupHint");
+      const footnote = document.getElementById("onboardingFootnote");
       if (resetWarning) resetWarning.hidden = !(onboardingMode === "reset");
       if (resetBox) resetBox.hidden = !(onboardingMode === "reset");
+      if (footnote) footnote.hidden = onboardingStep !== 1;
       if (backupHint) {
         const stamp = new Date().toISOString().replaceAll(":", "-").replaceAll(".", "-");
         backupHint.textContent = onboardingMode === "reset"
@@ -2850,6 +3084,7 @@
       state.focus.wig1 = wig.title;
 
       const seeds = collectOnboardingTasks();
+      let todaySlots = TODAY_STAGE_LIMIT;
       const created = seeds.map(seed => ({
         id: uid(),
         title: seed.title,
@@ -2858,6 +3093,7 @@
         urgency: "Low",
         depth: "Deep",
         wig: seed.category === "Strategic" ? "PG1" : "None",
+        stage: seed.focus && todaySlots-- > 0 ? "today" : "next_up",
         createdAt: nowIso,
         completedAt: null,
         elapsedSec: 0,
@@ -2877,13 +3113,12 @@
             importance: task.importance,
             urgency: task.urgency,
             depth: task.depth,
-            wig: task.wig
+            wig: task.wig,
+            stage: task.stage
           },
           `task_created_${task.id}`
         );
       }
-      const focusIds = created.filter(t => t._focus).map(t => t.id).slice(0, 3);
-      state.today_focus = { date: todayISO(), task_ids: focusIds };
       state.tasks.forEach(t => { delete t._focus; });
       state.onboarding = {
         completed_at: nowIso,
@@ -3315,7 +3550,7 @@
         const box=categoryToBox(task.category);
         if(!boxes[box]) boxes[box]=task;
       }
-      document.getElementById("todayFocusCount").textContent = `Focus: ${focusTasks.length}`;
+      document.getElementById("todayFocusCount").textContent = `Today Queue: ${focusTasks.length}`;
       ["strategic","maintenance","body"].forEach(box=>{
         const el=document.getElementById(`box-${box}`);
         const taskEl=document.getElementById(`box-${box}-task`);
@@ -3456,47 +3691,177 @@
       return "Day-to-day";
     }
 
+    function stageLabel(stage) {
+      if (stage === "backlog") return "Backlog";
+      if (stage === "next_up") return "Next Up";
+      if (stage === "today") return "Today";
+      return "Done";
+    }
+
+    function openTasksByStage(stage) {
+      return state.tasks.filter(t => !t.completedAt && normalizePipelineStage(t.stage) === stage);
+    }
+
+    function clearPipelineDragClasses() {
+      document.querySelectorAll(".pipeline-list.drag-over").forEach(el => el.classList.remove("drag-over"));
+      document.querySelectorAll(".pipeline-card.dragging").forEach(el => el.classList.remove("dragging"));
+    }
+
+    function moveTaskToStage(taskId, targetStage, beforeTaskId = "") {
+      const stage = normalizePipelineStage(targetStage);
+      if (!taskId || !stage) return false;
+      const fromIndex = state.tasks.findIndex(t => t.id === taskId);
+      if (fromIndex < 0) return false;
+      const task = state.tasks[fromIndex];
+      if (!task || task.completedAt) return false;
+      const currentStage = normalizePipelineStage(task.stage) || defaultStageForNewTask();
+      if (stage === "today" && currentStage !== "today" && countOpenTasksInStage("today") >= TODAY_STAGE_LIMIT) {
+        alert(`Today is capped at ${TODAY_STAGE_LIMIT} open tasks. Move one out first.`);
+        return false;
+      }
+      if (stage === "next_up" && currentStage !== "next_up" && countOpenTasksInStage("next_up") >= NEXT_UP_SOFT_LIMIT) {
+        const ok = window.confirm(`Next Up already has ${NEXT_UP_SOFT_LIMIT}+ tasks. Add another anyway?`);
+        if (!ok) return false;
+      }
+      if (stage === "done" && !task.completedAt) {
+        alert("Move to Done by checking the task complete box.");
+        return false;
+      }
+
+      state.tasks.splice(fromIndex, 1);
+      task.stage = stage;
+
+      let insertIndex = state.tasks.length;
+      if (beforeTaskId) {
+        const beforeIndex = state.tasks.findIndex(t => t.id === beforeTaskId && !t.completedAt && normalizePipelineStage(t.stage) === stage);
+        if (beforeIndex >= 0) insertIndex = beforeIndex;
+      } else {
+        const stageIndexes = state.tasks
+          .map((t, idx) => ({ t, idx }))
+          .filter(entry => !entry.t.completedAt && normalizePipelineStage(entry.t.stage) === stage)
+          .map(entry => entry.idx);
+        if (stageIndexes.length) insertIndex = stageIndexes[stageIndexes.length - 1] + 1;
+      }
+
+      state.tasks.splice(insertIndex, 0, task);
+
+      if (stage !== "today" && Array.isArray(state.today_focus?.task_ids)) {
+        state.today_focus.task_ids = state.today_focus.task_ids.filter(id => id !== task.id);
+      }
+
+      saveState("pipeline_move");
+      render();
+      return true;
+    }
+
+    function moveTaskWithinStage(taskId, direction) {
+      const index = state.tasks.findIndex(t => t.id === taskId && !t.completedAt);
+      if (index < 0) return;
+      const stage = normalizePipelineStage(state.tasks[index].stage);
+      if (!stage) return;
+      const peers = state.tasks
+        .map((t, idx) => ({ t, idx }))
+        .filter(entry => !entry.t.completedAt && normalizePipelineStage(entry.t.stage) === stage)
+        .map(entry => entry.idx);
+      const peerPos = peers.indexOf(index);
+      if (peerPos < 0) return;
+      const nextPos = direction === "up" ? peerPos - 1 : peerPos + 1;
+      if (nextPos < 0 || nextPos >= peers.length) return;
+      const swapIndex = peers[nextPos];
+      const temp = state.tasks[index];
+      state.tasks[index] = state.tasks[swapIndex];
+      state.tasks[swapIndex] = temp;
+      saveState("pipeline_reorder");
+      render();
+    }
+
+    function renderTaskPipeline() {
+      const colMap = [
+        { stage: "backlog", listId: "pipelineBacklog", countId: "pipelineBacklogCount", empty: "No backlog tasks.", done: false },
+        { stage: "next_up", listId: "pipelineNext", countId: "pipelineNextCount", empty: "No tasks queued up.", done: false },
+        { stage: "today", listId: "pipelineToday", countId: "pipelineTodayCount", empty: "No tasks in today queue.", done: false },
+        { stage: "done", listId: "pipelineDone", countId: "pipelineDoneCount", empty: "No tasks completed this week.", done: true }
+      ];
+
+      colMap.forEach(col => {
+        const listEl = document.getElementById(col.listId);
+        const countEl = document.getElementById(col.countId);
+        if (!listEl || !countEl) return;
+        const [weekStart, , , , , , weekEnd] = getWeekDates(0);
+        const tasks = col.done
+          ? state.tasks.filter(t => {
+              if (!t.completedAt || normalizePipelineStage(t.stage) !== "done") return false;
+              const key = isoToLocalDateKey(t.completedAt || "");
+              return key >= weekStart && key <= weekEnd;
+            })
+          : openTasksByStage(col.stage);
+        countEl.textContent = col.stage === "today" ? `${tasks.length} / ${TODAY_STAGE_LIMIT}` : String(tasks.length);
+        if (!tasks.length) {
+          listEl.innerHTML = `<div class="pipeline-empty">${col.empty}</div>`;
+          return;
+        }
+        listEl.innerHTML = tasks.map(task => {
+          const stageIndex = PIPELINE_STAGES.indexOf(col.stage);
+          const canLeft = stageIndex > 0;
+          const canRight = stageIndex < PIPELINE_STAGES.length - 1;
+          const depth = task.depth || "Deep";
+          return `<div class="pipeline-card" draggable="${col.done ? "false" : "true"}" data-task-id="${task.id}" data-stage="${col.stage}">
+            <div class="pipeline-card-title">${task.title}</div>
+            <div class="pipeline-card-meta">
+              <span class="tag ${tagClass(task.category)}">${task.category}</span>
+              <span class="tag ${depth === "Deep" ? "deep" : "shallow"}">${depth}</span>
+              <span class="tag ${task.wig !== "None" ? "wig" : ""}">${goalLabelShort(task.wig || "None")}</span>
+            </div>
+            <div class="pipeline-actions">
+              <div class="controls">
+                ${!col.done && canLeft ? `<button type="button" class="ghost" data-pipe-shift="-1" data-task-id="${task.id}">←</button>` : ""}
+                ${!col.done && canRight && PIPELINE_STAGES[stageIndex + 1] !== "done" ? `<button type="button" class="ghost" data-pipe-shift="1" data-task-id="${task.id}">→</button>` : ""}
+              </div>
+              <div class="controls">
+                ${!col.done ? `<button type="button" class="ghost" data-pipe-order="up" data-task-id="${task.id}">↑</button>` : ""}
+                ${!col.done ? `<button type="button" class="ghost" data-pipe-order="down" data-task-id="${task.id}">↓</button>` : ""}
+              </div>
+            </div>
+          </div>`;
+        }).join("");
+      });
+
+      const openTotal = state.tasks.filter(t => !t.completedAt).length;
+      const todayCount = countOpenTasksInStage("today");
+      const metaEl = document.getElementById("pipelineMeta");
+      if (metaEl) metaEl.textContent = `${openTotal} open tasks • Today ${todayCount}/${TODAY_STAGE_LIMIT} • Next Up target ${NEXT_UP_SOFT_LIMIT}`;
+    }
+
     // ── Table ──
     function renderTable() {
       const now=Date.now();
-      const focusIds = new Set(state.today_focus?.task_ids || []);
+      const focusIds = new Set(getTodayFocusTasks().map(t => t.id));
       const orderedTasks = state.tasks
         .map((task, index) => ({ task, index }))
+        .filter(entry => !entry.task.completedAt && normalizePipelineStage(entry.task.stage) === "today")
         .sort((left, right) => {
           const a = left.task;
           const b = right.task;
-          const aDone = !!a.completedAt;
-          const bDone = !!b.completedAt;
-          if (aDone !== bDone) return aDone ? 1 : -1; // open tasks first
+          const aRunning = state.activeTaskId === a.id;
+          const bRunning = state.activeTaskId === b.id;
+          if (aRunning !== bRunning) return aRunning ? -1 : 1; // running task first
 
-          if (!aDone) {
-            const aRunning = state.activeTaskId === a.id;
-            const bRunning = state.activeTaskId === b.id;
-            if (aRunning !== bRunning) return aRunning ? -1 : 1; // running task first
+          const aFocus = focusIds.has(a.id);
+          const bFocus = focusIds.has(b.id);
+          if (aFocus !== bFocus) return aFocus ? -1 : 1; // checked Today tasks float up
 
-            const aFocus = focusIds.has(a.id);
-            const bFocus = focusIds.has(b.id);
-            if (aFocus !== bFocus) return aFocus ? -1 : 1; // checked Today tasks float up
-
-            return left.index - right.index; // preserve insertion order
-          }
-
-          const aWhen = a.completedAt || a.createdAt || "";
-          const bWhen = b.completedAt || b.createdAt || "";
-          return bWhen.localeCompare(aWhen); // recently completed first
+          return left.index - right.index; // preserve pipeline order
         })
         .map(entry => entry.task);
       document.getElementById("taskTableBody").innerHTML=orderedTasks.map(task=>{
         const isRunning=state.activeTaskId===task.id;
-        const isFocus = focusIds.has(task.id);
         const liveDelta=isRunning&&state.activeStartedAt?Math.round((now-new Date(state.activeStartedAt).getTime())/1000):0;
         const total=(task.elapsedSec||0)+liveDelta;
         const depthCls=(task.depth||"Deep")==="Deep"?"deep":"shallow";
         const wigCls=(task.wig||"None")!=="None"?"wig":"";
-        return `<tr${task.completedAt?' style="opacity:.55;"':''}>
-          <td><input type="checkbox" ${task.completedAt?"checked":""} data-act="done" data-id="${task.id}" /></td>
-          <td><input type="checkbox" ${isFocus?"checked":""} data-act="focus" data-id="${task.id}" ${task.completedAt?"disabled":""} /></td>
-          <td><div>${task.title}</div><div class="tiny">${task.completedAt?'<span class="done-text">Completed</span>':'Open'}</div></td>
+        return `<tr>
+          <td><input type="checkbox" data-act="done" data-id="${task.id}" /></td>
+          <td><div>${task.title}</div><div class="tiny">Open</div></td>
           <td><span class="tag ${tagClass(task.category)}">${task.category}</span></td>
           <td><span class="tag">${task.importance[0]}/${task.urgency[0]}</span></td>
           <td><span class="tag ${depthCls}">${task.depth||"Deep"}</span></td>
@@ -3636,6 +4001,8 @@
           </div>`;
         }).join("");
       }
+
+      renderTaskPipeline();
 
       // Goal scoreboard (month trends)
       const month = nowMonth();
@@ -3848,10 +4215,7 @@
       const input=e.target.closest("input[data-act='done']");
       if(input) {
         toggleDone(input.dataset.id,input.checked);
-        return;
       }
-      const focus=e.target.closest("input[data-act='focus']");
-      if(focus) setTaskFocusToday(focus.dataset.id, focus.checked);
     });
 
     document.getElementById("clearDoneBtn").addEventListener("click",removeDone);
@@ -3988,6 +4352,69 @@
       const btn = e.target.closest("button[data-commit-ft]");
       if (!btn) return;
       setCommitmentAsFinishTrack(btn.dataset.commitFt);
+    });
+    document.getElementById("pipelineBoard").addEventListener("click",e=>{
+      const moveBtn = e.target.closest("button[data-pipe-shift]");
+      if (moveBtn) {
+        const task = getTask(moveBtn.dataset.taskId);
+        if (!task || task.completedAt) return;
+        const currentStage = normalizePipelineStage(task.stage);
+        const currentIndex = PIPELINE_STAGES.indexOf(currentStage);
+        const shift = Number.parseInt(moveBtn.dataset.pipeShift, 10);
+        const targetStage = PIPELINE_STAGES[currentIndex + shift];
+        if (targetStage) moveTaskToStage(task.id, targetStage);
+        return;
+      }
+      const orderBtn = e.target.closest("button[data-pipe-order]");
+      if (orderBtn) {
+        moveTaskWithinStage(orderBtn.dataset.taskId, orderBtn.dataset.pipeOrder);
+      }
+    });
+    document.getElementById("pipelineBoard").addEventListener("dragstart",e=>{
+      const card = e.target.closest(".pipeline-card");
+      if (!card) return;
+      pipelineDragTaskId = card.dataset.taskId || null;
+      card.classList.add("dragging");
+      if (e.dataTransfer) {
+        e.dataTransfer.effectAllowed = "move";
+        e.dataTransfer.setData("text/plain", pipelineDragTaskId || "");
+      }
+    });
+    document.getElementById("pipelineBoard").addEventListener("dragend",()=>{
+      pipelineDragTaskId = null;
+      clearPipelineDragClasses();
+    });
+    document.getElementById("pipelineBoard").addEventListener("dragover",e=>{
+      if (!pipelineDragTaskId) return;
+      const list = e.target.closest(".pipeline-list");
+      const card = e.target.closest(".pipeline-card");
+      const targetList = list || card?.closest(".pipeline-list");
+      if (!targetList) return;
+      if (targetList.dataset.stage === "done") return;
+      e.preventDefault();
+      clearPipelineDragClasses();
+      targetList.classList.add("drag-over");
+    });
+    document.getElementById("pipelineBoard").addEventListener("drop",e=>{
+      if (!pipelineDragTaskId) return;
+      e.preventDefault();
+      const card = e.target.closest(".pipeline-card");
+      const list = e.target.closest(".pipeline-list") || card?.closest(".pipeline-list");
+      if (!list) {
+        clearPipelineDragClasses();
+        pipelineDragTaskId = null;
+        return;
+      }
+      const targetStage = list.dataset.stage;
+      if (targetStage === "done") {
+        pipelineDragTaskId = null;
+        clearPipelineDragClasses();
+        return;
+      }
+      const beforeTaskId = card && card.dataset.taskId !== pipelineDragTaskId ? card.dataset.taskId : "";
+      moveTaskToStage(pipelineDragTaskId, targetStage, beforeTaskId);
+      pipelineDragTaskId = null;
+      clearPipelineDragClasses();
     });
 
     // File sync
