@@ -225,7 +225,7 @@
     #onboardingModal .onboard-task-grid,
     #onboardingModal .onboard-confirm-box { padding:16px; gap:12px; border-radius:14px; }
     #onboardingModal .onboard-row { grid-template-columns:1.3fr 150px 1.4fr; }
-    #onboardingModal .onboard-row.task { grid-template-columns:1.4fr 210px auto; }
+    #onboardingModal .onboard-row.task { grid-template-columns:1.3fr 210px 170px auto; }
     #onboardingModal input,
     #onboardingModal select,
     #onboardingModal textarea { font-size:22px; padding:14px 16px; border-radius:12px; }
@@ -399,6 +399,35 @@
       margin-top:10px;
       align-items:end;
     }
+    .ai-provider-switch {
+      display:flex;
+      gap:6px;
+      flex-wrap:wrap;
+      align-items:center;
+    }
+    .ai-provider-btn {
+      border:1px solid var(--line);
+      background:#fff;
+      color:var(--muted);
+      font-size:12px;
+      border-radius:999px;
+      padding:4px 10px;
+      line-height:1.2;
+      cursor:pointer;
+    }
+    .ai-provider-btn.active {
+      border-color:#9acdbf;
+      background:var(--accent-light);
+      color:var(--accent);
+      font-weight:700;
+    }
+    .ai-settings-panel {
+      border:1px solid var(--line);
+      border-radius:12px;
+      background:#fafcf9;
+      padding:10px;
+      margin-top:10px;
+    }
     .ai-chat-box {
       border:1px solid var(--line);
       border-radius:12px;
@@ -474,6 +503,10 @@
       background:#fff6f4;
     }
     .ai-action-meta { color:var(--muted); font-size:11px; }
+    #aiInlineCard .ai-messages {
+      min-height:140px;
+      max-height:260px;
+    }
     .score-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:10px; }
     .score-card {
       border:1px solid var(--line);
@@ -756,7 +789,7 @@
       gap:8px;
       align-items:center;
     }
-    .onboard-row.task { grid-template-columns:1.4fr 130px auto; }
+    .onboard-row.task { grid-template-columns:1.2fr 170px 120px auto; }
     .onboard-foot {
       display:flex;
       justify-content:space-between;
@@ -883,6 +916,51 @@
             <button id="heroCompleteBtn" class="hero-complete-btn" type="button" disabled>
               ✓ &nbsp;Mark Complete
             </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- AI Inbox -->
+      <section id="aiInlineCard" class="card">
+        <div class="titlebar">
+          <h2>AI Inbox</h2>
+          <div class="controls">
+            <div id="aiInlineProviderSwitch" class="ai-provider-switch">
+              <button class="ai-provider-btn" type="button" data-ai-provider-btn="openai">ChatGPT</button>
+              <button class="ai-provider-btn" type="button" data-ai-provider-btn="anthropic">Claude</button>
+              <button class="ai-provider-btn" type="button" data-ai-provider-btn="grok">Grok</button>
+              <button class="ai-provider-btn" type="button" data-ai-provider-btn="gemini">Gemini</button>
+              <button class="ai-provider-btn" type="button" data-ai-provider-btn="deepseek">DeepSeek</button>
+            </div>
+            <button id="aiInlineOpenSettingsBtn" class="ghost" type="button">AI Settings</button>
+            <button id="aiInlineOpenAssistantBtn" class="ghost" type="button">Open AI Workspace</button>
+          </div>
+        </div>
+        <p class="subtitle" style="margin-top:8px;">
+          Brain-dump tasks naturally, then review and apply only the board changes you want.
+        </p>
+        <div id="aiInlineDisabledNotice" class="ai-note" hidden>
+          AI is currently off. Open AI Settings to enable providers and API keys.
+        </div>
+        <div id="aiInlineChatWrap" class="ai-chat-box" hidden>
+          <div id="aiInlineMessages" class="ai-messages"></div>
+          <textarea id="aiInlineUserInput" placeholder="Dump tasks and context freely. Example: I finished section 2, move regression robustness to Today, and add a commitment to draft intro by Friday."></textarea>
+          <div class="controls">
+            <button id="aiInlineSendBtn" class="primary" type="button">Propose Changes</button>
+            <button id="aiInlineClearChatBtn" class="ghost" type="button">Clear Chat</button>
+            <span id="aiInlineBusyStatus" class="tiny"></span>
+          </div>
+        </div>
+        <div id="aiInlineProposalWrap" class="ai-proposal" hidden>
+          <h3 style="margin:0;">Proposed Changes</h3>
+          <div id="aiInlineProposalSummary" class="tiny"></div>
+          <div id="aiInlineProposalAssumptions" class="tiny"></div>
+          <div id="aiInlineProposalQuestions" class="tiny"></div>
+          <div id="aiInlineActionsList" class="ai-actions-list"></div>
+          <div class="controls">
+            <button id="aiInlineApplyBtn" class="primary" type="button">Apply Selected Changes</button>
+            <button id="aiInlineUndoBtn" class="ghost" type="button">Undo Last AI Batch</button>
+            <span id="aiInlineApplyStatus" class="tiny"></span>
           </div>
         </div>
       </section>
@@ -1229,52 +1307,67 @@
     <div id="tab-assistant" class="tab-content">
       <section class="card">
         <div class="titlebar">
-          <h2>AI Assistant</h2>
+          <h2>AI Workspace</h2>
           <div class="controls">
             <span id="aiStatusBadge" class="tiny">Disabled</span>
-            <button id="aiSaveConfigBtn" class="primary" type="button">Save AI Settings</button>
+            <div id="aiTabProviderSwitch" class="ai-provider-switch">
+              <button class="ai-provider-btn" type="button" data-ai-provider-btn="openai">ChatGPT</button>
+              <button class="ai-provider-btn" type="button" data-ai-provider-btn="anthropic">Claude</button>
+              <button class="ai-provider-btn" type="button" data-ai-provider-btn="grok">Grok</button>
+              <button class="ai-provider-btn" type="button" data-ai-provider-btn="gemini">Gemini</button>
+              <button class="ai-provider-btn" type="button" data-ai-provider-btn="deepseek">DeepSeek</button>
+            </div>
+            <button id="aiToggleConfigBtn" class="ghost" type="button">Settings</button>
           </div>
         </div>
         <p class="subtitle" style="margin-bottom:10px;">
-          Optional feature: chat naturally, review proposed board changes, then apply only what you approve.
+          Continuous conversation for board updates. Settings stay tucked away unless you need them.
         </p>
 
-        <div class="ai-config-grid">
-          <label class="tiny" style="display:grid;gap:4px;">
-            <span>Enable AI Assistant</span>
-            <input id="aiEnabledInput" type="checkbox" />
-          </label>
-          <label class="tiny" style="display:grid;gap:4px;">
-            <span>Hide AI tab when disabled</span>
-            <input id="aiHideDisabledInput" type="checkbox" checked />
-          </label>
-          <label class="tiny" style="display:grid;gap:4px;">
-            <span>Provider</span>
-            <select id="aiProviderInput">
-              <option value="openai">OpenAI</option>
-              <option value="anthropic">Anthropic</option>
-              <option value="gemini">Google Gemini</option>
-              <option value="grok">xAI / Grok</option>
-              <option value="deepseek">DeepSeek</option>
-              <option value="openai_compatible">OpenAI-compatible</option>
-            </select>
-          </label>
-          <label class="tiny" style="display:grid;gap:4px;">
-            <span>Model</span>
-            <input id="aiModelInput" placeholder="e.g. gpt-4.1-mini / claude-3-5-sonnet-latest" />
-          </label>
-          <label class="tiny" style="display:grid;gap:4px;">
-            <span>API Key (stored locally on this machine)</span>
-            <input id="aiApiKeyInput" type="password" autocomplete="off" placeholder="sk-... / sk-ant-..." />
-          </label>
-          <label class="tiny" style="display:grid;gap:4px;">
-            <span>Base URL (optional override)</span>
-            <input id="aiBaseUrlInput" placeholder="https://api.openai.com/v1" />
-          </label>
-        </div>
-        <div class="controls" style="margin-top:8px;">
-          <button id="aiTestBtn" class="ghost" type="button">Test connection</button>
-          <span id="aiTestStatus" class="tiny"></span>
+        <div id="aiConfigPanel" class="ai-settings-panel" hidden>
+          <div class="ai-config-grid">
+            <label class="tiny" style="display:grid;gap:4px;">
+              <span>Enable AI Assistant</span>
+              <input id="aiEnabledInput" type="checkbox" />
+            </label>
+            <label class="tiny" style="display:grid;gap:4px;">
+              <span>Hide AI tab when disabled</span>
+              <input id="aiHideDisabledInput" type="checkbox" checked />
+            </label>
+            <label class="tiny" style="display:grid;gap:4px;">
+              <span>Provider</span>
+              <select id="aiProviderInput">
+                <option value="openai">OpenAI</option>
+                <option value="anthropic">Anthropic</option>
+                <option value="gemini">Google Gemini</option>
+                <option value="grok">xAI / Grok</option>
+                <option value="deepseek">DeepSeek</option>
+                <option value="openai_compatible">OpenAI-compatible</option>
+              </select>
+            </label>
+            <label class="tiny" style="display:grid;gap:4px;">
+              <span>API Key (stored locally on this machine)</span>
+              <input id="aiApiKeyInput" type="password" autocomplete="off" placeholder="sk-... / sk-ant-..." />
+            </label>
+          </div>
+          <details style="margin-top:8px;">
+            <summary class="tiny" style="cursor:pointer;">Advanced options (optional)</summary>
+            <div class="ai-config-grid" style="margin-top:8px;">
+              <label class="tiny" style="display:grid;gap:4px;">
+                <span>Model override (advanced)</span>
+                <input id="aiModelInput" placeholder="Leave blank to use provider default" />
+              </label>
+              <label class="tiny" style="display:grid;gap:4px;">
+                <span>Base URL override (advanced)</span>
+                <input id="aiBaseUrlInput" placeholder="Leave blank to use provider default endpoint" />
+              </label>
+            </div>
+          </details>
+          <div class="controls" style="margin-top:8px;">
+            <button id="aiSaveConfigBtn" class="primary" type="button">Save AI Settings</button>
+            <button id="aiTestBtn" class="ghost" type="button">Test connection</button>
+            <span id="aiTestStatus" class="tiny"></span>
+          </div>
         </div>
 
         <div id="aiDisabledNotice" class="ai-note" hidden>
@@ -1285,7 +1378,7 @@
           <div id="aiMessages" class="ai-messages"></div>
           <textarea id="aiUserInput" placeholder="Example: I just finished the methods section. Move Boycott robustness checks into Today and add a commitment to draft intro by Friday."></textarea>
           <div class="controls">
-            <button id="aiSendBtn" class="primary" type="button">Ask AI</button>
+            <button id="aiSendBtn" class="primary" type="button">Propose Changes</button>
             <button id="aiClearChatBtn" class="ghost" type="button">Clear Chat</button>
             <span id="aiBusyStatus" class="tiny"></span>
           </div>
@@ -1375,7 +1468,7 @@
       </div>
       <div class="onboard-steps">
         <span id="onboardStepPill1" class="onboard-step-pill active">1. Welcome</span>
-        <span id="onboardStepPill2" class="onboard-step-pill">2. How it works</span>
+        <span id="onboardStepPill2" class="onboard-step-pill">2. AI assist (optional)</span>
         <span id="onboardStepPill3" class="onboard-step-pill">3. Primary goal</span>
         <span id="onboardStepPill4" class="onboard-step-pill">4. Life practices</span>
         <span id="onboardStepPill5" class="onboard-step-pill">5. First tasks</span>
@@ -1396,12 +1489,30 @@
         </div>
 
         <div id="onboardStep2" class="onboard-screen" hidden>
-          <p><strong>How It Works</strong></p>
-          <p class="tiny" style="margin-top:10px;">PPP Flow is built on four principles:</p>
-          <p class="tiny" style="margin-top:12px;"><strong>1. Focus on one primary goal (PG).</strong> Instead of spreading effort across everything, pick the one goal where success would change everything else. Most goals fail not because of bad planning but because the day-to-day crowds them out. Narrowing your focus is the first discipline.</p>
-          <p class="tiny" style="margin-top:10px;"><strong>2. Track inputs, not just results.</strong> There are two kinds of measures. Results tell you whether you achieved the goal after the fact — you can't control them directly. Inputs are the activities that <em>predict</em> the result: the deep-work sessions, the drafts written, the experiments run. Track what you can control this week.</p>
-          <p class="tiny" style="margin-top:10px;"><strong>3. Keep a visible scoreboard.</strong> If you can't tell at a glance whether you're winning or losing, you'll lose focus. PPP Flow is your scoreboard. It tracks your deep ratio — how much of your time goes to focused, high-value work versus shallow logistics — plus tasks closed, streaks, and weekly trends. All updated automatically as you work.</p>
-          <p class="tiny" style="margin-top:10px;"><strong>4. Review weekly.</strong> Once a week, look at your scoreboard. What worked? What didn't? What will you commit to this week? The weekly review is what sustains the other three principles over time. Without it, goals drift.</p>
+          <p><strong>AI Setup (Recommended)</strong></p>
+          <p class="tiny" style="margin-top:10px;">Connect an AI provider now and let it help draft your starter board. If you prefer, skip this and continue manual setup.</p>
+          <div class="onboard-confirm-box" style="margin-top:10px;">
+            <div class="onboard-row task">
+              <select id="onboardAiProvider">
+                <option value="openai">ChatGPT (OpenAI)</option>
+                <option value="anthropic">Claude (Anthropic)</option>
+                <option value="grok">Grok (xAI)</option>
+                <option value="gemini">Gemini (Google)</option>
+                <option value="deepseek">DeepSeek</option>
+                <option value="openai_compatible">OpenAI-compatible</option>
+              </select>
+              <input id="onboardAiApiKey" type="password" autocomplete="off" placeholder="Paste API key (stored locally)" />
+              <button id="onboardAiConnectBtn" class="ghost" type="button">Connect key</button>
+            </div>
+            <textarea id="onboardAiIntake" placeholder="Brain-dump what matters right now: goals, deadlines, life practices, constraints, and what tends to get procrastinated."></textarea>
+            <div class="controls">
+              <button id="onboardAiGenerateBtn" class="primary" type="button">Generate starter board with AI</button>
+              <span id="onboardAiStatus" class="tiny"></span>
+            </div>
+            <div id="onboardAiQuestions" class="tiny"></div>
+          </div>
+          <p class="tiny" style="margin-top:8px;"><strong>Set up later?</strong> No problem. Press Next and continue manual onboarding.</p>
+          <p class="tiny" style="margin-top:12px;"><strong>How PPP Flow works:</strong> focus on one primary goal, track controllable inputs (not just results), keep a visible scoreboard, and review weekly so priorities stay honest.</p>
         </div>
 
         <div id="onboardStep3" class="onboard-screen" hidden>
@@ -1438,6 +1549,16 @@
               <input id="onboardPractice3Min" type="number" min="1" max="240" step="1" placeholder="Min" />
               <input id="onboardPractice3Note" placeholder="Optional note" />
             </div>
+            <div class="onboard-row">
+              <input id="onboardPractice4" placeholder="Practice 4 (optional)" />
+              <input id="onboardPractice4Min" type="number" min="1" max="240" step="1" placeholder="Min" />
+              <input id="onboardPractice4Note" placeholder="Optional note" />
+            </div>
+            <div class="onboard-row">
+              <input id="onboardPractice5" placeholder="Practice 5 (optional)" />
+              <input id="onboardPractice5Min" type="number" min="1" max="240" step="1" placeholder="Min" />
+              <input id="onboardPractice5Note" placeholder="Optional note" />
+            </div>
           </div>
         </div>
 
@@ -1456,6 +1577,10 @@
                 <option>Travel/Admin</option>
                 <option>Revenue/Venture</option>
               </select>
+              <select id="onboardTask1Depth">
+                <option value="Deep">Deep</option>
+                <option value="Shallow">Shallow</option>
+              </select>
               <label class="tiny"><input id="onboardTask1Focus" type="checkbox" checked /> Add to Today</label>
             </div>
             <div class="onboard-row task">
@@ -1466,6 +1591,10 @@
                 <option>Body/Mind</option>
                 <option>Travel/Admin</option>
                 <option>Revenue/Venture</option>
+              </select>
+              <select id="onboardTask2Depth">
+                <option value="Deep">Deep</option>
+                <option value="Shallow">Shallow</option>
               </select>
               <label class="tiny"><input id="onboardTask2Focus" type="checkbox" checked /> Add to Today</label>
             </div>
@@ -1478,7 +1607,41 @@
                 <option>Travel/Admin</option>
                 <option>Revenue/Venture</option>
               </select>
+              <select id="onboardTask3Depth">
+                <option value="Deep">Deep</option>
+                <option value="Shallow">Shallow</option>
+              </select>
               <label class="tiny"><input id="onboardTask3Focus" type="checkbox" checked /> Add to Today</label>
+            </div>
+            <div class="onboard-row task">
+              <input id="onboardTask4" placeholder="Task 4 (optional)" />
+              <select id="onboardTask4Category">
+                <option>Strategic</option>
+                <option>Maintenance</option>
+                <option>Body/Mind</option>
+                <option>Travel/Admin</option>
+                <option>Revenue/Venture</option>
+              </select>
+              <select id="onboardTask4Depth">
+                <option value="Deep">Deep</option>
+                <option value="Shallow">Shallow</option>
+              </select>
+              <label class="tiny"><input id="onboardTask4Focus" type="checkbox" checked /> Add to Today</label>
+            </div>
+            <div class="onboard-row task">
+              <input id="onboardTask5" placeholder="Task 5 (optional)" />
+              <select id="onboardTask5Category">
+                <option>Strategic</option>
+                <option>Maintenance</option>
+                <option>Body/Mind</option>
+                <option>Travel/Admin</option>
+                <option>Revenue/Venture</option>
+              </select>
+              <select id="onboardTask5Depth">
+                <option value="Deep">Deep</option>
+                <option value="Shallow">Shallow</option>
+              </select>
+              <label class="tiny"><input id="onboardTask5Focus" type="checkbox" checked /> Add to Today</label>
             </div>
           </div>
         </div>
@@ -1583,6 +1746,7 @@
     let aiProposal = null;
     let aiUndoBatch = null;
     let aiPanelForcedVisible = false;
+    let aiConfigOpen = false;
     let aiBusy = false;
     const pointerPipelineDrag = {
       taskId: "",
@@ -2127,39 +2291,221 @@
       return "https://api.openai.com/v1";
     }
     function aiDefaultModel(provider) {
-      if (provider === "anthropic") return "claude-3-5-sonnet-latest";
-      if (provider === "gemini") return "gemini-1.5-pro";
-      if (provider === "grok") return "grok-2-latest";
+      if (provider === "anthropic") return "claude-sonnet-4-5";
+      if (provider === "gemini") return "gemini-2.5-flash";
+      if (provider === "grok") return "grok-4-1-fast-non-reasoning";
       if (provider === "deepseek") return "deepseek-chat";
       return "gpt-4.1-mini";
     }
+    function aiPreferredModelHints(provider) {
+      if (provider === "openai" || provider === "openai_compatible") return ["gpt-5.1", "gpt-5-mini", "gpt-4.1", "gpt-4.1-mini"];
+      if (provider === "anthropic") return [
+        "claude-sonnet-4-5",
+        "claude-opus-4-6",
+        "claude-haiku-4-5",
+        "claude-sonnet-4-5-20250929",
+        "claude-haiku-4-5-20251001",
+        "claude-3-7-sonnet-latest"
+      ];
+      if (provider === "gemini") return ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-flash-latest", "gemini-2.0-flash", "gemini-1.5-pro"];
+      if (provider === "grok") return [
+        "grok-4-1-fast-non-reasoning",
+        "grok-4-1-fast-reasoning",
+        "grok-4-fast-non-reasoning",
+        "grok-4-fast-reasoning",
+        "grok-4-0709",
+        "grok-code-fast-1",
+        "grok-3-mini",
+        "grok-3"
+      ];
+      if (provider === "deepseek") return ["deepseek-chat", "deepseek-reasoner"];
+      return [];
+    }
+    function aiNormalizeModelId(provider, value) {
+      const text = String(value || "").trim();
+      if (!text) return "";
+      if (provider === "gemini" && text.startsWith("models/")) return text.slice("models/".length);
+      return text;
+    }
+    function aiChooseModel(provider, requestedModel, availableModels) {
+      const requested = aiNormalizeModelId(provider, requestedModel);
+      const normalized = Array.from(new Set(
+        (Array.isArray(availableModels) ? availableModels : [])
+          .map(v => aiNormalizeModelId(provider, v))
+          .filter(Boolean)
+      ));
+      if (!normalized.length) return requested || aiDefaultModel(provider);
+      if (requested && normalized.includes(requested)) return requested;
+      for (const candidate of aiPreferredModelHints(provider)) {
+        const hit = normalized.find(m => m.toLowerCase() === candidate.toLowerCase());
+        if (hit) return hit;
+      }
+      return normalized[0];
+    }
+    function aiChooseAlternativeModel(provider, availableModels, blocked = []) {
+      const blockedSet = new Set(
+        (Array.isArray(blocked) ? blocked : [blocked])
+          .map(v => aiNormalizeModelId(provider, v))
+          .filter(Boolean)
+      );
+      const normalized = Array.from(new Set(
+        (Array.isArray(availableModels) ? availableModels : [])
+          .map(v => aiNormalizeModelId(provider, v))
+          .filter(Boolean)
+      ));
+      for (const candidate of aiPreferredModelHints(provider)) {
+        const hit = normalized.find(m => m.toLowerCase() === candidate.toLowerCase());
+        if (hit && !blockedSet.has(hit)) return hit;
+      }
+      return normalized.find(m => !blockedSet.has(m)) || "";
+    }
+    function aiLooksLikeModelError(message) {
+      return /model[^.]*not found|invalid model|unknown model|does not exist|not supported|not_found/i.test(String(message || ""));
+    }
+    function aiLooksLikePolicyBlock(provider, message) {
+      if (provider !== "grok") return false;
+      return /usage guidelines|does not have permission|failed check|safety_check_type_/i.test(String(message || ""));
+    }
+    function aiBuildFallbackCandidates(provider, currentModel, availableModels = []) {
+      const current = aiNormalizeModelId(provider, currentModel);
+      const blockedSet = new Set([current].filter(Boolean));
+      const available = Array.isArray(availableModels)
+        ? availableModels.map(v => aiNormalizeModelId(provider, v)).filter(Boolean)
+        : [];
+      const candidates = [];
+      const pushCandidate = (value) => {
+        const normalized = aiNormalizeModelId(provider, value);
+        if (!normalized || blockedSet.has(normalized) || candidates.includes(normalized)) return;
+        candidates.push(normalized);
+      };
+      for (const hint of aiPreferredModelHints(provider)) pushCandidate(hint);
+      for (const value of available) pushCandidate(value);
+      return candidates;
+    }
+    async function aiFetchAvailableModels(cfgLike) {
+      const cfg = cfgLike && typeof cfgLike === "object" ? cfgLike : aiResolveConfig(aiPrefs);
+      const baseUrl = String(cfg.baseUrl || "").trim().replace(/\/+$/, "");
+      if (!cfg.apiKey) throw new Error("API key is required.");
+      if (!baseUrl) throw new Error("Base URL is required.");
+
+      if (cfg.provider === "grok") {
+        // xAI Responses endpoint works reliably with explicit model names for this app.
+        return aiPreferredModelHints("grok");
+      }
+
+      if (cfg.provider === "anthropic") {
+        const res = await fetch(`${baseUrl}/models`, {
+          method: "GET",
+          headers: {
+            "x-api-key": cfg.apiKey,
+            "anthropic-version": "2023-06-01",
+            "anthropic-dangerous-direct-browser-access": "true"
+          }
+        });
+        if (!res.ok) throw new Error(`Anthropic model list error ${res.status}: ${await res.text()}`);
+        const data = await res.json();
+        const models = Array.isArray(data?.data)
+          ? data.data.map(item => String(item?.id || "").trim()).filter(Boolean)
+          : [];
+        return models;
+      }
+
+      if (cfg.provider === "gemini") {
+        const separator = baseUrl.includes("?") ? "&" : "?";
+        const res = await fetch(`${baseUrl}/models${separator}key=${encodeURIComponent(cfg.apiKey)}`, {
+          method: "GET",
+          headers: { "Accept": "application/json" }
+        });
+        if (!res.ok) throw new Error(`Gemini model list error ${res.status}: ${await res.text()}`);
+        const data = await res.json();
+        const models = Array.isArray(data?.models)
+          ? data.models
+              .filter(item => {
+                const methods = Array.isArray(item?.supportedGenerationMethods)
+                  ? item.supportedGenerationMethods.map(v => String(v || "").trim())
+                  : [];
+                return !methods.length || methods.includes("generateContent");
+              })
+              .map(item => aiNormalizeModelId("gemini", item?.name))
+              .filter(Boolean)
+          : [];
+        return models;
+      }
+
+      if (!aiIsOpenAiCompatibleProvider(cfg.provider)) {
+        throw new Error(`Unsupported provider: ${cfg.provider}`);
+      }
+      const res = await fetch(`${baseUrl}/models`, {
+        method: "GET",
+        headers: { "Authorization": `Bearer ${cfg.apiKey}` }
+      });
+      if (!res.ok) throw new Error(`Model list error ${res.status}: ${await res.text()}`);
+      const data = await res.json();
+      const rows = Array.isArray(data?.data) ? data.data : (Array.isArray(data?.models) ? data.models : []);
+      const models = rows
+        .map(item => String(item?.id || item?.name || "").trim())
+        .filter(Boolean);
+      return models;
+    }
     function aiIsOpenAiCompatibleProvider(provider) {
       return provider === "openai" || provider === "openai_compatible" || provider === "grok" || provider === "deepseek";
+    }
+    function aiDefaultProviderConfig(provider) {
+      return {
+        model: aiDefaultModel(provider),
+        apiKey: "",
+        baseUrl: aiDefaultBaseUrl(provider)
+      };
+    }
+    function buildDefaultAiProviderConfigs() {
+      return AI_ALLOWED_PROVIDERS.reduce((acc, provider) => {
+        acc[provider] = aiDefaultProviderConfig(provider);
+        return acc;
+      }, {});
     }
     function defaultAiPrefs() {
       return {
         enabled: false,
         hideUiWhenDisabled: true,
         provider: "openai",
-        model: aiDefaultModel("openai"),
-        apiKey: "",
-        baseUrl: aiDefaultBaseUrl("openai")
+        providerConfigs: buildDefaultAiProviderConfigs()
       };
     }
     function normalizeAiPrefs(raw) {
       const base = defaultAiPrefs();
       const input = raw && typeof raw === "object" ? raw : {};
       const provider = AI_ALLOWED_PROVIDERS.includes(input.provider) ? input.provider : base.provider;
+      const providerConfigs = buildDefaultAiProviderConfigs();
+      const rawProviderConfigs = input.providerConfigs && typeof input.providerConfigs === "object"
+        ? input.providerConfigs
+        : {};
+      AI_ALLOWED_PROVIDERS.forEach(name => {
+        const defaults = aiDefaultProviderConfig(name);
+        const rawCfg = rawProviderConfigs[name] && typeof rawProviderConfigs[name] === "object"
+          ? rawProviderConfigs[name]
+          : {};
+        providerConfigs[name] = {
+          model: String(rawCfg.model || "").trim() || defaults.model,
+          apiKey: String(rawCfg.apiKey || "").trim(),
+          baseUrl: String(rawCfg.baseUrl || "").trim() || defaults.baseUrl
+        };
+      });
+      // Legacy migration: previously one key/model/baseUrl was shared across all providers.
+      const legacyProvider = AI_ALLOWED_PROVIDERS.includes(input.provider) ? input.provider : provider;
+      if (input.apiKey != null || input.model != null || input.baseUrl != null) {
+        const legacyDefaults = aiDefaultProviderConfig(legacyProvider);
+        providerConfigs[legacyProvider] = {
+          model: String(input.model || "").trim() || providerConfigs[legacyProvider].model || legacyDefaults.model,
+          apiKey: String(input.apiKey || "").trim() || providerConfigs[legacyProvider].apiKey || "",
+          baseUrl: String(input.baseUrl || "").trim() || providerConfigs[legacyProvider].baseUrl || legacyDefaults.baseUrl
+        };
+      }
       const normalized = {
-        ...base,
         enabled: input.enabled === true,
         hideUiWhenDisabled: input.hideUiWhenDisabled !== false,
         provider,
-        model: String(input.model || "").trim() || aiDefaultModel(provider),
-        apiKey: String(input.apiKey || "").trim(),
-        baseUrl: String(input.baseUrl || "").trim()
+        providerConfigs
       };
-      if (!normalized.baseUrl) normalized.baseUrl = aiDefaultBaseUrl(provider);
       return normalized;
     }
     function loadAiPrefs() {
@@ -2176,6 +2522,38 @@
     }
     function aiShouldShowTab() {
       return aiPrefs.enabled || !aiPrefs.hideUiWhenDisabled || aiPanelForcedVisible;
+    }
+    function aiGetProviderConfig(provider = aiPrefs.provider, sourcePrefs = aiPrefs) {
+      const name = AI_ALLOWED_PROVIDERS.includes(provider) ? provider : "openai";
+      const defaults = aiDefaultProviderConfig(name);
+      const source = sourcePrefs && typeof sourcePrefs === "object" ? sourcePrefs : {};
+      const configMap = source.providerConfigs && typeof source.providerConfigs === "object"
+        ? source.providerConfigs
+        : {};
+      const raw = configMap[name] && typeof configMap[name] === "object" ? configMap[name] : {};
+      return {
+        model: String(raw.model || "").trim() || defaults.model,
+        apiKey: String(raw.apiKey || "").trim(),
+        baseUrl: String(raw.baseUrl || "").trim() || defaults.baseUrl
+      };
+    }
+    function aiSetProviderConfig(provider, patch = {}) {
+      const name = AI_ALLOWED_PROVIDERS.includes(provider) ? provider : "openai";
+      if (!aiPrefs.providerConfigs || typeof aiPrefs.providerConfigs !== "object") {
+        aiPrefs.providerConfigs = buildDefaultAiProviderConfigs();
+      }
+      const previous = aiGetProviderConfig(name);
+      aiPrefs.providerConfigs[name] = {
+        model: String(patch.model ?? previous.model).trim() || aiDefaultModel(name),
+        apiKey: String(patch.apiKey ?? previous.apiKey).trim(),
+        baseUrl: String(patch.baseUrl ?? previous.baseUrl).trim() || aiDefaultBaseUrl(name)
+      };
+    }
+    function setAiProvider(provider) {
+      const next = String(provider || "").trim();
+      if (!AI_ALLOWED_PROVIDERS.includes(next)) return;
+      aiPrefs.provider = next;
+      aiSetProviderConfig(next, aiGetProviderConfig(next));
     }
     function normalizeEnumValue(value, allowed) {
       const input = String(value ?? "").trim();
@@ -2233,13 +2611,40 @@
       };
     }
     function aiBuildSystemPrompt() {
-      return [
-        "You are an assistant for PPP Flow Desktop.",
-        "Convert user intent into structured board actions only.",
-        "Return valid JSON only, no markdown, no prose outside JSON.",
-        "Output object keys: summary, actions, assumptions, questions.",
-        "Use only supported action types and enum values provided in user prompt."
-      ].join(" ");
+      return `You are the AI assistant for PPP Flow — a personal operating system built around one central truth: every day is consumed by reactive work. Emails, meetings, logistics, other people's priorities. This is the day-to-day. It has to happen — but left unchecked, it devours all the time needed for the work that actually moves the needle.
+
+PPP Flow — Prioritisation, Productivity & Procrastination — exists to protect that time. Your role is to help the user manage their board in service of that goal.
+
+PRODUCT PHILOSOPHY
+
+1. PRIMARY GOAL FIRST. The user has nominated one Primary Goal (PG1) — the single most important thing they are working toward right now, with a concrete deadline and a success measure. A Secondary Goal (PG2) is optional. Every task, commitment, and daily decision should be evaluated relative to PG1. When creating or moving tasks, always consider whether they serve the primary goal. When a user adds tasks unrelated to PG1, it is worth noting.
+
+2. PROTECT DEEP WORK. Tasks are classified as Deep (cognitively demanding, requiring protected focus time) or Shallow (administrative, logistical, can be done distracted). The board tracks the user's Deep Work Ratio — the share of actual work time spent on Deep tasks. This is one of the most important metrics in the system. When adding tasks, default to the correct depth. When the user's board is dominated by Shallow work, notice it.
+
+3. THE PIPELINE IS A FORCING FUNCTION. The four stages are: Backlog (unlimited parking lot), Next Up (soft limit ~10, what you're genuinely considering this week), Today (hard cap of 5 open tasks, what you're committing to now), Done. The Today limit is intentional — it forces real prioritisation. If Today already has 5 open tasks and the user wants to add another, do not silently add a 6th. Ask which existing task to defer first.
+
+4. IMPORTANCE VS URGENCY. High Importance + Low Urgency tasks are the most valuable and most neglected — typically the Deep, Strategic tasks that move the primary goal forward. High Urgency + Low Importance tasks are the trap — the day-to-day that feels pressing but doesn't compound. When creating tasks, reason carefully about these fields. If the user's board has everything marked High/High, probe gently — a real prioritised board has distribution across all quadrants.
+
+5. TRACK INPUTS, NOT JUST OUTPUTS. The system is designed around controlling what you can control: the inputs. Life practices are the daily non-negotiables (exercise, sleep, reflection, recovery) that sustain performance over time — treat them as foundational inputs, not optional tasks. Weekly commitments are specific, time-bound actions that answer: what, exactly, will I do this week to move my primary goal forward?
+
+6. ACCOUNTABILITY RHYTHM. The weekly review is where users close the loop — checking what was committed, what was done, what the Deep Ratio actually was, and resetting for the next week. The system keeps an honest record. Encourage users to set commitments that are specific and measurable, not vague intentions.
+
+7. CATEGORIES REVEAL ENERGY ALLOCATION. Strategic / Maintenance / Body-Mind / Travel-Admin / Revenue-Venture. Over time, the category distribution tells the user whether their energy is going where they intend. A board dominated by Maintenance and Travel-Admin is a warning sign, not a plan.
+
+8. PROCRASTINATION IS A SYSTEM PROBLEM. When users have large backlogs but few completions, when Today tasks linger for many days, when commitments are never marked done — these are signals of friction, not character flaws. The system's job is to reduce decision fatigue, keep next actions clear, and make starting easier than avoiding. You can help by surfacing these patterns gently.
+
+YOUR ROLE
+
+You are a thinking partner for prioritisation, not a data-entry tool. When a user brain-dumps, help them translate it into structured board actions — but also notice what the brain-dump reveals about their priorities and energy. Ask good clarifying questions when intent is ambiguous: which stage, which goal, deep or shallow, is there a deadline? Gently push back on overload. Acknowledge trade-offs. Use the board context you are given to make grounded, specific observations — never generic productivity platitudes.
+
+OUTPUT RULES (strict)
+
+Return valid JSON only. No markdown, no prose, no code fences — just the raw JSON object.
+Top-level keys: summary (string), actions (array), assumptions (array of strings), questions (array of strings).
+Every action must be a complete, valid object exactly matching the schema examples provided in the user prompt.
+For task.create: the nested 'task' object MUST include title (required string), category, importance, urgency, depth, and goal. Never omit these fields. Use a sensible enum default if uncertain — but always include them.
+If no board action is needed, return actions: [] and explain in summary.
+Use only supported action types and enum values from the schema.`;
     }
     function aiBuildUserPrompt(userInput) {
       const context = aiBuildContext();
@@ -2263,14 +2668,37 @@
           urgency: AI_ALLOWED_URGENCY,
           depth: AI_ALLOWED_DEPTH,
           category: AI_ALLOWED_CATEGORIES
-        }
+        },
+        examples: [
+          {
+            type: "task.create",
+            client_ref: "ref_1",
+            task: { title: "Finalise binding financial agreement with Hannah", category: "Travel/Admin", importance: "High", urgency: "High", depth: "Shallow", goal: "None" },
+            place: { stage: "backlog" }
+          },
+          {
+            type: "task.move",
+            task_id: "<existing task id from board context>",
+            to_stage: "today"
+          },
+          {
+            type: "task.update",
+            task_id: "<existing task id>",
+            patch: { title: "Updated title", importance: "High" }
+          },
+          {
+            type: "commitment.create",
+            client_ref: "ref_2",
+            commitment: { title: "Review draft by Friday", goal: "PG1" }
+          }
+        ]
       };
       return [
         `BOARD_CONTEXT_JSON:\n${JSON.stringify(context)}`,
         `RECENT_CHAT_JSON:\n${JSON.stringify(recent)}`,
         `SCHEMA_HINT_JSON:\n${JSON.stringify(schemaHint)}`,
         `USER_REQUEST:\n${userInput}`,
-        "Return JSON object with keys summary (string), actions (array), assumptions (array of strings), questions (array of strings)."
+        "Return a JSON object with keys: summary (string), actions (array of complete action objects matching the schema examples above), assumptions (array of strings), questions (array of strings)."
       ].join("\n\n");
     }
     function extractJsonObject(rawText) {
@@ -2290,34 +2718,80 @@
     }
     function normalizeAiAction(rawAction) {
       if (!rawAction || typeof rawAction !== "object") return { error: "Action is not an object." };
-      const type = String(rawAction.type || "").trim();
+      const parseObjectLike = (value) => {
+        if (!value) return {};
+        if (typeof value === "object") return value;
+        if (typeof value !== "string") return {};
+        const text = value.trim();
+        if (!text) return {};
+        try {
+          const parsed = JSON.parse(text);
+          return parsed && typeof parsed === "object" ? parsed : {};
+        } catch {
+          const first = text.indexOf("{");
+          const last = text.lastIndexOf("}");
+          if (first >= 0 && last > first) {
+            try {
+              const parsed = JSON.parse(text.slice(first, last + 1));
+              return parsed && typeof parsed === "object" ? parsed : {};
+            } catch {
+              return {};
+            }
+          }
+        }
+        return {};
+      };
+      const wrapped = rawAction.action && typeof rawAction.action === "object"
+        ? { ...rawAction, ...rawAction.action, type: rawAction.type || rawAction.action.type || rawAction.action.name || rawAction.action.action || "" }
+        : { ...rawAction };
+      const argBundle = {
+        ...parseObjectLike(wrapped.arguments),
+        ...parseObjectLike(wrapped.args),
+        ...parseObjectLike(wrapped.params)
+      };
+      const merged = { ...wrapped, ...argBundle };
+      const type = String(merged.type || merged.action || merged.name || "").trim();
       if (!type) return { error: "Missing action type." };
       if (type === "task.create") {
-        const task = rawAction.task && typeof rawAction.task === "object" ? rawAction.task : {};
-        const place = rawAction.place && typeof rawAction.place === "object" ? rawAction.place : {};
-        const title = String(task.title || "").trim();
+        const task = parseObjectLike(merged.task);
+        const place = parseObjectLike(merged.place);
+        const title = String(
+          task.title ||
+          task.name ||
+          task.text ||
+          task.description ||
+          task.label ||
+          merged.title ||
+          merged.task_title ||
+          merged.taskName ||
+          merged.description ||
+          merged.label ||
+          merged.text ||
+          ""
+        ).trim();
         if (!title) return { error: "task.create requires task.title." };
-        const category = normalizeEnumValue(task.category, AI_ALLOWED_CATEGORIES);
-        if (!category) return { error: "task.create has invalid category." };
-        const importance = normalizeEnumValue(task.importance, AI_ALLOWED_IMPORTANCE);
-        const urgency = normalizeEnumValue(task.urgency, AI_ALLOWED_URGENCY);
-        const depth = normalizeEnumValue(task.depth, AI_ALLOWED_DEPTH);
-        const goal = normalizeEnumValue(task.goal, AI_ALLOWED_GOALS);
-        const stage = normalizeEnumValue(place.stage, AI_ALLOWED_STAGES) || "backlog";
-        if (!importance || !urgency || !depth || !goal) return { error: "task.create has invalid enums." };
+        const category = normalizeEnumValue(task.category || merged.category, AI_ALLOWED_CATEGORIES) || "Maintenance";
+        const importance = normalizeEnumValue(task.importance || merged.importance, AI_ALLOWED_IMPORTANCE) || "Low";
+        const urgency = normalizeEnumValue(task.urgency || merged.urgency, AI_ALLOWED_URGENCY) || "Low";
+        const depth = normalizeEnumValue(task.depth || merged.depth, AI_ALLOWED_DEPTH) || "Deep";
+        const goal = normalizeEnumValue(task.goal || task.wig || merged.goal || merged.wig, AI_ALLOWED_GOALS) || "None";
+        const stage = normalizeEnumValue(place.stage || merged.stage || merged.to_stage, AI_ALLOWED_STAGES) || "backlog";
         return {
           action: {
             type,
-            client_ref: String(rawAction.client_ref || uid()),
+            client_ref: String(merged.client_ref || uid()),
             task: { title, category, importance, urgency, depth, goal },
-            place: { stage, before_task_id: String(place.before_task_id || "").trim() || undefined }
+            place: {
+              stage,
+              before_task_id: String(place.before_task_id || merged.before_task_id || "").trim() || undefined
+            }
           }
         };
       }
       if (type === "task.update") {
-        const taskId = String(rawAction.task_id || "").trim();
+        const taskId = String(merged.task_id || merged.id || "").trim();
         if (!taskId) return { error: "task.update requires task_id." };
-        const patchIn = rawAction.patch && typeof rawAction.patch === "object" ? rawAction.patch : {};
+        const patchIn = merged.patch && typeof merged.patch === "object" ? merged.patch : merged;
         const patch = {};
         if (patchIn.title != null && String(patchIn.title).trim()) patch.title = String(patchIn.title).trim();
         const category = normalizeEnumValue(patchIn.category, AI_ALLOWED_CATEGORIES);
@@ -2334,28 +2808,35 @@
         return { action: { type, task_id: taskId, patch } };
       }
       if (type === "task.move") {
-        const taskId = String(rawAction.task_id || "").trim();
-        const toStage = normalizeEnumValue(rawAction.to_stage, AI_ALLOWED_STAGES);
+        const taskId = String(merged.task_id || merged.id || "").trim();
+        const toStage = normalizeEnumValue(merged.to_stage || merged.stage, AI_ALLOWED_STAGES);
         if (!taskId || !toStage) return { error: "task.move requires valid task_id and to_stage." };
-        const beforeTaskId = String(rawAction.before_task_id || "").trim();
+        const beforeTaskId = String(merged.before_task_id || "").trim();
         return { action: { type, task_id: taskId, to_stage: toStage, before_task_id: beforeTaskId || undefined } };
       }
       if (type === "task.complete") {
-        const taskId = String(rawAction.task_id || "").trim();
-        if (!taskId || typeof rawAction.completed !== "boolean") return { error: "task.complete requires task_id and completed boolean." };
-        return { action: { type, task_id: taskId, completed: rawAction.completed } };
+        const taskId = String(merged.task_id || merged.id || "").trim();
+        const completedValue =
+          typeof merged.completed === "boolean"
+            ? merged.completed
+            : typeof merged.done === "boolean"
+              ? merged.done
+              : null;
+        if (!taskId || completedValue === null) return { error: "task.complete requires task_id and completed boolean." };
+        return { action: { type, task_id: taskId, completed: completedValue } };
       }
       if (type === "life_practice.create") {
-        const p = rawAction.practice && typeof rawAction.practice === "object" ? rawAction.practice : {};
-        const title = String(p.title || "").trim();
-        const min = Number.parseInt(String(p.minimum_minutes || ""), 10);
-        if (!title || !Number.isFinite(min) || min <= 0) return { error: "life_practice.create requires title and minimum_minutes > 0." };
-        return { action: { type, client_ref: String(rawAction.client_ref || uid()), practice: { title, minimum_minutes: min, note: String(p.note || "").trim() } } };
+        const p = parseObjectLike(merged.practice);
+        const title = String(p.title || merged.title || "").trim();
+        const min = Number.parseInt(String(p.minimum_minutes || merged.minimum_minutes || ""), 10);
+        const normalizedMin = Number.isFinite(min) && min > 0 ? min : 10;
+        if (!title) return { error: "life_practice.create requires title." };
+        return { action: { type, client_ref: String(merged.client_ref || uid()), practice: { title, minimum_minutes: normalizedMin, note: String(p.note || merged.note || "").trim() } } };
       }
       if (type === "life_practice.update") {
-        const practiceId = String(rawAction.practice_id || "").trim();
+        const practiceId = String(merged.practice_id || merged.id || "").trim();
         if (!practiceId) return { error: "life_practice.update requires practice_id." };
-        const patchIn = rawAction.patch && typeof rawAction.patch === "object" ? rawAction.patch : {};
+        const patchIn = merged.patch && typeof merged.patch === "object" ? merged.patch : merged;
         const patch = {};
         if (patchIn.title != null && String(patchIn.title).trim()) patch.title = String(patchIn.title).trim();
         if (patchIn.note != null) patch.note = String(patchIn.note || "").trim();
@@ -2367,27 +2848,27 @@
         return { action: { type, practice_id: practiceId, patch } };
       }
       if (type === "commitment.create") {
-        const c = rawAction.commitment && typeof rawAction.commitment === "object" ? rawAction.commitment : {};
-        const title = String(c.title || "").trim();
-        const goal = normalizeEnumValue(c.goal, AI_ALLOWED_GOALS);
+        const c = parseObjectLike(merged.commitment);
+        const title = String(c.title || merged.title || "").trim();
+        const goal = normalizeEnumValue(c.goal || merged.goal || merged.wig, AI_ALLOWED_GOALS);
         if (!title || !goal) return { error: "commitment.create requires title and valid goal." };
         return {
           action: {
             type,
-            client_ref: String(rawAction.client_ref || uid()),
+            client_ref: String(merged.client_ref || uid()),
             commitment: {
               title,
               goal,
-              linked_task_id: String(c.linked_task_id || "").trim() || undefined,
-              use_finish_track: c.use_finish_track === true
+              linked_task_id: String(c.linked_task_id || merged.linked_task_id || "").trim() || undefined,
+              use_finish_track: c.use_finish_track === true || merged.use_finish_track === true
             }
           }
         };
       }
       if (type === "commitment.update") {
-        const commitmentId = String(rawAction.commitment_id || "").trim();
+        const commitmentId = String(merged.commitment_id || merged.id || "").trim();
         if (!commitmentId) return { error: "commitment.update requires commitment_id." };
-        const patchIn = rawAction.patch && typeof rawAction.patch === "object" ? rawAction.patch : {};
+        const patchIn = merged.patch && typeof merged.patch === "object" ? merged.patch : merged;
         const patch = {};
         if (patchIn.title != null && String(patchIn.title).trim()) patch.title = String(patchIn.title).trim();
         const goal = normalizeEnumValue(patchIn.goal, AI_ALLOWED_GOALS);
@@ -2399,10 +2880,10 @@
         return { action: { type, commitment_id: commitmentId, patch } };
       }
       if (type === "focus.update_primary_goal") {
-        const title = String(rawAction.title || "").trim();
+        const title = String(merged.title || "").trim();
         if (!title) return { error: "focus.update_primary_goal requires title." };
-        const deadline = String(rawAction.deadline || "").trim();
-        const measure = String(rawAction.measure || "").trim();
+        const deadline = String(merged.deadline || "").trim();
+        const measure = String(merged.measure || "").trim();
         return { action: { type, title, deadline: deadline || undefined, measure: measure || undefined } };
       }
       return { error: `Unsupported action type: ${type}` };
@@ -2450,31 +2931,33 @@
         assumptions: Array.isArray(raw?.assumptions) ? raw.assumptions.map(v => String(v || "").trim()).filter(Boolean) : [],
         questions: Array.isArray(raw?.questions) ? raw.questions.map(v => String(v || "").trim()).filter(Boolean) : [],
         items,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        appliedAt: null,
+        appliedCount: 0
       };
     }
-    function renderAiMessages() {
-      const el = document.getElementById("aiMessages");
+    function renderAiMessagesInto(messagesId) {
+      const el = document.getElementById(messagesId);
       if (!el) return;
       if (!aiMessages.length) {
-        el.innerHTML = '<div class="tiny">No messages yet. Ask for changes in plain language.</div>';
+        el.innerHTML = '<div class="tiny">No messages yet. Brain-dump what you want changed and the AI will propose structured board updates.</div>';
         return;
       }
       el.innerHTML = aiMessages.map(m => `<div class="ai-msg ${m.role === "user" ? "user" : "assistant"}"><strong>${m.role === "user" ? "You" : "Assistant"}:</strong> ${escapeHtml(m.content)}</div>`).join("");
       el.scrollTop = el.scrollHeight;
     }
-    function renderAiProposal() {
-      const wrap = document.getElementById("aiProposalWrap");
+    function renderAiProposalInto(surface) {
+      const wrap = document.getElementById(surface.proposalWrapId);
       if (!wrap) return;
       if (!aiProposal) {
         wrap.hidden = true;
         return;
       }
       wrap.hidden = false;
-      const summaryEl = document.getElementById("aiProposalSummary");
-      const assumptionsEl = document.getElementById("aiProposalAssumptions");
-      const questionsEl = document.getElementById("aiProposalQuestions");
-      const actionsEl = document.getElementById("aiActionsList");
+      const summaryEl = document.getElementById(surface.summaryId);
+      const assumptionsEl = document.getElementById(surface.assumptionsId);
+      const questionsEl = document.getElementById(surface.questionsId);
+      const actionsEl = document.getElementById(surface.actionsListId);
       if (summaryEl) summaryEl.textContent = aiProposal.summary;
       if (assumptionsEl) assumptionsEl.textContent = aiProposal.assumptions.length ? `Assumptions: ${aiProposal.assumptions.join(" | ")}` : "";
       if (questionsEl) questionsEl.textContent = aiProposal.questions.length ? `Questions: ${aiProposal.questions.join(" | ")}` : "";
@@ -2493,7 +2976,14 @@
           `).join("");
         }
       }
-      const undoBtn = document.getElementById("aiUndoBtn");
+      const applyBtn = document.getElementById(surface.applyBtnId);
+      if (applyBtn) {
+        const hasSelected = aiProposal.items.some(item => item.valid && item.selected);
+        const alreadyApplied = !!aiProposal.appliedAt;
+        applyBtn.disabled = aiBusy || alreadyApplied || !hasSelected;
+        applyBtn.textContent = alreadyApplied ? "Applied (ask AI again for updates)" : "Apply Selected Changes";
+      }
+      const undoBtn = document.getElementById(surface.undoBtnId);
       if (undoBtn) undoBtn.disabled = !aiUndoBatch;
     }
     function renderAiAssistant() {
@@ -2504,8 +2994,12 @@
         const assistantTab = document.getElementById("tab-assistant");
         if (assistantTab && assistantTab.classList.contains("active")) setActiveTab("focus");
       }
+
       const setupBtn = document.getElementById("aiSetupBtn");
-      if (setupBtn) setupBtn.textContent = aiPrefs.enabled ? "AI" : "AI Setup";
+      if (setupBtn) setupBtn.textContent = aiPrefs.enabled ? "AI Settings" : "Enable AI";
+
+      const inlineCard = document.getElementById("aiInlineCard");
+      if (inlineCard) inlineCard.hidden = (!aiPrefs.enabled && aiPrefs.hideUiWhenDisabled && !aiPanelForcedVisible);
 
       const enabledInput = document.getElementById("aiEnabledInput");
       const hideInput = document.getElementById("aiHideDisabledInput");
@@ -2513,54 +3007,163 @@
       const modelInput = document.getElementById("aiModelInput");
       const keyInput = document.getElementById("aiApiKeyInput");
       const baseInput = document.getElementById("aiBaseUrlInput");
+      const providerCfg = aiGetProviderConfig(aiPrefs.provider);
       if (enabledInput) enabledInput.checked = !!aiPrefs.enabled;
       if (hideInput) hideInput.checked = !!aiPrefs.hideUiWhenDisabled;
       if (providerInput) providerInput.value = aiPrefs.provider;
-      if (modelInput) modelInput.value = aiPrefs.model || "";
-      if (keyInput) keyInput.value = aiPrefs.apiKey || "";
+      if (modelInput) modelInput.value = providerCfg.model || "";
+      if (keyInput) keyInput.value = providerCfg.apiKey || "";
       if (baseInput) {
-        baseInput.value = aiPrefs.baseUrl || "";
+        baseInput.value = providerCfg.baseUrl || "";
         baseInput.placeholder = aiDefaultBaseUrl(aiPrefs.provider || "openai");
       }
+      const configPanel = document.getElementById("aiConfigPanel");
+      if (configPanel) configPanel.hidden = !aiConfigOpen;
+      const toggleConfigBtn = document.getElementById("aiToggleConfigBtn");
+      if (toggleConfigBtn) toggleConfigBtn.textContent = aiConfigOpen ? "Hide Settings" : "Settings";
 
-      const disabledNotice = document.getElementById("aiDisabledNotice");
-      const chatWrap = document.getElementById("aiChatWrap");
+      const typedKey = aiConfigOpen ? String(document.getElementById("aiApiKeyInput")?.value || "").trim() : "";
+      const keyMissing = !(typedKey || String(providerCfg.apiKey || "").trim());
       const statusBadge = document.getElementById("aiStatusBadge");
-      const busyStatus = document.getElementById("aiBusyStatus");
-      const keyMissing = !String(aiPrefs.apiKey || "").trim();
       if (statusBadge) statusBadge.textContent = aiPrefs.enabled ? (keyMissing ? "Enabled (missing key)" : "Enabled") : "Disabled";
-      if (disabledNotice) {
-        disabledNotice.hidden = !!aiPrefs.enabled;
-        if (aiPrefs.enabled && keyMissing) {
-          disabledNotice.hidden = false;
-          disabledNotice.textContent = "AI is enabled but API key is missing. Add key and save settings.";
-        } else if (!aiPrefs.enabled) {
-          disabledNotice.textContent = "AI Assistant is currently off. Enable it above when you want chat-assisted board updates.";
+
+      const providerButtons = document.querySelectorAll("[data-ai-provider-btn]");
+      providerButtons.forEach(btn => {
+        const provider = String(btn.getAttribute("data-ai-provider-btn") || "");
+        btn.classList.toggle("active", provider === aiPrefs.provider);
+        btn.disabled = aiBusy;
+      });
+
+      const disabledText = aiPrefs.enabled
+        ? (keyMissing ? "AI is enabled but API key is missing. Open Settings, add a key, and save." : "")
+        : "AI is off. Open Settings to enable it and add an API key.";
+      const chatVisible = aiPrefs.enabled && !keyMissing;
+      const surfaces = [
+        {
+          disabledNoticeId: "aiDisabledNotice",
+          chatWrapId: "aiChatWrap",
+          busyStatusId: "aiBusyStatus",
+          messagesId: "aiMessages",
+          proposalWrapId: "aiProposalWrap",
+          summaryId: "aiProposalSummary",
+          assumptionsId: "aiProposalAssumptions",
+          questionsId: "aiProposalQuestions",
+          actionsListId: "aiActionsList",
+          applyBtnId: "aiApplyBtn",
+          undoBtnId: "aiUndoBtn"
+        },
+        {
+          disabledNoticeId: "aiInlineDisabledNotice",
+          chatWrapId: "aiInlineChatWrap",
+          busyStatusId: "aiInlineBusyStatus",
+          messagesId: "aiInlineMessages",
+          proposalWrapId: "aiInlineProposalWrap",
+          summaryId: "aiInlineProposalSummary",
+          assumptionsId: "aiInlineProposalAssumptions",
+          questionsId: "aiInlineProposalQuestions",
+          actionsListId: "aiInlineActionsList",
+          applyBtnId: "aiInlineApplyBtn",
+          undoBtnId: "aiInlineUndoBtn"
         }
-      }
-      if (chatWrap) chatWrap.hidden = !aiPrefs.enabled || keyMissing;
-      if (busyStatus) busyStatus.textContent = aiBusy ? "Working..." : "";
-      renderAiMessages();
-      renderAiProposal();
+      ];
+      surfaces.forEach(surface => {
+        const disabledNotice = document.getElementById(surface.disabledNoticeId);
+        const chatWrap = document.getElementById(surface.chatWrapId);
+        const busyStatus = document.getElementById(surface.busyStatusId);
+        if (disabledNotice) {
+          disabledNotice.hidden = chatVisible;
+          disabledNotice.textContent = disabledText;
+        }
+        if (chatWrap) chatWrap.hidden = !chatVisible;
+        if (busyStatus) busyStatus.textContent = aiBusy ? "Working..." : "";
+        renderAiMessagesInto(surface.messagesId);
+        renderAiProposalInto(surface);
+      });
     }
-    function aiBaseUrlForPrefs() {
-      const raw = String(aiPrefs.baseUrl || "").trim() || aiDefaultBaseUrl(aiPrefs.provider || "openai");
-      return raw.replace(/\/+$/, "");
+    function aiResolveConfig(prefsLike = aiPrefs) {
+      const source = prefsLike && typeof prefsLike === "object" ? prefsLike : {};
+      const provider = AI_ALLOWED_PROVIDERS.includes(source.provider) ? source.provider : "openai";
+      const cfg = aiGetProviderConfig(provider, source);
+      return {
+        provider,
+        model: String(cfg.model || "").trim() || aiDefaultModel(provider),
+        apiKey: String(cfg.apiKey || "").trim(),
+        baseUrl: String(cfg.baseUrl || "").trim() || aiDefaultBaseUrl(provider)
+      };
     }
-    async function aiCallProvider(systemPrompt, userPrompt) {
-      const model = String(aiPrefs.model || "").trim();
+    function aiDraftPrefsFromSettingsForm() {
+      const draft = normalizeAiPrefs(aiPrefs);
+      const providerInput = document.getElementById("aiProviderInput");
+      const enabledInput = document.getElementById("aiEnabledInput");
+      const hideInput = document.getElementById("aiHideDisabledInput");
+      const modelInput = document.getElementById("aiModelInput");
+      const keyInput = document.getElementById("aiApiKeyInput");
+      const baseInput = document.getElementById("aiBaseUrlInput");
+
+      const provider = String(providerInput?.value || draft.provider || "openai").trim();
+      if (AI_ALLOWED_PROVIDERS.includes(provider)) draft.provider = provider;
+      if (enabledInput) draft.enabled = !!enabledInput.checked;
+      if (hideInput) draft.hideUiWhenDisabled = !!hideInput.checked;
+
+      const current = aiGetProviderConfig(draft.provider, draft);
+      draft.providerConfigs = {
+        ...buildDefaultAiProviderConfigs(),
+        ...(draft.providerConfigs || {}),
+        [draft.provider]: {
+          model: String(modelInput?.value || "").trim() || current.model || aiDefaultModel(draft.provider),
+          apiKey: String(keyInput?.value || "").trim(),
+          baseUrl: String(baseInput?.value || "").trim() || current.baseUrl || aiDefaultBaseUrl(draft.provider)
+        }
+      };
+      return normalizeAiPrefs(draft);
+    }
+    async function aiCallProvider(systemPrompt, userPrompt, prefsOverride = null) {
+      const cfg = aiResolveConfig(prefsOverride || aiPrefs);
+      let model = aiNormalizeModelId(cfg.provider, cfg.model);
       if (!model) throw new Error("Model is required.");
-      const baseUrl = aiBaseUrlForPrefs();
-      if (aiPrefs.provider === "anthropic") {
+      const baseUrl = cfg.baseUrl.replace(/\/+$/, "");
+      const runWithModel = async (modelId) => {
+        if (cfg.provider === "grok") {
+          const res = await fetch(`${baseUrl}/responses`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${cfg.apiKey}`
+            },
+            body: JSON.stringify({
+              model: modelId,
+              temperature: 0.2,
+              input: [
+                { role: "system", content: String(systemPrompt || "") },
+                { role: "user", content: String(userPrompt || "") }
+              ]
+            })
+          });
+          if (!res.ok) throw new Error(`API error ${res.status}: ${await res.text()}`);
+          const data = await res.json();
+          const outputFromArray = Array.isArray(data?.output)
+            ? data.output
+                .flatMap(item => (Array.isArray(item?.content) ? item.content : []))
+                .map(part => (typeof part?.text === "string" ? part.text : ""))
+                .join("\n")
+                .trim()
+            : "";
+          if (outputFromArray) return outputFromArray;
+          const outputText = String(data?.output_text || "").trim();
+          if (outputText) return outputText;
+          throw new Error("Model returned empty content.");
+        }
+        if (cfg.provider === "anthropic") {
         const res = await fetch(`${baseUrl}/messages`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "x-api-key": aiPrefs.apiKey,
-            "anthropic-version": "2023-06-01"
+            "x-api-key": cfg.apiKey,
+            "anthropic-version": "2023-06-01",
+            "anthropic-dangerous-direct-browser-access": "true"
           },
           body: JSON.stringify({
-            model,
+            model: modelId,
             max_tokens: 1400,
             temperature: 0.2,
             system: systemPrompt,
@@ -2575,13 +3178,13 @@
         if (!text.trim()) throw new Error("Anthropic returned empty content.");
         return text;
       }
-      if (aiPrefs.provider === "gemini") {
-        const modelName = model.startsWith("models/") ? model.slice("models/".length) : model;
+      if (cfg.provider === "gemini") {
+        const modelName = modelId.startsWith("models/") ? modelId.slice("models/".length) : modelId;
         const res = await fetch(`${baseUrl}/models/${encodeURIComponent(modelName)}:generateContent`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "x-goog-api-key": aiPrefs.apiKey
+            "x-goog-api-key": cfg.apiKey
           },
           body: JSON.stringify({
             generationConfig: {
@@ -2608,17 +3211,17 @@
         if (!text) throw new Error("Gemini returned empty content.");
         return text;
       }
-      if (!aiIsOpenAiCompatibleProvider(aiPrefs.provider)) {
-        throw new Error(`Unsupported provider: ${aiPrefs.provider}`);
+      if (!aiIsOpenAiCompatibleProvider(cfg.provider)) {
+        throw new Error(`Unsupported provider: ${cfg.provider}`);
       }
       const res = await fetch(`${baseUrl}/chat/completions`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${aiPrefs.apiKey}`
+          "Authorization": `Bearer ${cfg.apiKey}`
         },
         body: JSON.stringify({
-          model,
+          model: modelId,
           temperature: 0.2,
           messages: [
             { role: "system", content: systemPrompt },
@@ -2635,37 +3238,122 @@
         if (joined) return joined;
       }
       throw new Error("Model returned empty content.");
+      };
+
+      try {
+        return await runWithModel(model);
+      } catch (err) {
+        const message = String(err?.message || err || "");
+        const mayBeModelIssue = aiLooksLikeModelError(message);
+        const mayBePolicyModelBlock = aiLooksLikePolicyBlock(cfg.provider, message);
+        if (!mayBeModelIssue && !mayBePolicyModelBlock) throw err;
+        let availableModels = [];
+        try {
+          availableModels = await aiFetchAvailableModels(cfg);
+        } catch (_modelListErr) {
+          availableModels = [];
+        }
+        const candidates = aiBuildFallbackCandidates(cfg.provider, model, availableModels);
+        let lastErr = err;
+        for (const candidate of candidates) {
+          try {
+            const result = await runWithModel(candidate);
+            model = candidate;
+            if (!prefsOverride) {
+              aiSetProviderConfig(cfg.provider, { model: candidate });
+              aiPrefs = normalizeAiPrefs(aiPrefs);
+              saveAiPrefs();
+              renderAiAssistant();
+            } else if (prefsOverride && typeof prefsOverride === "object" && prefsOverride.providerConfigs) {
+              const currentCfg = prefsOverride.providerConfigs[cfg.provider] || aiDefaultProviderConfig(cfg.provider);
+              prefsOverride.providerConfigs[cfg.provider] = { ...currentCfg, model: candidate };
+            }
+            return result;
+          } catch (candidateErr) {
+            const candidateMsg = String(candidateErr?.message || candidateErr || "");
+            if (!aiLooksLikeModelError(candidateMsg) && !aiLooksLikePolicyBlock(cfg.provider, candidateMsg)) {
+              throw candidateErr;
+            }
+            lastErr = candidateErr;
+          }
+        }
+        if (cfg.provider === "grok" && aiLooksLikePolicyBlock(cfg.provider, String(lastErr?.message || ""))) {
+          throw new Error(`${String(lastErr?.message || lastErr)}. Try xAI key ACLs: api-key:model:* and api-key:endpoint:* (or endpoint:chat) in xAI console.`);
+        }
+        throw lastErr;
+      }
     }
     async function testAiConnection() {
       const statusEl = document.getElementById("aiTestStatus");
-      if (!aiPrefs.apiKey) {
+      const modelInput = document.getElementById("aiModelInput");
+      const draftPrefs = aiDraftPrefsFromSettingsForm();
+      const cfg = aiResolveConfig(draftPrefs);
+      if (!cfg.apiKey) {
         if (statusEl) statusEl.textContent = "Add API key first.";
         return;
       }
       if (statusEl) statusEl.textContent = "Testing...";
       try {
         const started = Date.now();
+        let selectedModel = cfg.model;
+        if (cfg.provider !== "grok") {
+          try {
+            const availableModels = await aiFetchAvailableModels(cfg);
+            selectedModel = aiChooseModel(cfg.provider, cfg.model, availableModels);
+            if (selectedModel && modelInput && selectedModel !== cfg.model) {
+              modelInput.value = selectedModel;
+            }
+            if (selectedModel && selectedModel !== cfg.model) {
+              const currentCfg = draftPrefs.providerConfigs?.[cfg.provider] || aiDefaultProviderConfig(cfg.provider);
+              draftPrefs.providerConfigs = {
+                ...buildDefaultAiProviderConfigs(),
+                ...(draftPrefs.providerConfigs || {}),
+                [cfg.provider]: {
+                  ...currentCfg,
+                  model: selectedModel
+                }
+              };
+            }
+          } catch (modelErr) {
+            // Keep test resilient: if model listing fails, still verify chat endpoint and key.
+            selectedModel = cfg.model || aiDefaultModel(cfg.provider);
+          }
+        }
         const raw = await aiCallProvider(
-          "Return exactly this JSON: {\"ok\":true}",
-          "Return exactly this JSON: {\"ok\":true}"
+          "You are a concise assistant.",
+          "Reply with exactly: ok",
+          draftPrefs
         );
-        const parsed = extractJsonObject(raw);
-        if (statusEl) statusEl.textContent = parsed.ok === true ? `Connected (${Date.now() - started}ms)` : "Connected, unexpected response.";
+        const finalCfg = aiResolveConfig(draftPrefs);
+        const finalModel = aiNormalizeModelId(finalCfg.provider, finalCfg.model);
+        let isConnected = false;
+        try {
+          const parsed = extractJsonObject(raw);
+          isConnected = parsed?.ok === true;
+        } catch (_ignore) {
+          isConnected = String(raw || "").trim().length > 0;
+        }
+        if (statusEl) {
+          statusEl.textContent = isConnected
+            ? `Connected (${Date.now() - started}ms). ${finalModel && finalModel !== cfg.model ? `Model set to ${finalModel}. ` : ""}Click Save AI Settings to keep this key.`
+            : "Connected, unexpected response.";
+        }
       } catch (err) {
         if (statusEl) statusEl.textContent = `Failed: ${err?.message || err}`;
       }
     }
-    async function requestAiProposal() {
+    async function requestAiProposal(inputId = "aiUserInput") {
       if (aiBusy) return;
       if (!aiPrefs.enabled) {
-        alert("Enable AI Assistant first.");
+        alert("Enable AI in Settings first.");
         return;
       }
-      if (!aiPrefs.apiKey) {
-        alert("Add an API key first.");
+      const cfg = aiResolveConfig(aiPrefs);
+      if (!cfg.apiKey) {
+        alert("Add an API key in AI Settings first.");
         return;
       }
-      const input = document.getElementById("aiUserInput");
+      const input = document.getElementById(inputId);
       const text = String(input?.value || "").trim();
       if (!text) return;
       aiMessages.push({ role: "user", content: text, at: new Date().toISOString() });
@@ -2855,7 +3543,12 @@
     }
     function applyAiSelectedActions() {
       if (!aiProposal) return;
-      const selected = aiProposal.items.filter(item => item.selected && item.valid && item.action).map(item => item.action);
+      if (aiProposal.appliedAt) {
+        alert("These proposed changes are already applied. Ask AI again for a fresh proposal.");
+        return;
+      }
+      const selectedItems = aiProposal.items.filter(item => item.selected && item.valid && item.action);
+      const selected = selectedItems.map(item => item.action);
       if (!selected.length) {
         alert("No valid selected actions to apply.");
         return;
@@ -2876,9 +3569,20 @@
         createdAt: new Date().toISOString(),
         actionCount: selected.length
       };
+      aiProposal.appliedAt = new Date().toISOString();
+      aiProposal.appliedCount = selected.length;
+      aiProposal.items.forEach(item => {
+        if (item.selected) item.selected = false;
+      });
       saveState("ai_apply_batch");
-      const status = document.getElementById("aiApplyStatus");
-      if (status) status.textContent = `Applied ${selected.length} change(s).`;
+      const createdCount = selected.filter(action => action.type === "task.create").length;
+      const statusText = createdCount > 0
+        ? `Applied ${selected.length} change(s). Added ${createdCount} task${createdCount === 1 ? "" : "s"}.`
+        : `Applied ${selected.length} change(s).`;
+      ["aiApplyStatus", "aiInlineApplyStatus"].forEach(id => {
+        const status = document.getElementById(id);
+        if (status) status.textContent = statusText;
+      });
       render();
     }
     function undoAiBatch() {
@@ -3759,6 +4463,72 @@
       saveState(); render();
     }
 
+    function rebuildDailyLogsFromState() {
+      const rebuilt = {};
+      (state.sessions || []).forEach(session => {
+        const day = isoToLocalDateKey(session.startAt || session.endAt || "");
+        if (!day) return;
+        if (!rebuilt[day]) rebuilt[day] = { total_sec: 0, deep_sec: 0, tasks_closed: 0, sessions: 0 };
+        const sec = Number(session.durationSec) || 0;
+        rebuilt[day].total_sec += sec;
+        if ((session.depth || "Deep") === "Deep") rebuilt[day].deep_sec += sec;
+        rebuilt[day].sessions += 1;
+      });
+      (state.tasks || []).forEach(task => {
+        if (!task?.completedAt) return;
+        const day = isoToLocalDateKey(task.completedAt);
+        if (!day) return;
+        if (!rebuilt[day]) rebuilt[day] = { total_sec: 0, deep_sec: 0, tasks_closed: 0, sessions: 0 };
+        rebuilt[day].tasks_closed += 1;
+      });
+      state.daily_logs = rebuilt;
+    }
+
+    function deleteTask(taskId, opts = {}) {
+      const task = getTask(taskId);
+      if (!task) return;
+      const hasHistory =
+        !!task.completedAt ||
+        Number(task.elapsedSec || 0) > 0 ||
+        state.sessions.some(s => s.taskId === taskId);
+      if (state.activeTaskId === taskId) stopActiveTask();
+      state.tasks = state.tasks.filter(t => t.id !== taskId);
+      state.sessions = state.sessions.filter(s => s.taskId !== taskId);
+      if (Array.isArray(state.closed_task_log)) {
+        state.closed_task_log = state.closed_task_log.filter(entry => entry.taskId !== taskId);
+      }
+      if (Array.isArray(state.today_focus?.task_ids)) {
+        state.today_focus.task_ids = state.today_focus.task_ids.filter(id => id !== taskId);
+      }
+      if (pomodoro?.taskId === taskId) {
+        pomodoro.taskId = null;
+      }
+      if (Array.isArray(state.focus?.commitments)) {
+        state.focus.commitments.forEach(commitment => {
+          if (commitment.linked_task_id === taskId) commitment.linked_task_id = null;
+        });
+      }
+      rebuildDailyLogsFromState();
+      queueLedgerEvent(
+        "task_deleted",
+        "task",
+        taskId,
+        new Date().toISOString(),
+        {
+          taskId,
+          title: task.title,
+          hadHistory: hasHistory
+        }
+      );
+      saveState("task_delete");
+      const metaEl = document.getElementById("pipelineMeta");
+      if (metaEl) metaEl.textContent = `Deleted: ${task.title}`;
+      render();
+    }
+    window.__pppDeleteTask = (taskId) => {
+      deleteTask(String(taskId || "").trim());
+    };
+
     // ── Pomodoro ──
     function getOpenTasks() {
       const openAll = state.tasks.filter(t => !t.completedAt);
@@ -3831,6 +4601,152 @@
       const deadline = (document.getElementById("onboardWigDeadline")?.value || "").trim();
       const measure = (document.getElementById("onboardWigMeasure")?.value || "").trim();
       return { title, deadline, measure };
+    }
+
+    function applyOnboardingAiDraft(raw) {
+      const payload = raw && typeof raw === "object"
+        ? (raw.starter && typeof raw.starter === "object" ? raw.starter : raw)
+        : {};
+      const goal = payload.primary_goal && typeof payload.primary_goal === "object"
+        ? payload.primary_goal
+        : payload.goal && typeof payload.goal === "object"
+          ? payload.goal
+          : {};
+      const wigTitleEl = document.getElementById("onboardWigTitle");
+      const wigDeadlineEl = document.getElementById("onboardWigDeadline");
+      const wigMeasureEl = document.getElementById("onboardWigMeasure");
+      if (wigTitleEl && goal.title) wigTitleEl.value = String(goal.title).trim();
+      if (wigDeadlineEl && goal.deadline) wigDeadlineEl.value = String(goal.deadline).trim();
+      if (wigMeasureEl && goal.measure) wigMeasureEl.value = String(goal.measure).trim();
+
+      const practices = Array.isArray(payload.life_practices) ? payload.life_practices : [];
+      for (let i = 1; i <= 5; i++) {
+        const item = practices[i - 1] && typeof practices[i - 1] === "object" ? practices[i - 1] : null;
+        const titleEl = document.getElementById(`onboardPractice${i}`);
+        const minEl = document.getElementById(`onboardPractice${i}Min`);
+        const noteEl = document.getElementById(`onboardPractice${i}Note`);
+        if (!titleEl || !minEl || !noteEl) continue;
+        titleEl.value = item ? String(item.title || "").trim() : "";
+        const min = Number.parseInt(String(item?.minimum_minutes || item?.minutes || ""), 10);
+        minEl.value = item ? String(Number.isFinite(min) && min > 0 ? min : 10) : "";
+        noteEl.value = item ? String(item.note || "").trim() : "";
+      }
+
+      const tasks = Array.isArray(payload.tasks) ? payload.tasks : [];
+      for (let i = 1; i <= 5; i++) {
+        const item = tasks[i - 1] && typeof tasks[i - 1] === "object" ? tasks[i - 1] : null;
+        const titleEl = document.getElementById(`onboardTask${i}`);
+        const categoryEl = document.getElementById(`onboardTask${i}Category`);
+        const depthEl = document.getElementById(`onboardTask${i}Depth`);
+        const focusEl = document.getElementById(`onboardTask${i}Focus`);
+        if (!titleEl || !categoryEl || !depthEl || !focusEl) continue;
+        if (!item) {
+          titleEl.value = "";
+          depthEl.value = "Deep";
+          focusEl.checked = true;
+          continue;
+        }
+        titleEl.value = String(item.title || "").trim();
+        const category = normalizeEnumValue(item.category, AI_ALLOWED_CATEGORIES) || "Strategic";
+        categoryEl.value = category;
+        const depth = normalizeEnumValue(item.depth, AI_ALLOWED_DEPTH) || "Deep";
+        depthEl.value = depth;
+        const stage = normalizePipelineStage(item.stage || item.to_stage || "");
+        const suggestedFocus = stage ? stage === "today" : (item.focus === true);
+        focusEl.checked = suggestedFocus || !stage;
+      }
+    }
+
+    function buildOnboardingAiRequestText(intake) {
+      return [
+        "You are helping configure a personal execution board.",
+        "From the user's intake, produce a starter setup with 3-5 life practices and 3-5 first tasks.",
+        "Tasks should include realistic category/depth/importance choices, with no more than 5 suggested for today.",
+        "Return JSON only with keys:",
+        "summary (string), questions (array of strings),",
+        "primary_goal {title, deadline(YYYY-MM-DD), measure},",
+        "life_practices [{title, minimum_minutes, note}],",
+        "tasks [{title, category, importance, urgency, depth, goal, stage, focus}].",
+        `USER_INTAKE:\n${intake}`
+      ].join("\n");
+    }
+
+    async function runOnboardingAiSetup() {
+      const provider = String(document.getElementById("onboardAiProvider")?.value || "").trim();
+      const apiKey = String(document.getElementById("onboardAiApiKey")?.value || "").trim();
+      const intake = String(document.getElementById("onboardAiIntake")?.value || "").trim();
+      const statusEl = document.getElementById("onboardAiStatus");
+      const questionsEl = document.getElementById("onboardAiQuestions");
+      if (!AI_ALLOWED_PROVIDERS.includes(provider)) {
+        if (statusEl) statusEl.textContent = "Pick a provider first.";
+        return;
+      }
+      if (!apiKey) {
+        if (statusEl) statusEl.textContent = "Add an API key first.";
+        return;
+      }
+      if (!intake) {
+        if (statusEl) statusEl.textContent = "Add a short brain-dump so AI can propose a starter setup.";
+        return;
+      }
+      setAiProvider(provider);
+      aiPrefs.enabled = true;
+      aiSetProviderConfig(provider, { apiKey });
+      aiPrefs = normalizeAiPrefs(aiPrefs);
+      saveAiPrefs();
+      renderAiAssistant();
+      const providerCfg = aiGetProviderConfig(provider);
+      const override = {
+        provider,
+        providerConfigs: {
+          ...buildDefaultAiProviderConfigs(),
+          ...(aiPrefs.providerConfigs || {}),
+          [provider]: {
+            ...providerCfg,
+            apiKey
+          }
+        }
+      };
+      if (statusEl) statusEl.textContent = "Generating starter setup...";
+      if (questionsEl) questionsEl.textContent = "";
+      try {
+        const raw = await aiCallProvider(
+          "Return valid JSON only. No markdown.",
+          buildOnboardingAiRequestText(intake),
+          override
+        );
+        const parsed = extractJsonObject(raw);
+        applyOnboardingAiDraft(parsed);
+        refreshOnboardingSummary();
+        if (statusEl) statusEl.textContent = "Starter setup generated. Review and adjust, then continue.";
+        const questions = Array.isArray(parsed?.questions)
+          ? parsed.questions.map(v => String(v || "").trim()).filter(Boolean)
+          : [];
+        if (questionsEl) questionsEl.textContent = questions.length ? `AI follow-up questions: ${questions.join(" | ")}` : "";
+      } catch (err) {
+        if (statusEl) statusEl.textContent = `AI setup failed: ${err?.message || err}`;
+      }
+    }
+
+    function connectOnboardingAiKey() {
+      const provider = String(document.getElementById("onboardAiProvider")?.value || "").trim();
+      const apiKey = String(document.getElementById("onboardAiApiKey")?.value || "").trim();
+      const statusEl = document.getElementById("onboardAiStatus");
+      if (!AI_ALLOWED_PROVIDERS.includes(provider)) {
+        if (statusEl) statusEl.textContent = "Pick a provider first.";
+        return;
+      }
+      if (!apiKey) {
+        if (statusEl) statusEl.textContent = "Paste an API key first.";
+        return;
+      }
+      setAiProvider(provider);
+      aiPrefs.enabled = true;
+      aiSetProviderConfig(provider, { apiKey });
+      aiPrefs = normalizeAiPrefs(aiPrefs);
+      saveAiPrefs();
+      if (statusEl) statusEl.textContent = `${provider} key saved locally. You can now generate starter setup with AI.`;
+      renderAiAssistant();
     }
 
     function refreshOnboardingSummary() {
@@ -3951,9 +4867,17 @@
       const wigTitleEl = document.getElementById("onboardWigTitle");
       const wigDeadlineEl = document.getElementById("onboardWigDeadline");
       const wigMeasureEl = document.getElementById("onboardWigMeasure");
+      const onboardAiProviderEl = document.getElementById("onboardAiProvider");
+      const onboardAiKeyEl = document.getElementById("onboardAiApiKey");
+      const onboardAiStatusEl = document.getElementById("onboardAiStatus");
+      const onboardAiQuestionsEl = document.getElementById("onboardAiQuestions");
       if (wigTitleEl && !wigTitleEl.value) wigTitleEl.value = onboardingMode === "reset" ? (state.focus?.wig?.title || "") : "";
       if (wigDeadlineEl) wigDeadlineEl.value = state.focus?.wig?.deadline || defaultOnboardingDeadline();
       if (wigMeasureEl && !wigMeasureEl.value) wigMeasureEl.value = onboardingMode === "reset" ? (state.focus?.wig?.measure || "") : "";
+      if (onboardAiProviderEl) onboardAiProviderEl.value = aiPrefs.provider || "openai";
+      if (onboardAiKeyEl) onboardAiKeyEl.value = aiGetProviderConfig(aiPrefs.provider || "openai").apiKey || "";
+      if (onboardAiStatusEl) onboardAiStatusEl.textContent = "";
+      if (onboardAiQuestionsEl) onboardAiQuestionsEl.textContent = "";
       const confirmInput = document.getElementById("onboardConfirmText");
       const confirmAck = document.getElementById("onboardConfirmAcknowledge");
       if (confirmInput) confirmInput.value = "";
@@ -3975,7 +4899,7 @@
 
     function collectOnboardingPractices() {
       const practices = [];
-      for (let i = 1; i <= 3; i++) {
+      for (let i = 1; i <= 5; i++) {
         const title = (document.getElementById(`onboardPractice${i}`)?.value || "").trim();
         if (!title) continue;
         const minRaw = document.getElementById(`onboardPractice${i}Min`)?.value || "";
@@ -3994,12 +4918,13 @@
 
     function collectOnboardingTasks() {
       const tasks = [];
-      for (let i = 1; i <= 3; i++) {
+      for (let i = 1; i <= 5; i++) {
         const title = (document.getElementById(`onboardTask${i}`)?.value || "").trim();
         if (!title) continue;
         const category = document.getElementById(`onboardTask${i}Category`)?.value || "Strategic";
+        const depth = document.getElementById(`onboardTask${i}Depth`)?.value || "Deep";
         const focus = !!document.getElementById(`onboardTask${i}Focus`)?.checked;
-        tasks.push({ title, category, focus });
+        tasks.push({ title, category, depth: normalizeEnumValue(depth, AI_ALLOWED_DEPTH) || "Deep", focus });
       }
       return tasks;
     }
@@ -4074,9 +4999,9 @@
         id: uid(),
         title: seed.title,
         category: seed.category,
-        importance: "High",
+        importance: seed.category === "Strategic" ? "High" : "Low",
         urgency: "Low",
-        depth: "Deep",
+        depth: seed.depth || "Deep",
         wig: seed.category === "Strategic" ? "PG1" : "None",
         stage: seed.focus && todaySlots-- > 0 ? "today" : "next_up",
         createdAt: nowIso,
@@ -4920,6 +5845,9 @@
                 ${!col.done ? `<button type="button" class="ghost" data-pipe-order="up" data-task-id="${task.id}">↑</button>` : ""}
                 ${!col.done ? `<button type="button" class="ghost" data-pipe-order="down" data-task-id="${task.id}">↓</button>` : ""}
               </div>
+              <div class="controls">
+                <button type="button" class="warn" data-pipe-delete="1" data-task-id="${task.id}" data-task-delete="${task.id}" onclick="window.__pppDeleteTask('${task.id}'); return false;">Delete</button>
+              </div>
             </div>
           </div>`;
         }).join("");
@@ -4967,8 +5895,9 @@
           <td><span class="tag ${wigCls}">${goalLabelShort(task.wig||"None")}</span></td>
           <td>${fmtDuration(total)}</td>
           <td><div class="controls">
-            <button data-act="start" data-id="${task.id}" ${isRunning?"disabled":""}>Start</button>
-            <button data-act="stop" data-id="${task.id}" ${isRunning?"":"disabled"}>Stop</button>
+            <button type="button" data-act="start" data-id="${task.id}" ${isRunning?"disabled":""}>Start</button>
+            <button type="button" data-act="stop" data-id="${task.id}" ${isRunning?"":"disabled"}>Stop</button>
+            <button type="button" class="warn" data-act="delete" data-id="${task.id}" data-task-delete="${task.id}" onclick="window.__pppDeleteTask('${task.id}'); return false;">Delete</button>
           </div></td>
         </tr>`;
       }).join("");
@@ -5436,6 +6365,23 @@
     document.getElementById("onboardWigTitle").addEventListener("input", refreshOnboardingSummary);
     document.getElementById("onboardWigDeadline").addEventListener("change", refreshOnboardingSummary);
     document.getElementById("onboardWigMeasure").addEventListener("input", refreshOnboardingSummary);
+    document.getElementById("onboardAiProvider").addEventListener("change", e => {
+      const provider = String(e.target.value || "").trim();
+      if (!AI_ALLOWED_PROVIDERS.includes(provider)) return;
+      const keyInput = document.getElementById("onboardAiApiKey");
+      const statusEl = document.getElementById("onboardAiStatus");
+      const cfg = aiGetProviderConfig(provider);
+      if (keyInput) keyInput.value = cfg.apiKey || "";
+      if (statusEl) statusEl.textContent = "";
+    });
+    document.getElementById("onboardAiConnectBtn").addEventListener("click", connectOnboardingAiKey);
+    document.getElementById("onboardAiGenerateBtn").addEventListener("click", ()=>{ void runOnboardingAiSetup(); });
+    document.getElementById("onboardAiIntake").addEventListener("keydown", e => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+        e.preventDefault();
+        void runOnboardingAiSetup();
+      }
+    });
     document.getElementById("addCommitmentBtn").addEventListener("click", addWeeklyCommitment);
     document.getElementById("commitmentTitleInput").addEventListener("keydown", e => {
       if (e.key === "Enter") {
@@ -5468,8 +6414,30 @@
       const orderBtn = e.target.closest("button[data-pipe-order]");
       if (orderBtn) {
         moveTaskWithinStage(orderBtn.dataset.taskId, orderBtn.dataset.pipeOrder);
+        return;
+      }
+      const deleteBtn = e.target.closest("button[data-pipe-delete]");
+      if (deleteBtn) {
+        return;
       }
     });
+
+    // Robust fallback: capture-phase handler for task deletion buttons across views.
+    document.addEventListener("click", e => {
+      const targetEl = e.target instanceof Element ? e.target : null;
+      if (!targetEl) return;
+      const btn = targetEl.closest("button[data-task-delete]");
+      if (!btn) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const taskId = String(btn.dataset.taskDelete || "").trim();
+      if (!taskId) return;
+      try {
+        deleteTask(taskId);
+      } catch (err) {
+        alert(`Delete failed: ${err?.message || err}`);
+      }
+    }, true);
     document.getElementById("pipelineBoard").addEventListener("mousedown",e=>{
       if (e.button !== 0) return;
       const targetEl = e.target instanceof Element ? e.target : null;
@@ -5611,53 +6579,96 @@
     // AI assistant controls
     document.getElementById("aiSetupBtn").addEventListener("click",()=>{
       aiPanelForcedVisible = true;
+      aiConfigOpen = true;
       setActiveTab("assistant");
       renderAiAssistant();
     });
-    document.getElementById("aiProviderInput").addEventListener("change",e=>{
-      const provider = String(e.target.value || "");
-      if (!AI_ALLOWED_PROVIDERS.includes(provider)) return;
-      const prevProvider = aiPrefs.provider || "openai";
-      aiPrefs.provider = provider;
-      if (!aiPrefs.baseUrl || aiPrefs.baseUrl === aiDefaultBaseUrl(prevProvider)) {
-        aiPrefs.baseUrl = aiDefaultBaseUrl(provider);
-      }
-      if (!aiPrefs.model || aiPrefs.model === aiDefaultModel(prevProvider)) {
-        aiPrefs.model = aiDefaultModel(provider);
-      }
+    document.getElementById("aiInlineOpenSettingsBtn").addEventListener("click",()=>{
+      aiPanelForcedVisible = true;
+      aiConfigOpen = true;
+      setActiveTab("assistant");
       renderAiAssistant();
     });
+    document.getElementById("aiInlineOpenAssistantBtn").addEventListener("click",()=>{
+      aiPanelForcedVisible = true;
+      setActiveTab("assistant");
+      renderAiAssistant();
+    });
+    document.getElementById("aiToggleConfigBtn").addEventListener("click",()=>{
+      aiConfigOpen = !aiConfigOpen;
+      renderAiAssistant();
+    });
+    document.getElementById("aiProviderInput").addEventListener("change",e=>{
+      setAiProvider(String(e.target.value || ""));
+      renderAiAssistant();
+    });
+    document.querySelectorAll("[data-ai-provider-btn]").forEach(btn=>{
+      btn.addEventListener("click",()=>{
+        const provider = String(btn.getAttribute("data-ai-provider-btn") || "");
+        if (!provider) return;
+        setAiProvider(provider);
+        renderAiAssistant();
+      });
+    });
     document.getElementById("aiSaveConfigBtn").addEventListener("click",()=>{
-      aiPrefs = normalizeAiPrefs({
-        enabled: document.getElementById("aiEnabledInput").checked,
-        hideUiWhenDisabled: document.getElementById("aiHideDisabledInput").checked,
-        provider: document.getElementById("aiProviderInput").value,
+      const provider = document.getElementById("aiProviderInput").value;
+      setAiProvider(provider);
+      aiPrefs.enabled = document.getElementById("aiEnabledInput").checked;
+      aiPrefs.hideUiWhenDisabled = document.getElementById("aiHideDisabledInput").checked;
+      aiSetProviderConfig(aiPrefs.provider, {
         model: document.getElementById("aiModelInput").value,
         apiKey: document.getElementById("aiApiKeyInput").value,
         baseUrl: document.getElementById("aiBaseUrlInput").value
       });
+      aiPrefs = normalizeAiPrefs(aiPrefs);
       saveAiPrefs();
       aiPanelForcedVisible = false;
+      aiConfigOpen = false;
       renderAiAssistant();
       alert("AI settings saved.");
     });
     document.getElementById("aiTestBtn").addEventListener("click",()=>{ void testAiConnection(); });
-    document.getElementById("aiSendBtn").addEventListener("click",()=>{ void requestAiProposal(); });
+    document.getElementById("aiSendBtn").addEventListener("click",()=>{ void requestAiProposal("aiUserInput"); });
+    document.getElementById("aiInlineSendBtn").addEventListener("click",()=>{ void requestAiProposal("aiInlineUserInput"); });
     document.getElementById("aiUserInput").addEventListener("keydown",e=>{
       if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
         e.preventDefault();
-        void requestAiProposal();
+        void requestAiProposal("aiUserInput");
+      }
+    });
+    document.getElementById("aiInlineUserInput").addEventListener("keydown",e=>{
+      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+        e.preventDefault();
+        void requestAiProposal("aiInlineUserInput");
       }
     });
     document.getElementById("aiClearChatBtn").addEventListener("click",clearAiChat);
+    document.getElementById("aiInlineClearChatBtn").addEventListener("click",clearAiChat);
     document.getElementById("aiApplyBtn").addEventListener("click",applyAiSelectedActions);
+    document.getElementById("aiInlineApplyBtn").addEventListener("click",applyAiSelectedActions);
     document.getElementById("aiUndoBtn").addEventListener("click",undoAiBatch);
-    document.getElementById("aiActionsList").addEventListener("change",e=>{
+    document.getElementById("aiInlineUndoBtn").addEventListener("click",undoAiBatch);
+    const aiActionSelectionChange = (e) => {
       const input = e.target.closest("input[data-ai-action-id]");
       if (!input || !aiProposal) return;
+      if (aiProposal.appliedAt) {
+        input.checked = false;
+        return;
+      }
       const item = aiProposal.items.find(x => x.id === input.dataset.aiActionId);
       if (!item || !item.valid) return;
       item.selected = !!input.checked;
+      const actionId = String(input.dataset.aiActionId || "");
+      document.querySelectorAll(`input[data-ai-action-id="${actionId}"]`).forEach(box => {
+        if (box !== input) box.checked = !!item.selected;
+      });
+      renderAiAssistant();
+    };
+    document.getElementById("aiActionsList").addEventListener("change",e=>{
+      aiActionSelectionChange(e);
+    });
+    document.getElementById("aiInlineActionsList").addEventListener("change",e=>{
+      aiActionSelectionChange(e);
     });
 
     // Tabs

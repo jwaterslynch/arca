@@ -4,6 +4,9 @@ Date: 2026-03-01
 Product: PPP Flow Desktop  
 Status: Approved MVP contract
 
+Companion implementation notes:
+- `design/AI_PROVIDER_IMPLEMENTATION_NOTES_v1.md` (provider-specific endpoint/model behavior, known failure modes, and troubleshooting)
+
 ## 1) Product decisions (locked)
 
 1. AI Assistant is optional and OFF by default.
