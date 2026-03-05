@@ -52,6 +52,9 @@
     .sync-banner { padding:10px 16px; border-radius:10px; font-size:13px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
     .sync-banner.file { background:#eaf2f8; border:1px solid #aed6f1; color:var(--deep); }
     .sync-banner.local { background:#fdf3d7; border:1px solid #e8c84a; color:#8a6d00; }
+    .sync-banner.cloud { background:#e9f7ef; border:1px solid #a9dfbf; color:#186a3b; }
+    .sync-banner.offline { background:#f8f4f4; border:1px solid #e5c7c7; color:#7d2f22; }
+    .sync-banner.syncing { background:#edf5fc; border:1px solid #b6d7f2; color:#1f4e79; }
     .sync-status { font-weight:600; }
     .sync-time { font-size:11px; opacity:.8; }
 
@@ -59,6 +62,33 @@
     .tabs { display:flex; gap:4px; background:#f0f2ee; border-radius:10px; padding:3px; }
     .tab { padding:8px 16px; border-radius:8px; border:none; background:transparent; cursor:pointer; font:inherit; color:var(--muted); font-weight:500; font-size:14px; }
     .tab.active { background:#fff; color:var(--ink); box-shadow:0 1px 3px rgba(0,0,0,.08); }
+    .plan-subtabs {
+      display:flex;
+      gap:6px;
+      flex-wrap:wrap;
+      align-items:center;
+      border:1px solid var(--line);
+      border-radius:10px;
+      padding:6px 8px;
+      background:#f8faf8;
+    }
+    .plan-subtab {
+      border:1px solid var(--line);
+      border-radius:999px;
+      background:#fff;
+      color:var(--muted);
+      font:inherit;
+      font-size:12px;
+      font-weight:500;
+      padding:5px 12px;
+      cursor:pointer;
+    }
+    .plan-subtab.active {
+      border-color:#9acdbf;
+      background:var(--accent-light);
+      color:var(--accent);
+      font-weight:700;
+    }
     .tab-content { display:none; }
     .tab-content.active { display:block; }
     #tab-execute > section.card { transition:opacity .25s ease, transform .25s ease, max-height .25s ease, padding .25s ease, margin .25s ease; }
@@ -507,6 +537,23 @@
       min-height:140px;
       max-height:260px;
     }
+    .ai-inline-mode {
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .ai-inline-toast {
+      margin-top:10px;
+      border:1px solid #9acdbf;
+      border-radius:10px;
+      background:var(--accent-light);
+      color:var(--accent);
+      font-size:12px;
+      font-weight:600;
+      padding:8px 10px;
+    }
     .score-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:10px; }
     .score-card {
       border:1px solid var(--line);
@@ -534,7 +581,14 @@
     .score-status.rag-green { background:var(--done-light); border-color:#a8dbb8; color:var(--done); }
     .score-status.rag-amber { background:#fdf3d7; border-color:#e8c84a; color:#8a6d00; }
     .score-status.rag-red { background:#fff6f4; border-color:#efc0b7; color:var(--warn); }
-    .commitment-add-grid { display:grid; grid-template-columns:2fr 110px 1fr auto auto; gap:8px; margin-top:8px; align-items:center; }
+    .commitment-add-grid {
+      display:grid;
+      grid-template-columns:minmax(260px,1fr) 170px 190px auto auto;
+      gap:8px;
+      margin-top:8px;
+      align-items:center;
+    }
+    .commitment-add-grid > * { min-width:0; }
     .commitments-list { border:1px solid var(--line); border-radius:10px; margin-top:10px; overflow:hidden; }
     .commitment-row {
       display:grid;
@@ -680,6 +734,7 @@
       pointer-events: none;
     }
     body.focus-mode .tabs,
+    body.focus-mode .plan-subtabs,
     body.focus-mode #tab-focus,
     body.focus-mode #tab-review,
     body.focus-mode #tab-assistant,
@@ -797,6 +852,24 @@
       flex-wrap:wrap;
       margin-top:10px;
     }
+    .cloud-config-grid {
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:10px;
+      align-items:end;
+      margin-top:8px;
+    }
+    .cloud-config-grid .span-2 { grid-column:1 / -1; }
+    .cloud-note {
+      border:1px solid #d7e4dd;
+      border-radius:10px;
+      background:#f6fbf9;
+      color:#38555a;
+      font-size:12px;
+      line-height:1.4;
+      padding:10px 12px;
+      margin-top:8px;
+    }
 
     @media (max-width:1080px) {
       .layout,.stats,.summary-grid,.three-box,.trend-row,.week-grid,.focus-grid,.score-grid,.focus-targets-grid,.pipeline-board,.ai-config-grid { grid-template-columns:1fr; }
@@ -807,7 +880,10 @@
       .pomo-grid { grid-template-columns:1fr 1fr; }
       .life-grid { grid-template-columns:1fr; }
       .life-add-grid,.life-config-row,.onboard-row,.onboard-row.task { grid-template-columns:1fr; }
+      .cloud-config-grid { grid-template-columns:1fr; }
       .commitment-add-grid { grid-template-columns:1fr; }
+      .plan-subtabs { gap:8px; }
+      .ai-inline-mode { align-items:flex-start; }
       #onboardingModal .modal-head h3 { font-size:34px; }
       #onboardingModal .modal-head .tiny { font-size:18px; }
       #onboardingModal .onboard-step-pill { font-size:14px; padding:6px 10px; }
@@ -849,6 +925,7 @@
         <span class="sync-status" id="syncStatus">Data source: File</span>
         <span class="sync-time" id="syncTime"></span>
         <div class="controls" style="margin-left:auto;">
+          <button id="cloudSyncBtn" class="ghost" style="padding:5px 10px;font-size:12px;">Cloud Sync</button>
           <button id="aiSetupBtn" class="ghost" style="padding:5px 10px;font-size:12px;">AI Setup</button>
           <button id="setupBoardBtn" class="warn" style="padding:5px 10px;font-size:12px;">Set Up New Board</button>
           <button id="loadFileBtn" class="ghost" style="padding:5px 10px;font-size:12px;">Load JSON File</button>
@@ -876,9 +953,13 @@
     <!-- Tabs -->
     <div class="tabs">
       <button class="tab active" data-tab="execute">Execute</button>
-      <button class="tab" data-tab="focus">Focus Layer</button>
-      <button class="tab" data-tab="review">Weekly Review</button>
-      <button class="tab" data-tab="assistant">AI Assistant</button>
+      <button class="tab" data-tab="plan">Plan</button>
+    </div>
+    <div id="planSubtabs" class="plan-subtabs" hidden>
+      <span class="tiny">Plan view:</span>
+      <button class="plan-subtab active" data-plan-tab="focus" type="button">Pipeline</button>
+      <button class="plan-subtab" data-plan-tab="assistant" type="button">AI Workspace</button>
+      <button class="plan-subtab" data-plan-tab="review" type="button">Review</button>
     </div>
 
     <!-- ═══════════ EXECUTE TAB ═══════════ -->
@@ -933,11 +1014,11 @@
               <button class="ai-provider-btn" type="button" data-ai-provider-btn="deepseek">DeepSeek</button>
             </div>
             <button id="aiInlineOpenSettingsBtn" class="ghost" type="button">AI Settings</button>
-            <button id="aiInlineOpenAssistantBtn" class="ghost" type="button">Open AI Workspace</button>
+            <button id="aiInlineOpenAssistantBtn" class="ghost" type="button">Open Plan Workspace</button>
           </div>
         </div>
         <p class="subtitle" style="margin-top:8px;">
-          Brain-dump tasks naturally, then review and apply only the board changes you want.
+          Brain-dump tasks naturally. In trust mode, PPP applies updates automatically and keeps undo available.
         </p>
         <div id="aiInlineDisabledNotice" class="ai-note" hidden>
           AI is currently off. Open AI Settings to enable providers and API keys.
@@ -945,12 +1026,20 @@
         <div id="aiInlineChatWrap" class="ai-chat-box" hidden>
           <div id="aiInlineMessages" class="ai-messages"></div>
           <textarea id="aiInlineUserInput" placeholder="Dump tasks and context freely. Example: I finished section 2, move regression robustness to Today, and add a commitment to draft intro by Friday."></textarea>
+          <div class="ai-inline-mode">
+            <label class="tiny" style="display:inline-flex;align-items:center;gap:8px;">
+              <input id="aiInlineAutoApplyToggle" type="checkbox" />
+              Auto-apply (trust mode)
+            </label>
+            <span id="aiInlineModeHint" class="tiny"></span>
+          </div>
           <div class="controls">
-            <button id="aiInlineSendBtn" class="primary" type="button">Propose Changes</button>
+            <button id="aiInlineSendBtn" class="primary" type="button">Ask AI</button>
             <button id="aiInlineClearChatBtn" class="ghost" type="button">Clear Chat</button>
             <span id="aiInlineBusyStatus" class="tiny"></span>
           </div>
         </div>
+        <div id="aiInlineToast" class="ai-inline-toast" hidden></div>
         <div id="aiInlineProposalWrap" class="ai-proposal" hidden>
           <h3 style="margin:0;">Proposed Changes</h3>
           <div id="aiInlineProposalSummary" class="tiny"></div>
@@ -1192,56 +1281,60 @@
           <h2>Focus Layer</h2>
           <div class="controls">
             <span class="tiny" id="focusUpdated"></span>
+            <span class="tiny" id="focusPlanningHint"></span>
+            <button id="focusPlanningToggleBtn" class="ghost" type="button">Hide Planning</button>
             <button id="saveFocusBtn" class="primary">Save Focus</button>
           </div>
         </div>
-        <p class="subtitle" style="margin-bottom:12px;">
-          Focus on one primary goal. Track input measures you control. Keep a visible scoreboard. Review weekly and adjust.
-        </p>
+        <div id="focusPlanningSection" hidden>
+          <p class="subtitle" style="margin-bottom:12px;">
+            Focus on one primary goal. Track input measures you control. Keep a visible scoreboard. Review weekly and adjust.
+          </p>
 
-        <div class="focus-grid">
-          <div>
-            <label class="tiny" style="display:block;margin-bottom:4px;">Primary Goal</label>
-            <input id="wig1Input" placeholder="From X to Y by when (e.g. Submit 3 papers by June 30)" />
-          </div>
-          <div>
-            <label class="tiny" style="display:block;margin-bottom:4px;">Secondary Goal (optional)</label>
-            <input id="wig2Input" placeholder="Secondary goal if needed" />
-          </div>
-        </div>
-        <div class="focus-grid" style="margin-top:12px;">
-          <div>
-            <label class="tiny" style="display:block;margin-bottom:4px;">Input Measures (weekly predictive actions)</label>
-            <textarea id="leadMeasuresInput" placeholder="- 5 deep work blocks per week&#10;- 1 submission package completed&#10;- 2 accountability check-ins"></textarea>
-            <label class="tiny" style="display:block;margin:10px 0 4px;">Weekly Targets (for scoreboard)</label>
-            <div class="focus-targets-grid">
-              <input id="targetWig1HoursInput" type="number" min="0" step="0.5" placeholder="Primary deep h/wk" />
-              <input id="targetWig1SessionsInput" type="number" min="0" step="1" placeholder="Primary sessions/wk" />
-              <input id="targetCommitmentsInput" type="number" min="0" step="1" placeholder="Commitments done/wk" />
+          <div class="focus-grid">
+            <div>
+              <label class="tiny" style="display:block;margin-bottom:4px;">Primary Goal</label>
+              <input id="wig1Input" placeholder="From X to Y by when (e.g. Submit 3 papers by June 30)" />
+            </div>
+            <div>
+              <label class="tiny" style="display:block;margin-bottom:4px;">Secondary Goal (optional)</label>
+              <input id="wig2Input" placeholder="Secondary goal if needed" />
             </div>
           </div>
-          <div>
-            <label class="tiny" style="display:block;margin-bottom:4px;">Weekly Commitments (structured)</label>
-            <div class="commitment-add-grid">
-              <input id="commitmentTitleInput" placeholder="Commitment (specific, this week)" />
-              <select id="commitmentWigInput">
-              <option value="PG1">Primary Goal</option>
-              <option value="PG2">Secondary Goal</option>
-                <option value="None">Day-to-day</option>
-              </select>
-              <select id="commitmentTaskInput">
-                <option value="">Link task (optional)</option>
-              </select>
-              <label class="tiny" style="display:inline-flex;align-items:center;gap:6px;">
-                <input id="commitmentUseFinishInput" type="checkbox" checked />
-                Use FT
-              </label>
-              <button id="addCommitmentBtn" class="primary" type="button">Add</button>
+          <div class="focus-grid" style="margin-top:12px;">
+            <div>
+              <label class="tiny" style="display:block;margin-bottom:4px;">Input Measures (weekly predictive actions)</label>
+              <textarea id="leadMeasuresInput" placeholder="- 5 deep work blocks per week&#10;- 1 submission package completed&#10;- 2 accountability check-ins"></textarea>
+              <label class="tiny" style="display:block;margin:10px 0 4px;">Weekly Targets (for scoreboard)</label>
+              <div class="focus-targets-grid">
+                <input id="targetWig1HoursInput" type="number" min="0" step="0.5" placeholder="Primary deep h/wk" />
+                <input id="targetWig1SessionsInput" type="number" min="0" step="1" placeholder="Primary sessions/wk" />
+                <input id="targetCommitmentsInput" type="number" min="0" step="1" placeholder="Commitments done/wk" />
+              </div>
             </div>
-            <div id="commitmentsMeta" class="tiny" style="margin-top:8px;"></div>
-            <div id="commitmentsList" class="commitments-list"></div>
-            <label class="tiny" style="display:block;margin:10px 0 4px;">Weekly Commitments Notes (optional)</label>
-            <textarea id="weeklyCommitmentsInput" placeholder="- Last week result&#10;- This week intent&#10;- Risks to execution"></textarea>
+            <div>
+              <label class="tiny" style="display:block;margin-bottom:4px;">Weekly Commitments (structured)</label>
+              <div class="commitment-add-grid">
+                <input id="commitmentTitleInput" placeholder="Commitment (specific, this week)" />
+                <select id="commitmentWigInput">
+                <option value="PG1">Primary Goal</option>
+                <option value="PG2">Secondary Goal</option>
+                  <option value="None">Day-to-day</option>
+                </select>
+                <select id="commitmentTaskInput">
+                  <option value="">Link task (optional)</option>
+                </select>
+                <label class="tiny" style="display:inline-flex;align-items:center;gap:6px;">
+                  <input id="commitmentUseFinishInput" type="checkbox" checked />
+                  Use FT
+                </label>
+                <button id="addCommitmentBtn" class="primary" type="button">Add</button>
+              </div>
+              <div id="commitmentsMeta" class="tiny" style="margin-top:8px;"></div>
+              <div id="commitmentsList" class="commitments-list"></div>
+              <label class="tiny" style="display:block;margin:10px 0 4px;">Weekly Commitments Notes (optional)</label>
+              <textarea id="weeklyCommitmentsInput" placeholder="- Last week result&#10;- This week intent&#10;- Risks to execution"></textarea>
+            </div>
           </div>
         </div>
 
@@ -1454,6 +1547,57 @@
       </div>
       <div id="closureModalList" class="modal-list"></div>
       <div id="closureModalHint" class="modal-hint" hidden></div>
+    </div>
+  </div>
+
+  <div id="cloudSyncModal" class="modal-backdrop" hidden aria-hidden="true">
+    <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="cloudSyncTitle">
+      <div class="modal-head">
+        <div>
+          <h3 id="cloudSyncTitle">Cloud Sync (Phase 1)</h3>
+          <div class="tiny">Optional and off by default. Local-first remains active.</div>
+        </div>
+        <button id="cloudSyncCloseBtn" class="ghost" type="button">Close</button>
+      </div>
+
+      <div class="cloud-config-grid">
+        <label class="span-2 tiny"><input id="cloudSyncEnabledInput" type="checkbox" /> Enable cloud sync</label>
+        <div>
+          <label class="tiny" for="cloudSyncUrlInput">Supabase Project URL</label>
+          <input id="cloudSyncUrlInput" placeholder="https://your-project.supabase.co" />
+        </div>
+        <div>
+          <label class="tiny" for="cloudSyncAnonKeyInput">Supabase Anon Key</label>
+          <input id="cloudSyncAnonKeyInput" type="password" autocomplete="off" placeholder="eyJ..." />
+        </div>
+        <div>
+          <label class="tiny" for="cloudSyncTokenInput">Access Token (temporary; auth UI comes next)</label>
+          <input id="cloudSyncTokenInput" type="password" autocomplete="off" placeholder="eyJ..." />
+        </div>
+        <div>
+          <label class="tiny" for="cloudSyncBoardNameInput">Board Name</label>
+          <input id="cloudSyncBoardNameInput" placeholder="My PPP Board" />
+        </div>
+        <div>
+          <label class="tiny" for="cloudSyncPollInput">Pull Interval (seconds)</label>
+          <input id="cloudSyncPollInput" type="number" min="5" max="300" step="1" />
+        </div>
+        <div>
+          <label class="tiny" for="cloudSyncDeviceIdInput">Device ID</label>
+          <input id="cloudSyncDeviceIdInput" disabled />
+        </div>
+      </div>
+
+      <div class="controls" style="margin-top:10px;">
+        <button id="cloudSyncSaveBtn" class="primary" type="button">Save Cloud Settings</button>
+        <button id="cloudSyncTestBtn" class="ghost" type="button">Test Connection</button>
+        <button id="cloudSyncNowBtn" class="ghost" type="button">Sync Now</button>
+        <span id="cloudSyncStatusText" class="tiny"></span>
+      </div>
+      <div class="cloud-note">
+        Phase 1 uses snapshot + event sync over Supabase RPC functions from
+        <code>design/SUPABASE_SCHEMA_v1.sql</code>. Auth UI is the next workstream; for now this accepts an existing user access token.
+      </div>
     </div>
   </div>
 
@@ -1734,6 +1878,8 @@
     const PIPELINE_STAGES = ["backlog", "next_up", "today", "done"];
     const AI_PREF_KEY = "PPP_AI_PREFS_V1";
     const AI_ALLOWED_PROVIDERS = ["openai", "anthropic", "gemini", "grok", "deepseek", "openai_compatible"];
+    const CLOUD_SYNC_PREF_KEY = "PPP_CLOUD_SYNC_PREFS_V1";
+    const FOCUS_UI_PREF_KEY = "PPP_FOCUS_UI_PREFS_V3";
     const AI_ALLOWED_STAGES = ["backlog", "next_up", "today"];
     const AI_ALLOWED_GOALS = ["None", "PG1", "PG2"];
     const AI_ALLOWED_IMPORTANCE = ["High", "Low"];
@@ -1748,6 +1894,20 @@
     let aiPanelForcedVisible = false;
     let aiConfigOpen = false;
     let aiBusy = false;
+    let aiInlineToastTimer = null;
+    let activePlanTab = "focus";
+    let focusUiPrefs = loadFocusUiPrefs();
+    let cloudSyncPrefs = loadCloudSyncPrefs();
+    const cloudSyncRuntime = {
+      pendingEvents: [],
+      pushTimer: null,
+      pushing: false,
+      syncingNow: false,
+      pollTimer: null,
+      statusText: "",
+      mode: "local",
+      lastError: ""
+    };
     const pointerPipelineDrag = {
       taskId: "",
       startX: 0,
@@ -1787,6 +1947,12 @@
         },
         finish_track: { text: "", locked_at: null, completed_at: null },
         today_focus: { date: null, task_ids: [] },
+        sync: {
+          device_id: null,
+          cloud_enabled: false,
+          last_server_version: 0,
+          last_synced_at: null
+        },
         life_practices: { practices: defaultLifePractices(), daily_log: {} },
         onboarding: { completed_at: null, skipped_at: null },
         tasks: [],
@@ -1874,6 +2040,10 @@
         : [];
       normalized.finish_track = { ...base.finish_track, ...(incoming.finish_track || {}) };
       normalized.today_focus = { ...base.today_focus, ...(incoming.today_focus || {}) };
+      normalized.sync = {
+        ...base.sync,
+        ...(incoming.sync || {})
+      };
       normalized.life_practices = {
         practices: normalizeLifePractices(Array.isArray(incoming.life_practices?.practices) ? incoming.life_practices.practices : base.life_practices.practices),
         daily_log: incoming.life_practices && typeof incoming.life_practices.daily_log === "object" ? incoming.life_practices.daily_log : {}
@@ -2054,6 +2224,7 @@
       state.last_modified = new Date().toISOString();
       state.last_modified_by = source;
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      queueCloudSyncEvent(source);
       ledgerClosuresRangeKey = "";
       if (nativeStore.available) {
         queueNativePersist();
@@ -2283,6 +2454,347 @@
         .replaceAll('"', "&quot;")
         .replaceAll("'", "&#39;");
     }
+    function defaultFocusUiPrefs() {
+      return {
+        planningCollapsed: true
+      };
+    }
+    function normalizeFocusUiPrefs(raw) {
+      const input = raw && typeof raw === "object" ? raw : {};
+      return {
+        planningCollapsed: input.planningCollapsed === true
+      };
+    }
+    function loadFocusUiPrefs() {
+      try {
+        const raw = localStorage.getItem(FOCUS_UI_PREF_KEY);
+        if (!raw) return defaultFocusUiPrefs();
+        return normalizeFocusUiPrefs(JSON.parse(raw));
+      } catch {
+        return defaultFocusUiPrefs();
+      }
+    }
+    function saveFocusUiPrefs() {
+      localStorage.setItem(FOCUS_UI_PREF_KEY, JSON.stringify(focusUiPrefs));
+    }
+    function defaultCloudSyncPrefs() {
+      return {
+        enabled: false,
+        supabaseUrl: "",
+        anonKey: "",
+        accessToken: "",
+        boardName: "My PPP Board",
+        boardId: "",
+        deviceId: uid(),
+        pollSeconds: 20,
+        lastServerVersion: 0,
+        lastSyncedAt: null
+      };
+    }
+    function normalizeCloudSyncPrefs(raw) {
+      const base = defaultCloudSyncPrefs();
+      const input = raw && typeof raw === "object" ? raw : {};
+      const normalized = {
+        enabled: input.enabled === true,
+        supabaseUrl: String(input.supabaseUrl || "").trim().replace(/\/+$/, ""),
+        anonKey: String(input.anonKey || "").trim(),
+        accessToken: String(input.accessToken || "").trim(),
+        boardName: String(input.boardName || "").trim() || base.boardName,
+        boardId: String(input.boardId || "").trim(),
+        deviceId: String(input.deviceId || "").trim() || base.deviceId,
+        pollSeconds: Math.max(5, Math.min(300, Number(input.pollSeconds) || base.pollSeconds)),
+        lastServerVersion: Math.max(0, Number(input.lastServerVersion) || 0),
+        lastSyncedAt: input.lastSyncedAt || null
+      };
+      return normalized;
+    }
+    function loadCloudSyncPrefs() {
+      try {
+        const raw = localStorage.getItem(CLOUD_SYNC_PREF_KEY);
+        if (!raw) return defaultCloudSyncPrefs();
+        return normalizeCloudSyncPrefs(JSON.parse(raw));
+      } catch {
+        return defaultCloudSyncPrefs();
+      }
+    }
+    function saveCloudSyncPrefs() {
+      localStorage.setItem(CLOUD_SYNC_PREF_KEY, JSON.stringify(cloudSyncPrefs));
+    }
+    function cloudSyncConfigured() {
+      return !!(cloudSyncPrefs.enabled && cloudSyncPrefs.supabaseUrl && cloudSyncPrefs.anonKey && cloudSyncPrefs.accessToken);
+    }
+    function cloudSyncAuthHeaders() {
+      return {
+        apikey: cloudSyncPrefs.anonKey,
+        Authorization: `Bearer ${cloudSyncPrefs.accessToken}`,
+        "Content-Type": "application/json"
+      };
+    }
+    function cloudSyncSetStatus(statusText, mode = "cloud", detail = "") {
+      cloudSyncRuntime.statusText = String(statusText || "");
+      cloudSyncRuntime.mode = mode;
+      cloudSyncRuntime.lastError = mode === "offline" ? String(detail || "") : "";
+      if (!cloudSyncPrefs.enabled) return;
+      setSyncBanner(cloudSyncRuntime.statusText, mode, detail);
+    }
+    async function cloudSyncRpc(functionName, payload = {}) {
+      const url = `${cloudSyncPrefs.supabaseUrl}/rest/v1/rpc/${functionName}`;
+      const res = await fetch(url, {
+        method: "POST",
+        headers: cloudSyncAuthHeaders(),
+        body: JSON.stringify(payload || {})
+      });
+      const bodyText = await res.text();
+      if (!res.ok) {
+        throw new Error(`Cloud RPC ${functionName} failed ${res.status}: ${bodyText}`);
+      }
+      if (!bodyText) return null;
+      try { return JSON.parse(bodyText); } catch { return bodyText; }
+    }
+    async function cloudSyncFetchLatestSnapshot() {
+      if (!cloudSyncPrefs.boardId) return null;
+      const query = new URLSearchParams({
+        select: "board_id,state_json,server_version,updated_at,last_client_modified_at,last_client_device_id",
+        board_id: `eq.${cloudSyncPrefs.boardId}`,
+        limit: "1"
+      });
+      const url = `${cloudSyncPrefs.supabaseUrl}/rest/v1/board_snapshots?${query.toString()}`;
+      const res = await fetch(url, { headers: cloudSyncAuthHeaders() });
+      const bodyText = await res.text();
+      if (!res.ok) {
+        throw new Error(`Cloud snapshot fetch failed ${res.status}: ${bodyText}`);
+      }
+      const rows = bodyText ? JSON.parse(bodyText) : [];
+      return Array.isArray(rows) && rows.length ? rows[0] : null;
+    }
+    function cloudSyncEnsureDeviceId() {
+      if (!cloudSyncPrefs.deviceId) {
+        cloudSyncPrefs.deviceId = uid();
+        saveCloudSyncPrefs();
+      }
+      if (!state.sync || typeof state.sync !== "object") state.sync = {};
+      if (!state.sync.device_id) state.sync.device_id = cloudSyncPrefs.deviceId;
+    }
+    async function cloudSyncEnsureBoardId() {
+      if (cloudSyncPrefs.boardId) return cloudSyncPrefs.boardId;
+      const response = await cloudSyncRpc("ensure_user_board", { p_name: cloudSyncPrefs.boardName || "My PPP Board" });
+      const boardId = String(
+        response?.id ||
+        response?.board_id ||
+        (Array.isArray(response) ? (response[0]?.id || response[0]?.board_id || response[0]) : response) ||
+        ""
+      ).trim();
+      if (!boardId) throw new Error("Cloud ensure_user_board returned no board id.");
+      cloudSyncPrefs.boardId = boardId;
+      saveCloudSyncPrefs();
+      return boardId;
+    }
+    function queueCloudSyncEvent(source = "dashboard") {
+      if (!cloudSyncPrefs.enabled) return;
+      if (cloudSyncRuntime.syncingNow) return;
+      if (String(source || "").startsWith("cloud_")) return;
+      cloudSyncRuntime.pendingEvents.push({
+        clientEventId: uid(),
+        eventType: String(source || "state_change"),
+        payload: {
+          source: String(source || "dashboard"),
+          last_modified: state.last_modified || null
+        }
+      });
+      scheduleCloudSyncPush(900);
+    }
+    function scheduleCloudSyncPush(delayMs = 900) {
+      if (!cloudSyncPrefs.enabled) return;
+      if (cloudSyncRuntime.pushTimer) clearTimeout(cloudSyncRuntime.pushTimer);
+      cloudSyncRuntime.pushTimer = setTimeout(() => {
+        cloudSyncRuntime.pushTimer = null;
+        void cloudSyncFlushPush();
+      }, Math.max(50, Number(delayMs) || 0));
+    }
+    async function cloudSyncFlushPush() {
+      if (!cloudSyncPrefs.enabled) return false;
+      if (cloudSyncRuntime.pushing) return false;
+      if (!cloudSyncConfigured()) {
+        cloudSyncSetStatus("Cloud sync enabled but incomplete credentials.", "offline", "Open Cloud Sync and add URL, anon key, and access token.");
+        return false;
+      }
+      cloudSyncRuntime.pushing = true;
+      cloudSyncSetStatus("Cloud sync: syncing…", "syncing", "Pushing local changes");
+      const queued = cloudSyncRuntime.pendingEvents.slice();
+      let maxEventId = 0;
+      try {
+        cloudSyncEnsureDeviceId();
+        const boardId = await cloudSyncEnsureBoardId();
+        for (const evt of queued) {
+          const eventId = await cloudSyncRpc("append_board_event", {
+            p_board_id: boardId,
+            p_device_id: cloudSyncPrefs.deviceId,
+            p_client_event_id: evt.clientEventId,
+            p_event_type: evt.eventType,
+            p_payload: evt.payload || {}
+          });
+          const numericId = Number(eventId || 0);
+          if (Number.isFinite(numericId) && numericId > maxEventId) maxEventId = numericId;
+        }
+        const snapshotRows = await cloudSyncRpc("upsert_board_snapshot", {
+          p_board_id: boardId,
+          p_state_json: state,
+          p_schema_version: String(state.schema_version || "3.1.0"),
+          p_device_id: cloudSyncPrefs.deviceId,
+          p_client_modified_at: state.last_modified || null
+        });
+        const snapshot = Array.isArray(snapshotRows) ? snapshotRows[0] : snapshotRows;
+        const serverVersion = Number(snapshot?.server_version || cloudSyncPrefs.lastServerVersion || 0);
+        if (maxEventId > 0) {
+          await cloudSyncRpc("upsert_device_checkpoint", {
+            p_board_id: boardId,
+            p_device_id: cloudSyncPrefs.deviceId,
+            p_last_seen_event_id: maxEventId
+          });
+        }
+        cloudSyncRuntime.pendingEvents.splice(0, queued.length);
+        cloudSyncPrefs.lastServerVersion = serverVersion;
+        cloudSyncPrefs.lastSyncedAt = new Date().toISOString();
+        saveCloudSyncPrefs();
+        if (!state.sync || typeof state.sync !== "object") state.sync = {};
+        state.sync.device_id = cloudSyncPrefs.deviceId;
+        state.sync.last_server_version = serverVersion;
+        state.sync.last_synced_at = cloudSyncPrefs.lastSyncedAt;
+        cloudSyncSetStatus("Data source: Supabase cloud sync", "cloud", `v${serverVersion} · ${new Date().toLocaleTimeString()}`);
+        return true;
+      } catch (err) {
+        cloudSyncSetStatus("Cloud sync paused (connection error)", "offline", String(err?.message || err));
+        return false;
+      } finally {
+        cloudSyncRuntime.pushing = false;
+      }
+    }
+    async function cloudSyncPullLatest(reason = "poll") {
+      if (!cloudSyncPrefs.enabled || !cloudSyncConfigured()) return false;
+      if (cloudSyncRuntime.syncingNow) return false;
+      cloudSyncRuntime.syncingNow = true;
+      try {
+        cloudSyncEnsureDeviceId();
+        await cloudSyncEnsureBoardId();
+        const row = await cloudSyncFetchLatestSnapshot();
+        if (!row || !row.state_json) return false;
+        const serverVersion = Number(row.server_version || 0);
+        const localVersion = Number(cloudSyncPrefs.lastServerVersion || 0);
+        if (serverVersion <= localVersion) {
+          if (reason !== "poll") {
+            cloudSyncSetStatus("Data source: Supabase cloud sync", "cloud", `Already current · v${localVersion}`);
+          }
+          return false;
+        }
+        const pendingLocalEvents = cloudSyncRuntime.pendingEvents.slice();
+        state = normalizeState(row.state_json);
+        if (!state.sync || typeof state.sync !== "object") state.sync = {};
+        state.sync.device_id = cloudSyncPrefs.deviceId;
+        state.sync.last_server_version = serverVersion;
+        state.sync.last_synced_at = new Date().toISOString();
+        cloudSyncRuntime.syncingNow = true;
+        saveState("cloud_pull");
+        cloudSyncRuntime.pendingEvents = pendingLocalEvents;
+        if (pendingLocalEvents.length) scheduleCloudSyncPush(300);
+        cloudSyncPrefs.lastServerVersion = serverVersion;
+        cloudSyncPrefs.lastSyncedAt = state.sync.last_synced_at;
+        saveCloudSyncPrefs();
+        render();
+        cloudSyncSetStatus("Data source: Supabase cloud sync", "cloud", `Pulled remote update · v${serverVersion}`);
+        return true;
+      } catch (err) {
+        cloudSyncSetStatus("Cloud sync pull failed", "offline", String(err?.message || err));
+        return false;
+      } finally {
+        cloudSyncRuntime.syncingNow = false;
+      }
+    }
+    function cloudSyncStopPolling() {
+      if (cloudSyncRuntime.pollTimer) clearInterval(cloudSyncRuntime.pollTimer);
+      cloudSyncRuntime.pollTimer = null;
+    }
+    function cloudSyncStartPolling() {
+      cloudSyncStopPolling();
+      if (!cloudSyncPrefs.enabled || !cloudSyncConfigured()) return;
+      const intervalMs = Math.max(5000, (Number(cloudSyncPrefs.pollSeconds) || 20) * 1000);
+      cloudSyncRuntime.pollTimer = setInterval(() => {
+        if (!navigator.onLine) {
+          cloudSyncSetStatus("Cloud sync offline", "offline", "Network unavailable");
+          return;
+        }
+        void cloudSyncPullLatest("poll");
+      }, intervalMs);
+    }
+    async function cloudSyncTestConnection() {
+      if (!cloudSyncConfigured()) throw new Error("Missing URL, anon key, or access token.");
+      cloudSyncEnsureDeviceId();
+      const boardId = await cloudSyncEnsureBoardId();
+      const snapshot = await cloudSyncFetchLatestSnapshot();
+      return {
+        boardId,
+        hasSnapshot: !!snapshot,
+        serverVersion: Number(snapshot?.server_version || 0)
+      };
+    }
+    function openCloudSyncModal() {
+      const modal = document.getElementById("cloudSyncModal");
+      if (!modal) return;
+      cloudSyncEnsureDeviceId();
+      document.getElementById("cloudSyncEnabledInput").checked = !!cloudSyncPrefs.enabled;
+      document.getElementById("cloudSyncUrlInput").value = cloudSyncPrefs.supabaseUrl || "";
+      document.getElementById("cloudSyncAnonKeyInput").value = cloudSyncPrefs.anonKey || "";
+      document.getElementById("cloudSyncTokenInput").value = cloudSyncPrefs.accessToken || "";
+      document.getElementById("cloudSyncBoardNameInput").value = cloudSyncPrefs.boardName || "My PPP Board";
+      document.getElementById("cloudSyncPollInput").value = String(cloudSyncPrefs.pollSeconds || 20);
+      document.getElementById("cloudSyncDeviceIdInput").value = cloudSyncPrefs.deviceId || "";
+      document.getElementById("cloudSyncStatusText").textContent = cloudSyncRuntime.statusText || "";
+      modal.hidden = false;
+      modal.setAttribute("aria-hidden", "false");
+    }
+    function closeCloudSyncModal() {
+      const modal = document.getElementById("cloudSyncModal");
+      if (!modal) return;
+      modal.hidden = true;
+      modal.setAttribute("aria-hidden", "true");
+    }
+    function applyCloudSyncForm() {
+      const previousUrl = cloudSyncPrefs.supabaseUrl;
+      cloudSyncPrefs = normalizeCloudSyncPrefs({
+        ...cloudSyncPrefs,
+        enabled: document.getElementById("cloudSyncEnabledInput").checked,
+        supabaseUrl: document.getElementById("cloudSyncUrlInput").value,
+        anonKey: document.getElementById("cloudSyncAnonKeyInput").value,
+        accessToken: document.getElementById("cloudSyncTokenInput").value,
+        boardName: document.getElementById("cloudSyncBoardNameInput").value,
+        pollSeconds: document.getElementById("cloudSyncPollInput").value,
+        deviceId: cloudSyncPrefs.deviceId
+      });
+      if (cloudSyncPrefs.supabaseUrl !== previousUrl) {
+        cloudSyncPrefs.boardId = "";
+        cloudSyncPrefs.lastServerVersion = 0;
+      }
+      cloudSyncEnsureDeviceId();
+      saveCloudSyncPrefs();
+      if (!state.sync || typeof state.sync !== "object") state.sync = {};
+      state.sync.device_id = cloudSyncPrefs.deviceId;
+      state.sync.cloud_enabled = cloudSyncPrefs.enabled;
+      saveState("cloud_settings_save");
+      if (cloudSyncPrefs.enabled) {
+        if (cloudSyncConfigured()) {
+          cloudSyncSetStatus("Cloud sync enabled", "cloud", "Ready");
+          cloudSyncStartPolling();
+          scheduleCloudSyncPush(150);
+          void cloudSyncPullLatest("settings_save");
+        } else {
+          cloudSyncSetStatus("Cloud sync enabled but incomplete credentials.", "offline", "Open Cloud Sync and complete all fields.");
+          cloudSyncStopPolling();
+        }
+      } else {
+        cloudSyncRuntime.pendingEvents = [];
+        cloudSyncStopPolling();
+        setSyncBanner("Data source: App local storage (autosave)", "file", nativeStore.path || "Cloud sync disabled");
+      }
+    }
     function aiDefaultBaseUrl(provider) {
       if (provider === "anthropic") return "https://api.anthropic.com/v1";
       if (provider === "gemini") return "https://generativelanguage.googleapis.com/v1beta";
@@ -2467,6 +2979,7 @@
       return {
         enabled: false,
         hideUiWhenDisabled: true,
+        inlineAutoApply: true,
         provider: "openai",
         providerConfigs: buildDefaultAiProviderConfigs()
       };
@@ -2503,6 +3016,7 @@
       const normalized = {
         enabled: input.enabled === true,
         hideUiWhenDisabled: input.hideUiWhenDisabled !== false,
+        inlineAutoApply: input.inlineAutoApply !== false,
         provider,
         providerConfigs
       };
@@ -2987,12 +3501,15 @@ Use only supported action types and enum values from the schema.`;
       if (undoBtn) undoBtn.disabled = !aiUndoBatch;
     }
     function renderAiAssistant() {
-      const tabBtn = document.querySelector('.tab[data-tab="assistant"]');
       const showTab = aiShouldShowTab();
-      if (tabBtn) tabBtn.style.display = showTab ? "" : "none";
-      if (!showTab) {
-        const assistantTab = document.getElementById("tab-assistant");
-        if (assistantTab && assistantTab.classList.contains("active")) setActiveTab("focus");
+      const assistantSubtabBtn = document.querySelector('.plan-subtab[data-plan-tab="assistant"]');
+      if (assistantSubtabBtn) assistantSubtabBtn.style.display = showTab ? "" : "none";
+      const assistantPanelActive = !!document.getElementById("tab-assistant")?.classList.contains("active");
+      if (!showTab && (activePlanTab === "assistant" || assistantPanelActive)) {
+        activePlanTab = "focus";
+        if (assistantPanelActive) {
+          setActiveTab("plan");
+        }
       }
 
       const setupBtn = document.getElementById("aiSetupBtn");
@@ -3026,6 +3543,11 @@ Use only supported action types and enum values from the schema.`;
       const keyMissing = !(typedKey || String(providerCfg.apiKey || "").trim());
       const statusBadge = document.getElementById("aiStatusBadge");
       if (statusBadge) statusBadge.textContent = aiPrefs.enabled ? (keyMissing ? "Enabled (missing key)" : "Enabled") : "Disabled";
+      const inlineModeToggle = document.getElementById("aiInlineAutoApplyToggle");
+      if (inlineModeToggle) {
+        inlineModeToggle.checked = !!aiPrefs.inlineAutoApply;
+        inlineModeToggle.disabled = aiBusy;
+      }
 
       const providerButtons = document.querySelectorAll("[data-ai-provider-btn]");
       providerButtons.forEach(btn => {
@@ -3038,6 +3560,16 @@ Use only supported action types and enum values from the schema.`;
         ? (keyMissing ? "AI is enabled but API key is missing. Open Settings, add a key, and save." : "")
         : "AI is off. Open Settings to enable it and add an API key.";
       const chatVisible = aiPrefs.enabled && !keyMissing;
+      const inlineSendBtn = document.getElementById("aiInlineSendBtn");
+      if (inlineSendBtn) inlineSendBtn.textContent = aiPrefs.inlineAutoApply ? "Ask AI (Auto)" : "Ask AI";
+      const inlineModeHint = document.getElementById("aiInlineModeHint");
+      if (inlineModeHint) {
+        inlineModeHint.textContent = aiPrefs.inlineAutoApply
+          ? "Auto mode: valid AI changes apply immediately. Undo stays available."
+          : "Review mode: AI proposes changes and waits for Apply.";
+      }
+      const inlineToast = document.getElementById("aiInlineToast");
+      if (inlineToast && !chatVisible) inlineToast.hidden = true;
       const surfaces = [
         {
           disabledNoticeId: "aiDisabledNotice",
@@ -3356,6 +3888,8 @@ Use only supported action types and enum values from the schema.`;
       const input = document.getElementById(inputId);
       const text = String(input?.value || "").trim();
       if (!text) return;
+      const inlineSource = inputId === "aiInlineUserInput";
+      const autoApplyInline = inlineSource && aiPrefs.inlineAutoApply;
       aiMessages.push({ role: "user", content: text, at: new Date().toISOString() });
       if (input) input.value = "";
       aiBusy = true;
@@ -3365,6 +3899,14 @@ Use only supported action types and enum values from the schema.`;
         const parsed = extractJsonObject(raw);
         buildAiProposal(parsed);
         aiMessages.push({ role: "assistant", content: aiProposal.summary, at: new Date().toISOString() });
+        if (autoApplyInline) {
+          const result = applyAiSelectedActions({ silent: true, clearProposal: true });
+          if (result.ok) {
+            showAiInlineToast(result.statusText, "success");
+          } else {
+            showAiInlineToast(`Auto-apply blocked: ${result.error}`, "error");
+          }
+        }
       } catch (err) {
         aiProposal = null;
         aiMessages.push({
@@ -3541,17 +4083,21 @@ Use only supported action types and enum values from the schema.`;
       }
       return `Unsupported action type: ${action.type}`;
     }
-    function applyAiSelectedActions() {
-      if (!aiProposal) return;
+    function applyAiSelectedActions(options = {}) {
+      const opts = options && typeof options === "object" ? options : {};
+      const silent = opts.silent === true;
+      if (!aiProposal) return { ok: false, error: "No active proposal." };
       if (aiProposal.appliedAt) {
-        alert("These proposed changes are already applied. Ask AI again for a fresh proposal.");
-        return;
+        const err = "These proposed changes are already applied. Ask AI again for a fresh proposal.";
+        if (!silent) alert(err);
+        return { ok: false, error: err };
       }
       const selectedItems = aiProposal.items.filter(item => item.selected && item.valid && item.action);
       const selected = selectedItems.map(item => item.action);
       if (!selected.length) {
-        alert("No valid selected actions to apply.");
-        return;
+        const err = "No valid selected actions to apply.";
+        if (!silent) alert(err);
+        return { ok: false, error: err };
       }
       const snapshot = JSON.stringify(state);
       for (const action of selected) {
@@ -3560,8 +4106,8 @@ Use only supported action types and enum values from the schema.`;
           state = normalizeState(JSON.parse(snapshot));
           saveState("ai_apply_reverted");
           render();
-          alert(`AI apply failed: ${err}`);
-          return;
+          if (!silent) alert(`AI apply failed: ${err}`);
+          return { ok: false, error: err };
         }
       }
       aiUndoBatch = {
@@ -3574,7 +4120,6 @@ Use only supported action types and enum values from the schema.`;
       aiProposal.items.forEach(item => {
         if (item.selected) item.selected = false;
       });
-      saveState("ai_apply_batch");
       const createdCount = selected.filter(action => action.type === "task.create").length;
       const statusText = createdCount > 0
         ? `Applied ${selected.length} change(s). Added ${createdCount} task${createdCount === 1 ? "" : "s"}.`
@@ -3583,7 +4128,10 @@ Use only supported action types and enum values from the schema.`;
         const status = document.getElementById(id);
         if (status) status.textContent = statusText;
       });
+      if (opts.clearProposal === true) aiProposal = null;
+      saveState("ai_apply_batch");
       render();
+      return { ok: true, statusText, createdCount, appliedCount: selected.length };
     }
     function undoAiBatch() {
       if (!aiUndoBatch?.beforeStateJson) return;
@@ -3596,6 +4144,23 @@ Use only supported action types and enum values from the schema.`;
       aiMessages = [];
       aiProposal = null;
       renderAiAssistant();
+    }
+    function showAiInlineToast(message, variant = "success") {
+      const toast = document.getElementById("aiInlineToast");
+      if (!toast) return;
+      toast.textContent = String(message || "").trim();
+      if (!toast.textContent) {
+        toast.hidden = true;
+        return;
+      }
+      toast.style.borderColor = variant === "error" ? "#efc0b7" : "#9acdbf";
+      toast.style.background = variant === "error" ? "#fff6f4" : "var(--accent-light)";
+      toast.style.color = variant === "error" ? "#7d2f22" : "var(--accent)";
+      toast.hidden = false;
+      if (aiInlineToastTimer) clearTimeout(aiInlineToastTimer);
+      aiInlineToastTimer = window.setTimeout(() => {
+        toast.hidden = true;
+      }, 4200);
     }
     function localDateKey(date = new Date()) {
       const y = date.getFullYear();
@@ -4571,13 +5136,34 @@ Use only supported action types and enum values from the schema.`;
     }
 
     function setActiveTab(tabName) {
-      const tabBtn = document.querySelector(`.tab[data-tab="${tabName}"]`);
-      if (!tabBtn) return;
-      document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
-      document.querySelectorAll(".tab-content").forEach(c=>c.classList.remove("active"));
-      tabBtn.classList.add("active");
-      const panel = document.getElementById(`tab-${tabName}`);
-      if (panel) panel.classList.add("active");
+      const requested = String(tabName || "").trim() || "execute";
+      const planTabs = ["focus", "assistant", "review"];
+      let mode = requested === "execute" ? "execute" : "plan";
+      let planTab = activePlanTab;
+      if (planTabs.includes(requested)) planTab = requested;
+      if (!planTabs.includes(planTab)) planTab = "focus";
+      if (planTab === "assistant" && !aiShouldShowTab()) planTab = "focus";
+      activePlanTab = planTab;
+
+      document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+      const topBtn = document.querySelector(`.tab[data-tab="${mode}"]`);
+      if (topBtn) topBtn.classList.add("active");
+
+      const planSubtabs = document.getElementById("planSubtabs");
+      if (planSubtabs) planSubtabs.hidden = mode !== "plan";
+      document.querySelectorAll(".plan-subtab").forEach(btn => {
+        const sub = String(btn.getAttribute("data-plan-tab") || "");
+        btn.classList.toggle("active", mode === "plan" && sub === planTab);
+      });
+
+      document.querySelectorAll(".tab-content").forEach(panel => panel.classList.remove("active"));
+      if (mode === "execute") {
+        const executePanel = document.getElementById("tab-execute");
+        if (executePanel) executePanel.classList.add("active");
+        return;
+      }
+      const planPanel = document.getElementById(`tab-${planTab}`);
+      if (planPanel) planPanel.classList.add("active");
     }
 
     function onboardingMaxStep() {
@@ -5959,6 +6545,13 @@ Use only supported action types and enum values from the schema.`;
       document.getElementById("targetWig1SessionsInput").value = state.focus.targets?.wig1_deep_sessions_weekly || "";
       document.getElementById("targetCommitmentsInput").value = state.focus.targets?.commitments_done_weekly || "";
       document.getElementById("focusUpdated").textContent = state.focus.updated_at ? `Updated: ${new Date(state.focus.updated_at).toLocaleDateString()}` : "";
+      const planningSection = document.getElementById("focusPlanningSection");
+      const planningToggle = document.getElementById("focusPlanningToggleBtn");
+      const planningHint = document.getElementById("focusPlanningHint");
+      const planningCollapsed = !!focusUiPrefs.planningCollapsed;
+      if (planningSection) planningSection.hidden = planningCollapsed;
+      if (planningToggle) planningToggle.textContent = planningCollapsed ? "Show Planning" : "Hide Planning";
+      if (planningHint) planningHint.textContent = planningCollapsed ? "Planning hidden (Task Funnel mode)" : "";
 
       const weekDates = getWeekDates(0);
       const weekSessions = sessionsForDates(weekDates);
@@ -6523,6 +7116,39 @@ Use only supported action types and enum values from the schema.`;
     });
 
     // File sync
+    document.getElementById("cloudSyncBtn").addEventListener("click", openCloudSyncModal);
+    document.getElementById("cloudSyncCloseBtn").addEventListener("click", closeCloudSyncModal);
+    document.getElementById("cloudSyncModal").addEventListener("click",e=>{
+      if (e.target && e.target.id === "cloudSyncModal") closeCloudSyncModal();
+    });
+    document.getElementById("cloudSyncSaveBtn").addEventListener("click",()=>{
+      applyCloudSyncForm();
+      const status = document.getElementById("cloudSyncStatusText");
+      if (status) status.textContent = "Cloud settings saved.";
+    });
+    document.getElementById("cloudSyncTestBtn").addEventListener("click",async ()=>{
+      const status = document.getElementById("cloudSyncStatusText");
+      try {
+        applyCloudSyncForm();
+        if (status) status.textContent = "Testing connection…";
+        const test = await cloudSyncTestConnection();
+        if (status) status.textContent = `Connected. Board ${test.boardId.slice(0, 8)}… · v${test.serverVersion}`;
+      } catch (err) {
+        if (status) status.textContent = `Failed: ${String(err?.message || err)}`;
+      }
+    });
+    document.getElementById("cloudSyncNowBtn").addEventListener("click",async ()=>{
+      const status = document.getElementById("cloudSyncStatusText");
+      try {
+        applyCloudSyncForm();
+        if (status) status.textContent = "Syncing now…";
+        await cloudSyncFlushPush();
+        await cloudSyncPullLatest("manual");
+        if (status) status.textContent = "Sync complete.";
+      } catch (err) {
+        if (status) status.textContent = `Sync failed: ${String(err?.message || err)}`;
+      }
+    });
     document.getElementById("loadFileBtn").textContent = "Link JSON File";
     document.getElementById("loadFileBtn").addEventListener("click",pickAndLinkJsonFile);
     document.getElementById("loadFileInput").addEventListener("change",e=>{if(e.target.files[0]) importJson(e.target.files[0]);});
@@ -6557,6 +7183,11 @@ Use only supported action types and enum values from the schema.`;
     });
 
     // Focus layer save
+    document.getElementById("focusPlanningToggleBtn").addEventListener("click",()=>{
+      focusUiPrefs.planningCollapsed = !focusUiPrefs.planningCollapsed;
+      saveFocusUiPrefs();
+      renderFocusLayer();
+    });
     document.getElementById("saveFocusBtn").addEventListener("click",()=>{
       state.focus = {
         ...(state.focus || {}),
@@ -6596,6 +7227,11 @@ Use only supported action types and enum values from the schema.`;
     });
     document.getElementById("aiToggleConfigBtn").addEventListener("click",()=>{
       aiConfigOpen = !aiConfigOpen;
+      renderAiAssistant();
+    });
+    document.getElementById("aiInlineAutoApplyToggle").addEventListener("change",e=>{
+      aiPrefs.inlineAutoApply = !!e.target.checked;
+      saveAiPrefs();
       renderAiAssistant();
     });
     document.getElementById("aiProviderInput").addEventListener("change",e=>{
@@ -6678,6 +7314,12 @@ Use only supported action types and enum values from the schema.`;
         render();
       });
     });
+    document.querySelectorAll(".plan-subtab").forEach(tab=>{
+      tab.addEventListener("click",()=>{
+        setActiveTab(tab.dataset.planTab || "focus");
+        render();
+      });
+    });
 
     // Closure modal interactions
     document.getElementById("weekGrid").addEventListener("click",e=>{
@@ -6722,6 +7364,25 @@ Use only supported action types and enum values from the schema.`;
         renderPomodoro();
         void keepWindowMaximized();
       }
+      if (e.key === "Escape") {
+        const cloudModal = document.getElementById("cloudSyncModal");
+        if (cloudModal && !cloudModal.hidden) {
+          e.preventDefault();
+          e.stopPropagation();
+          closeCloudSyncModal();
+        }
+      }
+    });
+
+    window.addEventListener("online",()=>{
+      if (!cloudSyncPrefs.enabled) return;
+      cloudSyncSetStatus("Cloud sync online", "cloud", "Reconnected");
+      void cloudSyncFlushPush();
+      void cloudSyncPullLatest("online");
+    });
+    window.addEventListener("offline",()=>{
+      if (!cloudSyncPrefs.enabled) return;
+      cloudSyncSetStatus("Cloud sync offline", "offline", "Network unavailable");
     });
 
     // Weekly review nav
@@ -6750,6 +7411,20 @@ Use only supported action types and enum values from the schema.`;
       if (!loaded) loaded = await tryAutoLoadLinkedFile();
       if (!loaded && !nativeDetected) {
         setSyncBanner("Data source: Browser cache", "local", "Use Link JSON File for persistence");
+      }
+      cloudSyncEnsureDeviceId();
+      if (!state.sync || typeof state.sync !== "object") state.sync = {};
+      state.sync.device_id = cloudSyncPrefs.deviceId;
+      state.sync.cloud_enabled = cloudSyncPrefs.enabled;
+      if (cloudSyncPrefs.enabled) {
+        if (cloudSyncConfigured()) {
+          cloudSyncSetStatus("Cloud sync enabled", "cloud", "Initial sync in progress");
+          cloudSyncStartPolling();
+          await cloudSyncPullLatest("startup");
+          await cloudSyncFlushPush();
+        } else {
+          cloudSyncSetStatus("Cloud sync enabled but incomplete credentials.", "offline", "Open Cloud Sync and complete credentials.");
+        }
       }
       render();
       if (shouldShowOnboarding()) openOnboarding({ mode: "first_run" });
