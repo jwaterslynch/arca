@@ -202,6 +202,78 @@ body{font-family:var(--font);color:var(--text);background:var(--bg);-webkit-font
   background:var(--accent);color:#fff;font:600 .75rem var(--font);cursor:pointer;
 }
 
+/* Practice coaching UI */
+.pd-coach{margin-top:10px;padding-top:10px;border-top:1px solid var(--bg)}
+.pd-coach-input-row{display:flex;gap:6px}
+.pd-coach-input{
+  flex:1;border:1px solid var(--line);border-radius:var(--radius-sm);
+  padding:6px 10px;font:.8rem var(--font);outline:none;background:var(--surface);color:var(--text);
+}
+.pd-coach-input:focus{border-color:var(--accent)}
+.pd-coach-btn{
+  width:32px;height:32px;border-radius:var(--radius-sm);border:none;
+  background:var(--accent);color:#fff;cursor:pointer;font-size:.85rem;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  transition:all .15s;
+}
+.pd-coach-btn:hover{background:var(--accent-hover)}
+.pd-coach-btn.working{pointer-events:none;opacity:.6}
+.pd-coach-response{
+  background:var(--accent-light);border-radius:var(--radius-sm);
+  padding:10px 12px;margin-bottom:8px;font-size:.8rem;line-height:1.5;
+}
+.pd-coach-response .coach-summary{font-weight:600;margin-bottom:6px;color:var(--text)}
+.pd-coach-response .coach-observations{color:var(--text2);margin-bottom:6px}
+.pd-coach-response .coach-recommendations{color:var(--text)}
+.pd-coach-response .coach-rec-item{padding:3px 0}
+.pd-coach-response .coach-rec-item::before{content:"→ ";color:var(--accent);font-weight:600}
+.pd-coach-actions{margin-top:8px;display:flex;gap:6px;flex-wrap:wrap}
+.pd-coach-action-btn{
+  padding:4px 10px;border-radius:6px;border:1px solid var(--accent);
+  background:var(--surface);color:var(--accent);font:600 .72rem var(--font);
+  cursor:pointer;transition:all .15s;
+}
+.pd-coach-action-btn:hover{background:var(--accent);color:#fff}
+
+/* Review range toggle */
+.review-range-toggle{
+  display:flex;background:var(--bg);border-radius:var(--radius);padding:3px;gap:2px;
+}
+.range-btn{
+  padding:5px 14px;border-radius:10px;border:none;background:transparent;
+  font:600 .75rem var(--font);color:var(--text2);cursor:pointer;transition:all .15s;
+}
+.range-btn.active{background:var(--surface);color:var(--accent);box-shadow:var(--shadow)}
+.range-btn:hover:not(.active){color:var(--text)}
+
+/* Practice detail cards in Review tab */
+.practice-detail-block{margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--bg)}
+.practice-detail-block:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
+.practice-detail-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.practice-detail-header .pd-name{font-size:.85rem;font-weight:700}
+.practice-detail-header .pd-stats{font-size:.72rem;color:var(--text2);font-weight:600}
+/* Mini 7-day week strip */
+.pd-week-strip{display:flex;gap:4px;margin-bottom:8px}
+.pd-week-day{
+  flex:1;height:24px;border-radius:4px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:.6rem;font-weight:600;color:var(--text2);
+}
+.pd-week-day.done{background:var(--accent);color:#fff}
+.pd-week-day.missed{background:#fef2f2;color:#dc2626}
+.pd-week-day.future{background:var(--bg);color:var(--text2);opacity:.5}
+/* Contribution calendar (month/6-month view) */
+.contrib-calendar{display:grid;grid-template-rows:repeat(7,1fr);grid-auto-columns:14px;grid-auto-flow:column;gap:2px}
+.contrib-cell{width:12px;height:12px;border-radius:2px;background:var(--bg)}
+.contrib-cell.l1{background:#dcfce7}
+.contrib-cell.l2{background:#86efac}
+.contrib-cell.l3{background:#22c55e}
+.contrib-cell.l4{background:var(--accent)}
+.contrib-cell.missed-cell{background:#fecaca}
+/* Sparkline SVG */
+.sparkline-wrap{display:inline-block;vertical-align:middle;margin-left:8px}
+.sparkline-wrap svg{display:block}
+
 .stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .stat-box{text-align:center;padding:10px 6px;background:var(--bg);border-radius:var(--radius-sm)}
 .stat-box .stat-val{font-size:1.4rem;font-weight:800;color:var(--accent)}
@@ -233,12 +305,14 @@ body{font-family:var(--font);color:var(--text);background:var(--bg);-webkit-font
 .ai-bar textarea{
   resize:none;
   overflow-y:hidden;
-  padding:0;margin:0;
-  line-height:1.45;
-  height:1.45em;          /* single-line height; grows via JS on Shift+Enter */
+  padding:6px 0;
+  margin:0;
+  line-height:1.35;
+  min-height:34px;
+  height:34px;          /* single-line resting height; grows via JS on Shift+Enter */
   max-height:120px;
   align-self:center;
-  box-sizing:content-box;
+  box-sizing:border-box;
   display:block;
 }
 .ai-bar input::placeholder,
@@ -491,12 +565,24 @@ body{font-family:var(--font);color:var(--text);background:var(--bg);-webkit-font
 
 /* Commitments */
 .commitment-item{
-  display:flex;align-items:center;gap:8px;padding:6px 0;
+  display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:start;gap:8px;padding:6px 0;
   border-bottom:1px solid var(--bg);
 }
 .commitment-item:last-child{border-bottom:none}
-.commitment-item .commitment-text{font-size:.82rem;flex:1}
-.commitment-item .commitment-goal{font-size:.68rem;color:var(--accent);font-weight:600}
+.commitment-item input[type="checkbox"]{margin-top:2px}
+.commitment-item .commitment-text{
+  font-size:.82rem;
+  min-width:0;
+  line-height:1.4;
+  overflow-wrap:anywhere;
+}
+.commitment-item .commitment-goal{
+  font-size:.68rem;
+  color:var(--accent);
+  font-weight:600;
+  white-space:nowrap;
+  align-self:center;
+}
 
 /* ═══════════ FOCUS MODE OVERLAY ═══════════ */
 .focus-overlay{
@@ -1488,10 +1574,11 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
 #lifePracticesList .life-practice-item:last-child { border-bottom:none; }
 
 /* ── Commitments list ── */
-.commitment-item { display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid var(--bg); }
+.commitment-item { display:grid; grid-template-columns:auto minmax(0,1fr) auto; align-items:start; gap:8px; padding:6px 0; border-bottom:1px solid var(--bg); }
 .commitment-item:last-child { border-bottom:none; }
-.commitment-item .commitment-text { font-size:.82rem; flex:1; }
-.commitment-item .commitment-goal { font-size:.68rem; color:var(--accent); font-weight:600; }
+.commitment-item input[type="checkbox"] { margin-top:2px; }
+.commitment-item .commitment-text { font-size:.82rem; min-width:0; line-height:1.4; overflow-wrap:anywhere; }
+.commitment-item .commitment-goal { font-size:.68rem; color:var(--accent); font-weight:600; white-space:nowrap; align-self:center; }
 
 /* Streak heatmap */
 .streak-grid{display:flex;flex-direction:column;gap:8px}
@@ -1821,6 +1908,14 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         <!-- Review Panel -->
         <div class="plan-subpanel tab-content" id="tab-review">
           <div class="review-content">
+            <!-- Time-range selector -->
+            <div style="display:flex;align-items:center;gap:4px;margin-bottom:12px">
+              <div class="review-range-toggle" id="reviewRangeToggle">
+                <button class="range-btn active" data-range="week" type="button">Week</button>
+                <button class="range-btn" data-range="month" type="button">Month</button>
+                <button class="range-btn" data-range="6month" type="button">6 Months</button>
+              </div>
+            </div>
             <!-- Week navigation + summary stats -->
             <div class="review-card">
               <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
@@ -1835,7 +1930,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
               <div class="stats-grid" style="margin-top:12px">
                 <div class="stat-box"><div class="stat-val" id="weekTotalHours">0h</div><div class="stat-label">Total Hours</div></div>
                 <div class="stat-box"><button class="stat-val week-closed-btn" id="weekTotalClosed" type="button" style="background:none;border:none;font:inherit;color:var(--accent);cursor:pointer;">0</button><div class="stat-label">Tasks Closed</div></div>
-                <div class="stat-box"><div class="stat-val" id="weekQ2">0%</div><div class="stat-label">Q2 Time</div></div>
+                <div class="stat-box"><div class="stat-val" id="weekCommitments">0 / 0</div><div class="stat-label">Commitments</div></div>
                 <div class="stat-box"><div class="stat-val" id="weekDeepRatio">0%</div><div class="stat-label">Deep Ratio</div></div>
               </div>
             </div>
@@ -1844,6 +1939,12 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
             <div class="review-card">
               <h4>Life Practice Streaks — Last 28 Days</h4>
               <div class="streak-grid" id="streakGrid"></div>
+            </div>
+
+            <!-- Life Practices Detail — per-practice weekly view -->
+            <div class="review-card" id="practiceDetailCard">
+              <h4>Life Practices — This Week</h4>
+              <div id="practiceDetailGrid"></div>
             </div>
 
             <!-- Time by Category -->
@@ -1857,12 +1958,6 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
               <h4>Deep Work Ratio — 4 Week Trend</h4>
               <div style="display:flex;align-items:end;gap:6px;height:100px;padding-top:12px" id="deepTrend"></div>
             </div>
-
-            <!-- Quadrant Split (collapsed by default) -->
-            <details class="review-card">
-              <summary style="font-size:.85rem;font-weight:700;cursor:pointer;user-select:none;">Quadrant Split</summary>
-              <div id="weekQuadrants" style="margin-top:12px"></div>
-            </details>
 
             <!-- Closed Task Log (collapsed by default) -->
             <details class="review-card">
@@ -4871,6 +4966,234 @@ Use only supported action types and enum values from the schema.`;
         }
       }
     }
+    /* ═══════════ PRACTICE/STREAM AI COACHING ═══════════ */
+    /*
+     * ARCHITECTURE NOTE (transitional):
+     * The current practice model (life_practices.practices + daily_log) is a bridge.
+     * The target architecture is a normalized "streams" schema with separate collections
+     * for stream_events, stream_targets, stream_milestones, stream_notes, etc.
+     * This coaching layer uses Codex's prompt contract and is designed to transfer
+     * cleanly to the streams model when mobile sync / Supabase demands normalization.
+     */
+
+    function buildPracticeCoachContext(practiceId) {
+      const practices = state.life_practices?.practices || [];
+      const practice = practices.find(p => p.id === practiceId);
+      if (!practice) return null;
+      const dailyLog = state.life_practices?.daily_log || {};
+      const todayKey = todayISO();
+
+      /* Recent events (last 30 days of entries for this practice) */
+      const recentEvents = [];
+      const allDates = Object.keys(dailyLog).sort().reverse();
+      for (const dateKey of allDates) {
+        if (recentEvents.length >= 30) break;
+        const entry = dailyLog[dateKey]?.[practiceId];
+        if (!entry) continue;
+        recentEvents.push({
+          date: dateKey,
+          done: !!entry.done,
+          minutes: entry.minutes || null,
+          notes: entry.notes || null,
+        });
+      }
+
+      /* Streak + consistency */
+      let streak = 0;
+      for (let i = 0; i < 365; i++) {
+        const d = new Date(); d.setDate(d.getDate() - i);
+        const key = localDateKey(d);
+        if (dailyLog[key]?.[practiceId]?.done) streak++;
+        else break;
+      }
+      const last28 = [];
+      for (let i = 27; i >= 0; i--) {
+        const d = new Date(); d.setDate(d.getDate() - i);
+        last28.push(localDateKey(d));
+      }
+      const doneIn28 = last28.filter(dk => dailyLog[dk]?.[practiceId]?.done).length;
+      const consistency = Math.round((doneIn28 / 28) * 100);
+
+      /* Missed days (last 7) */
+      const last7 = [];
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date(); d.setDate(d.getDate() - i);
+        const key = localDateKey(d);
+        if (key <= todayKey && !dailyLog[key]?.[practiceId]?.done) last7.push(key);
+      }
+
+      /* Best streak */
+      const sortedDates = Object.keys(dailyLog).sort();
+      let bestStreak = 0, runStreak = 0;
+      for (const dk of sortedDates) {
+        if (dailyLog[dk]?.[practiceId]?.done) { runStreak++; bestStreak = Math.max(bestStreak, runStreak); }
+        else runStreak = 0;
+      }
+
+      /* Weekly trend (days done per week, last 8 weeks) */
+      const weeklyTrend = [];
+      for (let w = 7; w >= 0; w--) {
+        let count = 0;
+        for (let d = 0; d < 7; d++) {
+          const dt = new Date(); dt.setDate(dt.getDate() - (w * 7 + d));
+          const key = localDateKey(dt);
+          if (key <= todayKey && dailyLog[key]?.[practiceId]?.done) count++;
+        }
+        weeklyTrend.push(count);
+      }
+
+      /* Linked tasks + commitments */
+      const linkedTasks = state.tasks
+        .filter(t => !t.completedAt && (t.title || "").toLowerCase().includes(practice.title.toLowerCase().split(/[\s/]+/)[0]))
+        .slice(0, 5)
+        .map(t => ({ id: t.id, title: t.title, stage: t.stage }));
+
+      const weekStart = currentWeekStart();
+      const linkedCommitments = (Array.isArray(state.focus?.commitments) ? state.focus.commitments : [])
+        .filter(c => c.due_week_start === weekStart && (c.text || "").toLowerCase().includes(practice.title.toLowerCase().split(/[\s/]+/)[0]))
+        .slice(0, 5)
+        .map(c => ({ text: c.text, done: !!c.done }));
+
+      /* Codex's contract: stream-scoped payload */
+      return {
+        stream: {
+          id: practice.id,
+          title: practice.title,
+          kind: practice.kind || "life_practice",
+          minimum_minutes: practice.minimum_minutes,
+          target_value: practice.target_value,
+          target_unit: practice.target_unit,
+          note: practice.note,
+        },
+        recent_events: recentEvents,
+        review_summary: {
+          streak,
+          best_streak: bestStreak,
+          consistency_pct: consistency,
+          days_done_last_28: doneIn28,
+          missed_days_this_week: last7,
+          weekly_trend: weeklyTrend,
+        },
+        linked_tasks: linkedTasks,
+        linked_commitments: linkedCommitments,
+      };
+    }
+
+    function buildPracticeCoachSystemPrompt() {
+      return `You are a personal coach embedded in PPP Flow — a productivity operating system. You are coaching the user on a specific life practice or work domain (called a "stream").
+
+YOUR ROLE:
+You have deep context on this one stream — recent activity, consistency, streaks, targets, and linked tasks. Use this to give specific, grounded coaching. Never give generic advice. Reference actual data: "You've done 5 of the last 7 days" not "Try to be consistent."
+
+TONE:
+Warm but direct. Like a coach who genuinely cares about the person's progress. Celebrate real wins. Be honest about gaps. Keep it concise — this appears in a small UI panel.
+
+RESPONSE FORMAT (strict — return valid JSON only, no markdown, no code fences):
+{
+  "summary": "1-2 sentence assessment of current state",
+  "observations": ["specific data-backed observation 1", "observation 2"],
+  "recommendations": ["actionable recommendation 1", "recommendation 2"],
+  "actions": []
+}
+
+ACTIONS (optional — only include when clearly warranted):
+Supported action types: task.create, task.update, task.move, task.delete, commitment.create, commitment.update
+
+For task.create actions:
+{ "type": "task.create", "task": { "title": "...", "category": "Body/Mind", "importance": "High", "urgency": "Low", "depth": "Deep", "goal": "pg1" }, "place": { "stage": "next_up" } }
+
+For commitment.create actions:
+{ "type": "commitment.create", "commitment": { "title": "...", "goal": "pg1" } }
+
+RULES:
+- Advice without actions is perfectly fine and often preferred
+- Actions must be grounded in the stream context — never propose actions unrelated to this stream
+- Keep observations to 2-3 max, recommendations to 2-3 max
+- If the user asks a specific question, answer it directly before giving general coaching
+- Reference specific dates, numbers, and patterns from the data`;
+    }
+
+    function buildPracticeCoachUserPrompt(practiceId, userQuestion) {
+      const context = buildPracticeCoachContext(practiceId);
+      if (!context) return null;
+      return `STREAM CONTEXT:
+${JSON.stringify(context, null, 2)}
+
+USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
+    }
+
+    async function requestPracticeCoaching(practiceId, userQuestion) {
+      const practice = (state.life_practices?.practices || []).find(p => p.id === practiceId);
+      if (!practice) return;
+      if (!aiPrefs.enabled || !aiResolveConfig(aiPrefs).apiKey) {
+        showAiInlineToast("Enable AI and add an API key in Settings first.", "error");
+        return;
+      }
+
+      const btn = document.querySelector(`[data-coach-send="${practiceId}"]`);
+      const responseEl = document.getElementById(`pdCoachResponse_${practiceId}`);
+      const inputEl = document.querySelector(`[data-coach-practice="${practiceId}"]`);
+      if (btn) btn.classList.add("working");
+
+      try {
+        const systemPrompt = buildPracticeCoachSystemPrompt();
+        const userPrompt = buildPracticeCoachUserPrompt(practiceId, userQuestion);
+        if (!userPrompt) throw new Error("Could not build context for this practice.");
+
+        const raw = await aiCallProvider(systemPrompt, userPrompt);
+        const parsed = extractJsonObject(raw);
+
+        if (responseEl) {
+          let html = "";
+          if (parsed.summary) html += `<div class="coach-summary">${escapeHtml(parsed.summary)}</div>`;
+          if (Array.isArray(parsed.observations) && parsed.observations.length) {
+            html += `<div class="coach-observations">${parsed.observations.map(o => escapeHtml(o)).join(" · ")}</div>`;
+          }
+          if (Array.isArray(parsed.recommendations) && parsed.recommendations.length) {
+            html += `<div class="coach-recommendations">${parsed.recommendations.map(r => `<div class="coach-rec-item">${escapeHtml(r)}</div>`).join("")}</div>`;
+          }
+          if (Array.isArray(parsed.actions) && parsed.actions.length) {
+            html += `<div class="pd-coach-actions">${parsed.actions.map((a, i) => {
+              const label = a.type === "task.create" ? `Add task: ${a.task?.title || "?"}`
+                : a.type === "commitment.create" ? `Add commitment: ${a.commitment?.title || "?"}`
+                : `${a.type}`;
+              return `<button class="pd-coach-action-btn" data-coach-action-idx="${i}" data-coach-action-practice="${escapeHtml(practiceId)}">${escapeHtml(label)}</button>`;
+            }).join("")}</div>`;
+            /* Stash actions for later apply */
+            responseEl._coachActions = parsed.actions;
+          }
+          responseEl.innerHTML = html;
+          responseEl.hidden = false;
+        }
+      } catch (err) {
+        if (responseEl) {
+          responseEl.innerHTML = `<div class="coach-summary" style="color:var(--danger)">${escapeHtml(String(err?.message || err))}</div>`;
+          responseEl.hidden = false;
+        }
+      } finally {
+        if (btn) btn.classList.remove("working");
+      }
+    }
+
+    /* Apply a single coach-proposed action */
+    function applyCoachAction(practiceId, actionIdx) {
+      const responseEl = document.getElementById(`pdCoachResponse_${practiceId}`);
+      const actions = responseEl?._coachActions;
+      if (!actions || !actions[actionIdx]) return;
+      const action = actions[actionIdx];
+      const err = applySingleAiAction(action);
+      if (err) {
+        showAiInlineToast(`Coach action failed: ${err}`, "error");
+      } else {
+        showAiInlineToast("Coach action applied.", "success");
+        saveState("coach_action_applied");
+        render();
+        /* Disable the button */
+        const btn = document.querySelector(`[data-coach-action-idx="${actionIdx}"][data-coach-action-practice="${practiceId}"]`);
+        if (btn) { btn.disabled = true; btn.textContent = "✓ Applied"; }
+      }
+    }
+
     async function requestAiProposal(inputId = "aiUserInput") {
       if (aiBusy) return;
       if (!aiPrefs.enabled) {
@@ -5536,12 +5859,23 @@ Use only supported action types and enum values from the schema.`;
         seen.add(id);
         const min = Number.parseInt(String(raw.minimum_minutes ?? raw.minimumMinutes ?? 10), 10);
         const defaultMinutes = Number.parseInt(String(raw.default_minutes ?? raw.defaultMinutes ?? min), 10);
+        /* Interim bridge fields — transitional model toward full streams schema */
+        const kind = (raw.kind === "work_domain") ? "work_domain" : "life_practice";
+        const targetValue = Number.parseFloat(String(raw.target_value ?? ""));
+        const targetUnit = String(raw.target_unit || "sessions/week").trim();
         normalized.push({
           id,
           title,
+          kind,
           minimum_minutes: Number.isFinite(min) && min > 0 ? min : 10,
           default_minutes: Number.isFinite(defaultMinutes) && defaultMinutes > 0 ? defaultMinutes : (Number.isFinite(min) && min > 0 ? min : 10),
-          note: String(raw.note || "").trim()
+          note: String(raw.note || "").trim(),
+          coach_enabled: raw.coach_enabled !== false,
+          target_value: Number.isFinite(targetValue) && targetValue > 0 ? targetValue : null,
+          target_unit: targetUnit,
+          domain_key: String(raw.domain_key || "").trim() || null,
+          color: String(raw.color || "").trim() || null,
+          icon: String(raw.icon || "").trim() || null,
         });
       });
       return normalized;
@@ -5608,7 +5942,7 @@ Use only supported action types and enum values from the schema.`;
       for (const p of state.life_practices.practices) {
         if (!state.life_practices.daily_log[today][p.id]) {
           const defaultMinutes = Number.isFinite(Number(p.default_minutes)) ? Number(p.default_minutes) : null;
-          state.life_practices.daily_log[today][p.id] = { done: false, minutes: defaultMinutes };
+          state.life_practices.daily_log[today][p.id] = { done: false, minutes: defaultMinutes, notes: "", entries: [] };
           changed = true;
         }
       }
@@ -5690,6 +6024,12 @@ Use only supported action types and enum values from the schema.`;
 
     function currentWeekStart() {
       return getWeekDates(0)[0];
+    }
+
+    function scrollReviewPaneToTop() {
+      const el = document.querySelector("#tab-review .review-content");
+      if (!el) return;
+      el.scrollTo({ top: 0, behavior: "auto" });
     }
 
     function commitmentsForWeek(weekStart = currentWeekStart()) {
@@ -5810,6 +6150,25 @@ Use only supported action types and enum values from the schema.`;
       return !!(state.finish_track?.locked_at && !state.finish_track?.completed_at);
     }
 
+    /* ── Build recent practice entries for the drawer ── */
+    function recentPracticeEntries(practiceId, limit = 7) {
+      const dailyLog = state.life_practices?.daily_log || {};
+      const entries = [];
+      const keys = Object.keys(dailyLog).sort().reverse();
+      for (const dateKey of keys) {
+        if (entries.length >= limit) break;
+        const entry = dailyLog[dateKey]?.[practiceId];
+        if (!entry || !entry.done) continue;
+        entries.push({ date: dateKey, minutes: entry.minutes, notes: entry.notes || "" });
+      }
+      return entries;
+    }
+
+    function fmtEntryDate(dateKey) {
+      const d = parseLocalDateKey(dateKey);
+      return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    }
+
     function renderLifePractices() {
       initTodayState();
       const today = todayISO();
@@ -5825,11 +6184,30 @@ Use only supported action types and enum values from the schema.`;
         return;
       }
 
+      /* Preserve which drawers are currently open */
+      const openDrawers = new Set();
+      listEl.querySelectorAll(".practice-drawer.open").forEach(d => {
+        const pid = d.dataset.practiceId;
+        if (pid) openDrawers.add(pid);
+      });
+
       listEl.innerHTML = practices.map(p => {
-        const entry = log[p.id] || { done: false, minutes: null };
+        const entry = log[p.id] || { done: false, minutes: null, notes: "" };
         const min = Number.isFinite(Number(p.minimum_minutes)) ? Number(p.minimum_minutes) : 10;
         const doneClass = entry.done ? "done" : "";
-        const status = entry.done ? `${min} min · done today` : `${min} min minimum`;
+        const todayNotes = entry.notes ? ` · ${entry.notes}` : "";
+        const status = entry.done ? `${min} min · done today${todayNotes}` : `${min} min minimum`;
+        const isOpen = openDrawers.has(p.id);
+
+        /* Recent entries for the drawer */
+        const recent = recentPracticeEntries(p.id, 5);
+        const entriesHtml = recent.length
+          ? recent.map(e => {
+              const detail = e.notes || (e.minutes ? `${e.minutes} min` : "✓ Done");
+              return `<div class="practice-entry"><span class="entry-date">${fmtEntryDate(e.date)}</span><span class="entry-detail">${escapeHtml(detail)}</span></div>`;
+            }).join("")
+          : '<p class="tiny" style="padding:4px 0">No entries yet — log your first one below.</p>';
+
         return `
         <div class="practice-item" data-practice-id="${escapeHtml(p.id)}">
           <div class="practice-check ${doneClass}"></div>
@@ -5837,12 +6215,20 @@ Use only supported action types and enum values from the schema.`;
             <div class="practice-name">${escapeHtml(p.title)}</div>
             <div class="practice-meta">${status}</div>
           </div>
-          <div class="practice-expand">›</div>
+          <div class="practice-expand" style="${isOpen ? "transform:rotate(90deg)" : ""}">\u203A</div>
+        </div>
+        <div class="practice-drawer${isOpen ? " open" : ""}" data-practice-id="${escapeHtml(p.id)}">
+          <div class="practice-entries">${entriesHtml}</div>
+          <div class="practice-ai-input">
+            <input type="text" placeholder="${escapeHtml(p.title === "Gym / Exercise" || p.title === "Exercise" ? "What did you do? (e.g. 3×5 squats @70kg)" : p.title.includes("Read") ? "What did you read? (e.g. 20 min Kahneman ch.14)" : p.title.includes("Piano") ? "What did you practise? (e.g. Scales C major, Chopin)" : p.title.includes("Lang") ? "What did you study? (e.g. 20 min Duolingo Spanish)" : `Log your ${p.title.toLowerCase()} session...`)}" data-practice-id="${escapeHtml(p.id)}" />
+            <button type="button" data-log-practice="${escapeHtml(p.id)}">Log</button>
+          </div>
         </div>`;
       }).join("");
 
       if (!lifePracticesDelegated) {
         listEl.addEventListener("click", e => {
+          /* Checkbox toggle */
           const checkEl = e.target.closest(".practice-check");
           if (checkEl) {
             e.preventDefault();
@@ -5854,9 +6240,35 @@ Use only supported action types and enum values from the schema.`;
             updateLifePractice(practiceId, { done: !currentEntry.done });
             return;
           }
+          /* Log button */
+          const logBtn = e.target.closest("[data-log-practice]");
+          if (logBtn) {
+            e.preventDefault();
+            e.stopPropagation();
+            const practiceId = logBtn.dataset.logPractice;
+            const input = logBtn.closest(".practice-ai-input")?.querySelector("input");
+            if (input && practiceId) logPracticeEntry(practiceId, input);
+            return;
+          }
+          /* Drawer toggle — click on practice-item row */
           const item = e.target.closest(".practice-item[data-practice-id]");
           if (!item) return;
-          // Reserved for future expand/collapse behavior.
+          const practiceId = item.dataset.practiceId || "";
+          const drawer = listEl.querySelector(`.practice-drawer[data-practice-id="${practiceId}"]`);
+          if (drawer) {
+            drawer.classList.toggle("open");
+            const expand = item.querySelector(".practice-expand");
+            if (expand) expand.style.transform = drawer.classList.contains("open") ? "rotate(90deg)" : "";
+          }
+        });
+        /* Enter key on log inputs */
+        listEl.addEventListener("keydown", e => {
+          if (e.key !== "Enter") return;
+          const input = e.target.closest(".practice-ai-input input[data-practice-id]");
+          if (!input) return;
+          e.preventDefault();
+          const practiceId = input.dataset.practiceId;
+          if (practiceId) logPracticeEntry(practiceId, input);
         });
         lifePracticesDelegated = true;
       }
@@ -5870,10 +6282,19 @@ Use only supported action types and enum values from the schema.`;
       renderLifePracticeConfigList();
     }
 
+    /* ── Log a practice entry with free-text notes ── */
+    function logPracticeEntry(practiceId, inputEl) {
+      const text = String(inputEl?.value || "").trim();
+      if (!text) return;
+      inputEl.value = "";
+      /* Mark done + store notes */
+      updateLifePractice(practiceId, { done: true, notes: text });
+    }
+
     function updateLifePractice(id, patch, options = {}) {
       initTodayState();
       const today = todayISO();
-      const current = state.life_practices.daily_log[today][id] || { done: false, minutes: null };
+      const current = state.life_practices.daily_log[today][id] || { done: false, minutes: null, notes: "", entries: [] };
       state.life_practices.daily_log[today][id] = { ...current, ...patch };
       if (options.save !== false) saveState();
       if (options.render !== false) renderLifePractices();
@@ -8093,30 +8514,33 @@ Use only supported action types and enum values from the schema.`;
     }
 
     // ── Render Streak Heatmap ──
-    function renderStreakHeatmap() {
+    function renderStreakHeatmap(anchorDateKey = getWeekDates(reviewWeekOffset)[6]) {
       const grid = document.getElementById("streakGrid");
       if (!grid) return;
       const practices = state.life_practices?.practices || [];
       if (!practices.length) { grid.innerHTML = '<p class="tiny" style="color:var(--text2)">No practices configured yet.</p>'; return; }
 
-      const today = new Date();
+      const todayKey = todayISO();
+      const anchorDate = parseLocalDateKey(anchorDateKey || todayKey);
+      const streakAnchorKey = anchorDateKey && anchorDateKey < todayKey ? anchorDateKey : todayKey;
+      const streakAnchorDate = parseLocalDateKey(streakAnchorKey);
       grid.innerHTML = practices.map(p => {
         // Build 28-day pattern from daily_log
         const days = [];
         for (let i = 27; i >= 0; i--) {
-          const d = new Date(today);
-          d.setDate(d.getDate() - i);
+          const d = new Date(anchorDate);
+          d.setDate(anchorDate.getDate() - i);
           const key = localDateKey(d);
           const entry = state.life_practices?.daily_log?.[key]?.[p.id];
-          const isFuture = i < 0;
+          const isFuture = key > todayKey;
           const cls = isFuture ? "future" : (entry && entry.done) ? "done" : "missed";
           days.push('<div class="streak-day ' + cls + '" title="' + key + '"></div>');
         }
-        // Count current streak
+        // Count streak as of the selected review week (or today for the current/future week)
         let streak = 0;
         for (let i = 0; i <= 27; i++) {
-          const d = new Date(today);
-          d.setDate(d.getDate() - i);
+          const d = new Date(streakAnchorDate);
+          d.setDate(streakAnchorDate.getDate() - i);
           const key = localDateKey(d);
           const entry = state.life_practices?.daily_log?.[key]?.[p.id];
           if (entry && entry.done) streak++;
@@ -8126,18 +8550,221 @@ Use only supported action types and enum values from the schema.`;
       }).join("");
     }
 
+    // ── Render Practice Detail Cards (Review tab) ──
+    function renderPracticeDetail(weekDates) {
+      const grid = document.getElementById("practiceDetailGrid");
+      if (!grid) return;
+      const practices = state.life_practices?.practices || [];
+      if (!practices.length) {
+        grid.innerHTML = '<p class="tiny" style="color:var(--text2)">No practices configured yet.</p>';
+        return;
+      }
+      const todayKey = todayISO();
+      const dailyLog = state.life_practices?.daily_log || {};
+      const dayLabels = ["M","T","W","T","F","S","S"];
+
+      grid.innerHTML = practices.map(p => {
+        /* Week strip: 7 boxes for Mon–Sun */
+        let doneThisWeek = 0;
+        const strip = weekDates.map((dateKey, i) => {
+          const entry = dailyLog[dateKey]?.[p.id];
+          const isFuture = dateKey > todayKey;
+          let cls = "future";
+          if (!isFuture) {
+            if (entry && entry.done) { cls = "done"; doneThisWeek++; }
+            else cls = "missed";
+          }
+          const tooltip = entry?.notes ? escapeHtml(entry.notes) : (entry?.done ? "✓ Done" : dateKey);
+          return `<div class="pd-week-day ${cls}" title="${tooltip}">${dayLabels[i]}</div>`;
+        }).join("");
+
+        /* Streak count (from today or week end, whichever is earlier) */
+        const anchorKey = weekDates[6] <= todayKey ? weekDates[6] : todayKey;
+        const anchorDate = parseLocalDateKey(anchorKey);
+        let streak = 0;
+        for (let i = 0; i < 90; i++) {
+          const d = new Date(anchorDate);
+          d.setDate(anchorDate.getDate() - i);
+          const key = localDateKey(d);
+          const entry = dailyLog[key]?.[p.id];
+          if (entry && entry.done) streak++;
+          else break;
+        }
+
+        /* Best streak (scan all data) */
+        const allDates = Object.keys(dailyLog).sort();
+        let bestStreak = 0, runStreak = 0;
+        for (const dk of allDates) {
+          if (dailyLog[dk]?.[p.id]?.done) { runStreak++; bestStreak = Math.max(bestStreak, runStreak); }
+          else runStreak = 0;
+        }
+
+        /* This week's entries with notes */
+        const weekEntries = weekDates
+          .filter(dk => dailyLog[dk]?.[p.id]?.done)
+          .reverse()
+          .map(dk => {
+            const e = dailyLog[dk][p.id];
+            const detail = e.notes || (e.minutes ? `${e.minutes} min` : "✓ Done");
+            return `<div class="practice-entry"><span class="entry-date">${fmtEntryDate(dk)}</span><span class="entry-detail">${escapeHtml(detail)}</span></div>`;
+          }).join("");
+
+        return `
+        <div class="practice-detail-block">
+          <div class="practice-detail-header">
+            <span class="pd-name">${escapeHtml(p.title)}</span>
+            <span class="pd-stats">${doneThisWeek}/7 days · Streak: ${streak}d · Best: ${bestStreak}d</span>
+          </div>
+          <div class="pd-week-strip">${strip}</div>
+          ${weekEntries ? `<div class="practice-entries" style="margin-top:4px">${weekEntries}</div>` : ""}
+          ${p.coach_enabled !== false ? `
+          <div class="pd-coach" data-practice-id="${escapeHtml(p.id)}">
+            <div class="pd-coach-response" id="pdCoachResponse_${escapeHtml(p.id)}" hidden></div>
+            <div class="pd-coach-input-row">
+              <input type="text" class="pd-coach-input" data-coach-practice="${escapeHtml(p.id)}" placeholder="Ask your coach about ${escapeHtml(p.title.toLowerCase())}..." />
+              <button type="button" class="pd-coach-btn" data-coach-send="${escapeHtml(p.id)}" title="Get coaching">✦</button>
+            </div>
+          </div>` : ""}
+        </div>`;
+      }).join("");
+    }
+
+    // ── Review Time Range ──
+    let reviewRange = "week"; // "week" | "month" | "6month"
+
+    function getReviewRangeDates() {
+      const weekDates = getWeekDates(reviewWeekOffset);
+      if (reviewRange === "week") return { dates: weekDates, label: "week", groupBy: "day" };
+      const weekStart = parseLocalDateKey(weekDates[0]);
+      if (reviewRange === "month") {
+        /* ~30 days ending at the selected week's Sunday */
+        const end = parseLocalDateKey(weekDates[6]);
+        const start = new Date(end);
+        start.setDate(end.getDate() - 29);
+        const dates = [];
+        for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) dates.push(localDateKey(d));
+        return { dates, label: "month", groupBy: "week" };
+      }
+      /* 6 months (~182 days) ending at selected week's Sunday */
+      const end = parseLocalDateKey(weekDates[6]);
+      const start = new Date(end);
+      start.setDate(end.getDate() - 181);
+      const dates = [];
+      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) dates.push(localDateKey(d));
+      return { dates, label: "6month", groupBy: "month" };
+    }
+
+    // ── Contribution Calendar (GitHub-style heatmap) ──
+    function renderContributionCalendar(practiceId, startDate, endDate) {
+      const dailyLog = state.life_practices?.daily_log || {};
+      const todayKey = todayISO();
+      const start = typeof startDate === "string" ? parseLocalDateKey(startDate) : startDate;
+      const end = typeof endDate === "string" ? parseLocalDateKey(endDate) : endDate;
+      const cells = [];
+      /* Pad start to Monday */
+      const dayOfWeek = start.getDay() || 7; /* 1=Mon ... 7=Sun */
+      const padStart = new Date(start);
+      padStart.setDate(start.getDate() - (dayOfWeek - 1));
+      for (let d = new Date(padStart); d <= end; d.setDate(d.getDate() + 1)) {
+        const key = localDateKey(d);
+        const isFuture = key > todayKey;
+        const isBeforeRange = d < start;
+        if (isFuture || isBeforeRange) {
+          cells.push('<div class="contrib-cell" style="opacity:.3"></div>');
+        } else {
+          const entry = dailyLog[key]?.[practiceId];
+          const done = entry && entry.done;
+          const cls = done ? "contrib-cell l4" : "contrib-cell missed-cell";
+          const tooltip = done ? (entry.notes || "✓ Done") : key;
+          cells.push(`<div class="${cls}" title="${escapeHtml(tooltip)}"></div>`);
+        }
+      }
+      return `<div class="contrib-calendar">${cells.join("")}</div>`;
+    }
+
+    // ── Sparkline SVG ──
+    function renderSparkline(values, width = 100, height = 24) {
+      if (!values.length) return "";
+      const max = Math.max(...values, 1);
+      const step = width / Math.max(values.length - 1, 1);
+      const points = values.map((v, i) => `${(i * step).toFixed(1)},${(height - (v / max) * (height - 4) - 2).toFixed(1)}`).join(" ");
+      return `<span class="sparkline-wrap"><svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><polyline fill="none" stroke="var(--accent)" stroke-width="1.5" stroke-linejoin="round" points="${points}" /></svg></span>`;
+    }
+
+    // ── Extended Practice Detail (month/6-month) ──
+    function renderPracticeDetailExtended(rangeDates, groupBy) {
+      const grid = document.getElementById("practiceDetailGrid");
+      if (!grid) return;
+      const practices = state.life_practices?.practices || [];
+      if (!practices.length) {
+        grid.innerHTML = '<p class="tiny" style="color:var(--text2)">No practices configured yet.</p>';
+        return;
+      }
+      const todayKey = todayISO();
+      const dailyLog = state.life_practices?.daily_log || {};
+      const startKey = rangeDates[0];
+      const endKey = rangeDates[rangeDates.length - 1];
+
+      grid.innerHTML = practices.map(p => {
+        /* Contribution calendar */
+        const calendar = renderContributionCalendar(p.id, startKey, endKey);
+
+        /* Count totals */
+        let totalDone = 0, totalDays = 0;
+        rangeDates.forEach(dk => {
+          if (dk > todayKey) return;
+          totalDays++;
+          if (dailyLog[dk]?.[p.id]?.done) totalDone++;
+        });
+        const pct = totalDays > 0 ? Math.round((totalDone / totalDays) * 100) : 0;
+
+        /* Best streak */
+        let bestStreak = 0, runStreak = 0, currentStreak = 0;
+        const sortedAll = Object.keys(dailyLog).sort();
+        for (const dk of sortedAll) {
+          if (dailyLog[dk]?.[p.id]?.done) { runStreak++; bestStreak = Math.max(bestStreak, runStreak); }
+          else runStreak = 0;
+        }
+        /* Current streak from today */
+        for (let i = 0; i < 365; i++) {
+          const d = new Date(); d.setDate(d.getDate() - i);
+          const key = localDateKey(d);
+          if (dailyLog[key]?.[p.id]?.done) currentStreak++;
+          else break;
+        }
+
+        /* Weekly sparkline: days-done-per-week */
+        const weekBuckets = [];
+        for (let i = 0; i < rangeDates.length; i += 7) {
+          const chunk = rangeDates.slice(i, i + 7);
+          weekBuckets.push(chunk.filter(dk => dk <= todayKey && dailyLog[dk]?.[p.id]?.done).length);
+        }
+        const sparkline = weekBuckets.length > 2 ? renderSparkline(weekBuckets, 120, 28) : "";
+
+        return `
+        <div class="practice-detail-block">
+          <div class="practice-detail-header">
+            <span class="pd-name">${escapeHtml(p.title)} ${sparkline}</span>
+            <span class="pd-stats">${pct}% · ${totalDone}/${totalDays}d · Streak: ${currentStreak}d · Best: ${bestStreak}d</span>
+          </div>
+          ${calendar}
+        </div>`;
+      }).join("");
+    }
+
     // ── Render Deep Work Trend ──
-    function renderDeepTrend() {
+    function renderDeepTrend(anchorWeekStartKey = getWeekDates(reviewWeekOffset)[0]) {
       const el = document.getElementById("deepTrend");
       if (!el) return;
-      // Calculate deep ratio from daily_logs for last 4 weeks
-      const today = new Date();
+      const anchorWeekStart = parseLocalDateKey(anchorWeekStartKey || currentWeekStart());
       const weeks = [];
       for (let w = 3; w >= 0; w--) {
+        const weekStart = new Date(anchorWeekStart);
+        weekStart.setDate(anchorWeekStart.getDate() - (w * 7));
         let totalSec = 0, deepSec = 0;
         for (let d = 0; d < 7; d++) {
-          const date = new Date(today);
-          date.setDate(date.getDate() - (w * 7 + d));
+          const date = new Date(weekStart);
+          date.setDate(weekStart.getDate() + d);
           const key = localDateKey(date);
           const log = state.daily_logs?.[key];
           if (log) {
@@ -8159,6 +8786,8 @@ Use only supported action types and enum values from the schema.`;
     function renderWeeklyReview() {
       const dates=getWeekDates(reviewWeekOffset);
       const today=todayISO();
+      const weekStart = dates[0];
+      const weekEnd = dates[6];
       if (nativeStore.available) {
         refreshLedgerClosuresForDates(dates).then(changed => {
           if (changed) renderWeeklyReview();
@@ -8167,6 +8796,7 @@ Use only supported action types and enum values from the schema.`;
 
       const fmt=d=>{const p=d.split("-"); return `${p[2]}/${p[1]}`;};
       document.getElementById("weekLabel").textContent=`${fmt(dates[0])} \u2013 ${fmt(dates[6])}`;
+      document.getElementById("weekHeading").textContent = `Week of ${new Intl.DateTimeFormat(undefined, { day: "numeric", month: "long", year: "numeric" }).format(parseLocalDateKey(weekStart))}`;
 
       let totalSec=0, totalClosed=0, totalDeepSec=0;
       document.getElementById("weekGrid").innerHTML=dates.map((d,i)=>{
@@ -8190,9 +8820,9 @@ Use only supported action types and enum values from the schema.`;
 
       const weekSessions=sessionsForDates(dates);
       const weekTotal=weekSessions.reduce((a,s)=>a+s.durationSec,0)||1;
-
-      const q2sec=weekSessions.filter(s=>s.importance==="High"&&s.urgency==="Low").reduce((a,s)=>a+s.durationSec,0);
-      document.getElementById("weekQ2").textContent=`${Math.round((q2sec/weekTotal)*100)}%`;
+      const weekCommitments = commitmentsForWeek(weekStart);
+      const commitmentsDone = weekCommitments.filter(isCommitmentDone).length;
+      document.getElementById("weekCommitments").textContent = `${commitmentsDone} / ${weekCommitments.length}`;
 
       const weekDeepTotal=weekSessions.filter(s=>(s.depth||"Deep")==="Deep").reduce((a,s)=>a+s.durationSec,0);
       document.getElementById("weekDeepRatio").textContent=`${Math.round((weekDeepTotal/weekTotal)*100)}%`;
@@ -8208,22 +8838,6 @@ Use only supported action types and enum values from the schema.`;
           const color=CAT_COLORS[n]||"var(--accent)";
           return `<div class="cat-bar-row"><span class="cat-name">${n}</span><div class="cat-bar-track"><div class="cat-bar-fill" style="width:${pct}%;background:${color}"></div></div><span class="cat-pct">${pct}%</span></div>`;
         }).join("")||'<p class="tiny">No data this week.</p>';
-
-      // Quadrants
-      const q={q1:0,q2:0,q3:0,q4:0};
-      weekSessions.forEach(s=>{
-        if(s.importance==="High"&&s.urgency==="High") q.q1+=s.durationSec;
-        if(s.importance==="High"&&s.urgency==="Low") q.q2+=s.durationSec;
-        if(s.importance==="Low"&&s.urgency==="High") q.q3+=s.durationSec;
-        if(s.importance==="Low"&&s.urgency==="Low") q.q4+=s.durationSec;
-      });
-      const qT=Object.values(q).reduce((a,b)=>a+b,0)||1;
-      document.getElementById("weekQuadrants").innerHTML=[
-        `<div class="quadrant">Q1 Imp+Urg: <strong>${fmtHours(q.q1)}</strong> (${Math.round((q.q1/qT)*100)}%)</div>`,
-        `<div class="quadrant" style="color:var(--accent);font-weight:600;">Q2 Imp+Not Urg: <strong>${fmtHours(q.q2)}</strong> (${Math.round((q.q2/qT)*100)}%)</div>`,
-        `<div class="quadrant">Q3 Not Imp+Urg: <strong>${fmtHours(q.q3)}</strong> (${Math.round((q.q3/qT)*100)}%)</div>`,
-        `<div class="quadrant" style="color:var(--warn);">Q4 Not Imp+Not Urg: <strong>${fmtHours(q.q4)}</strong> (${Math.round((q.q4/qT)*100)}%)</div>`
-      ].join("");
 
       // Notes
       const weekNotes=state.notes.filter(n=>dates.includes(isoToLocalDateKey(n.at)));
@@ -8254,9 +8868,18 @@ Use only supported action types and enum values from the schema.`;
         }
       }
 
-      // Render streak heatmap and deep work trend
-      renderStreakHeatmap();
-      renderDeepTrend();
+      // Render streak heatmap, practice detail, and deep work trend
+      renderStreakHeatmap(weekEnd);
+      if (reviewRange === "week") {
+        renderPracticeDetail(dates);
+        document.getElementById("practiceDetailCard").querySelector("h4").textContent = "Life Practices — This Week";
+      } else {
+        const range = getReviewRangeDates();
+        renderPracticeDetailExtended(range.dates, range.groupBy);
+        document.getElementById("practiceDetailCard").querySelector("h4").textContent =
+          reviewRange === "month" ? "Life Practices — Last 30 Days" : "Life Practices — Last 6 Months";
+      }
+      renderDeepTrend(weekStart);
     }
 
     // ── Master Render ──
@@ -8940,6 +9563,9 @@ Use only supported action types and enum values from the schema.`;
       tab.addEventListener("click",()=>{
         setActiveTab(tab.dataset.planTab || "focus");
         render();
+        if ((tab.dataset.planTab || "focus") === "review") {
+          scrollReviewPaneToTop();
+        }
       });
     });
 
@@ -9026,8 +9652,61 @@ Use only supported action types and enum values from the schema.`;
     });
 
     // Weekly review nav
-    document.getElementById("prevWeekBtn").addEventListener("click",()=>{reviewWeekOffset--;renderWeeklyReview();});
-    document.getElementById("nextWeekBtn").addEventListener("click",()=>{reviewWeekOffset++;renderWeeklyReview();});
+    document.getElementById("prevWeekBtn").addEventListener("click",()=>{
+      reviewWeekOffset--;
+      renderWeeklyReview();
+      scrollReviewPaneToTop();
+    });
+    document.getElementById("nextWeekBtn").addEventListener("click",()=>{
+      reviewWeekOffset++;
+      renderWeeklyReview();
+      scrollReviewPaneToTop();
+    });
+
+    // Review range toggle
+    document.getElementById("reviewRangeToggle").addEventListener("click", e => {
+      const btn = e.target.closest(".range-btn");
+      if (!btn || btn.classList.contains("active")) return;
+      document.querySelectorAll(".range-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      reviewRange = btn.dataset.range || "week";
+      renderWeeklyReview();
+    });
+
+    // Practice coaching — delegate click + keydown on practiceDetailGrid
+    const pdGrid = document.getElementById("practiceDetailGrid");
+    if (pdGrid) {
+      pdGrid.addEventListener("click", e => {
+        /* Coach send button */
+        const sendBtn = e.target.closest("[data-coach-send]");
+        if (sendBtn) {
+          const pid = sendBtn.dataset.coachSend;
+          const input = pdGrid.querySelector(`[data-coach-practice="${pid}"]`);
+          const q = input ? input.value.trim() : "";
+          void requestPracticeCoaching(pid, q || null);
+          if (input) input.value = "";
+          return;
+        }
+        /* Coach action button */
+        const actionBtn = e.target.closest("[data-coach-action-idx]");
+        if (actionBtn) {
+          const pid = actionBtn.dataset.coachActionPractice;
+          const idx = Number(actionBtn.dataset.coachActionIdx);
+          applyCoachAction(pid, idx);
+          return;
+        }
+      });
+      pdGrid.addEventListener("keydown", e => {
+        if (e.key !== "Enter") return;
+        const input = e.target.closest("[data-coach-practice]");
+        if (!input) return;
+        e.preventDefault();
+        const pid = input.dataset.coachPractice;
+        const q = input.value.trim();
+        void requestPracticeCoaching(pid, q || null);
+        input.value = "";
+      });
+    }
 
     // Streak badge click → open Review tab
     const streakBadgeEl = document.getElementById("streakDisplay");
