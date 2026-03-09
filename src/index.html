@@ -173,7 +173,7 @@ body{font-family:var(--font);color:var(--text);background:var(--bg);-webkit-font
 .practice-check.done::after{content:"✓";color:#fff;font-size:.65rem;font-weight:700}
 .practice-info{flex:1}
 .practice-name{font-size:.85rem;font-weight:600}
-.practice-meta{font-size:.72rem;color:var(--text2)}
+.practice-meta{font-size:.72rem;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .practice-expand{font-size:.8rem;color:var(--text2);opacity:.4;transition:all .15s}
 .practice-item:hover .practice-expand{opacity:1;color:var(--accent)}
 
@@ -192,6 +192,14 @@ body{font-family:var(--font);color:var(--text);background:var(--bg);-webkit-font
 .practice-ai-input{
   display:flex;gap:6px;margin-top:6px;
 }
+.practice-templates{
+  display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 8px;
+}
+.practice-template{
+  border:1px solid var(--line);border-radius:999px;background:#fff;color:var(--text2);
+  font:600 .7rem var(--font);padding:5px 9px;cursor:pointer;
+}
+.practice-template:hover{border-color:var(--accent);color:var(--accent)}
 .practice-ai-input input{
   flex:1;border:1px solid var(--line);border-radius:var(--radius-sm);
   padding:6px 10px;font:.8rem var(--font);outline:none;
@@ -1908,14 +1916,6 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         <!-- Review Panel -->
         <div class="plan-subpanel tab-content" id="tab-review">
           <div class="review-content">
-            <!-- Time-range selector -->
-            <div style="display:flex;align-items:center;gap:4px;margin-bottom:12px">
-              <div class="review-range-toggle" id="reviewRangeToggle">
-                <button class="range-btn active" data-range="week" type="button">Week</button>
-                <button class="range-btn" data-range="month" type="button">Month</button>
-                <button class="range-btn" data-range="6month" type="button">6 Months</button>
-              </div>
-            </div>
             <!-- Week navigation + summary stats -->
             <div class="review-card">
               <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
@@ -1943,7 +1943,17 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
 
             <!-- Life Practices Detail — per-practice weekly view -->
             <div class="review-card" id="practiceDetailCard">
-              <h4>Life Practices — This Week</h4>
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px">
+                <h4 id="practiceDetailHeading" style="margin-bottom:0">Life Practices — This Week</h4>
+                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                  <span class="tiny" style="font-weight:600">Practice Range</span>
+                  <div class="review-range-toggle" id="reviewRangeToggle">
+                    <button class="range-btn active" data-range="week" type="button">Week</button>
+                    <button class="range-btn" data-range="month" type="button">Month</button>
+                    <button class="range-btn" data-range="6month" type="button">6 Months</button>
+                  </div>
+                </div>
+              </div>
               <div id="practiceDetailGrid"></div>
             </div>
 
@@ -4301,9 +4311,23 @@ Use only supported action types and enum values from the schema.`;
         const patch = {};
         if (patchIn.title != null && String(patchIn.title).trim()) patch.title = String(patchIn.title).trim();
         if (patchIn.note != null) patch.note = String(patchIn.note || "").trim();
+        if (patchIn.logging_hint != null) patch.logging_hint = String(patchIn.logging_hint || "").trim();
+        if (patchIn.linked_goal != null || patchIn.goal != null) patch.linked_goal = normalizeGoalCode(patchIn.linked_goal || patchIn.goal || "None");
+        if (patchIn.target_unit != null && String(patchIn.target_unit).trim()) patch.target_unit = String(patchIn.target_unit).trim();
+        if (patchIn.target_period != null) {
+          const targetPeriod = String(patchIn.target_period || "").trim().toLowerCase();
+          if (["day", "week", "month"].includes(targetPeriod)) patch.target_period = targetPeriod;
+        }
+        if (patchIn.default_task_category != null && String(patchIn.default_task_category).trim()) patch.default_task_category = String(patchIn.default_task_category).trim();
+        if (patchIn.default_task_depth != null && String(patchIn.default_task_depth).trim()) patch.default_task_depth = String(patchIn.default_task_depth).trim();
+        if (typeof patchIn.coach_enabled === "boolean") patch.coach_enabled = patchIn.coach_enabled;
         if (patchIn.minimum_minutes != null) {
           const min = Number.parseInt(String(patchIn.minimum_minutes), 10);
           if (Number.isFinite(min) && min > 0) patch.minimum_minutes = min;
+        }
+        if (patchIn.target_value != null) {
+          const targetValue = Number.parseFloat(String(patchIn.target_value));
+          if (Number.isFinite(targetValue) && targetValue > 0) patch.target_value = targetValue;
         }
         if (!Object.keys(patch).length) return { error: "life_practice.update patch is empty or invalid." };
         return { action: { type, practice_id: practiceId, patch } };
@@ -4318,7 +4342,14 @@ Use only supported action types and enum values from the schema.`;
           const minutes = Number.parseInt(String(entryIn.minutes), 10);
           if (Number.isFinite(minutes) && minutes >= 0) action.entry.minutes = minutes;
         }
-        if (!Object.keys(action.entry).length) return { error: "life_practice.log requires entry.done or entry.minutes." };
+        if (entryIn.text != null || entryIn.note != null || entryIn.notes != null) {
+          const text = String(entryIn.text || entryIn.note || entryIn.notes || "").trim();
+          if (text) action.entry.text = text;
+        }
+        if (entryIn.metrics && typeof entryIn.metrics === "object" && !Array.isArray(entryIn.metrics)) action.entry.metrics = entryIn.metrics;
+        if (Array.isArray(entryIn.tags)) action.entry.tags = entryIn.tags.map(tag => String(tag || "").trim()).filter(Boolean);
+        if (Array.isArray(entryIn.attachments)) action.entry.attachments = entryIn.attachments.filter(item => item && typeof item === "object");
+        if (!Object.keys(action.entry).length) return { error: "life_practice.log requires done, minutes, text, or metrics." };
         return { action };
       }
       if (type === "life_practice.delete") {
@@ -4984,34 +5015,24 @@ Use only supported action types and enum values from the schema.`;
       const todayKey = todayISO();
 
       /* Recent events (last 30 days of entries for this practice) */
-      const recentEvents = [];
-      const allDates = Object.keys(dailyLog).sort().reverse();
-      for (const dateKey of allDates) {
-        if (recentEvents.length >= 30) break;
-        const entry = dailyLog[dateKey]?.[practiceId];
-        if (!entry) continue;
-        recentEvents.push({
-          date: dateKey,
-          done: !!entry.done,
-          minutes: entry.minutes || null,
-          notes: entry.notes || null,
-        });
-      }
+      const recentEvents = recentPracticeEntries(practiceId, 30).map(entry => ({
+        date: entry.date,
+        at: entry.at || `${entry.date}T12:00:00`,
+        done: true,
+        minutes: entry.minutes || null,
+        notes: practiceEntryDisplayText(entry),
+        metrics: entry.metrics || {},
+        tags: Array.isArray(entry.tags) ? entry.tags : []
+      }));
 
       /* Streak + consistency */
-      let streak = 0;
-      for (let i = 0; i < 365; i++) {
-        const d = new Date(); d.setDate(d.getDate() - i);
-        const key = localDateKey(d);
-        if (dailyLog[key]?.[practiceId]?.done) streak++;
-        else break;
-      }
+      const streak = practiceCurrentStreak(practiceId, todayKey);
       const last28 = [];
       for (let i = 27; i >= 0; i--) {
         const d = new Date(); d.setDate(d.getDate() - i);
         last28.push(localDateKey(d));
       }
-      const doneIn28 = last28.filter(dk => dailyLog[dk]?.[practiceId]?.done).length;
+      const doneIn28 = last28.filter(dk => practiceLogEntry(practiceId, dk)?.done).length;
       const consistency = Math.round((doneIn28 / 28) * 100);
 
       /* Missed days (last 7) */
@@ -5019,16 +5040,19 @@ Use only supported action types and enum values from the schema.`;
       for (let i = 6; i >= 0; i--) {
         const d = new Date(); d.setDate(d.getDate() - i);
         const key = localDateKey(d);
-        if (key <= todayKey && !dailyLog[key]?.[practiceId]?.done) last7.push(key);
+        if (key <= todayKey && !practiceLogEntry(practiceId, key)?.done) last7.push(key);
       }
 
       /* Best streak */
-      const sortedDates = Object.keys(dailyLog).sort();
-      let bestStreak = 0, runStreak = 0;
-      for (const dk of sortedDates) {
-        if (dailyLog[dk]?.[practiceId]?.done) { runStreak++; bestStreak = Math.max(bestStreak, runStreak); }
-        else runStreak = 0;
+      const practiceDateKeys = Object.keys(dailyLog).filter(dk => dailyLog[dk]?.[practiceId]).sort();
+      const firstTrackedDate = practiceDateKeys[0] || todayKey;
+      const streakRange = [];
+      const streakStart = parseLocalDateKey(firstTrackedDate);
+      const streakEnd = parseLocalDateKey(todayKey);
+      for (let d = new Date(streakStart); d <= streakEnd; d.setDate(d.getDate() + 1)) {
+        streakRange.push(localDateKey(d));
       }
+      const bestStreak = practiceBestStreakInDates(practiceId, streakRange);
 
       /* Weekly trend (days done per week, last 8 weeks) */
       const weeklyTrend = [];
@@ -5037,7 +5061,7 @@ Use only supported action types and enum values from the schema.`;
         for (let d = 0; d < 7; d++) {
           const dt = new Date(); dt.setDate(dt.getDate() - (w * 7 + d));
           const key = localDateKey(dt);
-          if (key <= todayKey && dailyLog[key]?.[practiceId]?.done) count++;
+          if (key <= todayKey && practiceLogEntry(practiceId, key)?.done) count++;
         }
         weeklyTrend.push(count);
       }
@@ -5050,9 +5074,9 @@ Use only supported action types and enum values from the schema.`;
 
       const weekStart = currentWeekStart();
       const linkedCommitments = (Array.isArray(state.focus?.commitments) ? state.focus.commitments : [])
-        .filter(c => c.due_week_start === weekStart && (c.text || "").toLowerCase().includes(practice.title.toLowerCase().split(/[\s/]+/)[0]))
+        .filter(c => c.due_week_start === weekStart && (c.title || "").toLowerCase().includes(practice.title.toLowerCase().split(/[\s/]+/)[0]))
         .slice(0, 5)
-        .map(c => ({ text: c.text, done: !!c.done }));
+        .map(c => ({ title: c.title, done: isCommitmentDone(c), status: c.status || (isCommitmentDone(c) ? "done" : "open") }));
 
       /* Codex's contract: stream-scoped payload */
       return {
@@ -5060,9 +5084,13 @@ Use only supported action types and enum values from the schema.`;
           id: practice.id,
           title: practice.title,
           kind: practice.kind || "life_practice",
+          coach_key: practice.coach_key || inferPracticeCoachKey(practice),
           minimum_minutes: practice.minimum_minutes,
           target_value: practice.target_value,
           target_unit: practice.target_unit,
+          target_period: practice.target_period,
+          logging_hint: practice.logging_hint || defaultPracticeLoggingHint(practice),
+          linked_goal: practice.linked_goal || "None",
           note: practice.note,
         },
         recent_events: recentEvents,
@@ -5097,13 +5125,19 @@ RESPONSE FORMAT (strict — return valid JSON only, no markdown, no code fences)
 }
 
 ACTIONS (optional — only include when clearly warranted):
-Supported action types: task.create, task.update, task.move, task.delete, commitment.create, commitment.update
+Supported action types: task.create, task.update, task.move, task.delete, commitment.create, commitment.update, life_practice.log, life_practice.update
 
 For task.create actions:
 { "type": "task.create", "task": { "title": "...", "category": "Body/Mind", "importance": "High", "urgency": "Low", "depth": "Deep", "goal": "pg1" }, "place": { "stage": "next_up" } }
 
 For commitment.create actions:
 { "type": "commitment.create", "commitment": { "title": "...", "goal": "pg1" } }
+
+For life_practice.log actions:
+{ "type": "life_practice.log", "practice_id": "...", "entry": { "done": true, "minutes": 45, "text": "Back squat 3x5 @70kg", "metrics": { "sets": 3, "reps": 5, "weight_kg": 70 } } }
+
+For life_practice.update actions:
+{ "type": "life_practice.update", "practice_id": "...", "patch": { "target_value": 3, "target_unit": "sessions", "target_period": "week" } }
 
 RULES:
 - Advice without actions is perfectly fine and often preferred
@@ -5156,6 +5190,8 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
             html += `<div class="pd-coach-actions">${parsed.actions.map((a, i) => {
               const label = a.type === "task.create" ? `Add task: ${a.task?.title || "?"}`
                 : a.type === "commitment.create" ? `Add commitment: ${a.commitment?.title || "?"}`
+                : a.type === "life_practice.log" ? `Log practice entry`
+                : a.type === "life_practice.update" ? `Update practice target`
                 : `${a.type}`;
               return `<button class="pd-coach-action-btn" data-coach-action-idx="${i}" data-coach-action-practice="${escapeHtml(practiceId)}">${escapeHtml(label)}</button>`;
             }).join("")}</div>`;
@@ -5390,7 +5426,16 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
           title,
           minimum_minutes: minimum,
           default_minutes: minimum,
-          note: String(action.practice.note || "").trim()
+          note: String(action.practice.note || "").trim(),
+          coach_enabled: true,
+          coach_key: inferPracticeCoachKey({ title }),
+          target_value: null,
+          target_unit: "sessions",
+          target_period: "week",
+          logging_hint: defaultPracticeLoggingHint({ title }),
+          linked_goal: "None",
+          default_task_category: null,
+          default_task_depth: null
         });
         return "";
       }
@@ -5400,12 +5445,36 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         if (action.patch.title) practice.title = action.patch.title;
         if (action.patch.note != null) practice.note = action.patch.note;
         if (action.patch.minimum_minutes != null) practice.minimum_minutes = Number(action.patch.minimum_minutes);
+        if (action.patch.target_value != null) practice.target_value = Number(action.patch.target_value);
+        if (action.patch.target_unit != null) practice.target_unit = action.patch.target_unit;
+        if (action.patch.target_period != null) practice.target_period = action.patch.target_period;
+        if (action.patch.logging_hint != null) practice.logging_hint = action.patch.logging_hint;
+        if (action.patch.linked_goal != null) practice.linked_goal = action.patch.linked_goal;
+        if (action.patch.default_task_category != null) practice.default_task_category = action.patch.default_task_category;
+        if (action.patch.default_task_depth != null) practice.default_task_depth = action.patch.default_task_depth;
+        if (typeof action.patch.coach_enabled === "boolean") practice.coach_enabled = action.patch.coach_enabled;
         return "";
       }
       if (action.type === "life_practice.log") {
         const practice = (state.life_practices.practices || []).find(p => p.id === action.practice_id);
         if (!practice) return `Life practice not found: ${action.practice_id}`;
-        const current = state.life_practices?.daily_log?.[todayISO()]?.[practice.id] || { done: false, minutes: null };
+        const hasStructuredEntry =
+          String(action.entry?.text || "").trim() ||
+          (action.entry?.metrics && typeof action.entry.metrics === "object" && Object.keys(action.entry.metrics).length) ||
+          (Array.isArray(action.entry?.tags) && action.entry.tags.length) ||
+          (Array.isArray(action.entry?.attachments) && action.entry.attachments.length);
+        if (hasStructuredEntry || action.entry?.done === true) {
+          appendPracticeEntry(practice.id, {
+            at: new Date().toISOString(),
+            text: String(action.entry?.text || "").trim(),
+            minutes: action.entry?.minutes,
+            metrics: action.entry?.metrics || {},
+            tags: Array.isArray(action.entry?.tags) ? action.entry.tags : [],
+            attachments: Array.isArray(action.entry?.attachments) ? action.entry.attachments : []
+          }, { save: false, render: false });
+          return "";
+        }
+        const current = state.life_practices?.daily_log?.[todayISO()]?.[practice.id] || { done: false, minutes: null, notes: "", entries: [] };
         const nextPatch = {};
         if (typeof action.entry?.done === "boolean") nextPatch.done = action.entry.done;
         if (action.entry?.minutes != null) nextPatch.minutes = action.entry.minutes;
@@ -5862,7 +5931,9 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         /* Interim bridge fields — transitional model toward full streams schema */
         const kind = (raw.kind === "work_domain") ? "work_domain" : "life_practice";
         const targetValue = Number.parseFloat(String(raw.target_value ?? ""));
-        const targetUnit = String(raw.target_unit || "sessions/week").trim();
+        const coachKey = String(raw.coach_key || raw.domain_key || "").trim().toLowerCase() || inferPracticeCoachKey({ title, kind });
+        const targetUnit = String(raw.target_unit || "sessions").trim() || "sessions";
+        const targetPeriod = String(raw.target_period || "week").trim().toLowerCase();
         normalized.push({
           id,
           title,
@@ -5871,9 +5942,15 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
           default_minutes: Number.isFinite(defaultMinutes) && defaultMinutes > 0 ? defaultMinutes : (Number.isFinite(min) && min > 0 ? min : 10),
           note: String(raw.note || "").trim(),
           coach_enabled: raw.coach_enabled !== false,
+          coach_key: coachKey,
           target_value: Number.isFinite(targetValue) && targetValue > 0 ? targetValue : null,
           target_unit: targetUnit,
-          domain_key: String(raw.domain_key || "").trim() || null,
+          target_period: ["day", "week", "month"].includes(targetPeriod) ? targetPeriod : "week",
+          logging_hint: String(raw.logging_hint || "").trim() || defaultPracticeLoggingHint({ title, kind, coach_key: coachKey }),
+          linked_goal: normalizeGoalCode(raw.linked_goal || raw.goal || "None"),
+          default_task_category: String(raw.default_task_category || "").trim() || null,
+          default_task_depth: String(raw.default_task_depth || "").trim() || null,
+          domain_key: coachKey,
           color: String(raw.color || "").trim() || null,
           icon: String(raw.icon || "").trim() || null,
         });
@@ -5940,9 +6017,10 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         changed = true;
       }
       for (const p of state.life_practices.practices) {
-        if (!state.life_practices.daily_log[today][p.id]) {
-          const defaultMinutes = Number.isFinite(Number(p.default_minutes)) ? Number(p.default_minutes) : null;
-          state.life_practices.daily_log[today][p.id] = { done: false, minutes: defaultMinutes, notes: "", entries: [] };
+        const currentEntry = state.life_practices.daily_log[today][p.id];
+        const normalizedEntry = normalizePracticeDayRecord(p, currentEntry, today);
+        if (!currentEntry || JSON.stringify(currentEntry) !== JSON.stringify(normalizedEntry)) {
+          state.life_practices.daily_log[today][p.id] = normalizedEntry;
           changed = true;
         }
       }
@@ -6150,16 +6228,139 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       return !!(state.finish_track?.locked_at && !state.finish_track?.completed_at);
     }
 
+    function getPracticeDefinition(practiceId) {
+      return (state.life_practices?.practices || []).find(p => p.id === practiceId) || null;
+    }
+
+    function inferPracticeCoachKey(practice) {
+      const explicit = String(practice?.coach_key || practice?.domain_key || "").trim().toLowerCase();
+      if (explicit) return explicit;
+      const title = String(practice?.title || "").toLowerCase();
+      if (/gym|exercise|workout|strength|run|cardio/.test(title)) return "gym";
+      if (/piano|music|guitar|violin|drum/.test(title)) return "music";
+      if (/arabic|language|spanish|french|german|italian|duolingo/.test(title)) return "language";
+      if (/read/.test(title)) return "reading";
+      if (/meditat|mindful|breath/.test(title)) return "meditation";
+      if (/research|paper|writing/.test(title)) return "research";
+      if (/revenue|venture|sales|pipeline/.test(title)) return "revenue";
+      return practice?.kind === "work_domain" ? "work_domain" : "life_practice";
+    }
+
+    function defaultPracticeLoggingHint(practice) {
+      switch (inferPracticeCoachKey(practice)) {
+        case "gym": return "e.g. Back squat 3×5 @70kg · 45m · energy 7/10";
+        case "music": return "e.g. Chopin Nocturne bars 32-48 · 25m · 72 bpm";
+        case "language": return "e.g. Arabic vocab review · 20m · lesson 4";
+        case "reading": return "e.g. Read 18 pages of Deep Work · 25m";
+        case "meditation": return "e.g. Breath meditation · 12m";
+        case "research": return "e.g. Results draft revision · 2 pomodoros · 50m";
+        case "revenue": return "e.g. Investor outreach · 30m · 3 leads";
+        default: return `Log your ${String(practice?.title || "practice").toLowerCase()} session...`;
+      }
+    }
+
+    function practiceLoggingTemplates(practice) {
+      switch (inferPracticeCoachKey(practice)) {
+        case "gym":
+          return ["Lower body 45m", "Back squat 3×5 @70kg", "Easy run 30m"];
+        case "music":
+          return ["Scales 15m", "Piece section practice 25m", "Sight reading 10m"];
+        case "language":
+          return ["Vocabulary review 20m", "Conversation practice 15m", "Grammar lesson 25m"];
+        case "reading":
+          return ["Read 20 pages", "Read 30m + 1 note"];
+        case "meditation":
+          return ["Breath meditation 10m", "Walking meditation 15m"];
+        case "research":
+          return ["Writing session 50m", "Paper revision 2 pomodoros"];
+        case "revenue":
+          return ["Outreach block 30m", "Pipeline review 20m"];
+        default:
+          return [];
+      }
+    }
+
+    function practiceDefaultMinutes(practiceOrId) {
+      const practice = typeof practiceOrId === "string" ? getPracticeDefinition(practiceOrId) : practiceOrId;
+      const defaultMinutes = Number(practice?.default_minutes);
+      if (Number.isFinite(defaultMinutes) && defaultMinutes > 0) return defaultMinutes;
+      const minimumMinutes = Number(practice?.minimum_minutes);
+      return Number.isFinite(minimumMinutes) && minimumMinutes > 0 ? minimumMinutes : null;
+    }
+
+    function normalizePracticeEntryItem(rawEntry, fallbackDateKey = todayISO()) {
+      const text = String(rawEntry?.text || rawEntry?.note || rawEntry?.notes || "").trim();
+      const minutesRaw = Number.parseFloat(String(rawEntry?.minutes ?? ""));
+      const metrics = rawEntry?.metrics && typeof rawEntry.metrics === "object" && !Array.isArray(rawEntry.metrics) ? { ...rawEntry.metrics } : {};
+      const tags = Array.isArray(rawEntry?.tags) ? rawEntry.tags.map(tag => String(tag || "").trim()).filter(Boolean) : [];
+      const attachments = Array.isArray(rawEntry?.attachments)
+        ? rawEntry.attachments.filter(item => item && typeof item === "object").map(item => ({ ...item }))
+        : [];
+      const atCandidate = String(rawEntry?.at || "").trim();
+      const at = atCandidate && !Number.isNaN(new Date(atCandidate).getTime()) ? atCandidate : `${fallbackDateKey}T12:00:00`;
+      return {
+        id: String(rawEntry?.id || "").trim() || null,
+        at,
+        text,
+        minutes: Number.isFinite(minutesRaw) && minutesRaw >= 0 ? minutesRaw : null,
+        metrics,
+        tags,
+        attachments
+      };
+    }
+
+    function normalizePracticeDayRecord(practiceOrId, rawEntry, dateKey = todayISO()) {
+      const practice = typeof practiceOrId === "string" ? getPracticeDefinition(practiceOrId) : practiceOrId;
+      const defaultMinutes = practiceDefaultMinutes(practice);
+      const minutesRaw = Number.parseFloat(String(rawEntry?.minutes ?? ""));
+      const notes = String(rawEntry?.notes || "").trim();
+      const normalized = {
+        done: !!rawEntry?.done,
+        minutes: Number.isFinite(minutesRaw) && minutesRaw >= 0 ? minutesRaw : defaultMinutes,
+        notes,
+        entries: Array.isArray(rawEntry?.entries)
+          ? rawEntry.entries.map(item => normalizePracticeEntryItem(item, dateKey))
+          : []
+      };
+      if (!normalized.entries.length && (normalized.done || normalized.notes)) {
+        normalized.entries = [normalizePracticeEntryItem({
+          at: `${dateKey}T12:00:00`,
+          text: normalized.notes,
+          minutes: normalized.done ? normalized.minutes : null
+        }, dateKey)];
+      }
+      return normalized;
+    }
+
+    function practiceEntryDisplayText(entry) {
+      const text = String(entry?.text || "").trim();
+      if (text) return text;
+      const minutes = Number(entry?.minutes);
+      return Number.isFinite(minutes) && minutes > 0 ? `${minutes} min` : "✓ Done";
+    }
+
+    function practiceEntriesForDate(practiceId, dateKey) {
+      const entry = practiceLogEntry(practiceId, dateKey);
+      return Array.isArray(entry?.entries)
+        ? entry.entries.slice().sort((a, b) => new Date(b.at || `${dateKey}T00:00:00`) - new Date(a.at || `${dateKey}T00:00:00`))
+        : [];
+    }
+
     /* ── Build recent practice entries for the drawer ── */
-    function recentPracticeEntries(practiceId, limit = 7) {
+    function recentPracticeEntries(practiceId, limit = 7, options = {}) {
       const dailyLog = state.life_practices?.daily_log || {};
+      const allowedDates = options.dateKeys ? new Set(options.dateKeys) : null;
       const entries = [];
       const keys = Object.keys(dailyLog).sort().reverse();
       for (const dateKey of keys) {
         if (entries.length >= limit) break;
-        const entry = dailyLog[dateKey]?.[practiceId];
+        if (allowedDates && !allowedDates.has(dateKey)) continue;
+        const entry = practiceLogEntry(practiceId, dateKey);
         if (!entry || !entry.done) continue;
-        entries.push({ date: dateKey, minutes: entry.minutes, notes: entry.notes || "" });
+        const dayEntries = practiceEntriesForDate(practiceId, dateKey);
+        dayEntries.forEach(item => {
+          if (entries.length < limit) entries.push({ date: dateKey, ...item });
+        });
       }
       return entries;
     }
@@ -6167,6 +6368,126 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
     function fmtEntryDate(dateKey) {
       const d = parseLocalDateKey(dateKey);
       return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    }
+
+    function practiceLogEntry(practiceId, dateKey) {
+      const practice = getPracticeDefinition(practiceId);
+      return normalizePracticeDayRecord(practice, state.life_practices?.daily_log?.[dateKey]?.[practiceId], dateKey);
+    }
+
+    function clampPracticeAnchorKey(anchorDateKey) {
+      const todayKey = todayISO();
+      const key = String(anchorDateKey || todayKey);
+      return key < todayKey ? key : todayKey;
+    }
+
+    function practiceCurrentStreak(practiceId, anchorDateKey, minDateKey = "") {
+      const anchorKey = clampPracticeAnchorKey(anchorDateKey);
+      const anchorDate = parseLocalDateKey(anchorKey);
+      let streak = 0;
+      for (let i = 0; i < 366; i++) {
+        const d = new Date(anchorDate);
+        d.setDate(anchorDate.getDate() - i);
+        const key = localDateKey(d);
+        if (minDateKey && key < minDateKey) break;
+        if (practiceLogEntry(practiceId, key)?.done) streak++;
+        else break;
+      }
+      return streak;
+    }
+
+    function practiceBestStreakInDates(practiceId, dateKeys) {
+      const todayKey = todayISO();
+      const ordered = Array.from(new Set((dateKeys || []).filter(Boolean))).sort();
+      let best = 0;
+      let run = 0;
+      ordered.forEach(key => {
+        if (key > todayKey) return;
+        if (practiceLogEntry(practiceId, key)?.done) {
+          run++;
+          best = Math.max(best, run);
+        } else {
+          run = 0;
+        }
+      });
+      return best;
+    }
+
+    function buildPracticeEntryFromText(practice, text) {
+      const cleanText = String(text || "").trim();
+      if (!cleanText) return null;
+      const lower = cleanText.toLowerCase();
+      const coachKey = inferPracticeCoachKey(practice);
+      const metrics = {};
+      const tags = [];
+      let minutes = null;
+
+      const minutesMatch = cleanText.match(/(?:^|[\s·,;])(\d{1,3})\s*(?:m|min|mins|minutes)\b/i);
+      if (minutesMatch) minutes = Number.parseInt(minutesMatch[1], 10);
+      const energyMatch = cleanText.match(/\benergy\s*(\d{1,2})(?:\/10)?\b/i) || cleanText.match(/\b(\d{1,2})\/10\b/i);
+      if (energyMatch) metrics.energy = Number.parseInt(energyMatch[1], 10);
+
+      if (coachKey === "gym") {
+        const setRepMatch = cleanText.match(/(\d+)\s*[x×]\s*(\d+)/i);
+        if (setRepMatch) {
+          metrics.sets = Number.parseInt(setRepMatch[1], 10);
+          metrics.reps = Number.parseInt(setRepMatch[2], 10);
+        }
+        const kgMatch = cleanText.match(/@?\s*(\d+(?:\.\d+)?)\s*kg\b/i);
+        if (kgMatch) metrics.weight_kg = Number.parseFloat(kgMatch[1]);
+        if (/\b(lower|legs?|squat|deadlift|rdl|lunge)\b/.test(lower)) metrics.session_type = "lower";
+        else if (/\b(upper|push|pull|bench|row|press|shoulder|chest|back)\b/.test(lower)) metrics.session_type = "upper";
+        else if (/\b(run|cardio|bike|cycle|rower|erg)\b/.test(lower)) metrics.session_type = "cardio";
+      } else if (coachKey === "music") {
+        const bpmMatch = cleanText.match(/\b(\d{2,3})\s*bpm\b/i);
+        if (bpmMatch) metrics.tempo_bpm = Number.parseInt(bpmMatch[1], 10);
+      } else if (coachKey === "language") {
+        const vocabMatch = cleanText.match(/\b(\d+)\s*(?:words?|cards?)\b/i);
+        if (vocabMatch) metrics.words_reviewed = Number.parseInt(vocabMatch[1], 10);
+        const lessonMatch = cleanText.match(/\blesson\s+([A-Za-z0-9._-]+)/i);
+        if (lessonMatch) metrics.lesson = lessonMatch[1];
+        const speakingMatch = cleanText.match(/\b(\d+)\s*(?:m|min|minutes)\s+speaking\b/i);
+        if (speakingMatch) metrics.speaking_minutes = Number.parseInt(speakingMatch[1], 10);
+      } else if (coachKey === "reading") {
+        const pagesMatch = cleanText.match(/\b(\d+)\s*pages?\b/i);
+        if (pagesMatch) metrics.pages = Number.parseInt(pagesMatch[1], 10);
+      } else if (coachKey === "research") {
+        const pomoMatch = cleanText.match(/\b(\d+)\s*(?:pomodoros?|pomos?)\b/i);
+        if (pomoMatch) metrics.pomodoros = Number.parseInt(pomoMatch[1], 10);
+      } else if (coachKey === "revenue") {
+        const leadsMatch = cleanText.match(/\b(\d+)\s*(?:leads?|prospects?|outreach(?:es)?)\b/i);
+        if (leadsMatch) metrics.count = Number.parseInt(leadsMatch[1], 10);
+      }
+
+      return {
+        id: uid(),
+        at: new Date().toISOString(),
+        text: cleanText,
+        minutes: minutes != null ? minutes : practiceDefaultMinutes(practice),
+        metrics,
+        tags,
+        attachments: []
+      };
+    }
+
+    function appendPracticeEntry(practiceId, rawEntry, options = {}) {
+      const practice = getPracticeDefinition(practiceId);
+      if (!practice) return false;
+      initTodayState();
+      const today = todayISO();
+      const current = normalizePracticeDayRecord(practice, state.life_practices.daily_log[today][practiceId], today);
+      const nextEntry = normalizePracticeEntryItem(rawEntry, today);
+      const nextEntries = current.entries.concat([nextEntry]);
+      state.life_practices.daily_log[today][practiceId] = {
+        ...current,
+        done: rawEntry?.done === false ? false : true,
+        minutes: nextEntry.minutes != null ? nextEntry.minutes : current.minutes,
+        notes: nextEntry.text || current.notes || "",
+        entries: nextEntries
+      };
+      if (options.save !== false) saveState(options.reason || "life_practice_log");
+      if (options.render !== false) renderLifePractices();
+      return true;
     }
 
     function renderLifePractices() {
@@ -6192,18 +6513,19 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       });
 
       listEl.innerHTML = practices.map(p => {
-        const entry = log[p.id] || { done: false, minutes: null, notes: "" };
+        const entry = practiceLogEntry(p.id, today);
         const min = Number.isFinite(Number(p.minimum_minutes)) ? Number(p.minimum_minutes) : 10;
         const doneClass = entry.done ? "done" : "";
         const todayNotes = entry.notes ? ` · ${entry.notes}` : "";
         const status = entry.done ? `${min} min · done today${todayNotes}` : `${min} min minimum`;
         const isOpen = openDrawers.has(p.id);
+        const templates = practiceLoggingTemplates(p);
 
         /* Recent entries for the drawer */
         const recent = recentPracticeEntries(p.id, 5);
         const entriesHtml = recent.length
           ? recent.map(e => {
-              const detail = e.notes || (e.minutes ? `${e.minutes} min` : "✓ Done");
+              const detail = practiceEntryDisplayText(e);
               return `<div class="practice-entry"><span class="entry-date">${fmtEntryDate(e.date)}</span><span class="entry-detail">${escapeHtml(detail)}</span></div>`;
             }).join("")
           : '<p class="tiny" style="padding:4px 0">No entries yet — log your first one below.</p>';
@@ -6219,8 +6541,9 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         </div>
         <div class="practice-drawer${isOpen ? " open" : ""}" data-practice-id="${escapeHtml(p.id)}">
           <div class="practice-entries">${entriesHtml}</div>
+          ${templates.length ? `<div class="practice-templates">${templates.map((label, index) => `<button type="button" class="practice-template" data-practice-template="${escapeHtml(p.id)}" data-practice-template-idx="${index}">${escapeHtml(label)}</button>`).join("")}</div>` : ""}
           <div class="practice-ai-input">
-            <input type="text" placeholder="${escapeHtml(p.title === "Gym / Exercise" || p.title === "Exercise" ? "What did you do? (e.g. 3×5 squats @70kg)" : p.title.includes("Read") ? "What did you read? (e.g. 20 min Kahneman ch.14)" : p.title.includes("Piano") ? "What did you practise? (e.g. Scales C major, Chopin)" : p.title.includes("Lang") ? "What did you study? (e.g. 20 min Duolingo Spanish)" : `Log your ${p.title.toLowerCase()} session...`)}" data-practice-id="${escapeHtml(p.id)}" />
+            <input type="text" placeholder="${escapeHtml(p.logging_hint || defaultPracticeLoggingHint(p))}" data-practice-id="${escapeHtml(p.id)}" />
             <button type="button" data-log-practice="${escapeHtml(p.id)}">Log</button>
           </div>
         </div>`;
@@ -6248,6 +6571,23 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
             const practiceId = logBtn.dataset.logPractice;
             const input = logBtn.closest(".practice-ai-input")?.querySelector("input");
             if (input && practiceId) logPracticeEntry(practiceId, input);
+            return;
+          }
+          /* Template fill */
+          const templateBtn = e.target.closest("[data-practice-template]");
+          if (templateBtn) {
+            e.preventDefault();
+            e.stopPropagation();
+            const practiceId = templateBtn.dataset.practiceTemplate || "";
+            const practice = getPracticeDefinition(practiceId);
+            const templateIdx = Number.parseInt(templateBtn.dataset.practiceTemplateIdx || "", 10);
+            const template = practiceLoggingTemplates(practice)[templateIdx] || "";
+            const input = listEl.querySelector(`.practice-ai-input input[data-practice-id="${practiceId}"]`);
+            if (input && template) {
+              input.value = template;
+              input.focus();
+              input.setSelectionRange(input.value.length, input.value.length);
+            }
             return;
           }
           /* Drawer toggle — click on practice-item row */
@@ -6286,16 +6626,23 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
     function logPracticeEntry(practiceId, inputEl) {
       const text = String(inputEl?.value || "").trim();
       if (!text) return;
+      const practice = getPracticeDefinition(practiceId);
+      const entry = buildPracticeEntryFromText(practice, text);
       inputEl.value = "";
-      /* Mark done + store notes */
-      updateLifePractice(practiceId, { done: true, notes: text });
+      if (entry) appendPracticeEntry(practiceId, entry);
     }
 
     function updateLifePractice(id, patch, options = {}) {
       initTodayState();
       const today = todayISO();
-      const current = state.life_practices.daily_log[today][id] || { done: false, minutes: null, notes: "", entries: [] };
-      state.life_practices.daily_log[today][id] = { ...current, ...patch };
+      const practice = getPracticeDefinition(id);
+      const current = normalizePracticeDayRecord(practice, state.life_practices.daily_log[today][id], today);
+      const next = {
+        ...current,
+        ...patch,
+        entries: Array.isArray(patch.entries) ? patch.entries.map(item => normalizePracticeEntryItem(item, today)) : current.entries
+      };
+      state.life_practices.daily_log[today][id] = normalizePracticeDayRecord(practice, next, today);
       if (options.save !== false) saveState();
       if (options.render !== false) renderLifePractices();
     }
@@ -6333,12 +6680,21 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         title: cleanTitle,
         minimum_minutes: minimum,
         default_minutes: minimum,
-        note: String(note || "").trim()
+        note: String(note || "").trim(),
+        coach_enabled: true,
+        coach_key: inferPracticeCoachKey({ title: cleanTitle }),
+        target_value: null,
+        target_unit: "sessions",
+        target_period: "week",
+        logging_hint: defaultPracticeLoggingHint({ title: cleanTitle }),
+        linked_goal: "None",
+        default_task_category: null,
+        default_task_depth: null
       });
       for (const day of Object.keys(state.life_practices.daily_log || {})) {
         if (!state.life_practices.daily_log[day]) state.life_practices.daily_log[day] = {};
         if (!state.life_practices.daily_log[day][id]) {
-          state.life_practices.daily_log[day][id] = { done: false, minutes: minimum };
+          state.life_practices.daily_log[day][id] = { done: false, minutes: minimum, notes: "", entries: [] };
         }
       }
       saveState("life_practice_add");
@@ -8522,8 +8878,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
 
       const todayKey = todayISO();
       const anchorDate = parseLocalDateKey(anchorDateKey || todayKey);
-      const streakAnchorKey = anchorDateKey && anchorDateKey < todayKey ? anchorDateKey : todayKey;
-      const streakAnchorDate = parseLocalDateKey(streakAnchorKey);
+      const anchorKey = clampPracticeAnchorKey(anchorDateKey);
       grid.innerHTML = practices.map(p => {
         // Build 28-day pattern from daily_log
         const days = [];
@@ -8531,21 +8886,12 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
           const d = new Date(anchorDate);
           d.setDate(anchorDate.getDate() - i);
           const key = localDateKey(d);
-          const entry = state.life_practices?.daily_log?.[key]?.[p.id];
+          const entry = practiceLogEntry(p.id, key);
           const isFuture = key > todayKey;
           const cls = isFuture ? "future" : (entry && entry.done) ? "done" : "missed";
           days.push('<div class="streak-day ' + cls + '" title="' + key + '"></div>');
         }
-        // Count streak as of the selected review week (or today for the current/future week)
-        let streak = 0;
-        for (let i = 0; i <= 27; i++) {
-          const d = new Date(streakAnchorDate);
-          d.setDate(streakAnchorDate.getDate() - i);
-          const key = localDateKey(d);
-          const entry = state.life_practices?.daily_log?.[key]?.[p.id];
-          if (entry && entry.done) streak++;
-          else break;
-        }
+        const streak = practiceCurrentStreak(p.id, anchorKey);
         return '<div class="streak-row"><span class="streak-label">' + escapeHtml(p.title) + '</span><div class="streak-days">' + days.join("") + '</div><span style="font-size:.72rem;font-weight:700;color:var(--accent);width:50px;text-align:right">' + streak + 'd</span></div>';
       }).join("");
     }
@@ -8560,54 +8906,32 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         return;
       }
       const todayKey = todayISO();
-      const dailyLog = state.life_practices?.daily_log || {};
       const dayLabels = ["M","T","W","T","F","S","S"];
 
       grid.innerHTML = practices.map(p => {
         /* Week strip: 7 boxes for Mon–Sun */
         let doneThisWeek = 0;
         const strip = weekDates.map((dateKey, i) => {
-          const entry = dailyLog[dateKey]?.[p.id];
+          const entry = practiceLogEntry(p.id, dateKey);
           const isFuture = dateKey > todayKey;
           let cls = "future";
           if (!isFuture) {
             if (entry && entry.done) { cls = "done"; doneThisWeek++; }
             else cls = "missed";
           }
-          const tooltip = entry?.notes ? escapeHtml(entry.notes) : (entry?.done ? "✓ Done" : dateKey);
+          const latest = practiceEntriesForDate(p.id, dateKey)[0];
+          const tooltip = latest ? escapeHtml(practiceEntryDisplayText(latest)) : (entry?.done ? "✓ Done" : dateKey);
           return `<div class="pd-week-day ${cls}" title="${tooltip}">${dayLabels[i]}</div>`;
         }).join("");
 
-        /* Streak count (from today or week end, whichever is earlier) */
-        const anchorKey = weekDates[6] <= todayKey ? weekDates[6] : todayKey;
-        const anchorDate = parseLocalDateKey(anchorKey);
-        let streak = 0;
-        for (let i = 0; i < 90; i++) {
-          const d = new Date(anchorDate);
-          d.setDate(anchorDate.getDate() - i);
-          const key = localDateKey(d);
-          const entry = dailyLog[key]?.[p.id];
-          if (entry && entry.done) streak++;
-          else break;
-        }
-
-        /* Best streak (scan all data) */
-        const allDates = Object.keys(dailyLog).sort();
-        let bestStreak = 0, runStreak = 0;
-        for (const dk of allDates) {
-          if (dailyLog[dk]?.[p.id]?.done) { runStreak++; bestStreak = Math.max(bestStreak, runStreak); }
-          else runStreak = 0;
-        }
+        const anchorKey = clampPracticeAnchorKey(weekDates[6]);
+        const streak = practiceCurrentStreak(p.id, anchorKey, weekDates[0]);
+        const bestStreak = practiceBestStreakInDates(p.id, weekDates);
 
         /* This week's entries with notes */
-        const weekEntries = weekDates
-          .filter(dk => dailyLog[dk]?.[p.id]?.done)
-          .reverse()
-          .map(dk => {
-            const e = dailyLog[dk][p.id];
-            const detail = e.notes || (e.minutes ? `${e.minutes} min` : "✓ Done");
-            return `<div class="practice-entry"><span class="entry-date">${fmtEntryDate(dk)}</span><span class="entry-detail">${escapeHtml(detail)}</span></div>`;
-          }).join("");
+        const weekEntries = recentPracticeEntries(p.id, 6, { dateKeys: weekDates })
+          .map(entry => `<div class="practice-entry"><span class="entry-date">${fmtEntryDate(entry.date)}</span><span class="entry-detail">${escapeHtml(practiceEntryDisplayText(entry))}</span></div>`)
+          .join("");
 
         return `
         <div class="practice-detail-block">
@@ -8629,7 +8953,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       }).join("");
     }
 
-    // ── Review Time Range ──
+    // ── Practice Detail Time Range (Review tab) ──
     let reviewRange = "week"; // "week" | "month" | "6month"
 
     function getReviewRangeDates() {
@@ -8675,7 +8999,8 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
           const entry = dailyLog[key]?.[practiceId];
           const done = entry && entry.done;
           const cls = done ? "contrib-cell l4" : "contrib-cell missed-cell";
-          const tooltip = done ? (entry.notes || "✓ Done") : key;
+          const latest = practiceEntriesForDate(practiceId, key)[0];
+          const tooltip = done ? practiceEntryDisplayText(latest || entry) : key;
           cells.push(`<div class="${cls}" title="${escapeHtml(tooltip)}"></div>`);
         }
       }
@@ -8701,9 +9026,9 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         return;
       }
       const todayKey = todayISO();
-      const dailyLog = state.life_practices?.daily_log || {};
       const startKey = rangeDates[0];
       const endKey = rangeDates[rangeDates.length - 1];
+      const anchorKey = clampPracticeAnchorKey(endKey);
 
       grid.innerHTML = practices.map(p => {
         /* Contribution calendar */
@@ -8714,30 +9039,18 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         rangeDates.forEach(dk => {
           if (dk > todayKey) return;
           totalDays++;
-          if (dailyLog[dk]?.[p.id]?.done) totalDone++;
+          if (practiceLogEntry(p.id, dk)?.done) totalDone++;
         });
         const pct = totalDays > 0 ? Math.round((totalDone / totalDays) * 100) : 0;
 
-        /* Best streak */
-        let bestStreak = 0, runStreak = 0, currentStreak = 0;
-        const sortedAll = Object.keys(dailyLog).sort();
-        for (const dk of sortedAll) {
-          if (dailyLog[dk]?.[p.id]?.done) { runStreak++; bestStreak = Math.max(bestStreak, runStreak); }
-          else runStreak = 0;
-        }
-        /* Current streak from today */
-        for (let i = 0; i < 365; i++) {
-          const d = new Date(); d.setDate(d.getDate() - i);
-          const key = localDateKey(d);
-          if (dailyLog[key]?.[p.id]?.done) currentStreak++;
-          else break;
-        }
+        const bestStreak = practiceBestStreakInDates(p.id, rangeDates);
+        const currentStreak = practiceCurrentStreak(p.id, anchorKey, startKey);
 
         /* Weekly sparkline: days-done-per-week */
         const weekBuckets = [];
         for (let i = 0; i < rangeDates.length; i += 7) {
           const chunk = rangeDates.slice(i, i + 7);
-          weekBuckets.push(chunk.filter(dk => dk <= todayKey && dailyLog[dk]?.[p.id]?.done).length);
+          weekBuckets.push(chunk.filter(dk => dk <= todayKey && practiceLogEntry(p.id, dk)?.done).length);
         }
         const sparkline = weekBuckets.length > 2 ? renderSparkline(weekBuckets, 120, 28) : "";
 
@@ -8870,14 +9183,17 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
 
       // Render streak heatmap, practice detail, and deep work trend
       renderStreakHeatmap(weekEnd);
+      const practiceDetailHeading = document.getElementById("practiceDetailHeading");
       if (reviewRange === "week") {
         renderPracticeDetail(dates);
-        document.getElementById("practiceDetailCard").querySelector("h4").textContent = "Life Practices — This Week";
+        if (practiceDetailHeading) practiceDetailHeading.textContent = "Life Practices — This Week";
       } else {
         const range = getReviewRangeDates();
         renderPracticeDetailExtended(range.dates, range.groupBy);
-        document.getElementById("practiceDetailCard").querySelector("h4").textContent =
-          reviewRange === "month" ? "Life Practices — Last 30 Days" : "Life Practices — Last 6 Months";
+        if (practiceDetailHeading) {
+          practiceDetailHeading.textContent =
+            reviewRange === "month" ? "Life Practices — Last 30 Days" : "Life Practices — Last 6 Months";
+        }
       }
       renderDeepTrend(weekStart);
     }
