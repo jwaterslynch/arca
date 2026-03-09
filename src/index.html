@@ -1671,6 +1671,67 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
   .cloud-config-grid, .ai-config-grid { grid-template-columns:1fr; }
   .commitment-add-grid { grid-template-columns:1fr; }
 }
+
+/* ═══════════ WEALTH TAB ═══════════ */
+.wealth-layout{padding:20px 24px;max-width:900px;margin:0 auto;overflow-y:auto;max-height:calc(100vh - 56px)}
+.wealth-subtabs{display:flex;gap:0;border-bottom:2px solid var(--line);margin-bottom:16px}
+.wealth-subtab{
+  padding:8px 20px;font:600 .82rem var(--font);color:var(--text2);cursor:pointer;
+  border:none;background:transparent;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s;
+}
+.wealth-subtab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.wealth-subtab:hover:not(.active){color:var(--text)}
+.wealth-panel{display:none}
+.wealth-panel.active{display:block}
+.wealth-net-worth{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:8px}
+.wealth-accounts-list{display:flex;flex-direction:column;gap:8px}
+.wealth-account-row{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 14px;background:var(--bg);border-radius:var(--radius-sm);
+  font-size:.82rem;transition:background .15s;cursor:default;
+}
+.wealth-account-row:hover{background:var(--accent-light)}
+.wealth-account-name{font-weight:600;display:flex;align-items:center;gap:8px}
+.wealth-account-type{
+  font-size:.68rem;font-weight:600;padding:2px 8px;border-radius:10px;
+  background:var(--accent-light);color:var(--accent);
+}
+.wealth-account-balance{font-weight:700;font-variant-numeric:tabular-nums}
+.wealth-account-balance.negative{color:var(--danger)}
+.wealth-txn-list{display:flex;flex-direction:column;gap:4px}
+.wealth-txn-row{
+  display:grid;grid-template-columns:80px 1fr auto auto;gap:12px;align-items:center;
+  padding:8px 14px;background:var(--bg);border-radius:var(--radius-sm);
+  font-size:.8rem;transition:background .15s;
+}
+.wealth-txn-row:hover{background:var(--accent-light)}
+.wealth-txn-date{color:var(--text2);font-size:.72rem;font-variant-numeric:tabular-nums}
+.wealth-txn-desc{font-weight:500}
+.wealth-txn-cat{font-size:.68rem;color:var(--text2)}
+.wealth-txn-amount{font-weight:700;font-variant-numeric:tabular-nums;text-align:right}
+.wealth-txn-amount.income{color:var(--accent)}
+.wealth-txn-amount.expense{color:var(--danger)}
+.wealth-category-list{display:flex;flex-direction:column;gap:6px}
+.wealth-category-row{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:8px 14px;background:var(--bg);border-radius:var(--radius-sm);font-size:.82rem;
+}
+.wealth-category-bar{height:6px;border-radius:3px;background:var(--accent);margin-top:4px}
+.wealth-empty-state{font-size:.8rem;color:var(--text2);padding:16px 0;text-align:center}
+/* Wealth modals */
+.wealth-form-grid{display:flex;flex-direction:column;gap:12px;margin-top:12px}
+.wealth-form-grid label{font-size:.78rem;font-weight:600;color:var(--text2)}
+.wealth-form-grid input,.wealth-form-grid select{
+  padding:8px 12px;border:1px solid var(--line);border-radius:var(--radius-sm);
+  font:.82rem var(--font);outline:none;width:100%;
+}
+.wealth-form-grid input:focus,.wealth-form-grid select:focus{border-color:var(--accent)}
+.wealth-form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.wealth-delete-btn{
+  background:none;border:none;color:var(--text2);font-size:.72rem;cursor:pointer;
+  padding:2px 6px;border-radius:4px;
+}
+.wealth-delete-btn:hover{color:var(--danger);background:rgba(220,38,38,.08)}
 </style>
 </head>
 <body>
@@ -1682,6 +1743,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
     <div class="mode-switcher">
       <button class="mode-btn tab active" data-tab="execute" type="button">Execute</button>
       <button class="mode-btn tab" data-tab="plan" type="button">Plan</button>
+      <button class="mode-btn tab" data-tab="wealth" type="button">Wealth</button>
     </div>
     <div class="top-right">
       <div id="streakDisplay" class="streak-badge streak-flame"></div>
@@ -2101,6 +2163,86 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
                 <textarea id="weeklyCommitmentsInput" placeholder="This week's intent..."></textarea>
               </div>
             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ WEALTH SURFACE ═══════════ -->
+  <div class="surface tab-content" id="tab-wealth">
+    <div class="wealth-layout">
+      <!-- Wealth Subtabs -->
+      <div class="wealth-subtabs" id="wealthSubtabs">
+        <div class="wealth-subtab active" data-wealth-tab="overview">Overview</div>
+        <div class="wealth-subtab" data-wealth-tab="cashflow">Cash Flow</div>
+      </div>
+
+      <!-- Overview Subtab -->
+      <div class="wealth-panel active" id="wealth-panel-overview">
+        <!-- Net Worth Summary -->
+        <div class="review-card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+            <h4 style="margin-bottom:0">Net Worth</h4>
+            <button class="ghost" id="wealthAddAccountBtn" type="button" style="font-size:.75rem">+ Add Account</button>
+          </div>
+          <div class="wealth-net-worth" id="wealthNetWorth">
+            <div class="stat-box"><div class="stat-val" id="wealthTotalAssets">$0</div><div class="stat-label">Assets</div></div>
+            <div class="stat-box"><div class="stat-val" id="wealthTotalLiabilities">$0</div><div class="stat-label">Liabilities</div></div>
+            <div class="stat-box"><div class="stat-val" id="wealthNetWorthVal" style="font-weight:800">$0</div><div class="stat-label">Net Worth</div></div>
+          </div>
+        </div>
+
+        <!-- Accounts List -->
+        <div class="review-card">
+          <h4 style="margin-bottom:12px">Accounts</h4>
+          <div id="wealthAccountsList" class="wealth-accounts-list">
+            <div class="wealth-empty-state">No accounts yet. Add one to start tracking.</div>
+          </div>
+        </div>
+
+        <!-- Recent Transactions -->
+        <div class="review-card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+            <h4 style="margin-bottom:0">Recent Transactions</h4>
+            <button class="ghost" id="wealthAddTxnBtn" type="button" style="font-size:.75rem">+ Add Transaction</button>
+          </div>
+          <div id="wealthRecentTxns" class="wealth-txn-list">
+            <div class="wealth-empty-state">No transactions recorded yet.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cash Flow Subtab -->
+      <div class="wealth-panel" id="wealth-panel-cashflow">
+        <div class="review-card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+            <h4 style="margin-bottom:0" id="cashflowMonthHeading">March 2026</h4>
+            <div style="display:flex;align-items:center;gap:4px;">
+              <button id="wealthPrevMonthBtn" class="ghost" type="button" style="font-size:.75rem;padding:4px 8px;">← Prev</button>
+              <button id="wealthNextMonthBtn" class="ghost" type="button" style="font-size:.75rem;padding:4px 8px;">Next →</button>
+            </div>
+          </div>
+          <div class="wealth-net-worth" id="cashflowSummary">
+            <div class="stat-box"><div class="stat-val" style="color:var(--accent)" id="cashflowIncome">$0</div><div class="stat-label">Income</div></div>
+            <div class="stat-box"><div class="stat-val" style="color:var(--danger)" id="cashflowExpenses">$0</div><div class="stat-label">Expenses</div></div>
+            <div class="stat-box"><div class="stat-val" id="cashflowNet">$0</div><div class="stat-label">Net</div></div>
+          </div>
+        </div>
+
+        <!-- Category Breakdown -->
+        <div class="review-card">
+          <h4 style="margin-bottom:12px">By Category</h4>
+          <div id="cashflowCategories" class="wealth-category-list">
+            <div class="wealth-empty-state">Add transactions to see category breakdown.</div>
+          </div>
+        </div>
+
+        <!-- Monthly Transactions -->
+        <div class="review-card">
+          <h4 style="margin-bottom:12px">Transactions</h4>
+          <div id="cashflowTxnList" class="wealth-txn-list">
+            <div class="wealth-empty-state">No transactions this month.</div>
           </div>
         </div>
       </div>
@@ -2677,7 +2819,12 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         streak_days: [],
         daily_logs: {},
         weekly_reviews: {},
-        last_backup: null
+        last_backup: null,
+        wealth: {
+          accounts: [],
+          transactions: [],
+          currency: "AUD"
+        }
       };
     }
 
@@ -2804,6 +2951,29 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       normalized.streak_days = Array.isArray(incoming.streak_days) ? incoming.streak_days : [];
       normalized.daily_logs = incoming.daily_logs && typeof incoming.daily_logs === "object" ? incoming.daily_logs : {};
       normalized.weekly_reviews = incoming.weekly_reviews && typeof incoming.weekly_reviews === "object" ? incoming.weekly_reviews : {};
+      // Wealth migration
+      const iw = incoming.wealth || {};
+      normalized.wealth = {
+        accounts: Array.isArray(iw.accounts) ? iw.accounts.map(a => ({
+          id: a.id || uid(),
+          name: a.name || "Untitled Account",
+          type: ["checking","savings","credit_card","loan","investment","cash","other"].includes(a.type) ? a.type : "checking",
+          balance: Number.isFinite(a.balance) ? a.balance : 0,
+          created_at: a.created_at || new Date().toISOString(),
+          archived: !!a.archived
+        })) : [],
+        transactions: Array.isArray(iw.transactions) ? iw.transactions.map(t => ({
+          id: t.id || uid(),
+          date: t.date || todayISO(),
+          account_id: t.account_id || null,
+          type: t.type === "income" ? "income" : "expense",
+          amount: Number.isFinite(t.amount) ? Math.abs(t.amount) : 0,
+          category: t.category || "Other",
+          description: t.description || "",
+          created_at: t.created_at || new Date().toISOString()
+        })) : [],
+        currency: iw.currency || "AUD"
+      };
       return normalized;
     }
 
@@ -7728,11 +7898,14 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
     function setActiveTab(tabName) {
       const requested = String(tabName || "").trim() || "execute";
       const planTabs = ["focus", "assistant", "review"];
-      let mode = requested === "execute" ? "execute" : "plan";
+      const topLevelTabs = ["execute", "plan", "wealth"];
+      let mode = requested === "wealth" ? "wealth" : requested === "execute" ? "execute" : "plan";
       let planTab = activePlanTab;
-      if (planTabs.includes(requested)) planTab = requested;
-      if (!planTabs.includes(planTab)) planTab = "focus";
-      if (planTab === "assistant" && !aiShouldShowTab()) planTab = "focus";
+      if (planTabs.includes(requested)) { mode = "plan"; planTab = requested; }
+      if (mode === "plan") {
+        if (!planTabs.includes(planTab)) planTab = "focus";
+        if (planTab === "assistant" && !aiShouldShowTab()) planTab = "focus";
+      }
       activePlanTab = planTab;
 
       document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
@@ -7745,15 +7918,23 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         const sub = String(btn.getAttribute("data-plan-tab") || "");
         btn.classList.toggle("active", mode === "plan" && sub === planTab);
       });
+
       const executeSurface = document.getElementById("tab-execute");
       const planSurface = document.getElementById("surface-plan");
+      const wealthSurface = document.getElementById("tab-wealth");
       if (executeSurface) executeSurface.classList.toggle("active", mode === "execute");
       if (planSurface) planSurface.classList.toggle("active", mode === "plan");
+      if (wealthSurface) wealthSurface.classList.toggle("active", mode === "wealth");
 
       document.querySelectorAll(".tab-content").forEach(panel => panel.classList.remove("active"));
       if (mode === "execute") {
         const executePanel = document.getElementById("tab-execute");
         if (executePanel) executePanel.classList.add("active");
+        return;
+      }
+      if (mode === "wealth") {
+        if (wealthSurface) wealthSurface.classList.add("active");
+        renderWealth();
         return;
       }
       const planPanel = document.getElementById(`tab-${planTab}`);
@@ -9814,6 +9995,391 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       renderDeepTrend(weekStart);
     }
 
+    // ═══════════ WEALTH MODULE ═══════════
+    let activeWealthTab = "overview";
+    let wealthMonthOffset = 0;
+
+    const WEALTH_ACCOUNT_TYPES = {
+      checking: "Checking", savings: "Savings", credit_card: "Credit Card",
+      loan: "Loan", investment: "Investment", cash: "Cash", other: "Other"
+    };
+
+    const WEALTH_EXPENSE_CATEGORIES = [
+      "Housing", "Transport", "Food", "Utilities", "Insurance",
+      "Health", "Entertainment", "Shopping", "Education", "Subscriptions",
+      "Travel", "Gifts", "Other"
+    ];
+    const WEALTH_INCOME_CATEGORIES = [
+      "Salary", "Freelance", "Investment", "Rental", "Refund", "Gift", "Other"
+    ];
+
+    function formatCurrency(amount, currency) {
+      const c = currency || state.wealth?.currency || "AUD";
+      const abs = Math.abs(amount);
+      try {
+        return new Intl.NumberFormat("en-AU", { style: "currency", currency: c, minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(amount);
+      } catch {
+        return `$${amount < 0 ? "-" : ""}${abs.toLocaleString()}`;
+      }
+    }
+
+    function getWealthAccount(id) {
+      return (state.wealth?.accounts || []).find(a => a.id === id) || null;
+    }
+
+    function computeAccountBalance(accountId) {
+      const account = getWealthAccount(accountId);
+      if (!account) return 0;
+      let bal = 0;
+      for (const txn of (state.wealth?.transactions || [])) {
+        if (txn.account_id !== accountId) continue;
+        bal += txn.type === "income" ? txn.amount : -txn.amount;
+      }
+      return bal + (account.balance || 0);
+    }
+
+    function wealthNetWorthCalc() {
+      const accounts = state.wealth?.accounts || [];
+      let assets = 0, liabilities = 0;
+      for (const a of accounts) {
+        if (a.archived) continue;
+        const bal = computeAccountBalance(a.id);
+        if (["credit_card", "loan"].includes(a.type)) {
+          liabilities += Math.abs(bal);
+        } else {
+          assets += bal;
+        }
+      }
+      return { assets, liabilities, net: assets - liabilities };
+    }
+
+    function getMonthRange(offset) {
+      const d = new Date();
+      d.setDate(1);
+      d.setMonth(d.getMonth() + offset);
+      const start = new Date(d.getFullYear(), d.getMonth(), 1);
+      const end = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+      return {
+        start: start.toISOString().slice(0, 10),
+        end: end.toISOString().slice(0, 10),
+        label: start.toLocaleDateString("en-AU", { month: "long", year: "numeric" })
+      };
+    }
+
+    function wealthTxnsForMonth(offset) {
+      const { start, end } = getMonthRange(offset);
+      return (state.wealth?.transactions || []).filter(t => t.date >= start && t.date <= end);
+    }
+
+    function addWealthAccount(name, type, openingBalance) {
+      if (!state.wealth) state.wealth = { accounts: [], transactions: [], currency: "AUD" };
+      const account = {
+        id: uid(),
+        name: name || "New Account",
+        type: type || "checking",
+        balance: Number(openingBalance) || 0,
+        created_at: new Date().toISOString(),
+        archived: false
+      };
+      state.wealth.accounts.push(account);
+      saveState("wealth_add_account");
+      renderWealth();
+      return account;
+    }
+
+    function deleteWealthAccount(accountId) {
+      if (!state.wealth) return;
+      state.wealth.accounts = state.wealth.accounts.filter(a => a.id !== accountId);
+      state.wealth.transactions = state.wealth.transactions.filter(t => t.account_id !== accountId);
+      saveState("wealth_delete_account");
+      renderWealth();
+    }
+
+    function addWealthTransaction(date, accountId, type, amount, category, description) {
+      if (!state.wealth) state.wealth = { accounts: [], transactions: [], currency: "AUD" };
+      const txn = {
+        id: uid(),
+        date: date || todayISO(),
+        account_id: accountId || null,
+        type: type === "income" ? "income" : "expense",
+        amount: Math.abs(Number(amount) || 0),
+        category: category || "Other",
+        description: description || "",
+        created_at: new Date().toISOString()
+      };
+      state.wealth.transactions.push(txn);
+      saveState("wealth_add_txn");
+      renderWealth();
+      return txn;
+    }
+
+    function deleteWealthTransaction(txnId) {
+      if (!state.wealth) return;
+      state.wealth.transactions = state.wealth.transactions.filter(t => t.id !== txnId);
+      saveState("wealth_delete_txn");
+      renderWealth();
+    }
+
+    // ── Wealth Rendering ──
+    function renderWealth() {
+      renderWealthOverview();
+      renderWealthCashflow();
+    }
+
+    function renderWealthOverview() {
+      // Net worth summary
+      const nw = wealthNetWorthCalc();
+      const elAssets = document.getElementById("wealthTotalAssets");
+      const elLiab = document.getElementById("wealthTotalLiabilities");
+      const elNet = document.getElementById("wealthNetWorthVal");
+      if (elAssets) elAssets.textContent = formatCurrency(nw.assets);
+      if (elLiab) elLiab.textContent = formatCurrency(nw.liabilities);
+      if (elNet) {
+        elNet.textContent = formatCurrency(nw.net);
+        elNet.style.color = nw.net >= 0 ? "var(--accent)" : "var(--danger)";
+      }
+
+      // Accounts list
+      const listEl = document.getElementById("wealthAccountsList");
+      if (!listEl) return;
+      const accounts = (state.wealth?.accounts || []).filter(a => !a.archived);
+      if (!accounts.length) {
+        listEl.innerHTML = '<div class="wealth-empty-state">No accounts yet. Add one to start tracking.</div>';
+        return;
+      }
+      listEl.innerHTML = accounts.map(a => {
+        const bal = computeAccountBalance(a.id);
+        const isNeg = bal < 0;
+        return `<div class="wealth-account-row" data-account-id="${escapeHtml(a.id)}">
+          <div class="wealth-account-name">
+            <span class="wealth-account-type">${escapeHtml(WEALTH_ACCOUNT_TYPES[a.type] || a.type)}</span>
+            ${escapeHtml(a.name)}
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="wealth-account-balance ${isNeg ? "negative" : ""}">${formatCurrency(bal)}</span>
+            <button class="wealth-delete-btn" data-delete-account="${escapeHtml(a.id)}" title="Delete account">✕</button>
+          </div>
+        </div>`;
+      }).join("");
+
+      // Recent transactions (last 10)
+      const txnEl = document.getElementById("wealthRecentTxns");
+      if (!txnEl) return;
+      const txns = [...(state.wealth?.transactions || [])].sort((a, b) => b.date.localeCompare(a.date) || b.created_at.localeCompare(a.created_at)).slice(0, 10);
+      if (!txns.length) {
+        txnEl.innerHTML = '<div class="wealth-empty-state">No transactions recorded yet.</div>';
+        return;
+      }
+      txnEl.innerHTML = txns.map(t => renderTxnRow(t)).join("");
+    }
+
+    function renderTxnRow(t) {
+      const isIncome = t.type === "income";
+      const acct = getWealthAccount(t.account_id);
+      const dateStr = (() => { try { return new Date(t.date + "T00:00:00").toLocaleDateString("en-AU", { day:"numeric", month:"short" }); } catch { return t.date; } })();
+      return `<div class="wealth-txn-row" data-txn-id="${escapeHtml(t.id)}">
+        <span class="wealth-txn-date">${dateStr}</span>
+        <span class="wealth-txn-desc">${escapeHtml(t.description || t.category)}${acct ? ` <span style="color:var(--text2);font-size:.7rem">· ${escapeHtml(acct.name)}</span>` : ""}</span>
+        <span class="wealth-txn-cat">${escapeHtml(t.category)}</span>
+        <span class="wealth-txn-amount ${isIncome ? "income" : "expense"}">${isIncome ? "+" : "-"}${formatCurrency(t.amount)}</span>
+      </div>`;
+    }
+
+    function renderWealthCashflow() {
+      const { label } = getMonthRange(wealthMonthOffset);
+      const heading = document.getElementById("cashflowMonthHeading");
+      if (heading) heading.textContent = label;
+
+      const txns = wealthTxnsForMonth(wealthMonthOffset);
+      let income = 0, expenses = 0;
+      const catTotals = {};
+      for (const t of txns) {
+        if (t.type === "income") {
+          income += t.amount;
+        } else {
+          expenses += t.amount;
+          catTotals[t.category] = (catTotals[t.category] || 0) + t.amount;
+        }
+      }
+      const net = income - expenses;
+
+      const elIncome = document.getElementById("cashflowIncome");
+      const elExp = document.getElementById("cashflowExpenses");
+      const elNet = document.getElementById("cashflowNet");
+      if (elIncome) elIncome.textContent = formatCurrency(income);
+      if (elExp) elExp.textContent = formatCurrency(expenses);
+      if (elNet) {
+        elNet.textContent = formatCurrency(net);
+        elNet.style.color = net >= 0 ? "var(--accent)" : "var(--danger)";
+      }
+
+      // Category breakdown
+      const catEl = document.getElementById("cashflowCategories");
+      if (catEl) {
+        const cats = Object.entries(catTotals).sort((a, b) => b[1] - a[1]);
+        if (!cats.length) {
+          catEl.innerHTML = '<div class="wealth-empty-state">Add transactions to see category breakdown.</div>';
+        } else {
+          const maxCat = cats[0][1] || 1;
+          catEl.innerHTML = cats.map(([cat, total]) => {
+            const pct = Math.round((total / maxCat) * 100);
+            return `<div class="wealth-category-row">
+              <div style="flex:1">
+                <div style="display:flex;justify-content:space-between"><span>${escapeHtml(cat)}</span><span style="font-weight:600;font-variant-numeric:tabular-nums">${formatCurrency(total)}</span></div>
+                <div class="wealth-category-bar" style="width:${pct}%"></div>
+              </div>
+            </div>`;
+          }).join("");
+        }
+      }
+
+      // Monthly txn list
+      const txnList = document.getElementById("cashflowTxnList");
+      if (txnList) {
+        const sorted = [...txns].sort((a, b) => b.date.localeCompare(a.date) || b.created_at.localeCompare(a.created_at));
+        if (!sorted.length) {
+          txnList.innerHTML = '<div class="wealth-empty-state">No transactions this month.</div>';
+        } else {
+          txnList.innerHTML = sorted.map(t => renderTxnRow(t)).join("");
+        }
+      }
+    }
+
+    // ── Wealth Modals ──
+    function showAddAccountModal() {
+      const html = `<div class="wealth-form-grid">
+        <div>
+          <label>Account Name</label>
+          <input id="wealthAcctName" placeholder="e.g. ING Savings" />
+        </div>
+        <div class="wealth-form-row">
+          <div>
+            <label>Type</label>
+            <select id="wealthAcctType">
+              ${Object.entries(WEALTH_ACCOUNT_TYPES).map(([k, v]) => `<option value="${k}">${v}</option>`).join("")}
+            </select>
+          </div>
+          <div>
+            <label>Opening Balance</label>
+            <input id="wealthAcctBalance" type="number" placeholder="0" />
+          </div>
+        </div>
+        <button class="primary" id="wealthAcctSubmit" type="button" style="margin-top:8px">Add Account</button>
+      </div>`;
+      showWealthModal("Add Account", html);
+      requestAnimationFrame(() => {
+        const nameInput = document.getElementById("wealthAcctName");
+        if (nameInput) nameInput.focus();
+        const submitBtn = document.getElementById("wealthAcctSubmit");
+        if (submitBtn) submitBtn.addEventListener("click", () => {
+          const name = (document.getElementById("wealthAcctName")?.value || "").trim();
+          const type = document.getElementById("wealthAcctType")?.value || "checking";
+          const balance = Number(document.getElementById("wealthAcctBalance")?.value) || 0;
+          if (!name) return;
+          addWealthAccount(name, type, balance);
+          closeWealthModal();
+        });
+      });
+    }
+
+    function showAddTxnModal(presetAccountId) {
+      const accounts = (state.wealth?.accounts || []).filter(a => !a.archived);
+      const acctOptions = accounts.length
+        ? accounts.map(a => `<option value="${a.id}" ${a.id === presetAccountId ? "selected" : ""}>${escapeHtml(a.name)}</option>`).join("")
+        : '<option value="">No accounts</option>';
+      const html = `<div class="wealth-form-grid">
+        <div class="wealth-form-row">
+          <div>
+            <label>Date</label>
+            <input id="wealthTxnDate" type="date" value="${todayISO()}" />
+          </div>
+          <div>
+            <label>Account</label>
+            <select id="wealthTxnAcct">${acctOptions}</select>
+          </div>
+        </div>
+        <div class="wealth-form-row">
+          <div>
+            <label>Type</label>
+            <select id="wealthTxnType">
+              <option value="expense">Expense</option>
+              <option value="income">Income</option>
+            </select>
+          </div>
+          <div>
+            <label>Amount</label>
+            <input id="wealthTxnAmount" type="number" step="0.01" placeholder="0.00" />
+          </div>
+        </div>
+        <div class="wealth-form-row">
+          <div>
+            <label>Category</label>
+            <select id="wealthTxnCat">
+              <optgroup label="Expenses">${WEALTH_EXPENSE_CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join("")}</optgroup>
+              <optgroup label="Income">${WEALTH_INCOME_CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join("")}</optgroup>
+            </select>
+          </div>
+          <div>
+            <label>Description</label>
+            <input id="wealthTxnDesc" placeholder="e.g. Groceries at Woolworths" />
+          </div>
+        </div>
+        <button class="primary" id="wealthTxnSubmit" type="button" style="margin-top:8px">Add Transaction</button>
+      </div>`;
+      showWealthModal("Add Transaction", html);
+      requestAnimationFrame(() => {
+        const amtInput = document.getElementById("wealthTxnAmount");
+        if (amtInput) amtInput.focus();
+        // Sync categories to type
+        const typeSelect = document.getElementById("wealthTxnType");
+        const catSelect = document.getElementById("wealthTxnCat");
+        if (typeSelect && catSelect) {
+          typeSelect.addEventListener("change", () => {
+            const isIncome = typeSelect.value === "income";
+            catSelect.innerHTML = (isIncome ? WEALTH_INCOME_CATEGORIES : WEALTH_EXPENSE_CATEGORIES)
+              .map(c => `<option value="${c}">${c}</option>`).join("");
+          });
+        }
+        const submitBtn = document.getElementById("wealthTxnSubmit");
+        if (submitBtn) submitBtn.addEventListener("click", () => {
+          const date = document.getElementById("wealthTxnDate")?.value || todayISO();
+          const accountId = document.getElementById("wealthTxnAcct")?.value || null;
+          const type = document.getElementById("wealthTxnType")?.value || "expense";
+          const amount = Number(document.getElementById("wealthTxnAmount")?.value) || 0;
+          const category = document.getElementById("wealthTxnCat")?.value || "Other";
+          const desc = (document.getElementById("wealthTxnDesc")?.value || "").trim();
+          if (!amount) return;
+          addWealthTransaction(date, accountId, type, amount, category, desc);
+          closeWealthModal();
+        });
+      });
+    }
+
+    function showWealthModal(title, bodyHtml) {
+      let overlay = document.getElementById("wealthModalOverlay");
+      if (!overlay) {
+        overlay = document.createElement("div");
+        overlay.id = "wealthModalOverlay";
+        overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:1000;display:flex;align-items:center;justify-content:center";
+        document.body.appendChild(overlay);
+        overlay.addEventListener("click", e => { if (e.target === overlay) closeWealthModal(); });
+      }
+      overlay.innerHTML = `<div style="background:var(--surface);border-radius:var(--radius);padding:24px;width:420px;max-width:90vw;box-shadow:var(--shadow-lg)">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <h4 style="margin:0">${title}</h4>
+          <button class="ghost" type="button" onclick="closeWealthModal()" style="font-size:.8rem">✕</button>
+        </div>
+        ${bodyHtml}
+      </div>`;
+      overlay.hidden = false;
+    }
+
+    function closeWealthModal() {
+      const overlay = document.getElementById("wealthModalOverlay");
+      if (overlay) overlay.hidden = true;
+    }
+    window.closeWealthModal = closeWealthModal;
+
     // ── Master Render ──
     function render() {
       initTodayState();
@@ -10499,6 +11065,30 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
           scrollReviewPaneToTop();
         }
       });
+    });
+
+    // Wealth tab events
+    document.querySelectorAll(".wealth-subtab").forEach(tab => {
+      tab.addEventListener("click", () => {
+        activeWealthTab = tab.dataset.wealthTab || "overview";
+        document.querySelectorAll(".wealth-subtab").forEach(t => t.classList.toggle("active", t === tab));
+        document.querySelectorAll(".wealth-panel").forEach(p => p.classList.toggle("active", p.id === `wealth-panel-${activeWealthTab}`));
+        renderWealth();
+      });
+    });
+    document.getElementById("wealthAddAccountBtn")?.addEventListener("click", () => showAddAccountModal());
+    document.getElementById("wealthAddTxnBtn")?.addEventListener("click", () => showAddTxnModal());
+    document.getElementById("wealthPrevMonthBtn")?.addEventListener("click", () => { wealthMonthOffset--; renderWealthCashflow(); });
+    document.getElementById("wealthNextMonthBtn")?.addEventListener("click", () => { wealthMonthOffset++; renderWealthCashflow(); });
+
+    // Wealth list delegation (delete account, delete txn)
+    document.getElementById("tab-wealth")?.addEventListener("click", e => {
+      const delAcct = e.target.closest("[data-delete-account]");
+      if (delAcct) {
+        const id = delAcct.dataset.deleteAccount;
+        if (id && confirm("Delete this account and all its transactions?")) deleteWealthAccount(id);
+        return;
+      }
     });
 
     // Closure modal interactions
