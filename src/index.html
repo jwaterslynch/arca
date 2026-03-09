@@ -239,11 +239,17 @@ body{font-family:var(--font);color:var(--text);background:var(--bg);-webkit-font
 .practice-structured-submit{
   padding:6px 12px;border-radius:var(--radius-sm);border:none;background:var(--text);color:#fff;font:600 .72rem var(--font);cursor:pointer;
 }
-.practice-ai-input input{
+.practice-ai-input textarea{
   flex:1;border:1px solid var(--line);border-radius:var(--radius-sm);
-  padding:6px 10px;font:.8rem var(--font);outline:none;
+  padding:6px 10px;font:.8rem var(--font);outline:none;resize:none;
+  min-height:34px;max-height:120px;line-height:1.4;overflow-y:auto;
+  field-sizing:content;
 }
-.practice-ai-input input:focus{border-color:var(--accent)}
+.practice-ai-input textarea:focus{border-color:var(--accent)}
+.practice-log-confirm{
+  font-size:.72rem;color:var(--accent);font-weight:600;padding:4px 0;
+  animation:receiptIn .2s ease;
+}
 .practice-ai-input button{
   padding:6px 12px;border-radius:var(--radius-sm);border:none;
   background:var(--accent);color:#fff;font:600 .75rem var(--font);cursor:pointer;
@@ -251,10 +257,12 @@ body{font-family:var(--font);color:var(--text);background:var(--bg);-webkit-font
 
 /* Practice coaching UI */
 .pd-coach{margin-top:10px;padding-top:10px;border-top:1px solid var(--bg)}
-.pd-coach-input-row{display:flex;gap:6px}
+.pd-coach-input-row{display:flex;gap:6px;align-items:flex-end}
 .pd-coach-input{
   flex:1;border:1px solid var(--line);border-radius:var(--radius-sm);
   padding:6px 10px;font:.8rem var(--font);outline:none;background:var(--surface);color:var(--text);
+  resize:none;min-height:34px;max-height:120px;line-height:1.4;overflow-y:auto;
+  field-sizing:content;
 }
 .pd-coach-input:focus{border-color:var(--accent)}
 .pd-coach-btn{
@@ -7098,9 +7106,10 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
           <div class="practice-entries">${entriesHtml}</div>
           ${templates.length ? `<div class="practice-templates">${templates.map((label, index) => `<button type="button" class="practice-template" data-practice-template="${escapeHtml(p.id)}" data-practice-template-idx="${index}">${escapeHtml(label)}</button>`).join("")}</div>` : ""}
           ${renderStructuredPracticeForm(p)}
+          <div class="practice-log-confirm" id="practiceLogConfirm_${escapeHtml(p.id)}" hidden></div>
           <div class="practice-ai-input">
-            <input type="text" placeholder="${escapeHtml(p.logging_hint || defaultPracticeLoggingHint(p))}" data-practice-id="${escapeHtml(p.id)}" />
-            <button type="button" data-log-practice="${escapeHtml(p.id)}">Quick log</button>
+            <textarea rows="1" placeholder="${escapeHtml(p.logging_hint || defaultPracticeLoggingHint(p))}" data-practice-id="${escapeHtml(p.id)}"></textarea>
+            <button type="button" data-log-practice="${escapeHtml(p.id)}">Log</button>
           </div>
         </div>`;
       }).join("")}`; }).join("");
@@ -7125,8 +7134,8 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
             e.preventDefault();
             e.stopPropagation();
             const practiceId = logBtn.dataset.logPractice;
-            const input = logBtn.closest(".practice-ai-input")?.querySelector("input");
-            if (input && practiceId) logPracticeEntry(practiceId, input);
+            const ta = logBtn.closest(".practice-ai-input")?.querySelector("textarea");
+            if (ta && practiceId) logPracticeEntry(practiceId, ta);
             return;
           }
           /* Structured log submit */
@@ -7150,11 +7159,11 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
             const practice = getPracticeDefinition(practiceId);
             const templateIdx = Number.parseInt(templateBtn.dataset.practiceTemplateIdx || "", 10);
             const template = practiceLoggingTemplates(practice)[templateIdx] || "";
-            const input = listEl.querySelector(`.practice-ai-input input[data-practice-id="${practiceId}"]`);
-            if (input && template) {
-              input.value = template;
-              input.focus();
-              input.setSelectionRange(input.value.length, input.value.length);
+            const ta = listEl.querySelector(`.practice-ai-input textarea[data-practice-id="${practiceId}"]`);
+            if (ta && template) {
+              ta.value = template;
+              ta.focus();
+              ta.setSelectionRange(ta.value.length, ta.value.length);
             }
             return;
           }
@@ -7182,11 +7191,12 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
             }
             return;
           }
-          const input = e.target.closest(".practice-ai-input input[data-practice-id]");
-          if (!input) return;
+          const ta = e.target.closest(".practice-ai-input textarea[data-practice-id]");
+          if (!ta) return;
+          if (e.shiftKey) return; /* Shift+Enter = newline */
           e.preventDefault();
-          const practiceId = input.dataset.practiceId;
-          if (practiceId) logPracticeEntry(practiceId, input);
+          const practiceId = ta.dataset.practiceId;
+          if (practiceId) logPracticeEntry(practiceId, ta);
         });
         lifePracticesDelegated = true;
       }
@@ -7207,7 +7217,35 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       const practice = getPracticeDefinition(practiceId);
       const entry = buildPracticeEntryFromText(practice, text);
       inputEl.value = "";
-      if (entry) appendPracticeEntry(practiceId, entry);
+      if (entry) {
+        appendPracticeEntry(practiceId, entry);
+        /* Show confirmation of what was captured */
+        showPracticeLogConfirm(practiceId, entry);
+      }
+    }
+
+    function showPracticeLogConfirm(practiceId, entry) {
+      const el = document.getElementById(`practiceLogConfirm_${practiceId}`);
+      if (!el) return;
+      const parts = ["✓ Logged"];
+      if (entry.text) parts.push(entry.text);
+      const m = entry.metrics || {};
+      const metricBits = [];
+      if (m.sets && m.reps) metricBits.push(`${m.sets}×${m.reps}`);
+      if (m.weight_kg) metricBits.push(`${m.weight_kg}kg`);
+      if (m.tempo_bpm) metricBits.push(`${m.tempo_bpm} bpm`);
+      if (m.pages) metricBits.push(`${m.pages} pages`);
+      if (m.words_reviewed) metricBits.push(`${m.words_reviewed} words`);
+      if (m.pomodoros) metricBits.push(`${m.pomodoros} poms`);
+      if (m.lead_count) metricBits.push(`${m.lead_count} leads`);
+      if (m.energy) metricBits.push(`energy ${m.energy}/10`);
+      if (metricBits.length) parts.push(`(${metricBits.join(", ")})`);
+      if (entry.minutes) parts.push(`· ${entry.minutes}m`);
+      el.textContent = parts.join(" ");
+      el.hidden = false;
+      /* Auto-hide after 5s */
+      clearTimeout(el._timer);
+      el._timer = setTimeout(() => { el.hidden = true; }, 5000);
     }
 
     function updateLifePractice(id, patch, options = {}) {
@@ -9523,7 +9561,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
           <div class="pd-coach" data-practice-id="${escapeHtml(p.id)}">
             <div class="pd-coach-response" id="pdCoachResponse_${escapeHtml(p.id)}" hidden></div>
             <div class="pd-coach-input-row">
-              <input type="text" class="pd-coach-input" data-coach-practice="${escapeHtml(p.id)}" placeholder="Ask your coach about ${escapeHtml(p.title.toLowerCase())}..." />
+              <textarea rows="1" class="pd-coach-input" data-coach-practice="${escapeHtml(p.id)}" placeholder="Ask your coach about ${escapeHtml(p.title.toLowerCase())}..."></textarea>
               <button type="button" class="pd-coach-btn" data-coach-send="${escapeHtml(p.id)}" title="Get coaching">✦</button>
             </div>
           </div>` : ""}
@@ -10592,6 +10630,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       });
       pdGrid.addEventListener("keydown", e => {
         if (e.key !== "Enter") return;
+        if (e.shiftKey) return; /* Shift+Enter = newline in textarea */
         const input = e.target.closest("[data-coach-practice]");
         if (!input) return;
         e.preventDefault();
