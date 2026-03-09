@@ -200,6 +200,37 @@ body{font-family:var(--font);color:var(--text);background:var(--bg);-webkit-font
   font:600 .7rem var(--font);padding:5px 9px;cursor:pointer;
 }
 .practice-template:hover{border-color:var(--accent);color:var(--accent)}
+.practice-structured{
+  margin:8px 0 10px;padding:10px;border:1px solid var(--line);border-radius:12px;background:#fbfcfb;
+}
+.practice-structured-title{
+  font-size:.68rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--text2);margin-bottom:8px;
+}
+.practice-structured-grid{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;
+}
+.practice-field{
+  display:flex;flex-direction:column;gap:4px;
+}
+.practice-field.full{
+  grid-column:1 / -1;
+}
+.practice-field-label{
+  font-size:.68rem;font-weight:600;color:var(--text2);
+}
+.practice-field input{
+  width:100%;border:1px solid var(--line);border-radius:var(--radius-sm);
+  padding:6px 8px;font:.78rem var(--font);outline:none;background:#fff;color:var(--text);
+}
+.practice-field input:focus{
+  border-color:var(--accent);
+}
+.practice-structured-actions{
+  display:flex;justify-content:flex-end;margin-top:8px;
+}
+.practice-structured-submit{
+  padding:6px 12px;border-radius:var(--radius-sm);border:none;background:var(--text);color:#fff;font:600 .72rem var(--font);cursor:pointer;
+}
 .practice-ai-input input{
   flex:1;border:1px solid var(--line);border-radius:var(--radius-sm);
   padding:6px 10px;font:.8rem var(--font);outline:none;
@@ -230,18 +261,21 @@ body{font-family:var(--font);color:var(--text);background:var(--bg);-webkit-font
   background:var(--accent-light);border-radius:var(--radius-sm);
   padding:10px 12px;margin-bottom:8px;font-size:.8rem;line-height:1.5;
 }
-.pd-coach-response .coach-summary{font-weight:600;margin-bottom:6px;color:var(--text)}
-.pd-coach-response .coach-observations{color:var(--text2);margin-bottom:6px}
-.pd-coach-response .coach-recommendations{color:var(--text)}
-.pd-coach-response .coach-rec-item{padding:3px 0}
+.pd-coach-response .coach-summary{font-weight:600;margin-bottom:8px;color:var(--text);line-height:1.45}
+.pd-coach-response .coach-observations{color:var(--text2);margin-bottom:8px;padding-left:2px}
+.pd-coach-response .coach-obs-item{padding:2px 0}
+.pd-coach-response .coach-obs-item::before{content:"• ";color:var(--accent);font-weight:700}
+.pd-coach-response .coach-recommendations{color:var(--text);margin-bottom:4px;padding-left:2px}
+.pd-coach-response .coach-rec-item{padding:2px 0}
 .pd-coach-response .coach-rec-item::before{content:"→ ";color:var(--accent);font-weight:600}
 .pd-coach-actions{margin-top:8px;display:flex;gap:6px;flex-wrap:wrap}
 .pd-coach-action-btn{
   padding:4px 10px;border-radius:6px;border:1px solid var(--accent);
   background:var(--surface);color:var(--accent);font:600 .72rem var(--font);
-  cursor:pointer;transition:all .15s;
+  cursor:pointer;transition:all .15s;white-space:nowrap;
 }
 .pd-coach-action-btn:hover{background:var(--accent);color:#fff}
+.pd-coach-action-btn:disabled{opacity:.5;cursor:default;background:var(--accent);color:#fff;border-color:var(--accent)}
 
 /* Review range toggle */
 .review-range-toggle{
@@ -5024,6 +5058,7 @@ Use only supported action types and enum values from the schema.`;
         metrics: entry.metrics || {},
         tags: Array.isArray(entry.tags) ? entry.tags : []
       }));
+      const metricsSummary = summarizePracticeMetrics(practice, recentEvents);
 
       /* Streak + consistency */
       const streak = practiceCurrentStreak(practiceId, todayKey);
@@ -5094,6 +5129,7 @@ Use only supported action types and enum values from the schema.`;
           note: practice.note,
         },
         recent_events: recentEvents,
+        metrics_summary: metricsSummary,
         review_summary: {
           streak,
           best_streak: bestStreak,
@@ -5107,51 +5143,95 @@ Use only supported action types and enum values from the schema.`;
       };
     }
 
-    function buildPracticeCoachSystemPrompt() {
-      return `You are a personal coach embedded in PPP Flow — a productivity operating system. You are coaching the user on a specific life practice or work domain (called a "stream").
+    function buildPracticeCoachSystemPrompt(coachKey) {
+      const domainGuidance = {
+        gym: `DOMAIN: FITNESS / GYM
+Look for in metrics: weight_kg trends (progressive overload), sets × reps volume, session_type balance (upper/lower/cardio), energy ratings, recovery gaps.
+Good example: "Your squat moved from 60kg to 70kg over 3 weeks — solid. But 4 upper vs 1 lower session this month — time to rebalance."
+Watch for: deload needs (4+ weeks without rest), skipped sessions after heavy days, one-dimensional training.`,
+        music: `DOMAIN: MUSIC / PIANO
+Look for in metrics: tempo_bpm progression on same piece, daily consistency vs sporadic long sessions, technique vs repertoire balance.
+Good example: "5 of the last 7 days at 15-20 min each — that consistency matters more than one 2-hour session. Chopin tempo up to 108 bpm from 92 two weeks ago."
+Watch for: plateaus (same piece, same tempo for weeks), skipping fundamentals, avoidance after difficult sessions.`,
+        language: `DOMAIN: LANGUAGE LEARNING
+Look for in metrics: words_reviewed counts, speaking_minutes, lesson progression, exposure consistency.
+Good example: "40 words reviewed yesterday but last speaking session was 8 days ago. Passive recognition and active recall need to stay paired."
+Watch for: vocab review without speaking practice, long gaps (language decays fast), not advancing lessons.`,
+        reading: `DOMAIN: READING
+Look for in metrics: pages per session, pace trends, consistency.
+Good example: "6 of the last 7 days, 15-25 pages each. At this pace you'll finish in about 10 days."
+Watch for: starting books without finishing, inconsistent pages suggesting distraction.`,
+        meditation: `DOMAIN: MEDITATION
+Look for: session length trends, daily consistency, time-of-day patterns.
+Good example: "12 of 14 days — strong. Both misses were Saturdays — consider anchoring to a weekend routine."
+Watch for: dropping off during stressful periods (when it's needed most), all-or-nothing patterns.`,
+        research: `DOMAIN: RESEARCH / DEEP WORK
+Look for in metrics: pomodoro counts, depth vs shallow, topic focus.
+Good example: "4 pomodoros Monday but zero the rest of the week. Research benefits from shorter daily blocks over marathon sessions."
+Watch for: binge-then-gap patterns, shallow tasks masquerading as research.`,
+        revenue: `DOMAIN: REVENUE / VENTURE
+Look for in metrics: lead/prospect counts, pipeline activity, follow-up patterns.
+Good example: "8 leads this week vs 3 last — momentum building. But no follow-ups logged, which is where deals close."
+Watch for: activity without follow-through, inconsistent prospecting.`
+      };
 
-YOUR ROLE:
-You have deep context on this one stream — recent activity, consistency, streaks, targets, and linked tasks. Use this to give specific, grounded coaching. Never give generic advice. Reference actual data: "You've done 5 of the last 7 days" not "Try to be consistent."
+      const domain = domainGuidance[coachKey] || `DOMAIN: GENERAL PRACTICE
+Look for: consistency trends, target progress, patterns in metrics objects, quality indicators in entry text.`;
 
-TONE:
-Warm but direct. Like a coach who genuinely cares about the person's progress. Celebrate real wins. Be honest about gaps. Keep it concise — this appears in a small UI panel.
+      return `You are a personal coach in PPP Flow, a productivity app. You coach one practice at a time.
 
-RESPONSE FORMAT (strict — return valid JSON only, no markdown, no code fences):
+${domain}
+
+READING THE DATA:
+- recent_events[]: log entries with .at (timestamp), .text, .minutes, and .metrics (structured: weight_kg, sets, reps, bpm, pages, words_reviewed, etc). USE THESE — they are your richest signal.
+- review_summary: streak, consistency_pct, weekly_trend (8 weeks of days-done), missed_days_this_week.
+- stream.target_value/target_unit/target_period: user's goal. Compare actual vs target.
+
+COACHING PRINCIPLES:
+1. Lead with data. "Squat 60kg → 70kg in 3 weeks" not "Keep pushing."
+2. Spot patterns the user might miss — weekly cycles, imbalances, plateaus, recovery needs.
+3. One sharp insight beats three generic observations.
+4. If the user asked a question, answer it first. Then add context.
+5. Be concise. Small UI panel. Every word earns its place.
+
+TONE: Warm, direct, no fluff. A coach who's read the log and has something specific to say.
+
+RESPONSE FORMAT (strict JSON only, no markdown, no fences):
 {
-  "summary": "1-2 sentence assessment of current state",
-  "observations": ["specific data-backed observation 1", "observation 2"],
-  "recommendations": ["actionable recommendation 1", "recommendation 2"],
+  "summary": "1-2 sentence headline",
+  "observations": ["data-backed observation", "..."],
+  "recommendations": ["specific actionable rec", "..."],
   "actions": []
 }
+2-3 observations max. 1-3 recommendations max.
 
-ACTIONS (optional — only include when clearly warranted):
-Supported action types: task.create, task.update, task.move, task.delete, commitment.create, commitment.update, life_practice.log, life_practice.update
-
-For task.create actions:
+ACTIONS (optional — only when clearly useful):
+Types: task.create, commitment.create, life_practice.log, life_practice.update
 { "type": "task.create", "task": { "title": "...", "category": "Body/Mind", "importance": "High", "urgency": "Low", "depth": "Deep", "goal": "pg1" }, "place": { "stage": "next_up" } }
-
-For commitment.create actions:
 { "type": "commitment.create", "commitment": { "title": "...", "goal": "pg1" } }
-
-For life_practice.log actions:
 { "type": "life_practice.log", "practice_id": "...", "entry": { "done": true, "minutes": 45, "text": "Back squat 3x5 @70kg", "metrics": { "sets": 3, "reps": 5, "weight_kg": 70 } } }
-
-For life_practice.update actions:
-{ "type": "life_practice.update", "practice_id": "...", "patch": { "target_value": 3, "target_unit": "sessions", "target_period": "week" } }
-
-RULES:
-- Advice without actions is perfectly fine and often preferred
-- Actions must be grounded in the stream context — never propose actions unrelated to this stream
-- Keep observations to 2-3 max, recommendations to 2-3 max
-- If the user asks a specific question, answer it directly before giving general coaching
-- Reference specific dates, numbers, and patterns from the data`;
+{ "type": "life_practice.update", "practice_id": "...", "patch": { "target_value": 4, "target_unit": "sessions", "target_period": "week" } }
+Advice without actions is often better. Never propose actions unrelated to this stream.`;
     }
 
     function buildPracticeCoachUserPrompt(practiceId, userQuestion) {
       const context = buildPracticeCoachContext(practiceId);
       if (!context) return null;
+      const coachKey = context.stream?.coach_key || "general";
+      const metricHints = {
+        gym: "Pay attention to weight_kg, sets, reps, session_type, and energy in the metrics.",
+        music: "Pay attention to tempo_bpm and practice duration trends.",
+        language: "Pay attention to words_reviewed, speaking_minutes, and lesson in the metrics.",
+        reading: "Pay attention to pages and reading consistency.",
+        meditation: "Pay attention to session duration and daily consistency.",
+        research: "Pay attention to pomodoros and depth of focus.",
+        revenue: "Pay attention to lead/prospect counts and follow-up patterns."
+      };
+      const hint = metricHints[coachKey] || "Look for patterns in the metrics and entry text.";
       return `STREAM CONTEXT:
 ${JSON.stringify(context, null, 2)}
+
+${hint}
 
 USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
     }
@@ -5170,7 +5250,8 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       if (btn) btn.classList.add("working");
 
       try {
-        const systemPrompt = buildPracticeCoachSystemPrompt();
+        const coachKey = inferPracticeCoachKey(practice);
+        const systemPrompt = buildPracticeCoachSystemPrompt(coachKey);
         const userPrompt = buildPracticeCoachUserPrompt(practiceId, userQuestion);
         if (!userPrompt) throw new Error("Could not build context for this practice.");
 
@@ -5181,17 +5262,17 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
           let html = "";
           if (parsed.summary) html += `<div class="coach-summary">${escapeHtml(parsed.summary)}</div>`;
           if (Array.isArray(parsed.observations) && parsed.observations.length) {
-            html += `<div class="coach-observations">${parsed.observations.map(o => escapeHtml(o)).join(" · ")}</div>`;
+            html += `<div class="coach-observations">${parsed.observations.map(o => `<div class="coach-obs-item">${escapeHtml(o)}</div>`).join("")}</div>`;
           }
           if (Array.isArray(parsed.recommendations) && parsed.recommendations.length) {
             html += `<div class="coach-recommendations">${parsed.recommendations.map(r => `<div class="coach-rec-item">${escapeHtml(r)}</div>`).join("")}</div>`;
           }
           if (Array.isArray(parsed.actions) && parsed.actions.length) {
             html += `<div class="pd-coach-actions">${parsed.actions.map((a, i) => {
-              const label = a.type === "task.create" ? `Add task: ${a.task?.title || "?"}`
-                : a.type === "commitment.create" ? `Add commitment: ${a.commitment?.title || "?"}`
-                : a.type === "life_practice.log" ? `Log practice entry`
-                : a.type === "life_practice.update" ? `Update practice target`
+              const label = a.type === "task.create" ? `Create task: ${a.task?.title || "?"}`
+                : a.type === "commitment.create" ? `Commit: ${a.commitment?.title || "?"}`
+                : a.type === "life_practice.log" ? `Log: ${a.entry?.text || (a.entry?.minutes ? a.entry.minutes + " min" : "entry")}`
+                : a.type === "life_practice.update" ? `Set target: ${a.patch?.target_value || ""}${a.patch?.target_unit ? " " + a.patch.target_unit : ""}${a.patch?.target_period ? "/" + a.patch.target_period : ""}`
                 : `${a.type}`;
               return `<button class="pd-coach-action-btn" data-coach-action-idx="${i}" data-coach-action-practice="${escapeHtml(practiceId)}">${escapeHtml(label)}</button>`;
             }).join("")}</div>`;
@@ -6280,6 +6361,73 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       }
     }
 
+    function structuredPracticeFieldDefs(practice) {
+      switch (inferPracticeCoachKey(practice)) {
+        case "gym":
+          return [
+            { key: "exercise", label: "Exercise", type: "text", placeholder: "Back squat", full: true },
+            { key: "sets", label: "Sets", type: "number", min: 0, step: 1, placeholder: "3" },
+            { key: "reps", label: "Reps", type: "number", min: 0, step: 1, placeholder: "5" },
+            { key: "weight_kg", label: "Weight (kg)", type: "number", min: 0, step: 0.5, placeholder: "70" },
+            { key: "minutes", label: "Minutes", type: "number", min: 0, step: 1, placeholder: String(practiceDefaultMinutes(practice) || 45) },
+            { key: "energy", label: "Energy /10", type: "number", min: 1, max: 10, step: 1, placeholder: "7" }
+          ];
+        case "music":
+          return [
+            { key: "piece", label: "Piece", type: "text", placeholder: "Chopin Nocturne", full: true },
+            { key: "section", label: "Section", type: "text", placeholder: "Bars 32-48" },
+            { key: "minutes", label: "Minutes", type: "number", min: 0, step: 1, placeholder: String(practiceDefaultMinutes(practice) || 25) },
+            { key: "tempo_bpm", label: "Tempo BPM", type: "number", min: 0, step: 1, placeholder: "72" },
+            { key: "difficulty", label: "Difficulty /10", type: "number", min: 1, max: 10, step: 1, placeholder: "6" }
+          ];
+        case "language":
+          return [
+            { key: "lesson", label: "Lesson / Topic", type: "text", placeholder: "Arabic vocab review", full: true },
+            { key: "minutes", label: "Minutes", type: "number", min: 0, step: 1, placeholder: String(practiceDefaultMinutes(practice) || 20) },
+            { key: "words_reviewed", label: "Words", type: "number", min: 0, step: 1, placeholder: "25" },
+            { key: "speaking_minutes", label: "Speaking min", type: "number", min: 0, step: 1, placeholder: "10" },
+            { key: "difficulty", label: "Difficulty /10", type: "number", min: 1, max: 10, step: 1, placeholder: "5" }
+          ];
+        case "reading":
+          return [
+            { key: "book", label: "Book / Text", type: "text", placeholder: "Deep Work", full: true },
+            { key: "pages", label: "Pages", type: "number", min: 0, step: 1, placeholder: "20" },
+            { key: "minutes", label: "Minutes", type: "number", min: 0, step: 1, placeholder: String(practiceDefaultMinutes(practice) || 25) },
+            { key: "note", label: "Note", type: "text", placeholder: "Key idea or chapter", full: true }
+          ];
+        default:
+          return [];
+      }
+    }
+
+    function renderStructuredPracticeForm(practice) {
+      const fields = structuredPracticeFieldDefs(practice);
+      if (!fields.length) return "";
+      return `
+        <div class="practice-structured" data-practice-structured="${escapeHtml(practice.id)}">
+          <div class="practice-structured-title">Structured Log</div>
+          <div class="practice-structured-grid">
+            ${fields.map(field => `
+              <label class="practice-field ${field.full ? "full" : ""}">
+                <span class="practice-field-label">${escapeHtml(field.label)}</span>
+                <input
+                  type="${field.type === "number" ? "number" : "text"}"
+                  data-practice-field="${escapeHtml(practice.id)}"
+                  data-practice-field-key="${escapeHtml(field.key)}"
+                  ${field.min != null ? `min="${field.min}"` : ""}
+                  ${field.max != null ? `max="${field.max}"` : ""}
+                  ${field.step != null ? `step="${field.step}"` : ""}
+                  placeholder="${escapeHtml(field.placeholder || "")}"
+                />
+              </label>
+            `).join("")}
+          </div>
+          <div class="practice-structured-actions">
+            <button type="button" class="practice-structured-submit" data-practice-structured-submit="${escapeHtml(practice.id)}">Add structured log</button>
+          </div>
+        </div>`;
+    }
+
     function practiceDefaultMinutes(practiceOrId) {
       const practice = typeof practiceOrId === "string" ? getPracticeDefinition(practiceOrId) : practiceOrId;
       const defaultMinutes = Number(practice?.default_minutes);
@@ -6470,6 +6618,153 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       };
     }
 
+    function readStructuredPracticeFields(practiceId, container) {
+      const values = {};
+      container.querySelectorAll(`[data-practice-field="${practiceId}"]`).forEach(input => {
+        const key = String(input.dataset.practiceFieldKey || "").trim();
+        if (!key) return;
+        const raw = String(input.value || "").trim();
+        if (!raw) return;
+        if (input.type === "number") {
+          const parsed = Number.parseFloat(raw);
+          if (Number.isFinite(parsed)) values[key] = parsed;
+        } else {
+          values[key] = raw;
+        }
+      });
+      return values;
+    }
+
+    function buildPracticeEntryFromStructuredValues(practice, values) {
+      const coachKey = inferPracticeCoachKey(practice);
+      const metrics = { ...values };
+      const parts = [];
+      let minutes = Number.isFinite(Number(values.minutes)) ? Number(values.minutes) : practiceDefaultMinutes(practice);
+
+      if (coachKey === "gym") {
+        const exercise = String(values.exercise || "").trim();
+        if (!exercise && !values.sets && !values.reps && !values.weight_kg && !values.energy && !values.minutes) return null;
+        if (exercise) parts.push(exercise);
+        if (values.sets && values.reps) parts.push(`${values.sets}×${values.reps}`);
+        if (values.weight_kg) parts.push(`@${values.weight_kg}kg`);
+        if (minutes) parts.push(`· ${minutes}m`);
+        if (values.energy) parts.push(`· energy ${values.energy}/10`);
+      } else if (coachKey === "music") {
+        const piece = String(values.piece || "").trim();
+        const section = String(values.section || "").trim();
+        if (!piece && !section && !values.minutes && !values.tempo_bpm && !values.difficulty) return null;
+        if (piece) parts.push(piece);
+        if (section) parts.push(section);
+        if (minutes) parts.push(`· ${minutes}m`);
+        if (values.tempo_bpm) parts.push(`· ${values.tempo_bpm} bpm`);
+        if (values.difficulty) parts.push(`· diff ${values.difficulty}/10`);
+      } else if (coachKey === "language") {
+        const lesson = String(values.lesson || "").trim();
+        if (!lesson && !values.minutes && !values.words_reviewed && !values.speaking_minutes && !values.difficulty) return null;
+        if (lesson) parts.push(lesson);
+        if (minutes) parts.push(`· ${minutes}m`);
+        if (values.words_reviewed) parts.push(`· ${values.words_reviewed} words`);
+        if (values.speaking_minutes) parts.push(`· ${values.speaking_minutes}m speaking`);
+        if (values.difficulty) parts.push(`· diff ${values.difficulty}/10`);
+      } else if (coachKey === "reading") {
+        const book = String(values.book || "").trim();
+        const note = String(values.note || "").trim();
+        if (!book && !note && !values.pages && !values.minutes) return null;
+        if (book) parts.push(book);
+        if (values.pages) parts.push(`· ${values.pages} pages`);
+        if (minutes) parts.push(`· ${minutes}m`);
+        if (note) parts.push(`· ${note}`);
+      } else {
+        return null;
+      }
+
+      return {
+        id: uid(),
+        at: new Date().toISOString(),
+        text: parts.join(" ").replace(/\s+·/g, " ·").trim(),
+        minutes,
+        metrics,
+        tags: [],
+        attachments: []
+      };
+    }
+
+    function clearStructuredPracticeFields(practiceId, container) {
+      container.querySelectorAll(`[data-practice-field="${practiceId}"]`).forEach(input => {
+        input.value = "";
+      });
+    }
+
+    function logStructuredPracticeEntry(practiceId, container) {
+      const practice = getPracticeDefinition(practiceId);
+      if (!practice) return false;
+      const values = readStructuredPracticeFields(practiceId, container);
+      const entry = buildPracticeEntryFromStructuredValues(practice, values);
+      if (!entry) return false;
+      appendPracticeEntry(practiceId, entry);
+      clearStructuredPracticeFields(practiceId, container);
+      return true;
+    }
+
+    function summarizePracticeMetrics(practice, recentEvents) {
+      const coachKey = inferPracticeCoachKey(practice);
+      const events = Array.isArray(recentEvents) ? recentEvents : [];
+      const numericTotal = key => events.reduce((sum, event) => sum + (Number(event?.metrics?.[key]) || 0), 0);
+      const numericMax = key => events.reduce((max, event) => Math.max(max, Number(event?.metrics?.[key]) || 0), 0);
+      const numericAvg = key => {
+        const values = events.map(event => Number(event?.metrics?.[key])).filter(value => Number.isFinite(value) && value > 0);
+        if (!values.length) return null;
+        return Math.round((values.reduce((sum, value) => sum + value, 0) / values.length) * 10) / 10;
+      };
+      const recentTextValues = key => Array.from(new Set(
+        events
+          .map(event => String(event?.metrics?.[key] || "").trim())
+          .filter(Boolean)
+      )).slice(0, 5);
+
+      const base = {
+        session_count: events.length,
+        total_minutes: numericTotal("minutes") || events.reduce((sum, event) => sum + (Number(event?.minutes) || 0), 0)
+      };
+
+      if (coachKey === "gym") {
+        return {
+          ...base,
+          exercises: recentTextValues("exercise"),
+          max_weight_kg: numericMax("weight_kg") || null,
+          avg_energy: numericAvg("energy"),
+          total_sets: numericTotal("sets") || null,
+          total_reps: numericTotal("reps") || null
+        };
+      }
+      if (coachKey === "music") {
+        return {
+          ...base,
+          pieces: recentTextValues("piece"),
+          sections: recentTextValues("section"),
+          max_tempo_bpm: numericMax("tempo_bpm") || null,
+          avg_difficulty: numericAvg("difficulty")
+        };
+      }
+      if (coachKey === "language") {
+        return {
+          ...base,
+          lessons: recentTextValues("lesson"),
+          total_words_reviewed: numericTotal("words_reviewed") || null,
+          total_speaking_minutes: numericTotal("speaking_minutes") || null,
+          avg_difficulty: numericAvg("difficulty")
+        };
+      }
+      if (coachKey === "reading") {
+        return {
+          ...base,
+          books: recentTextValues("book"),
+          total_pages: numericTotal("pages") || null
+        };
+      }
+      return base;
+    }
+
     function appendPracticeEntry(practiceId, rawEntry, options = {}) {
       const practice = getPracticeDefinition(practiceId);
       if (!practice) return false;
@@ -6542,9 +6837,10 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         <div class="practice-drawer${isOpen ? " open" : ""}" data-practice-id="${escapeHtml(p.id)}">
           <div class="practice-entries">${entriesHtml}</div>
           ${templates.length ? `<div class="practice-templates">${templates.map((label, index) => `<button type="button" class="practice-template" data-practice-template="${escapeHtml(p.id)}" data-practice-template-idx="${index}">${escapeHtml(label)}</button>`).join("")}</div>` : ""}
+          ${renderStructuredPracticeForm(p)}
           <div class="practice-ai-input">
             <input type="text" placeholder="${escapeHtml(p.logging_hint || defaultPracticeLoggingHint(p))}" data-practice-id="${escapeHtml(p.id)}" />
-            <button type="button" data-log-practice="${escapeHtml(p.id)}">Log</button>
+            <button type="button" data-log-practice="${escapeHtml(p.id)}">Quick log</button>
           </div>
         </div>`;
       }).join("");
@@ -6571,6 +6867,18 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
             const practiceId = logBtn.dataset.logPractice;
             const input = logBtn.closest(".practice-ai-input")?.querySelector("input");
             if (input && practiceId) logPracticeEntry(practiceId, input);
+            return;
+          }
+          /* Structured log submit */
+          const structuredBtn = e.target.closest("[data-practice-structured-submit]");
+          if (structuredBtn) {
+            e.preventDefault();
+            e.stopPropagation();
+            const practiceId = structuredBtn.dataset.practiceStructuredSubmit || "";
+            const container = structuredBtn.closest(`[data-practice-structured="${practiceId}"]`);
+            if (container && practiceId && !logStructuredPracticeEntry(practiceId, container)) {
+              showAiInlineToast("Add at least one structured field before logging.", "error");
+            }
             return;
           }
           /* Template fill */
@@ -6604,6 +6912,16 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         /* Enter key on log inputs */
         listEl.addEventListener("keydown", e => {
           if (e.key !== "Enter") return;
+          const structuredInput = e.target.closest(".practice-structured input[data-practice-field]");
+          if (structuredInput) {
+            e.preventDefault();
+            const practiceId = structuredInput.dataset.practiceField || "";
+            const container = structuredInput.closest(`[data-practice-structured="${practiceId}"]`);
+            if (container && practiceId && !logStructuredPracticeEntry(practiceId, container)) {
+              showAiInlineToast("Add at least one structured field before logging.", "error");
+            }
+            return;
+          }
           const input = e.target.closest(".practice-ai-input input[data-practice-id]");
           if (!input) return;
           e.preventDefault();
