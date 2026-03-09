@@ -4451,22 +4451,56 @@ Use only supported action types and enum values from the schema.`;
       }
       return { error: `Unsupported action type: ${type}` };
     }
+    function resolveTaskTitle(taskId) {
+      const t = getTask(taskId);
+      return t ? `"${t.title}"` : taskId;
+    }
+    function resolvePracticeTitle(practiceId) {
+      const p = (state.life_practices?.practices || []).find(pr => pr.id === practiceId);
+      return p ? p.title : practiceId;
+    }
+    function resolveCommitmentTitle(commitmentId) {
+      const c = findCommitment(commitmentId);
+      return c ? `"${c.title}"` : commitmentId;
+    }
     function describeAiAction(action) {
       if (!action || !action.type) return "Unknown action";
-      if (action.type === "task.create") return `Create task: ${action.task.title} -> ${action.place.stage}`;
-      if (action.type === "task.update") return `Update task ${action.task_id}`;
-      if (action.type === "task.move") return `Move task ${action.task_id} -> ${action.to_stage}`;
-      if (action.type === "task.complete") return `${action.completed ? "Complete" : "Reopen"} task ${action.task_id}`;
-      if (action.type === "task.delete") return `Delete task ${action.task_id}`;
-      if (action.type === "life_practice.create") return `Add life practice: ${action.practice.title}`;
-      if (action.type === "life_practice.update") return `Update life practice ${action.practice_id}`;
-      if (action.type === "life_practice.log") return `Log life practice ${action.practice_id}`;
-      if (action.type === "life_practice.delete") return `Delete life practice ${action.practice_id}`;
+      if (action.type === "task.create") return `Create task: ${action.task.title} → ${humanStage(action.place.stage)}`;
+      if (action.type === "task.update") {
+        const name = resolveTaskTitle(action.task_id);
+        const changes = [];
+        if (action.patch?.title) changes.push(`title → "${action.patch.title}"`);
+        if (action.patch?.importance) changes.push(`importance → ${action.patch.importance}`);
+        if (action.patch?.category) changes.push(`category → ${action.patch.category}`);
+        return `Update ${name}${changes.length ? ": " + changes.join(", ") : ""}`;
+      }
+      if (action.type === "task.move") return `Move ${resolveTaskTitle(action.task_id)} → ${humanStage(action.to_stage)}`;
+      if (action.type === "task.complete") return `${action.completed ? "Complete" : "Reopen"} ${resolveTaskTitle(action.task_id)}`;
+      if (action.type === "task.delete") return `Delete ${resolveTaskTitle(action.task_id)}`;
+      if (action.type === "life_practice.create") return `Add practice: ${action.practice.title}`;
+      if (action.type === "life_practice.update") {
+        const name = resolvePracticeTitle(action.practice_id);
+        const changes = [];
+        if (action.patch?.target_value) changes.push(`target → ${action.patch.target_value} ${action.patch.target_unit || ""}/${action.patch.target_period || ""}`);
+        if (action.patch?.logging_hint) changes.push(`hint → "${action.patch.logging_hint}"`);
+        if (action.patch?.title) changes.push(`title → "${action.patch.title}"`);
+        return `Update ${name}${changes.length ? ": " + changes.join(", ") : ""}`;
+      }
+      if (action.type === "life_practice.log") {
+        const name = resolvePracticeTitle(action.practice_id);
+        const detail = action.entry?.text || (action.entry?.minutes ? `${action.entry.minutes} min` : "done");
+        return `Log ${name}: ${detail}`;
+      }
+      if (action.type === "life_practice.delete") return `Delete ${resolvePracticeTitle(action.practice_id)}`;
       if (action.type === "commitment.create") return `Add commitment: ${action.commitment.title}`;
-      if (action.type === "commitment.update") return `Update commitment ${action.commitment_id}`;
-      if (action.type === "commitment.set_finish_track") return `Set finish track from commitment ${action.commitment_id}`;
-      if (action.type === "focus.update_primary_goal") return `Update primary goal`;
+      if (action.type === "commitment.update") return `Update commitment ${resolveCommitmentTitle(action.commitment_id)}`;
+      if (action.type === "commitment.set_finish_track") return `Lock finish track: ${resolveCommitmentTitle(action.commitment_id)}`;
+      if (action.type === "focus.update_primary_goal") return `Update primary goal: ${action.title}`;
       return action.type;
+    }
+    function humanStage(stage) {
+      const map = { next_up: "Next Up", in_progress: "In Progress", today: "Today", waiting: "Waiting", icebox: "Icebox", done: "Done" };
+      return map[stage] || stage;
     }
     function buildAiProposal(raw) {
       const actionsRaw = Array.isArray(raw?.actions) ? raw.actions : [];
@@ -5347,22 +5381,58 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       }
     }
 
-    /* Apply a single coach-proposed action */
+    /* Apply a single coach-proposed action with undo support */
     function applyCoachAction(practiceId, actionIdx) {
       const responseEl = document.getElementById(`pdCoachResponse_${practiceId}`);
       const actions = responseEl?._coachActions;
       if (!actions || !actions[actionIdx]) return;
       const action = actions[actionIdx];
+
+      /* Snapshot state for undo */
+      const snapshot = JSON.stringify(state);
       const err = applySingleAiAction(action);
       if (err) {
         showAiInlineToast(`Coach action failed: ${err}`, "error");
-      } else {
-        showAiInlineToast("Coach action applied.", "success");
-        saveState("coach_action_applied");
-        render();
-        /* Disable the button */
-        const btn = document.querySelector(`[data-coach-action-idx="${actionIdx}"][data-coach-action-practice="${practiceId}"]`);
-        if (btn) { btn.disabled = true; btn.textContent = "✓ Applied"; }
+        return;
+      }
+
+      /* Store undo batch so receipt Undo button works */
+      aiUndoBatch = {
+        beforeStateJson: snapshot,
+        createdAt: new Date().toISOString(),
+        actionCount: 1
+      };
+
+      const label = describeAiAction(action);
+      saveState("coach_action_applied");
+      render();
+      showAiInlineToast(label, "success");
+
+      /* Disable the button */
+      const btn = document.querySelector(`[data-coach-action-idx="${actionIdx}"][data-coach-action-practice="${practiceId}"]`);
+      if (btn) { btn.disabled = true; btn.textContent = "✓ Applied"; }
+
+      /* Flash highlight on affected elements */
+      if (action.type === "task.create" || action.type === "task.move") {
+        requestAnimationFrame(() => highlightAffectedTask(action));
+      }
+    }
+
+    function highlightAffectedTask(action) {
+      /* Find the task element that was just created/moved and briefly flash it */
+      const title = action.type === "task.create" ? action.task?.title : null;
+      const taskId = action.task_id || null;
+      if (!title && !taskId) return;
+      /* Task items can be .task-item (Execute list) or .pipeline-card (Plan board) */
+      const candidates = document.querySelectorAll(".task-item[data-task-id], .pipeline-card[data-task-id]");
+      for (const el of candidates) {
+        const elTitle = (el.querySelector(".task-title") || el.querySelector(".pipeline-title"))?.textContent || "";
+        const elId = el.dataset?.taskId || "";
+        if ((taskId && elId === taskId) || (title && elTitle.trim() === title.trim())) {
+          el.classList.add("ai-highlight");
+          setTimeout(() => el.classList.remove("ai-highlight"), 2200);
+          break;
+        }
       }
     }
 
