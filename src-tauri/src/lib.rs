@@ -1,6 +1,7 @@
 use std::fs;
 use std::io::ErrorKind;
 use std::path::PathBuf;
+use std::time::Duration;
 
 use chrono::Local;
 use rusqlite::{params, types::Value, Connection};
@@ -32,6 +33,15 @@ struct LedgerEventRecord {
     occurred_at: String,
     payload_json: String,
     created_at: String,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct HttpTextResponse {
+    status: u16,
+    body: String,
+    final_url: String,
+    content_type: Option<String>,
 }
 
 fn app_data_dir(app: &AppHandle) -> Result<PathBuf, String> {
@@ -337,6 +347,48 @@ fn play_native_chime(
     }
 }
 
+#[tauri::command]
+async fn http_get_text(url: String) -> Result<HttpTextResponse, String> {
+    let parsed = reqwest::Url::parse(&url).map_err(|e| e.to_string())?;
+    match parsed.scheme() {
+        "http" | "https" => {}
+        _ => return Err("Only http/https URLs are allowed".to_string()),
+    }
+
+    let host = parsed.host_str().unwrap_or_default();
+    let allowed_hosts = [
+        "api.coingecko.com",
+        "query1.finance.yahoo.com",
+        "api.frankfurter.app",
+    ];
+    if !allowed_hosts.contains(&host) {
+        return Err(format!("Host not allowed: {host}"));
+    }
+
+    let client = reqwest::Client::builder()
+        .timeout(Duration::from_secs(15))
+        .user_agent("PPP Flow Desktop/0.1")
+        .build()
+        .map_err(|e| e.to_string())?;
+
+    let response = client.get(parsed).send().await.map_err(|e| e.to_string())?;
+    let status = response.status().as_u16();
+    let final_url = response.url().to_string();
+    let content_type = response
+        .headers()
+        .get(reqwest::header::CONTENT_TYPE)
+        .and_then(|v| v.to_str().ok())
+        .map(|s| s.to_string());
+    let body = response.text().await.map_err(|e| e.to_string())?;
+
+    Ok(HttpTextResponse {
+        status,
+        body,
+        final_url,
+        content_type,
+    })
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -349,7 +401,8 @@ pub fn run() {
             app_state_path,
             ledger_path,
             backup_path,
-            play_native_chime
+            play_native_chime,
+            http_get_text
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

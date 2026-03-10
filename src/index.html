@@ -2264,7 +2264,11 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         <div class="review-card">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
             <h4 style="margin-bottom:0">Portfolio</h4>
-            <button class="ghost" id="wealthAddHoldingBtn" type="button" style="font-size:.75rem">+ Add Holding</button>
+            <div style="display:flex;align-items:center;gap:8px">
+              <span id="portfolioQuoteStatus" class="tiny" style="color:var(--text2)"></span>
+              <button class="ghost" id="wealthRefreshPricesBtn" type="button" style="font-size:.75rem">Refresh Prices</button>
+              <button class="ghost" id="wealthAddHoldingBtn" type="button" style="font-size:.75rem">+ Add Holding</button>
+            </div>
           </div>
           <div class="wealth-summary-grid">
             <div class="stat-box"><div class="stat-val" id="portfolioMarketValue">$0</div><div class="stat-label">Market Value</div></div>
@@ -10141,6 +10145,9 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
     // ═══════════ WEALTH MODULE ═══════════
     let activeWealthTab = "overview";
     let wealthMonthOffset = 0;
+    let wealthQuoteRefreshInFlight = false;
+    let wealthLastQuoteRefreshAttemptAt = 0;
+    let wealthQuoteStatusText = "";
 
     const WEALTH_ACCOUNT_TYPES = {
       checking: "Checking", savings: "Savings", credit_card: "Credit Card",
@@ -10246,6 +10253,12 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       return `${WEALTH_PROVIDER_LABELS[quote.provider] || quote.provider} · ${formatAgoShort(quote.fetched_at)}`;
     }
 
+    function setPortfolioQuoteStatus(text) {
+      wealthQuoteStatusText = text || "";
+      const el = document.getElementById("portfolioQuoteStatus");
+      if (el) el.textContent = wealthQuoteStatusText;
+    }
+
     function setWealthManualPrice(holdingId, priceAud) {
       const holding = getWealthHolding(holdingId);
       if (!holding) return null;
@@ -10266,6 +10279,193 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       saveState("wealth_set_manual_price");
       renderWealth();
       return quote;
+    }
+
+    async function wealthFetchJson(url) {
+      const invoke = getTauriInvoke();
+      if (invoke) {
+        const resp = await invoke("http_get_text", { url });
+        if (!resp || resp.status < 200 || resp.status >= 300) {
+          throw new Error(`HTTP ${resp?.status || "error"} for ${url}`);
+        }
+        return JSON.parse(resp.body);
+      }
+      const resp = await fetch(url);
+      if (!resp.ok) throw new Error(`HTTP ${resp.status} for ${url}`);
+      return await resp.json();
+    }
+
+    function wealthFxQuoteKey(baseCurrency, quoteCurrency = "AUD") {
+      return `${String(baseCurrency || "").trim().toUpperCase()}:${String(quoteCurrency || "AUD").trim().toUpperCase()}`;
+    }
+
+    function getFxQuote(baseCurrency, quoteCurrency = "AUD") {
+      const key = wealthFxQuoteKey(baseCurrency, quoteCurrency);
+      const quote = state.wealth?.fx_quotes?.[key];
+      if (!quote) return null;
+      return {
+        ...quote,
+        stale: wealthQuoteIsStale(quote)
+      };
+    }
+
+    function applyFxQuoteToMinor(amountMinor, fxQuote) {
+      if (!fxQuote) return amountMinor;
+      const numerator = Number.isFinite(fxQuote.rate_numerator) ? fxQuote.rate_numerator : 1;
+      const denominator = Number.isFinite(fxQuote.rate_denominator) && fxQuote.rate_denominator !== 0 ? fxQuote.rate_denominator : 1;
+      return Math.round((amountMinor * numerator) / denominator);
+    }
+
+    async function ensureFxQuoteToAud(baseCurrency) {
+      const base = String(baseCurrency || "AUD").trim().toUpperCase();
+      if (!base || base === "AUD") {
+        return {
+          base_currency: "AUD",
+          quote_currency: "AUD",
+          rate_numerator: 1,
+          rate_denominator: 1,
+          fetched_at: new Date().toISOString(),
+          stale_after_ms: 24 * 60 * 60 * 1000,
+          source: "identity",
+          stale: false
+        };
+      }
+      const existing = getFxQuote(base, "AUD");
+      if (existing && !existing.stale) return existing;
+      const url = `https://api.frankfurter.app/latest?from=${encodeURIComponent(base)}&to=AUD`;
+      const data = await wealthFetchJson(url);
+      const rate = Number.parseFloat(String(data?.rates?.AUD ?? ""));
+      if (!Number.isFinite(rate) || rate <= 0) throw new Error(`Missing FX rate for ${base}/AUD`);
+      const key = wealthFxQuoteKey(base, "AUD");
+      if (!state.wealth.fx_quotes || typeof state.wealth.fx_quotes !== "object") state.wealth.fx_quotes = {};
+      state.wealth.fx_quotes[key] = {
+        base_currency: base,
+        quote_currency: "AUD",
+        rate_numerator: Math.round(rate * 1_000_000),
+        rate_denominator: 1_000_000,
+        fetched_at: new Date().toISOString(),
+        stale_after_ms: 24 * 60 * 60 * 1000,
+        source: "frankfurter"
+      };
+      return getFxQuote(base, "AUD");
+    }
+
+    function upsertProviderQuote(provider, providerSymbol, patch) {
+      if (!state.wealth?.price_quotes || typeof state.wealth.price_quotes !== "object") state.wealth.price_quotes = {};
+      const key = wealthQuoteKey(provider, providerSymbol);
+      const previous = state.wealth.price_quotes[key] || {};
+      state.wealth.price_quotes[key] = {
+        ...previous,
+        provider,
+        provider_symbol: providerSymbol,
+        ...patch
+      };
+      return state.wealth.price_quotes[key];
+    }
+
+    async function fetchCoinGeckoPrices(holdings) {
+      const ids = Array.from(new Set(holdings.map(h => h.provider_symbol).filter(Boolean)));
+      if (!ids.length) return 0;
+      const url = `https://api.coingecko.com/api/v3/simple/price?ids=${encodeURIComponent(ids.join(","))}&vs_currencies=aud`;
+      const data = await wealthFetchJson(url);
+      let updated = 0;
+      ids.forEach(id => {
+        const priceAud = Number.parseFloat(String(data?.[id]?.aud ?? ""));
+        if (!Number.isFinite(priceAud) || priceAud <= 0) return;
+        upsertProviderQuote("coingecko", id, {
+          price_minor_aud: moneyToMinor(priceAud),
+          quote_currency: "AUD",
+          source_price_raw: priceAud,
+          fetched_at: new Date().toISOString(),
+          stale_after_ms: 5 * 60 * 1000,
+          error: null
+        });
+        updated += 1;
+      });
+      return updated;
+    }
+
+    async function fetchStockQuote(providerSymbol) {
+      const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(providerSymbol)}?range=1d&interval=1d`;
+      const data = await wealthFetchJson(url);
+      const result = data?.chart?.result?.[0];
+      const meta = result?.meta || {};
+      const rawPrice = Number.parseFloat(String(meta.regularMarketPrice ?? meta.previousClose ?? ""));
+      const quoteCurrency = String(meta.currency || "AUD").trim().toUpperCase();
+      if (!Number.isFinite(rawPrice) || rawPrice <= 0) throw new Error(`Missing Yahoo price for ${providerSymbol}`);
+      let priceMinorAud = moneyToMinor(rawPrice);
+      if (quoteCurrency !== "AUD") {
+        const fxQuote = await ensureFxQuoteToAud(quoteCurrency);
+        priceMinorAud = applyFxQuoteToMinor(priceMinorAud, fxQuote);
+      }
+      upsertProviderQuote("yahoo", providerSymbol, {
+        price_minor_aud: priceMinorAud,
+        quote_currency: quoteCurrency,
+        source_price_raw: rawPrice,
+        fetched_at: new Date().toISOString(),
+        stale_after_ms: 60 * 60 * 1000,
+        error: null
+      });
+      return 1;
+    }
+
+    function getRefreshablePortfolioHoldings({ force = false } = {}) {
+      const holdings = (state.wealth?.holdings || []).filter(h => h.provider && h.provider !== "manual" && !getHoldingManualQuote(h));
+      if (force) return holdings;
+      return holdings.filter(h => {
+        const quote = getHoldingProviderQuote(h);
+        return !quote || quote.stale;
+      });
+    }
+
+    function isWealthPortfolioVisible() {
+      const wealthSurface = document.getElementById("tab-wealth");
+      return !!(wealthSurface && wealthSurface.classList.contains("active") && activeWealthTab === "portfolio");
+    }
+
+    async function refreshPortfolioQuotes({ force = false } = {}) {
+      const holdings = getRefreshablePortfolioHoldings({ force });
+      if (!holdings.length) {
+        setPortfolioQuoteStatus("Prices up to date");
+        renderWealthPortfolio();
+        return 0;
+      }
+      if (wealthQuoteRefreshInFlight) return 0;
+      wealthQuoteRefreshInFlight = true;
+      wealthLastQuoteRefreshAttemptAt = Date.now();
+      setPortfolioQuoteStatus(`Refreshing ${holdings.length} quote${holdings.length === 1 ? "" : "s"}...`);
+      let updates = 0;
+      try {
+        const cryptoHoldings = holdings.filter(h => h.provider === "coingecko");
+        const stockSymbols = Array.from(new Set(holdings.filter(h => h.provider === "yahoo").map(h => h.provider_symbol).filter(Boolean)));
+        if (cryptoHoldings.length) updates += await fetchCoinGeckoPrices(cryptoHoldings);
+        for (const symbol of stockSymbols) {
+          updates += await fetchStockQuote(symbol);
+        }
+        if (updates > 0) saveState("wealth_refresh_quotes");
+        const snapshot = getPortfolioSnapshot();
+        setPortfolioQuoteStatus(updates > 0
+          ? `Updated ${updates} quote${updates === 1 ? "" : "s"}${snapshot.missingOrStaleCount ? ` · ${snapshot.missingOrStaleCount} stale/missing` : ""}`
+          : "No new quotes available");
+        renderWealthOverview();
+        renderWealthPortfolio();
+        return updates;
+      } catch (err) {
+        setPortfolioQuoteStatus(`Refresh failed: ${String(err?.message || err)}`);
+        renderWealthPortfolio();
+        return 0;
+      } finally {
+        wealthQuoteRefreshInFlight = false;
+      }
+    }
+
+    async function maybeAutoRefreshPortfolioQuotes() {
+      if (!isWealthPortfolioVisible()) return;
+      if (wealthQuoteRefreshInFlight) return;
+      const staleOrMissing = getRefreshablePortfolioHoldings();
+      if (!staleOrMissing.length) return;
+      if ((Date.now() - wealthLastQuoteRefreshAttemptAt) < 30_000) return;
+      await refreshPortfolioQuotes();
     }
 
     function computeAccountBalance(accountId) {
@@ -10570,6 +10770,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
 
     function renderWealthPortfolio() {
       const snapshot = getPortfolioSnapshot();
+      setPortfolioQuoteStatus(wealthQuoteRefreshInFlight ? "Refreshing prices..." : wealthQuoteStatusText);
       const marketEl = document.getElementById("portfolioMarketValue");
       const costEl = document.getElementById("portfolioCostBasis");
       const gainEl = document.getElementById("portfolioGainLoss");
@@ -10620,6 +10821,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
               .join("")
           : '<div class="wealth-empty-state">No holdings yet. Add one to start tracking portfolio value.</div>';
       }
+      void maybeAutoRefreshPortfolioQuotes();
     }
 
     function renderWealthCashflow() {
@@ -11637,6 +11839,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
     });
     document.getElementById("wealthAddAccountBtn")?.addEventListener("click", () => showAddAccountModal());
     document.getElementById("wealthAddHoldingBtn")?.addEventListener("click", () => showAddHoldingModal());
+    document.getElementById("wealthRefreshPricesBtn")?.addEventListener("click", () => { void refreshPortfolioQuotes({ force: true }); });
     document.getElementById("wealthAddTxnBtn")?.addEventListener("click", () => showAddTxnModal());
     document.getElementById("wealthPrevMonthBtn")?.addEventListener("click", () => { wealthMonthOffset--; renderWealthCashflow(); });
     document.getElementById("wealthNextMonthBtn")?.addEventListener("click", () => { wealthMonthOffset++; renderWealthCashflow(); });
