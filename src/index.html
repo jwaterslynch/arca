@@ -1684,6 +1684,8 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
 .wealth-panel{display:none}
 .wealth-panel.active{display:block}
 .wealth-net-worth{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:8px}
+.wealth-summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:8px}
+.wealth-summary-grid .stat-box{min-height:96px}
 .wealth-accounts-list{display:flex;flex-direction:column;gap:8px}
 .wealth-account-row{
   display:flex;align-items:center;justify-content:space-between;
@@ -1717,6 +1719,35 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
   padding:8px 14px;background:var(--bg);border-radius:var(--radius-sm);font-size:.82rem;
 }
 .wealth-category-bar{height:6px;border-radius:3px;background:var(--accent);margin-top:4px}
+.wealth-allocation-list{display:flex;flex-direction:column;gap:10px}
+.wealth-allocation-item{display:grid;grid-template-columns:140px 1fr 72px;gap:12px;align-items:center;font-size:.82rem}
+.wealth-allocation-label{font-weight:600}
+.wealth-allocation-track{height:10px;border-radius:999px;background:var(--line);overflow:hidden}
+.wealth-allocation-fill{height:100%;border-radius:999px}
+.wealth-allocation-value{font-variant-numeric:tabular-nums;text-align:right;color:var(--text2);font-weight:600}
+.wealth-holdings-list{display:flex;flex-direction:column;gap:8px}
+.wealth-holding-row{
+  display:grid;grid-template-columns:minmax(0,1.2fr) 96px 98px 112px 112px 112px 130px auto;gap:12px;align-items:center;
+  padding:12px 14px;background:var(--bg);border-radius:var(--radius-sm);font-size:.79rem;
+}
+.wealth-holding-head{color:var(--text2);font-size:.72rem;font-weight:700;background:transparent;padding:0 14px}
+.wealth-holding-symbol{font-weight:800;font-size:.9rem}
+.wealth-holding-name{color:var(--text2);font-size:.72rem;display:flex;gap:6px;flex-wrap:wrap}
+.wealth-holding-type{font-size:.68rem;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--line);color:var(--text2)}
+.wealth-holding-num{font-variant-numeric:tabular-nums;text-align:right}
+.wealth-holding-gain.pos{color:var(--accent)}
+.wealth-holding-gain.neg{color:var(--danger)}
+.wealth-holding-source{display:flex;flex-direction:column;gap:4px;align-items:flex-start}
+.wealth-source-badge{font-size:.66rem;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--accent-light);color:var(--accent)}
+.wealth-source-badge.stale{background:rgba(245,158,11,.12);color:#b45309}
+.wealth-source-badge.missing{background:rgba(220,38,38,.08);color:var(--danger)}
+.wealth-source-text{font-size:.68rem;color:var(--text2)}
+.wealth-row-actions{display:flex;gap:6px;justify-content:flex-end}
+.wealth-inline-btn{font-size:.68rem;padding:5px 8px;border-radius:8px;border:1px solid var(--line);background:var(--surface);cursor:pointer;color:var(--text2)}
+.wealth-inline-btn:hover{border-color:var(--accent);color:var(--accent)}
+.wealth-concentration-list{display:flex;flex-direction:column;gap:8px}
+.wealth-concentration-item{padding:10px 12px;background:var(--bg);border-radius:var(--radius-sm);font-size:.78rem}
+.wealth-concentration-item strong{display:block;margin-bottom:2px}
 .wealth-empty-state{font-size:.8rem;color:var(--text2);padding:16px 0;text-align:center}
 /* Wealth modals */
 .wealth-form-grid{display:flex;flex-direction:column;gap:12px;margin-top:12px}
@@ -1732,6 +1763,20 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
   padding:2px 6px;border-radius:4px;
 }
 .wealth-delete-btn:hover{color:var(--danger);background:rgba(220,38,38,.08)}
+@media (max-width: 1100px){
+  .wealth-summary-grid{grid-template-columns:repeat(2,1fr)}
+  .wealth-holding-row,.wealth-holding-head{grid-template-columns:minmax(0,1.2fr) 88px 90px 108px 108px 108px 120px auto}
+}
+@media (max-width: 860px){
+  .wealth-summary-grid,.wealth-net-worth{grid-template-columns:1fr}
+  .wealth-allocation-item{grid-template-columns:110px 1fr 64px}
+  .wealth-holding-head{display:none}
+  .wealth-holding-row{
+    grid-template-columns:1fr 1fr;
+    align-items:start;
+  }
+  .wealth-row-actions{grid-column:1 / -1;justify-content:flex-start}
+}
 </style>
 </head>
 <body>
@@ -2175,6 +2220,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       <!-- Wealth Subtabs -->
       <div class="wealth-subtabs" id="wealthSubtabs">
         <div class="wealth-subtab active" data-wealth-tab="overview">Overview</div>
+        <div class="wealth-subtab" data-wealth-tab="portfolio">Portfolio</div>
         <div class="wealth-subtab" data-wealth-tab="cashflow">Cash Flow</div>
       </div>
 
@@ -2209,6 +2255,55 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           </div>
           <div id="wealthRecentTxns" class="wealth-txn-list">
             <div class="wealth-empty-state">No transactions recorded yet.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Portfolio Subtab -->
+      <div class="wealth-panel" id="wealth-panel-portfolio">
+        <div class="review-card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+            <h4 style="margin-bottom:0">Portfolio</h4>
+            <button class="ghost" id="wealthAddHoldingBtn" type="button" style="font-size:.75rem">+ Add Holding</button>
+          </div>
+          <div class="wealth-summary-grid">
+            <div class="stat-box"><div class="stat-val" id="portfolioMarketValue">$0</div><div class="stat-label">Market Value</div></div>
+            <div class="stat-box"><div class="stat-val" id="portfolioCostBasis">$0</div><div class="stat-label">Cost Basis</div></div>
+            <div class="stat-box"><div class="stat-val" id="portfolioGainLoss">$0</div><div class="stat-label">Unrealized Gain/Loss</div></div>
+            <div class="stat-box"><div class="stat-val" id="portfolioStaleCount">0</div><div class="stat-label">Quotes Needing Refresh</div></div>
+          </div>
+        </div>
+
+        <div class="review-card">
+          <h4 style="margin-bottom:12px">Allocation by Asset Type</h4>
+          <div id="portfolioAllocation" class="wealth-allocation-list">
+            <div class="wealth-empty-state">Add holdings to see allocation.</div>
+          </div>
+        </div>
+
+        <div class="review-card">
+          <h4 style="margin-bottom:12px">Concentration</h4>
+          <div id="portfolioConcentration" class="wealth-concentration-list">
+            <div class="wealth-empty-state">No holdings yet.</div>
+          </div>
+        </div>
+
+        <div class="review-card">
+          <h4 style="margin-bottom:12px">Holdings</h4>
+          <div class="wealth-holdings-list">
+            <div class="wealth-holding-row wealth-holding-head">
+              <div>Holding</div>
+              <div class="wealth-holding-num">Units</div>
+              <div class="wealth-holding-num">Price</div>
+              <div class="wealth-holding-num">Market Value</div>
+              <div class="wealth-holding-num">Cost Basis</div>
+              <div class="wealth-holding-num">Gain/Loss</div>
+              <div>Source</div>
+              <div style="text-align:right">Actions</div>
+            </div>
+            <div id="portfolioHoldingsList">
+              <div class="wealth-empty-state">No holdings yet. Add one to start tracking portfolio value.</div>
+            </div>
           </div>
         </div>
       </div>
@@ -2823,9 +2918,29 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         wealth: {
           accounts: [],
           transactions: [],
-          currency: "AUD"
+          currency: "AUD",
+          holdings: [],
+          price_quotes: {},
+          fx_quotes: {},
+          properties: [],
+          property_estimates: {}
         }
       };
+    }
+
+    function moneyToMinor(value) {
+      if (value == null || value === "") return 0;
+      if (typeof value === "number" && Number.isFinite(value)) return Math.round(value * 100);
+      const cleaned = String(value).trim().replace(/[^0-9.-]/g, "");
+      if (!cleaned) return 0;
+      const parsed = Number.parseFloat(cleaned);
+      return Number.isFinite(parsed) ? Math.round(parsed * 100) : 0;
+    }
+
+    function normalizeMinorAmount(rawMinor, legacyAmount) {
+      const parsedMinor = Number.parseInt(String(rawMinor ?? ""), 10);
+      if (Number.isFinite(parsedMinor)) return parsedMinor;
+      return moneyToMinor(legacyAmount);
     }
 
     function normalizeGoalCode(value) {
@@ -2958,7 +3073,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           id: a.id || uid(),
           name: a.name || "Untitled Account",
           type: ["checking","savings","credit_card","loan","investment","cash","other"].includes(a.type) ? a.type : "checking",
-          balance: Number.isFinite(a.balance) ? a.balance : 0,
+          opening_balance_minor: normalizeMinorAmount(a.opening_balance_minor, a.balance),
           created_at: a.created_at || new Date().toISOString(),
           archived: !!a.archived
         })) : [],
@@ -2967,12 +3082,40 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           date: t.date || todayISO(),
           account_id: t.account_id || null,
           type: t.type === "income" ? "income" : "expense",
-          amount: Number.isFinite(t.amount) ? Math.abs(t.amount) : 0,
+          amount_minor: Math.abs(normalizeMinorAmount(t.amount_minor, t.amount)),
           category: t.category || "Other",
           description: t.description || "",
           created_at: t.created_at || new Date().toISOString()
         })) : [],
-        currency: iw.currency || "AUD"
+        currency: iw.currency || "AUD",
+        holdings: Array.isArray(iw.holdings) ? iw.holdings.map(h => ({
+          id: h.id || uid(),
+          account_id: h.account_id || null,
+          asset_type: ["stock", "etf", "crypto", "cash_fx"].includes(h.asset_type) ? h.asset_type : "stock",
+          display_symbol: String(h.display_symbol || h.ticker || "").trim() || "UNKNOWN",
+          provider_symbol: String(h.provider_symbol || h.display_symbol || h.ticker || "").trim() || "UNKNOWN",
+          provider: ["manual", "coingecko", "yahoo"].includes(h.provider) ? h.provider : "manual",
+          name: String(h.name || h.display_symbol || "Untitled Holding").trim(),
+          units: Number.isFinite(Number(h.units)) ? Number(h.units) : 0,
+          cost_basis_minor: normalizeMinorAmount(h.cost_basis_minor, h.cost_basis),
+          quote_currency: String(h.quote_currency || iw.currency || "AUD").trim().toUpperCase(),
+          added_at: h.added_at || new Date().toISOString()
+        })) : [],
+        price_quotes: iw.price_quotes && typeof iw.price_quotes === "object" ? Object.fromEntries(
+          Object.entries(iw.price_quotes).map(([key, q]) => [key, {
+            provider_symbol: String(q?.provider_symbol || "").trim(),
+            provider: ["manual", "coingecko", "yahoo"].includes(q?.provider) ? q.provider : "manual",
+            price_minor_aud: normalizeMinorAmount(q?.price_minor_aud, q?.price),
+            quote_currency: String(q?.quote_currency || iw.currency || "AUD").trim().toUpperCase(),
+            source_price_raw: Number.isFinite(Number(q?.source_price_raw)) ? Number(q.source_price_raw) : null,
+            fetched_at: q?.fetched_at || new Date().toISOString(),
+            stale_after_ms: Number.isFinite(Number(q?.stale_after_ms)) ? Number(q.stale_after_ms) : null,
+            error: q?.error || null
+          }])
+        ) : {},
+        fx_quotes: iw.fx_quotes && typeof iw.fx_quotes === "object" ? iw.fx_quotes : {},
+        properties: Array.isArray(iw.properties) ? iw.properties : [],
+        property_estimates: iw.property_estimates && typeof iw.property_estimates === "object" ? iw.property_estimates : {}
       };
       return normalized;
     }
@@ -10003,6 +10146,23 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       checking: "Checking", savings: "Savings", credit_card: "Credit Card",
       loan: "Loan", investment: "Investment", cash: "Cash", other: "Other"
     };
+    const WEALTH_ASSET_TYPES = {
+      stock: "Stock",
+      etf: "ETF",
+      crypto: "Crypto",
+      cash_fx: "Cash / FX"
+    };
+    const WEALTH_ASSET_TYPE_COLORS = {
+      stock: "#2563eb",
+      etf: "#16a34a",
+      crypto: "#f59e0b",
+      cash_fx: "#64748b"
+    };
+    const WEALTH_PROVIDER_LABELS = {
+      manual: "Manual",
+      coingecko: "CoinGecko",
+      yahoo: "Yahoo"
+    };
 
     const WEALTH_EXPENSE_CATEGORIES = [
       "Housing", "Transport", "Food", "Utilities", "Insurance",
@@ -10013,18 +10173,99 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       "Salary", "Freelance", "Investment", "Rental", "Refund", "Gift", "Other"
     ];
 
-    function formatCurrency(amount, currency) {
+    function formatCurrency(amountMinor, currency) {
       const c = currency || state.wealth?.currency || "AUD";
+      const amount = Number.isFinite(amountMinor) ? amountMinor / 100 : 0;
       const abs = Math.abs(amount);
       try {
-        return new Intl.NumberFormat("en-AU", { style: "currency", currency: c, minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(amount);
+        return new Intl.NumberFormat("en-AU", { style: "currency", currency: c }).format(amount);
       } catch {
-        return `$${amount < 0 ? "-" : ""}${abs.toLocaleString()}`;
+        return `$${amount < 0 ? "-" : ""}${abs.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
       }
     }
 
     function getWealthAccount(id) {
       return (state.wealth?.accounts || []).find(a => a.id === id) || null;
+    }
+
+    function getWealthHolding(id) {
+      return (state.wealth?.holdings || []).find(h => h.id === id) || null;
+    }
+
+    function wealthQuoteKey(provider, providerSymbol) {
+      return `${String(provider || "manual").trim()}:${String(providerSymbol || "").trim()}`;
+    }
+
+    function wealthManualQuoteKey(holdingId) {
+      return wealthQuoteKey("manual", holdingId);
+    }
+
+    function wealthQuoteIsStale(quote) {
+      if (!quote || !quote.fetched_at || !quote.stale_after_ms) return false;
+      const fetched = Date.parse(quote.fetched_at);
+      if (!Number.isFinite(fetched)) return false;
+      return (Date.now() - fetched) > quote.stale_after_ms;
+    }
+
+    function hydrateWealthQuote(quote) {
+      if (!quote) return null;
+      return { ...quote, stale: wealthQuoteIsStale(quote) };
+    }
+
+    function getHoldingManualQuote(holding) {
+      if (!holding) return null;
+      return hydrateWealthQuote(state.wealth?.price_quotes?.[wealthManualQuoteKey(holding.id)] || null);
+    }
+
+    function getHoldingProviderQuote(holding) {
+      if (!holding || !holding.provider_symbol || !holding.provider || holding.provider === "manual") return null;
+      return hydrateWealthQuote(state.wealth?.price_quotes?.[wealthQuoteKey(holding.provider, holding.provider_symbol)] || null);
+    }
+
+    function getHoldingQuote(holding) {
+      return getHoldingManualQuote(holding) || getHoldingProviderQuote(holding) || null;
+    }
+
+    function formatAgoShort(iso) {
+      const stamp = Date.parse(iso || "");
+      if (!Number.isFinite(stamp)) return "unknown";
+      const diffMs = Math.max(0, Date.now() - stamp);
+      const diffMin = Math.round(diffMs / 60000);
+      if (diffMin < 1) return "just now";
+      if (diffMin < 60) return `${diffMin}m ago`;
+      const diffHours = Math.round(diffMin / 60);
+      if (diffHours < 24) return `${diffHours}h ago`;
+      const diffDays = Math.round(diffHours / 24);
+      return `${diffDays}d ago`;
+    }
+
+    function quoteFreshnessLabel(quote) {
+      if (!quote) return "No quote";
+      if (quote.provider === "manual") return `Manual price · set ${formatAgoShort(quote.fetched_at)}`;
+      if (quote.stale) return `Stale · last updated ${formatAgoShort(quote.fetched_at)}`;
+      return `${WEALTH_PROVIDER_LABELS[quote.provider] || quote.provider} · ${formatAgoShort(quote.fetched_at)}`;
+    }
+
+    function setWealthManualPrice(holdingId, priceAud) {
+      const holding = getWealthHolding(holdingId);
+      if (!holding) return null;
+      const priceMinorAud = moneyToMinor(priceAud);
+      if (!priceMinorAud) return null;
+      if (!state.wealth?.price_quotes) state.wealth.price_quotes = {};
+      const quote = {
+        provider_symbol: holding.id,
+        provider: "manual",
+        price_minor_aud: priceMinorAud,
+        quote_currency: state.wealth?.currency || "AUD",
+        source_price_raw: Number.parseFloat(String(priceAud)) || null,
+        fetched_at: new Date().toISOString(),
+        stale_after_ms: null,
+        error: null
+      };
+      state.wealth.price_quotes[wealthManualQuoteKey(holding.id)] = quote;
+      saveState("wealth_set_manual_price");
+      renderWealth();
+      return quote;
     }
 
     function computeAccountBalance(accountId) {
@@ -10033,9 +10274,9 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       let bal = 0;
       for (const txn of (state.wealth?.transactions || [])) {
         if (txn.account_id !== accountId) continue;
-        bal += txn.type === "income" ? txn.amount : -txn.amount;
+        bal += txn.type === "income" ? (txn.amount_minor || 0) : -(txn.amount_minor || 0);
       }
-      return bal + (account.balance || 0);
+      return bal + (account.opening_balance_minor || 0);
     }
 
     function wealthNetWorthCalc() {
@@ -10050,6 +10291,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
           assets += bal;
         }
       }
+      assets += getPortfolioSnapshot().totalMarketValueMinor;
       return { assets, liabilities, net: assets - liabilities };
     }
 
@@ -10071,13 +10313,63 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       return (state.wealth?.transactions || []).filter(t => t.date >= start && t.date <= end);
     }
 
+    function getHoldingMarketValueMinor(holding) {
+      const quote = getHoldingQuote(holding);
+      if (!quote) return 0;
+      return Math.round((holding.units || 0) * (quote.price_minor_aud || 0));
+    }
+
+    function buildHoldingView(holding) {
+      const quote = getHoldingQuote(holding);
+      const marketValueMinor = getHoldingMarketValueMinor(holding);
+      const costBasisMinor = holding.cost_basis_minor || 0;
+      const gainLossMinor = quote ? marketValueMinor - costBasisMinor : null;
+      return {
+        ...holding,
+        account: getWealthAccount(holding.account_id),
+        quote,
+        marketValueMinor,
+        costBasisMinor,
+        gainLossMinor
+      };
+    }
+
+    function getPortfolioSnapshot() {
+      const holdingViews = (state.wealth?.holdings || []).map(buildHoldingView);
+      const totalMarketValueMinor = holdingViews.reduce((sum, h) => sum + h.marketValueMinor, 0);
+      const totalCostBasisMinor = holdingViews.reduce((sum, h) => sum + h.costBasisMinor, 0);
+      const allocationByType = {};
+      let missingOrStaleCount = 0;
+      holdingViews.forEach(h => {
+        if (!h.quote || h.quote.stale) missingOrStaleCount += 1;
+        if (!h.marketValueMinor) return;
+        allocationByType[h.asset_type] = (allocationByType[h.asset_type] || 0) + h.marketValueMinor;
+      });
+      const concentration = holdingViews
+        .filter(h => h.marketValueMinor > 0 && totalMarketValueMinor > 0)
+        .sort((a, b) => b.marketValueMinor - a.marketValueMinor)
+        .map(h => ({
+          ...h,
+          portfolioSharePct: Math.round((h.marketValueMinor / totalMarketValueMinor) * 100)
+        }));
+      return {
+        holdingViews,
+        totalMarketValueMinor,
+        totalCostBasisMinor,
+        unrealizedGainLossMinor: totalMarketValueMinor - totalCostBasisMinor,
+        allocationByType,
+        missingOrStaleCount,
+        concentration
+      };
+    }
+
     function addWealthAccount(name, type, openingBalance) {
-      if (!state.wealth) state.wealth = { accounts: [], transactions: [], currency: "AUD" };
+      if (!state.wealth) state.wealth = { accounts: [], transactions: [], currency: "AUD", holdings: [], price_quotes: {}, fx_quotes: {}, properties: [], property_estimates: {} };
       const account = {
         id: uid(),
         name: name || "New Account",
         type: type || "checking",
-        balance: Number(openingBalance) || 0,
+        opening_balance_minor: moneyToMinor(openingBalance),
         created_at: new Date().toISOString(),
         archived: false
       };
@@ -10089,20 +10381,25 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
 
     function deleteWealthAccount(accountId) {
       if (!state.wealth) return;
+      const removedHoldingIds = (state.wealth.holdings || []).filter(h => h.account_id === accountId).map(h => h.id);
       state.wealth.accounts = state.wealth.accounts.filter(a => a.id !== accountId);
       state.wealth.transactions = state.wealth.transactions.filter(t => t.account_id !== accountId);
+      state.wealth.holdings = (state.wealth.holdings || []).filter(h => h.account_id !== accountId);
+      if (state.wealth.price_quotes) {
+        removedHoldingIds.forEach(id => { delete state.wealth.price_quotes[wealthManualQuoteKey(id)]; });
+      }
       saveState("wealth_delete_account");
       renderWealth();
     }
 
     function addWealthTransaction(date, accountId, type, amount, category, description) {
-      if (!state.wealth) state.wealth = { accounts: [], transactions: [], currency: "AUD" };
+      if (!state.wealth) state.wealth = { accounts: [], transactions: [], currency: "AUD", holdings: [], price_quotes: {}, fx_quotes: {}, properties: [], property_estimates: {} };
       const txn = {
         id: uid(),
         date: date || todayISO(),
         account_id: accountId || null,
         type: type === "income" ? "income" : "expense",
-        amount: Math.abs(Number(amount) || 0),
+        amount_minor: Math.abs(moneyToMinor(amount)),
         category: category || "Other",
         description: description || "",
         created_at: new Date().toISOString()
@@ -10111,6 +10408,60 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       saveState("wealth_add_txn");
       renderWealth();
       return txn;
+    }
+
+    function addWealthHolding(payload) {
+      if (!state.wealth) {
+        state.wealth = {
+          accounts: [],
+          transactions: [],
+          currency: "AUD",
+          holdings: [],
+          price_quotes: {},
+          fx_quotes: {},
+          properties: [],
+          property_estimates: {}
+        };
+      }
+      if (!Array.isArray(state.wealth.holdings)) state.wealth.holdings = [];
+      const holding = {
+        id: uid(),
+        account_id: payload.account_id || null,
+        asset_type: ["stock", "etf", "crypto", "cash_fx"].includes(payload.asset_type) ? payload.asset_type : "stock",
+        display_symbol: String(payload.display_symbol || "").trim().toUpperCase(),
+        provider_symbol: String(payload.provider_symbol || payload.display_symbol || "").trim(),
+        provider: ["manual", "coingecko", "yahoo"].includes(payload.provider) ? payload.provider : "manual",
+        name: String(payload.name || payload.display_symbol || "Untitled Holding").trim(),
+        units: Number.parseFloat(String(payload.units || "0")) || 0,
+        cost_basis_minor: moneyToMinor(payload.cost_basis),
+        quote_currency: String(payload.quote_currency || state.wealth.currency || "AUD").trim().toUpperCase(),
+        added_at: new Date().toISOString()
+      };
+      state.wealth.holdings.push(holding);
+      if (payload.manual_price && moneyToMinor(payload.manual_price)) {
+        if (!state.wealth.price_quotes) state.wealth.price_quotes = {};
+        state.wealth.price_quotes[wealthManualQuoteKey(holding.id)] = {
+          provider_symbol: holding.id,
+          provider: "manual",
+          price_minor_aud: moneyToMinor(payload.manual_price),
+          quote_currency: state.wealth.currency || "AUD",
+          source_price_raw: Number.parseFloat(String(payload.manual_price)) || null,
+          fetched_at: new Date().toISOString(),
+          stale_after_ms: null,
+          error: null
+        };
+      }
+      saveState("wealth_add_holding");
+      renderWealth();
+      return holding;
+    }
+
+    function deleteWealthHolding(holdingId) {
+      if (!state.wealth) return;
+      state.wealth.holdings = (state.wealth.holdings || []).filter(h => h.id !== holdingId);
+      if (state.wealth.price_quotes) delete state.wealth.price_quotes[wealthManualQuoteKey(holdingId)];
+      saveState("wealth_delete_holding");
+      renderWealth();
     }
 
     function deleteWealthTransaction(txnId) {
@@ -10123,6 +10474,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
     // ── Wealth Rendering ──
     function renderWealth() {
       renderWealthOverview();
+      renderWealthPortfolio();
       renderWealthCashflow();
     }
 
@@ -10181,8 +10533,93 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         <span class="wealth-txn-date">${dateStr}</span>
         <span class="wealth-txn-desc">${escapeHtml(t.description || t.category)}${acct ? ` <span style="color:var(--text2);font-size:.7rem">· ${escapeHtml(acct.name)}</span>` : ""}</span>
         <span class="wealth-txn-cat">${escapeHtml(t.category)}</span>
-        <span class="wealth-txn-amount ${isIncome ? "income" : "expense"}">${isIncome ? "+" : "-"}${formatCurrency(t.amount)}</span>
+        <span class="wealth-txn-amount ${isIncome ? "income" : "expense"}">${isIncome ? "+" : "-"}${formatCurrency(t.amount_minor || 0)}</span>
       </div>`;
+    }
+
+    function renderPortfolioHoldingRow(h) {
+      const isGainPositive = (h.gainLossMinor || 0) >= 0;
+      const sourceClass = !h.quote ? "missing" : h.quote.stale ? "stale" : "";
+      const priceText = h.quote ? formatCurrency(h.quote.price_minor_aud || 0) : "—";
+      const marketText = h.quote ? formatCurrency(h.marketValueMinor) : "—";
+      const gainText = h.quote ? `${isGainPositive ? "+" : "-"}${formatCurrency(Math.abs(h.gainLossMinor || 0))}` : "—";
+      return `<div class="wealth-holding-row" data-holding-id="${escapeHtml(h.id)}">
+        <div>
+          <div class="wealth-holding-symbol">${escapeHtml(h.display_symbol)}</div>
+          <div class="wealth-holding-name">
+            <span>${escapeHtml(h.name)}</span>
+            <span class="wealth-holding-type">${escapeHtml(WEALTH_ASSET_TYPES[h.asset_type] || h.asset_type)}</span>
+            <span>· ${escapeHtml(h.account?.name || "No account")}</span>
+          </div>
+        </div>
+        <div class="wealth-holding-num">${(h.units || 0).toLocaleString(undefined, { maximumFractionDigits: 8 })}</div>
+        <div class="wealth-holding-num">${priceText}</div>
+        <div class="wealth-holding-num">${marketText}</div>
+        <div class="wealth-holding-num">${formatCurrency(h.costBasisMinor)}</div>
+        <div class="wealth-holding-num wealth-holding-gain ${isGainPositive ? "pos" : "neg"}">${gainText}</div>
+        <div class="wealth-holding-source">
+          <span class="wealth-source-badge ${sourceClass}">${h.quote ? (WEALTH_PROVIDER_LABELS[h.quote.provider] || h.quote.provider) : "Missing"}</span>
+          <span class="wealth-source-text">${escapeHtml(quoteFreshnessLabel(h.quote))}</span>
+        </div>
+        <div class="wealth-row-actions">
+          <button class="wealth-inline-btn" type="button" data-set-holding-price="${escapeHtml(h.id)}">${h.quote ? "Update Price" : "Set Price"}</button>
+          <button class="wealth-inline-btn" type="button" data-delete-holding="${escapeHtml(h.id)}">Delete</button>
+        </div>
+      </div>`;
+    }
+
+    function renderWealthPortfolio() {
+      const snapshot = getPortfolioSnapshot();
+      const marketEl = document.getElementById("portfolioMarketValue");
+      const costEl = document.getElementById("portfolioCostBasis");
+      const gainEl = document.getElementById("portfolioGainLoss");
+      const staleEl = document.getElementById("portfolioStaleCount");
+      if (marketEl) marketEl.textContent = formatCurrency(snapshot.totalMarketValueMinor);
+      if (costEl) costEl.textContent = formatCurrency(snapshot.totalCostBasisMinor);
+      if (gainEl) {
+        gainEl.textContent = `${snapshot.unrealizedGainLossMinor >= 0 ? "+" : "-"}${formatCurrency(Math.abs(snapshot.unrealizedGainLossMinor))}`;
+        gainEl.style.color = snapshot.unrealizedGainLossMinor >= 0 ? "var(--accent)" : "var(--danger)";
+      }
+      if (staleEl) staleEl.textContent = String(snapshot.missingOrStaleCount);
+
+      const allocationEl = document.getElementById("portfolioAllocation");
+      if (allocationEl) {
+        const entries = Object.entries(snapshot.allocationByType).sort((a, b) => b[1] - a[1]);
+        allocationEl.innerHTML = entries.length
+          ? entries.map(([assetType, totalMinor]) => {
+              const pct = snapshot.totalMarketValueMinor > 0 ? Math.round((totalMinor / snapshot.totalMarketValueMinor) * 100) : 0;
+              const color = WEALTH_ASSET_TYPE_COLORS[assetType] || "var(--accent)";
+              return `<div class="wealth-allocation-item">
+                <span class="wealth-allocation-label">${escapeHtml(WEALTH_ASSET_TYPES[assetType] || assetType)}</span>
+                <div class="wealth-allocation-track"><div class="wealth-allocation-fill" style="width:${pct}%;background:${color}"></div></div>
+                <span class="wealth-allocation-value">${pct}%</span>
+              </div>`;
+            }).join("")
+          : '<div class="wealth-empty-state">Add holdings with prices to see allocation.</div>';
+      }
+
+      const concentrationEl = document.getElementById("portfolioConcentration");
+      if (concentrationEl) {
+        concentrationEl.innerHTML = snapshot.concentration.length
+          ? snapshot.concentration.slice(0, 3).map((h, index) => {
+              const label = h.portfolioSharePct >= 35 ? "High concentration" : h.portfolioSharePct >= 20 ? "Moderate concentration" : "Diversified";
+              return `<div class="wealth-concentration-item">
+                <strong>${index + 1}. ${escapeHtml(h.display_symbol)} · ${h.portfolioSharePct}% of portfolio</strong>
+                <div>${escapeHtml(h.name)} · ${formatCurrency(h.marketValueMinor)} · ${label}</div>
+              </div>`;
+            }).join("")
+          : '<div class="wealth-empty-state">No priced holdings yet.</div>';
+      }
+
+      const holdingsEl = document.getElementById("portfolioHoldingsList");
+      if (holdingsEl) {
+        holdingsEl.innerHTML = snapshot.holdingViews.length
+          ? snapshot.holdingViews
+              .sort((a, b) => b.marketValueMinor - a.marketValueMinor || a.display_symbol.localeCompare(b.display_symbol))
+              .map(renderPortfolioHoldingRow)
+              .join("")
+          : '<div class="wealth-empty-state">No holdings yet. Add one to start tracking portfolio value.</div>';
+      }
     }
 
     function renderWealthCashflow() {
@@ -10195,10 +10632,10 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       const catTotals = {};
       for (const t of txns) {
         if (t.type === "income") {
-          income += t.amount;
+          income += t.amount_minor || 0;
         } else {
-          expenses += t.amount;
-          catTotals[t.category] = (catTotals[t.category] || 0) + t.amount;
+          expenses += t.amount_minor || 0;
+          catTotals[t.category] = (catTotals[t.category] || 0) + (t.amount_minor || 0);
         }
       }
       const net = income - expenses;
@@ -10274,7 +10711,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         if (submitBtn) submitBtn.addEventListener("click", () => {
           const name = (document.getElementById("wealthAcctName")?.value || "").trim();
           const type = document.getElementById("wealthAcctType")?.value || "checking";
-          const balance = Number(document.getElementById("wealthAcctBalance")?.value) || 0;
+          const balance = document.getElementById("wealthAcctBalance")?.value || "0";
           if (!name) return;
           addWealthAccount(name, type, balance);
           closeWealthModal();
@@ -10345,11 +10782,132 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
           const date = document.getElementById("wealthTxnDate")?.value || todayISO();
           const accountId = document.getElementById("wealthTxnAcct")?.value || null;
           const type = document.getElementById("wealthTxnType")?.value || "expense";
-          const amount = Number(document.getElementById("wealthTxnAmount")?.value) || 0;
+          const amount = document.getElementById("wealthTxnAmount")?.value || "0";
           const category = document.getElementById("wealthTxnCat")?.value || "Other";
           const desc = (document.getElementById("wealthTxnDesc")?.value || "").trim();
-          if (!amount) return;
+          if (!moneyToMinor(amount)) return;
           addWealthTransaction(date, accountId, type, amount, category, desc);
+          closeWealthModal();
+        });
+      });
+    }
+
+    function showAddHoldingModal() {
+      const accounts = (state.wealth?.accounts || []).filter(a => !a.archived);
+      if (!accounts.length) {
+        showWealthModal("Add Holding", '<div class="wealth-empty-state" style="padding:8px 0 0;text-align:left">Add an investment account first, then add holdings into it.</div>');
+        return;
+      }
+      const accountOptions = accounts.map(a => `<option value="${a.id}">${escapeHtml(a.name)}</option>`).join("");
+      const html = `<div class="wealth-form-grid">
+        <div class="wealth-form-row">
+          <div>
+            <label>Account</label>
+            <select id="wealthHoldingAccount">${accountOptions}</select>
+          </div>
+          <div>
+            <label>Asset Type</label>
+            <select id="wealthHoldingAssetType">
+              ${Object.entries(WEALTH_ASSET_TYPES).map(([k, v]) => `<option value="${k}">${v}</option>`).join("")}
+            </select>
+          </div>
+        </div>
+        <div class="wealth-form-row">
+          <div>
+            <label>Display Symbol</label>
+            <input id="wealthHoldingDisplaySymbol" placeholder="e.g. VAS.AX or BTC" />
+          </div>
+          <div>
+            <label>Provider Symbol</label>
+            <input id="wealthHoldingProviderSymbol" placeholder="e.g. VAS.AX or bitcoin" />
+          </div>
+        </div>
+        <div class="wealth-form-row">
+          <div>
+            <label>Name</label>
+            <input id="wealthHoldingName" placeholder="e.g. Vanguard Australian Shares ETF" />
+          </div>
+          <div>
+            <label>Provider</label>
+            <select id="wealthHoldingProvider">
+              <option value="manual">Manual</option>
+              <option value="yahoo">Yahoo</option>
+              <option value="coingecko">CoinGecko</option>
+            </select>
+          </div>
+        </div>
+        <div class="wealth-form-row">
+          <div>
+            <label>Units</label>
+            <input id="wealthHoldingUnits" type="number" step="0.00000001" placeholder="0" />
+          </div>
+          <div>
+            <label>Cost Basis (${escapeHtml(state.wealth?.currency || "AUD")})</label>
+            <input id="wealthHoldingCostBasis" type="number" step="0.01" placeholder="0.00" />
+          </div>
+        </div>
+        <div class="wealth-form-row">
+          <div>
+            <label>Quote Currency</label>
+            <input id="wealthHoldingQuoteCurrency" value="${escapeHtml(state.wealth?.currency || "AUD")}" />
+          </div>
+          <div>
+            <label>Manual Price (${escapeHtml(state.wealth?.currency || "AUD")} / unit)</label>
+            <input id="wealthHoldingManualPrice" type="number" step="0.01" placeholder="Optional" />
+          </div>
+        </div>
+        <button class="primary" id="wealthHoldingSubmit" type="button" style="margin-top:8px">Add Holding</button>
+      </div>`;
+      showWealthModal("Add Holding", html);
+      requestAnimationFrame(() => {
+        document.getElementById("wealthHoldingDisplaySymbol")?.focus();
+        document.getElementById("wealthHoldingSubmit")?.addEventListener("click", () => {
+          const displaySymbol = (document.getElementById("wealthHoldingDisplaySymbol")?.value || "").trim();
+          const providerSymbol = (document.getElementById("wealthHoldingProviderSymbol")?.value || "").trim() || displaySymbol;
+          const payload = {
+            account_id: document.getElementById("wealthHoldingAccount")?.value || null,
+            asset_type: document.getElementById("wealthHoldingAssetType")?.value || "stock",
+            display_symbol: displaySymbol,
+            provider_symbol: providerSymbol,
+            name: (document.getElementById("wealthHoldingName")?.value || "").trim(),
+            provider: document.getElementById("wealthHoldingProvider")?.value || "manual",
+            units: document.getElementById("wealthHoldingUnits")?.value || "0",
+            cost_basis: document.getElementById("wealthHoldingCostBasis")?.value || "0",
+            quote_currency: (document.getElementById("wealthHoldingQuoteCurrency")?.value || state.wealth?.currency || "AUD").trim().toUpperCase(),
+            manual_price: document.getElementById("wealthHoldingManualPrice")?.value || ""
+          };
+          if (!payload.account_id || !payload.display_symbol || !payload.provider_symbol) return;
+          if ((Number.parseFloat(String(payload.units)) || 0) <= 0) return;
+          if (moneyToMinor(payload.cost_basis) < 0) return;
+          addWealthHolding(payload);
+          closeWealthModal();
+        });
+      });
+    }
+
+    function showSetHoldingPriceModal(holdingId) {
+      const holding = getWealthHolding(holdingId);
+      if (!holding) return;
+      const currentQuote = getHoldingManualQuote(holding) || getHoldingProviderQuote(holding);
+      const currentPrice = currentQuote ? ((currentQuote.price_minor_aud || 0) / 100).toFixed(2) : "";
+      const html = `<div class="wealth-form-grid">
+        <div>
+          <label>Holding</label>
+          <div style="font-weight:700">${escapeHtml(holding.display_symbol)} · ${escapeHtml(holding.name)}</div>
+        </div>
+        <div>
+          <label>Manual Price (${escapeHtml(state.wealth?.currency || "AUD")} / unit)</label>
+          <input id="wealthManualPriceInput" type="number" step="0.01" value="${escapeHtml(currentPrice)}" />
+        </div>
+        <button class="primary" id="wealthManualPriceSubmit" type="button" style="margin-top:8px">Save Manual Price</button>
+      </div>`;
+      showWealthModal("Set Manual Price", html);
+      requestAnimationFrame(() => {
+        document.getElementById("wealthManualPriceInput")?.focus();
+        document.getElementById("wealthManualPriceSubmit")?.addEventListener("click", () => {
+          const price = document.getElementById("wealthManualPriceInput")?.value || "0";
+          if (!moneyToMinor(price)) return;
+          setWealthManualPrice(holdingId, price);
           closeWealthModal();
         });
       });
@@ -10397,6 +10955,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       renderAiAssistant();
       renderWeeklyReview();
       renderPlanSidebar();
+      renderWealth();
     }
 
     // ── Plan Sidebar Display ──
@@ -11077,17 +11636,29 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       });
     });
     document.getElementById("wealthAddAccountBtn")?.addEventListener("click", () => showAddAccountModal());
+    document.getElementById("wealthAddHoldingBtn")?.addEventListener("click", () => showAddHoldingModal());
     document.getElementById("wealthAddTxnBtn")?.addEventListener("click", () => showAddTxnModal());
     document.getElementById("wealthPrevMonthBtn")?.addEventListener("click", () => { wealthMonthOffset--; renderWealthCashflow(); });
     document.getElementById("wealthNextMonthBtn")?.addEventListener("click", () => { wealthMonthOffset++; renderWealthCashflow(); });
 
-    // Wealth list delegation (delete account, delete txn)
+    // Wealth list delegation
     document.getElementById("tab-wealth")?.addEventListener("click", e => {
       const delAcct = e.target.closest("[data-delete-account]");
       if (delAcct) {
         const id = delAcct.dataset.deleteAccount;
         if (id && confirm("Delete this account and all its transactions?")) deleteWealthAccount(id);
         return;
+      }
+      const delHolding = e.target.closest("[data-delete-holding]");
+      if (delHolding) {
+        const id = delHolding.dataset.deleteHolding;
+        if (id && confirm("Delete this holding?")) deleteWealthHolding(id);
+        return;
+      }
+      const setPrice = e.target.closest("[data-set-holding-price]");
+      if (setPrice) {
+        const id = setPrice.dataset.setHoldingPrice;
+        if (id) showSetHoldingPriceModal(id);
       }
     });
 
