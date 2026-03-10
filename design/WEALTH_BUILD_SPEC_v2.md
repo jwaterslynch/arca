@@ -500,19 +500,141 @@ refreshAllPropertyEstimates()
 renderProperties()
 ```
 
-## 13) Build Sequence
-1. migrate Phase 0 money fields to integer minor units
-2. extend `state.wealth` schema with holdings / quotes / properties
-3. build Portfolio subtab UI with manual holdings
-4. add manual price override path
+## 13) CSV Watch Folder Import (Phase 2a)
+
+### 13.1 Concept
+Reduce monthly import friction to near-zero. The user designates a local folder, exports bank CSVs into it, and the app auto-ingests new files when the Wealth tab is opened or on a manual "Scan for imports" action.
+
+### 13.2 Folder Structure
+```
+~/Documents/PPP Finance/imports/
+  cba/          # Commonwealth Bank exports
+  stgeorge/     # St George / Westpac group exports
+  other/        # Generic CSV (user maps columns manually on first import)
+```
+
+The subfolder name determines which parser is used. This avoids fragile auto-detection of bank format.
+
+### 13.3 Data Model Extension
+```js
+state.wealth.import_config = {
+  watch_folder: null,        // absolute path set by user (via Tauri folder picker)
+  bank_folders: {
+    cba: { subfolder: "cba", parser: "cba_csv", account_id: null },
+    stgeorge: { subfolder: "stgeorge", parser: "stgeorge_csv", account_id: null }
+  },
+  imported_files: []         // { filename, hash_sha256, imported_at, txn_count, bank }
+}
+```
+
+### 13.4 Import Flow
+1. User sets `watch_folder` once via a folder picker in Wealth settings.
+2. User links each bank subfolder to a Wealth account (e.g. cba/ → "CBA Smart Access").
+3. On Wealth tab open or manual scan:
+   - Tauri command `wealth_scan_import_folder` reads the watch folder.
+   - For each bank subfolder, list CSV files.
+   - Hash each file (SHA-256). Skip files already in `imported_files[]`.
+   - Parse new CSVs using the bank-specific parser.
+   - Return parsed transactions to the frontend.
+4. Frontend shows a confirmation panel: "Found 47 new transactions from CBA (March 2026). Import?"
+5. On confirm: transactions are normalized and appended to `state.wealth.transactions[]`.
+6. File hash is recorded in `imported_files[]` so it is never re-imported.
+
+### 13.5 Bank CSV Parsers
+
+#### CBA (NetBank export)
+Expected columns: `Date`, `Amount`, `Description`, `Balance`
+- Date format: `DD/MM/YYYY`
+- Amount: signed float (negative = debit, positive = credit)
+- Description: merchant/reference string
+- Balance: running balance (use for reconciliation, not import)
+
+```js
+function parseCbaCsv(csvText) {
+  // skip header row
+  // for each row: { date: toISO(DD/MM/YYYY), amount_minor: moneyToMinor(abs(amount)),
+  //   type: amount >= 0 ? "income" : "expense", description, category: "Other" }
+}
+```
+
+#### St George (Internet Banking export)
+Expected columns: `Date`, `Description`, `Debit`, `Credit`, `Balance`
+- Date format: `DD/MM/YYYY`
+- Debit/Credit: separate unsigned columns
+- Description: merchant/reference
+
+```js
+function parseStGeorgeCsv(csvText) {
+  // skip header row
+  // for each row: determine type from which column has a value
+  // { date, amount_minor, type, description, category: "Other" }
+}
+```
+
+### 13.6 Deduplication Rules
+1. Primary: file hash. If a CSV has been imported before (same SHA-256), skip entirely.
+2. Secondary: transaction fingerprint. Hash of (date + amount_minor + description). If an individual transaction matches an existing one in the same account within ±1 day, flag as potential duplicate in the confirmation UI. Do not silently skip — let the user decide.
+
+### 13.7 Category Inference (Later Enhancement)
+For v1, all imported transactions default to category "Other". The user can recategorize manually.
+
+Future: build a simple keyword → category map (e.g. "WOOLWORTHS" → Food, "UBER" → Transport) that learns from the user's manual recategorizations.
+
+### 13.8 Tauri Commands Required
+```rust
+wealth_scan_import_folder {
+  watch_folder: String,
+  bank_folders: { cba: { subfolder, parser }, stgeorge: { ... } },
+  known_hashes: [String]    // already imported file hashes
+}
+// Returns: { new_files: [{ filename, hash, bank, parsed_txns: [...] }] }
+
+wealth_pick_import_folder {}
+// Opens native folder picker, returns selected path
+```
+
+### 13.9 UI
+- Wealth settings section: "Import Folder" with folder picker button and bank → account mapping dropdowns.
+- On Wealth tab open: if new files detected, show a subtle banner: "3 new CSVs found. Review imports →"
+- Import review panel: shows parsed transactions grouped by file, with confirm/skip per file.
+- Import history: list of imported files with date and transaction count, in case user needs to audit.
+
+### 13.10 Functions to Build
+```js
+parseCbaCsv(csvText)
+parseStGeorgeCsv(csvText)
+hashImportFile(content)              // SHA-256 via SubtleCrypto or Tauri
+txnFingerprint(date, amountMinor, description)
+checkDuplicateTxns(newTxns, existingTxns)
+renderImportReview(newFiles)
+confirmImport(fileIndex)
+skipImport(fileIndex)
+renderImportSettings()
+renderImportHistory()
+```
+
+### 13.11 Monthly Workflow (Target UX)
+1. Log into NetBank → Export → Save CSV to `~/Documents/PPP Finance/imports/cba/`
+2. Log into St George → Export → Save CSV to `~/Documents/PPP Finance/imports/stgeorge/`
+3. Open PPP Flow → Click Wealth tab → See "2 new files found" → Review → Confirm
+4. Done. Cash flow and categories update automatically.
+
+Total friction: ~2 minutes per month (down from manual transaction entry).
+
+## 14) Build Sequence
+1. ~~migrate Phase 0 money fields to integer minor units~~ (done)
+2. ~~extend `state.wealth` schema with holdings / quotes / properties~~ (done)
+3. ~~build Portfolio subtab UI with manual holdings~~ (done)
+4. ~~add manual price override path~~ (done)
 5. add Tauri wealth fetch bridge
 6. add CoinGecko adapter
 7. add frankfurter adapter
 8. add Yahoo stock adapter
 9. add quote refresh orchestration and stale/fresh UI
-10. add property records and comparable entry
-11. add static regional growth table
-12. add estimator with confidence/freshness/breakdown
+10. add CSV watch folder import (Tauri commands + parsers + UI)
+11. add property records and comparable entry
+12. add static regional growth table
+13. add estimator with confidence/freshness/breakdown
 
 ## 14) Testing Guidance
 Portfolio test set:
@@ -528,6 +650,14 @@ Property test set:
 2. three comparables with different recency and distance
 3. one manual estimate
 
+CSV import test set:
+1. CBA CSV with 50+ transactions spanning two months
+2. St George CSV with debit/credit split columns
+3. duplicate file re-import (should be skipped)
+4. overlapping transactions across two CSVs (should flag duplicates)
+5. malformed CSV (missing columns, extra commas)
+6. empty CSV file
+
 Edge cases:
 1. stale quotes
 2. missing FX
@@ -535,6 +665,8 @@ Edge cases:
 4. missing comparables
 5. negative net worth
 6. archived accounts
+7. CSV with transactions for a deleted account
+8. watch folder that no longer exists
 
 ## 15) Acceptance Criteria
 
@@ -543,6 +675,15 @@ Edge cases:
 2. User can refresh crypto and equity prices and see updated valuations.
 3. Quotes show source and freshness.
 4. If a source fails, the last known quote remains visible and marked stale.
+
+### CSV Watch Folder Import
+1. User can set a watch folder via native folder picker.
+2. User can map bank subfolders to Wealth accounts.
+3. New CSVs are detected automatically on Wealth tab open.
+4. User sees a review panel before import is confirmed.
+5. Already-imported files (by hash) are never re-imported.
+6. Potential duplicate transactions are flagged, not silently skipped.
+7. Import history is visible and auditable.
 
 ### Property
 1. User can create a property record.
