@@ -1727,6 +1727,13 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
 .wealth-txn-date{color:var(--text2);font-size:.72rem;font-variant-numeric:tabular-nums}
 .wealth-txn-desc{font-weight:500}
 .wealth-txn-cat{font-size:.68rem;color:var(--text2)}
+.wealth-flow-scope-badge{
+  display:inline-flex;align-items:center;margin-left:6px;padding:2px 7px;border-radius:999px;
+  font-size:.6rem;font-weight:700;letter-spacing:.03em;text-transform:uppercase;
+  color:var(--text2);background:var(--surface);vertical-align:middle;
+}
+.wealth-flow-scope-badge.wealth{color:#7c3aed;background:#f3e8ff}
+.wealth-flow-scope-badge.transfer{color:#0369a1;background:#e0f2fe}
 .wealth-txn-amount{font-weight:700;font-variant-numeric:tabular-nums;text-align:right}
 .wealth-txn-amount.income{color:var(--accent)}
 .wealth-txn-amount.expense{color:var(--danger)}
@@ -2458,6 +2465,11 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
                 <button type="button" data-cashflow-range="6month">6M</button>
                 <button type="button" data-cashflow-range="year">Year</button>
               </div>
+              <div class="wealth-segmented" id="cashflowScopeMode" aria-label="Cash flow scope">
+                <button type="button" data-cashflow-scope="household" class="active">Household</button>
+                <button type="button" data-cashflow-scope="all">All</button>
+                <button type="button" data-cashflow-scope="wealth">Wealth</button>
+              </div>
               <input id="wealthMonthPicker" type="month" />
               <button id="wealthPrevMonthBtn" class="ghost" type="button" style="font-size:.75rem;padding:4px 8px;">← Prev</button>
               <button id="wealthNextMonthBtn" class="ghost" type="button" style="font-size:.75rem;padding:4px 8px;">Next →</button>
@@ -3149,6 +3161,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           transactions: [],
           currency: "AUD",
           display_percentages: false,
+          cashflow_scope_filter: "household",
           holdings_sort: { key: "marketValueMinor", dir: "desc" },
           holdings: [],
           price_quotes: {},
@@ -3178,6 +3191,24 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       return moneyToMinor(legacyAmount);
     }
 
+    function normalizeWealthCashflowScope(value) {
+      return ["household", "wealth", "transfer"].includes(value) ? value : "household";
+    }
+
+    function normalizeWealthCashflowScopeFilter(value) {
+      return ["household", "wealth", "all"].includes(value) ? value : "household";
+    }
+
+    function wealthAccountDefaultCashflowScope(accountType) {
+      return accountType === "investment" ? "wealth" : "household";
+    }
+
+    function inferWealthTransactionCashflowScope(txn, account = null) {
+      if (["household", "wealth", "transfer"].includes(txn?.cashflow_scope)) return txn.cashflow_scope;
+      if (txn?.exclude_from_cashflow) return "transfer";
+      return wealthAccountDefaultCashflowScope(account?.type || "checking");
+    }
+
     function normalizeWealthTransactionRecord(txn, defaultCurrency = "AUD") {
       const baseCurrency = String(defaultCurrency || "AUD").trim().toUpperCase() || "AUD";
       const sourceMeta = txn?.source_meta && typeof txn.source_meta === "object" ? { ...txn.source_meta } : null;
@@ -3200,6 +3231,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         source_ref: txn?.source_ref || null,
         source_status: txn?.source_status || null,
         exclude_from_cashflow: !!txn?.exclude_from_cashflow,
+        cashflow_scope: inferWealthTransactionCashflowScope(txn),
         source_meta: sourceMeta,
         created_at: txn?.created_at || new Date().toISOString()
       };
@@ -3389,20 +3421,30 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         ? iw.holdings_sort.key
         : "marketValueMinor";
       const wealthSortDir = iw.holdings_sort?.dir === "asc" ? "asc" : "desc";
+      const wealthAccounts = Array.isArray(iw.accounts) ? iw.accounts.map(a => ({
+        id: a.id || uid(),
+        name: a.name || "Untitled Account",
+        type: ["checking","savings","credit_card","loan","investment","cash","other"].includes(a.type) ? a.type : "checking",
+        opening_balance_minor: normalizeMinorAmount(a.opening_balance_minor, a.balance),
+        created_at: a.created_at || new Date().toISOString(),
+        archived: !!a.archived
+      })) : [];
+      const wealthAccountsById = new Map(wealthAccounts.map(account => [account.id, account]));
+      const wealthTransactions = Array.isArray(iw.transactions)
+        ? iw.transactions.map(t => {
+            const normalizedTxn = normalizeWealthTransactionRecord(t, iw.currency || "AUD");
+            return {
+              ...normalizedTxn,
+              cashflow_scope: inferWealthTransactionCashflowScope(normalizedTxn, wealthAccountsById.get(normalizedTxn.account_id))
+            };
+          })
+        : [];
       normalized.wealth = {
-        accounts: Array.isArray(iw.accounts) ? iw.accounts.map(a => ({
-          id: a.id || uid(),
-          name: a.name || "Untitled Account",
-          type: ["checking","savings","credit_card","loan","investment","cash","other"].includes(a.type) ? a.type : "checking",
-          opening_balance_minor: normalizeMinorAmount(a.opening_balance_minor, a.balance),
-          created_at: a.created_at || new Date().toISOString(),
-          archived: !!a.archived
-        })) : [],
-        transactions: Array.isArray(iw.transactions)
-          ? iw.transactions.map(t => normalizeWealthTransactionRecord(t, iw.currency || "AUD"))
-          : [],
+        accounts: wealthAccounts,
+        transactions: wealthTransactions,
         currency: iw.currency || "AUD",
         display_percentages: !!iw.display_percentages,
+        cashflow_scope_filter: normalizeWealthCashflowScopeFilter(iw.cashflow_scope_filter),
         holdings_sort: { key: wealthSortKey, dir: wealthSortDir },
         holdings: Array.isArray(iw.holdings) ? iw.holdings.map(h => ({
           id: h.id || uid(),
@@ -3441,6 +3483,12 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         last_import_review: normalizeWealthImportReviewRecord(iw.last_import_review),
         import_folder_label: String(iw.import_folder_label || "").trim()
       };
+      if (normalized.wealth.last_import_review?.sample_transactions?.length) {
+        normalized.wealth.last_import_review.sample_transactions = normalized.wealth.last_import_review.sample_transactions.map(txn => ({
+          ...txn,
+          cashflow_scope: inferWealthTransactionCashflowScope(txn, wealthAccountsById.get(txn.account_id))
+        }));
+      }
       return normalized;
     }
 
@@ -10545,6 +10593,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
     let activeWealthTab = "overview";
     let wealthCashflowAnchorMonth = todayISO().slice(0, 7);
     let wealthCashflowRange = "month";
+    let wealthCashflowScopeFilter = normalizeWealthCashflowScopeFilter(state.wealth?.cashflow_scope_filter);
     let wealthCashflowCategoryFilter = "";
     let wealthQuoteRefreshInFlight = false;
     let wealthLastQuoteRefreshAttemptAt = 0;
@@ -10576,6 +10625,11 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       manual: "Manual",
       coingecko: "CoinGecko",
       yahoo: "Yahoo"
+    };
+    const WEALTH_CASHFLOW_SCOPE_LABELS = {
+      household: "Household",
+      wealth: "Wealth Flow",
+      transfer: "Transfer"
     };
 
     const WEALTH_EXPENSE_CATEGORIES = [
@@ -10726,26 +10780,27 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       return (hash >>> 0).toString(16);
     }
 
-    function categorizeImportedTransaction(description, signedMinor) {
+    function categorizeImportedTransaction(description, signedMinor, accountType = "checking") {
       const text = cleanSabDescription(description).toUpperCase();
+      const defaultScope = wealthAccountDefaultCashflowScope(accountType);
       let behavior = null;
       if (text.includes("PAYMENT RECEIVED SABNET")) {
-        behavior = { type: "income", category: WEALTH_TRANSFER_CATEGORY, excludeFromCashflow: true };
+        behavior = { type: "income", category: WEALTH_TRANSFER_CATEGORY, excludeFromCashflow: true, cashflowScope: "transfer" };
       }
       if (!behavior && (text.includes("OPENAI") || text.includes("ANTHROPIC"))) {
-        behavior = { type: "expense", category: "Subscriptions", excludeFromCashflow: false };
+        behavior = { type: "expense", category: "Subscriptions", excludeFromCashflow: false, cashflowScope: defaultScope };
       }
       if (!behavior && (text.includes("UBER") || text.includes("CAREEM"))) {
-        behavior = { type: "expense", category: "Transport", excludeFromCashflow: false };
+        behavior = { type: "expense", category: "Transport", excludeFromCashflow: false, cashflowScope: defaultScope };
       }
       if (!behavior && (text.includes("SALAM AIR") || text.includes("BOOKING.COM") || text.includes("FLIGHTS ON BOOKING") || text.includes("LAUNDRIES") || text.includes("LAUNDRY"))) {
-        behavior = { type: "expense", category: "Travel", excludeFromCashflow: false };
+        behavior = { type: "expense", category: "Travel", excludeFromCashflow: false, cashflowScope: defaultScope };
       }
       if (!behavior && (text.includes("FITNESS FIRST") || text.includes("NAHDI"))) {
-        behavior = { type: "expense", category: "Health", excludeFromCashflow: false };
+        behavior = { type: "expense", category: "Health", excludeFromCashflow: false, cashflowScope: defaultScope };
       }
       if (!behavior && text.includes("STC")) {
-        behavior = { type: "expense", category: "Utilities", excludeFromCashflow: false };
+        behavior = { type: "expense", category: "Utilities", excludeFromCashflow: false, cashflowScope: defaultScope };
       }
       if (!behavior && (
         text.includes("MCDONALDS") || text.includes("HUNGERSTATION") || text.includes("TAMIMI") ||
@@ -10757,24 +10812,24 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         text.includes("CREPE") || text.includes("OLIVE TREE") || text.includes("VERONA") ||
         text.includes("PENNY FARTHING") || text.includes("KET BAKER") || text.includes("THE KILBURN")
       )) {
-        behavior = { type: "expense", category: "Food", excludeFromCashflow: false };
+        behavior = { type: "expense", category: "Food", excludeFromCashflow: false, cashflowScope: defaultScope };
       }
       if (!behavior && text.includes("NINTENDO")) {
-        behavior = { type: "expense", category: "Entertainment", excludeFromCashflow: false };
+        behavior = { type: "expense", category: "Entertainment", excludeFromCashflow: false, cashflowScope: defaultScope };
       }
       if (!behavior && (text.includes("SHOE") || text.includes("TANSWELLS") || text.includes("PRODUCT"))) {
-        behavior = { type: "expense", category: "Shopping", excludeFromCashflow: false };
+        behavior = { type: "expense", category: "Shopping", excludeFromCashflow: false, cashflowScope: defaultScope };
       }
       if (!behavior) {
         behavior = signedMinor > 0
-          ? { type: "income", category: "Other", excludeFromCashflow: false }
-          : { type: "expense", category: "Other", excludeFromCashflow: false };
+          ? { type: "income", category: "Other", excludeFromCashflow: false, cashflowScope: defaultScope }
+          : { type: "expense", category: "Other", excludeFromCashflow: false, cashflowScope: defaultScope };
       }
       return applyWealthCategoryRules(description, behavior);
     }
 
-    function categorizeSabTransaction(description, signedSarMinor) {
-      return categorizeImportedTransaction(description, signedSarMinor);
+    function categorizeSabTransaction(description, signedSarMinor, accountType = "credit_card") {
+      return categorizeImportedTransaction(description, signedSarMinor, accountType);
     }
 
     function applyWealthCategoryRules(description, behavior) {
@@ -10913,7 +10968,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         }
       }
       if (!amountInfo || !amountInfo.signedMinor) return { skip: "zero", status: statusRaw };
-      const behavior = categorizeImportedTransaction(description, amountInfo.signedMinor);
+      const behavior = categorizeImportedTransaction(description, amountInfo.signedMinor, mapping.account_type || "checking");
       const fingerprint = hashStringFnv1a(buildGenericImportFingerprintBase(row, mapping));
       return {
         skip: null,
@@ -10924,6 +10979,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         type: behavior.type,
         category: behavior.category,
         exclude_from_cashflow: behavior.excludeFromCashflow,
+        cashflow_scope: behavior.cashflowScope,
         amount_signed_minor: amountInfo.signedMinor,
         native_amount_minor: amountInfo.amountMinorAbs,
         native_currency: amountInfo.currency || fallbackCurrency || "AUD",
@@ -11334,6 +11390,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
           transactions: [],
           currency: "AUD",
           display_percentages: false,
+          cashflow_scope_filter: "household",
           holdings_sort: { key: "marketValueMinor", dir: "desc" },
           holdings: [],
           price_quotes: {},
@@ -11353,6 +11410,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       if (!Array.isArray(state.wealth.category_rules)) state.wealth.category_rules = [];
       if (!state.wealth.price_quotes || typeof state.wealth.price_quotes !== "object") state.wealth.price_quotes = {};
       if (!state.wealth.fx_quotes || typeof state.wealth.fx_quotes !== "object") state.wealth.fx_quotes = {};
+      state.wealth.cashflow_scope_filter = normalizeWealthCashflowScopeFilter(state.wealth.cashflow_scope_filter);
       if (typeof state.wealth.import_folder_label !== "string") state.wealth.import_folder_label = "";
       return state.wealth;
     }
@@ -11374,7 +11432,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       return { account, created: true };
     }
 
-    function buildSabImportCandidate(row, rowIndex, accountId, occurrence) {
+    function buildSabImportCandidate(row, rowIndex, accountId, occurrence, accountType = "credit_card") {
       const status = trimCsvCell(row["Status"]);
       if (status !== "Billed") return { skip: "status", status };
       const sarAmount = parseSabMoneyCell(row["Amount(SAR)"]);
@@ -11384,7 +11442,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       const description = cleanSabDescription(row["Description"]);
       if (!description) return { skip: "description", status };
       const otherCurrency = parseSabMoneyCell(row["Amount(Other Currency)"]);
-      const behavior = categorizeSabTransaction(description, sarAmount.signedMinor);
+      const behavior = categorizeSabTransaction(description, sarAmount.signedMinor, accountType);
       const fingerprint = hashStringFnv1a(buildSabFingerprintBase(row));
       return {
         skip: null,
@@ -11395,6 +11453,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         type: behavior.type,
         category: behavior.category,
         exclude_from_cashflow: behavior.excludeFromCashflow,
+        cashflow_scope: behavior.cashflowScope,
         amount_sar_signed_minor: sarAmount.signedMinor,
         native_amount_minor: otherCurrency?.amountMinorAbs ?? sarAmount.amountMinorAbs,
         native_currency: otherCurrency?.currency || "SAR",
@@ -11458,7 +11517,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         const base = buildSabFingerprintBase(row);
         const count = (fingerprintCounts.get(base) || 0) + 1;
         fingerprintCounts.set(base, count);
-        const candidate = buildSabImportCandidate(row, rowIndex, account.id, count);
+        const candidate = buildSabImportCandidate(row, rowIndex, account.id, count, account.type);
         if (candidate.skip === "status") {
           summary.skippedStatusRows += 1;
           const key = candidate.status || "Unknown";
@@ -11504,6 +11563,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
           source_ref: candidate.source_ref,
           source_status: candidate.source_status,
           exclude_from_cashflow: candidate.exclude_from_cashflow,
+          cashflow_scope: candidate.cashflow_scope,
           source_meta: {
             ...candidate.source_meta,
             fx_rate_numerator: fxQuote?.rate_numerator || null,
@@ -11653,6 +11713,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
           source_ref: candidate.source_ref,
           source_status: candidate.source_status,
           exclude_from_cashflow: candidate.exclude_from_cashflow,
+          cashflow_scope: candidate.cashflow_scope,
           source_meta: candidate.source_meta
         }, wealth.currency || "AUD");
         imported.push(txn);
@@ -12288,9 +12349,16 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       };
     }
 
-    function wealthTxnsForCashflowRange() {
+    function wealthTxnMatchesCashflowScope(txn, scopeFilter = wealthCashflowScopeFilter) {
+      const scope = normalizeWealthCashflowScope(txn?.cashflow_scope);
+      const filter = normalizeWealthCashflowScopeFilter(scopeFilter);
+      if (filter === "all") return scope !== "transfer";
+      return scope === filter;
+    }
+
+    function wealthTxnsForCashflowRange(scopeFilter = wealthCashflowScopeFilter) {
       const { start, end } = getWealthCashflowRange();
-      return (state.wealth?.transactions || []).filter(t => t.date >= start && t.date <= end);
+      return (state.wealth?.transactions || []).filter(t => t.date >= start && t.date <= end && wealthTxnMatchesCashflowScope(t, scopeFilter));
     }
 
     function wealthTxnsForMonth(offset) {
@@ -12413,6 +12481,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
 
     function addWealthTransaction(date, accountId, type, amount, category, description) {
       const wealth = ensureWealthStateShape();
+      const account = getWealthAccount(accountId);
       const txn = normalizeWealthTransactionRecord({
         date: date || todayISO(),
         account_id: accountId || null,
@@ -12420,6 +12489,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         amount_minor: Math.abs(moneyToMinor(amount)),
         category: category || "Other",
         description: description || "",
+        cashflow_scope: wealthAccountDefaultCashflowScope(account?.type || "checking"),
         currency: wealth.currency || "AUD"
       }, wealth.currency || "AUD");
       wealth.transactions.push(txn);
@@ -12514,6 +12584,10 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       const importedTxns = (state.wealth?.transactions || [])
         .filter(txn => (review.imported_transaction_ids || []).includes(txn.id))
         .sort((a, b) => a.date.localeCompare(b.date));
+      const importedScopeSource = importedTxns.length ? importedTxns : (review.sample_transactions || []);
+      const importedHouseholdCount = importedScopeSource.filter(txn => normalizeWealthCashflowScope(txn.cashflow_scope) === "household").length;
+      const importedWealthCount = importedScopeSource.filter(txn => normalizeWealthCashflowScope(txn.cashflow_scope) === "wealth").length;
+      const importedTransferCount = importedScopeSource.filter(txn => normalizeWealthCashflowScope(txn.cashflow_scope) === "transfer").length;
       const importedStart = importedTxns[0]?.date || review.sample_transactions?.map(txn => txn.date).filter(Boolean).sort()[0] || "";
       const importedEnd = importedTxns[importedTxns.length - 1]?.date || review.sample_transactions?.map(txn => txn.date).filter(Boolean).sort().slice(-1)[0] || "";
       const jumpMonth = importedEnd ? String(importedEnd).slice(0, 7) : "";
@@ -12530,15 +12604,22 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
             <span>${summary.skippedStatusRows || 0} status-skipped</span>
             <span>${summary.skippedMalformedRows || 0} malformed</span>
             <span>${summary.skippedZeroRows || 0} zero-value</span>
+            ${importedHouseholdCount ? `<span>${importedHouseholdCount} household</span>` : ""}
+            ${importedWealthCount ? `<span>${importedWealthCount} wealth flow</span>` : ""}
+            ${importedTransferCount ? `<span>${importedTransferCount} transfer</span>` : ""}
             ${importedStart && importedEnd ? `<span>${escapeHtml(formatDateLabel(importedStart))} – ${escapeHtml(formatDateLabel(importedEnd))}</span>` : ""}
           </div>
         </div>
         ${(review.sample_transactions || []).length
           ? review.sample_transactions.map(txn => {
               const isIncome = txn.type === "income";
+              const scope = normalizeWealthCashflowScope(txn.cashflow_scope);
+              const scopeBadge = scope === "household"
+                ? ""
+                : ` <span class="wealth-flow-scope-badge ${escapeHtml(scope)}">${escapeHtml(WEALTH_CASHFLOW_SCOPE_LABELS[scope] || scope)}</span>`;
               return `<div class="wealth-txn-row">
                 <span class="wealth-txn-date">${escapeHtml(formatDateLabel(txn.date))}</span>
-                <span class="wealth-txn-desc">${escapeHtml(txn.description || txn.category)}</span>
+                <span class="wealth-txn-desc">${escapeHtml(txn.description || txn.category)}${scopeBadge}</span>
                 <span class="wealth-txn-cat">${escapeHtml(txn.category)}</span>
                 <span class="wealth-txn-amount ${isIncome ? "income" : "expense"}">${isIncome ? "+" : "-"}${formatCurrency(txn.amount_minor || 0)}</span>
                 <span style="display:flex;justify-content:flex-end"><button class="wealth-inline-btn" type="button" data-import-rule-from-txn="${escapeHtml(txn.id)}">Rule</button></span>
@@ -12671,10 +12752,12 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
     function renderTxnRow(t) {
       const isIncome = t.type === "income";
       const acct = getWealthAccount(t.account_id);
+      const scope = normalizeWealthCashflowScope(t.cashflow_scope);
+      const scopeBadge = scope === "household" ? "" : ` <span class="wealth-flow-scope-badge ${scope}">${escapeHtml(WEALTH_CASHFLOW_SCOPE_LABELS[scope] || scope)}</span>`;
       const dateStr = (() => { try { return new Date(t.date + "T00:00:00").toLocaleDateString("en-AU", { day:"numeric", month:"short" }); } catch { return t.date; } })();
       return `<div class="wealth-txn-row" data-txn-id="${escapeHtml(t.id)}">
         <span class="wealth-txn-date">${dateStr}</span>
-        <span class="wealth-txn-desc">${escapeHtml(t.description || t.category)}${acct ? ` <span style="color:var(--text2);font-size:.7rem">· ${escapeHtml(acct.name)}</span>` : ""}</span>
+        <span class="wealth-txn-desc">${escapeHtml(t.description || t.category)}${acct ? ` <span style="color:var(--text2);font-size:.7rem">· ${escapeHtml(acct.name)}</span>` : ""}${scopeBadge}</span>
         <span class="wealth-txn-cat">${escapeHtml(t.category)}</span>
         <span class="wealth-txn-amount ${isIncome ? "income" : "expense"}">${isIncome ? "+" : "-"}${formatCurrency(t.amount_minor || 0)}</span>
       </div>`;
@@ -12809,18 +12892,31 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       document.querySelectorAll("#cashflowRangeMode [data-cashflow-range]").forEach(btn => {
         btn.classList.toggle("active", btn.getAttribute("data-cashflow-range") === wealthCashflowRange);
       });
+      document.querySelectorAll("#cashflowScopeMode [data-cashflow-scope]").forEach(btn => {
+        btn.classList.toggle("active", btn.getAttribute("data-cashflow-scope") === wealthCashflowScopeFilter);
+      });
+      const allRangeTxns = wealthTxnsForCashflowRange("all");
+      const txns = wealthTxnsForCashflowRange();
+      const hiddenWealthFlowCount = allRangeTxns.filter(t => normalizeWealthCashflowScope(t.cashflow_scope) === "wealth").length;
+      const hiddenHouseholdFlowCount = allRangeTxns.filter(t => normalizeWealthCashflowScope(t.cashflow_scope) === "household").length;
       const rangeMeta = document.getElementById("cashflowRangeMeta");
       if (rangeMeta) {
-        rangeMeta.textContent = rangeInfo.months === 1
-          ? `Showing imported wealth cash-flow activity for ${rangeInfo.label}.`
-          : `Showing ${rangeInfo.months} months of imported wealth cash-flow activity ending ${getMonthRangeFromKey(rangeInfo.anchorMonth).label}.`;
+        const rangeText = rangeInfo.months === 1
+          ? `Showing ${rangeInfo.label}.`
+          : `Showing ${rangeInfo.months} months ending ${getMonthRangeFromKey(rangeInfo.anchorMonth).label}.`;
+        const scopeText = wealthCashflowScopeFilter === "wealth"
+          ? "Viewing wealth-account flows only."
+          : wealthCashflowScopeFilter === "all"
+            ? "Viewing household and wealth-account flows. Transfers stay excluded."
+            : hiddenWealthFlowCount
+              ? `Viewing household cash flow only. ${hiddenWealthFlowCount} wealth-account flow${hiddenWealthFlowCount === 1 ? "" : "s"} excluded.`
+              : "Viewing household cash flow only.";
+        rangeMeta.textContent = `${rangeText} ${scopeText}`;
       }
 
-      const txns = wealthTxnsForCashflowRange();
       let income = 0, expenses = 0;
       const catTotals = {};
       for (const t of txns) {
-        if (t.exclude_from_cashflow) continue;
         if (t.type === "income") {
           income += t.amount_minor || 0;
         } else {
@@ -12887,7 +12983,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
     function wealthCategorySummaryForTxns(txns) {
       const totals = {};
       txns.forEach(t => {
-        if (t.exclude_from_cashflow || t.type !== "expense") return;
+        if (t.type !== "expense") return;
         totals[t.category] = (totals[t.category] || 0) + (t.amount_minor || 0);
       });
       return Object.entries(totals)
@@ -12897,7 +12993,8 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
 
     function buildWealthCoachSnapshot() {
       const rangeInfo = getWealthCashflowRange();
-      const txns = wealthTxnsForCashflowRange().filter(t => !t.exclude_from_cashflow);
+      const txns = wealthTxnsForCashflowRange();
+      const allRangeTxns = wealthTxnsForCashflowRange("all");
       const filteredTxns = wealthCashflowCategoryFilter
         ? txns.filter(t => t.category === wealthCashflowCategoryFilter)
         : txns;
@@ -12935,12 +13032,19 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
           range: rangeInfo.range,
           months: rangeInfo.months,
           anchor_month: rangeInfo.anchorMonth,
+          scope_filter: wealthCashflowScopeFilter,
           start_date: rangeInfo.start,
           end_date: rangeInfo.end,
           selected_category: wealthCashflowCategoryFilter || null,
           income_minor: incomeMinor,
           expense_minor: expenseMinor,
           net_minor: incomeMinor - expenseMinor,
+          hidden_wealth_flow_count: wealthCashflowScopeFilter === "household"
+            ? allRangeTxns.filter(t => normalizeWealthCashflowScope(t.cashflow_scope) === "wealth").length
+            : 0,
+          hidden_household_flow_count: wealthCashflowScopeFilter === "wealth"
+            ? allRangeTxns.filter(t => normalizeWealthCashflowScope(t.cashflow_scope) === "household").length
+            : 0,
           category_summary: categorySummary,
           visible_transactions: filteredTxns
             .sort((a, b) => b.date.localeCompare(a.date) || b.created_at.localeCompare(a.created_at))
@@ -12949,6 +13053,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
               date: t.date,
               description: t.description,
               category: t.category,
+              cashflow_scope: t.cashflow_scope,
               type: t.type,
               amount_minor: t.amount_minor,
               account: getWealthAccount(t.account_id)?.name || null
@@ -14279,6 +14384,16 @@ Data caveat`;
       if (rangeBtn) {
         wealthCashflowRange = String(rangeBtn.getAttribute("data-cashflow-range") || "month");
         wealthCashflowCategoryFilter = "";
+        renderWealthCashflow();
+        renderWealthCoach();
+        return;
+      }
+      const scopeBtn = e.target.closest("[data-cashflow-scope]");
+      if (scopeBtn) {
+        wealthCashflowScopeFilter = normalizeWealthCashflowScopeFilter(scopeBtn.getAttribute("data-cashflow-scope") || "household");
+        wealthCashflowCategoryFilter = "";
+        ensureWealthStateShape().cashflow_scope_filter = wealthCashflowScopeFilter;
+        saveState("wealth_set_cashflow_scope_filter");
         renderWealthCashflow();
         renderWealthCoach();
         return;
