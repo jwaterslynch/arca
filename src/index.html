@@ -1455,6 +1455,15 @@ button.warn {
 .ai-provider-switch { display:flex; gap:4px; }
 .ai-provider-btn { padding:4px 10px; border-radius:20px; border:1px solid var(--line); font-size:.7rem; font-weight:600; }
 .ai-provider-btn.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+.ai-provider-pill {
+  display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:999px;
+  font-size:.65rem;font-weight:600;letter-spacing:.02em;color:var(--text2);
+  background:var(--surface, var(--bg));border:1px solid var(--line);white-space:nowrap;
+  user-select:none;cursor:default;opacity:.7;transition:opacity .15s;
+}
+.ai-provider-pill:hover{opacity:1}
+.ai-provider-pill[data-privacy="local"]{border-color:var(--green,#22c55e);color:var(--green,#22c55e)}
+.ai-provider-pill[data-privacy="warning"]{border-color:#e8a308;color:#b8860b}
 .ai-inline-toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:var(--text); color:#fff; padding:10px 20px; border-radius:var(--radius); font:600 .85rem var(--font); box-shadow:var(--shadow-lg); z-index:100; }
 
 /* Life practices */
@@ -1674,7 +1683,8 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
 
 /* ═══════════ WEALTH TAB ═══════════ */
 .wealth-layout{padding:20px 24px;max-width:900px;margin:0 auto;overflow-y:auto;max-height:calc(100vh - 56px)}
-.wealth-subtabs{display:flex;gap:0;border-bottom:2px solid var(--line);margin-bottom:16px}
+.wealth-tabs-row{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:16px}
+.wealth-subtabs{display:flex;gap:0;border-bottom:2px solid var(--line);margin-bottom:0}
 .wealth-subtab{
   padding:8px 20px;font:600 .82rem var(--font);color:var(--text2);cursor:pointer;
   border:none;background:transparent;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s;
@@ -1683,6 +1693,13 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
 .wealth-subtab:hover:not(.active){color:var(--text)}
 .wealth-panel{display:none}
 .wealth-panel.active{display:block}
+.wealth-toolbar-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.wealth-segmented{display:inline-flex;align-items:center;gap:4px;padding:4px;border:1px solid var(--line);border-radius:999px;background:var(--surface)}
+.wealth-segmented button{
+  border:none;background:transparent;color:var(--text2);cursor:pointer;
+  font:600 .72rem var(--font);padding:5px 10px;border-radius:999px;transition:all .15s;
+}
+.wealth-segmented button.active{background:var(--accent-light);color:var(--accent)}
 .wealth-net-worth{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:8px}
 .wealth-summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:8px}
 .wealth-summary-grid .stat-box{min-height:96px}
@@ -1718,7 +1735,17 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
   display:flex;align-items:center;justify-content:space-between;
   padding:8px 14px;background:var(--bg);border-radius:var(--radius-sm);font-size:.82rem;
 }
+.wealth-category-btn{width:100%;border:0;background:none;padding:0;text-align:left;cursor:pointer;color:inherit}
+.wealth-category-btn:hover .wealth-category-bar,
+.wealth-category-btn.active .wealth-category-bar{filter:brightness(.92)}
 .wealth-category-bar{height:6px;border-radius:3px;background:var(--accent);margin-top:4px}
+.wealth-category-filter{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border-radius:var(--radius-sm);background:var(--accent-light);font-size:.78rem;color:var(--text2);margin-bottom:10px}
+.wealth-range-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.wealth-range-meta{font-size:.75rem;color:var(--text2)}
+.wealth-range-controls input[type="month"]{
+  padding:7px 10px;border:1px solid var(--line);border-radius:10px;background:var(--surface);
+  font:.74rem var(--font);color:var(--text)
+}
 .wealth-allocation-list{display:flex;flex-direction:column;gap:10px}
 .wealth-allocation-item{display:grid;grid-template-columns:140px 1fr 72px;gap:12px;align-items:center;font-size:.82rem}
 .wealth-allocation-label{font-weight:600}
@@ -1731,10 +1758,18 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
   padding:12px 14px;background:var(--bg);border-radius:var(--radius-sm);font-size:.79rem;
 }
 .wealth-holding-head{color:var(--text2);font-size:.72rem;font-weight:700;background:transparent;padding:0 14px}
+.wealth-sort-btn{
+  border:none;background:transparent;padding:0;cursor:pointer;display:inline-flex;align-items:center;gap:4px;
+  font:700 .72rem var(--font);color:var(--text2);
+}
+.wealth-sort-btn.active{color:var(--text)}
+.wealth-sort-btn:hover{color:var(--text)}
+.wealth-sort-indicator{font-size:.65rem;color:var(--text2)}
 .wealth-holding-symbol{font-weight:800;font-size:.9rem}
 .wealth-holding-name{color:var(--text2);font-size:.72rem;display:flex;gap:6px;flex-wrap:wrap}
 .wealth-holding-type{font-size:.68rem;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--line);color:var(--text2)}
 .wealth-holding-num{font-variant-numeric:tabular-nums;text-align:right}
+.wealth-holding-num.negative{color:var(--danger)}
 .wealth-holding-gain.pos{color:var(--accent)}
 .wealth-holding-gain.neg{color:var(--danger)}
 .wealth-holding-source{display:flex;flex-direction:column;gap:4px;align-items:flex-start}
@@ -1744,7 +1779,11 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
 .wealth-source-text{font-size:.68rem;color:var(--text2)}
 .wealth-row-actions{display:flex;gap:6px;justify-content:flex-end}
 .wealth-inline-btn{font-size:.68rem;padding:5px 8px;border-radius:8px;border:1px solid var(--line);background:var(--surface);cursor:pointer;color:var(--text2)}
+.wealth-inline-btn.warn{color:var(--danger);border-color:rgba(220,38,38,.22)}
 .wealth-inline-btn:hover{border-color:var(--accent);color:var(--accent)}
+.wealth-rule-meta{font-size:.72rem;color:var(--text2);display:flex;gap:8px;flex-wrap:wrap}
+.wealth-folder-file{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 14px;background:var(--bg);border-radius:var(--radius-sm);font-size:.8rem}
+.wealth-folder-file small{display:block;color:var(--text2);margin-top:2px}
 .wealth-concentration-list{display:flex;flex-direction:column;gap:8px}
 .wealth-concentration-item{padding:10px 12px;background:var(--bg);border-radius:var(--radius-sm);font-size:.78rem}
 .wealth-concentration-item strong{display:block;margin-bottom:2px}
@@ -1763,11 +1802,56 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
   padding:2px 6px;border-radius:4px;
 }
 .wealth-delete-btn:hover{color:var(--danger);background:rgba(220,38,38,.08)}
+.wealth-coach-backdrop{
+  position:fixed;inset:56px 0 0 0;background:rgba(0,0,0,.16);z-index:940;
+  opacity:0;pointer-events:none;transition:opacity .18s ease
+}
+.wealth-coach-backdrop.open{opacity:1;pointer-events:auto}
+.wealth-coach-drawer{
+  position:fixed;top:56px;right:0;bottom:0;width:min(460px,42vw);min-width:340px;background:var(--surface);
+  border-left:1px solid var(--line);box-shadow:var(--shadow-lg);z-index:950;display:flex;flex-direction:column;
+  transform:translateX(100%);transition:transform .22s ease
+}
+.wealth-coach-drawer.open{transform:translateX(0)}
+.wealth-coach-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:18px 18px 12px;border-bottom:1px solid var(--line)}
+.wealth-coach-head h4{margin:0}
+.wealth-coach-meta{font-size:.72rem;color:var(--text2);display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
+.wealth-coach-body{flex:1;overflow:auto;padding:16px 18px;display:flex;flex-direction:column;gap:10px;background:var(--bg)}
+.wealth-coach-msg{max-width:92%;padding:12px 14px;border-radius:18px;font-size:.82rem;line-height:1.5;white-space:pre-wrap}
+.wealth-coach-msg.user{align-self:flex-end;background:#eaf7f2}
+.wealth-coach-msg.assistant{align-self:flex-start;background:var(--surface);border:1px solid var(--line)}
+.wealth-coach-notice{
+  align-self:stretch;
+  padding:12px 14px;
+  border:1px solid var(--line);
+  border-radius:16px;
+  background:var(--surface);
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+.wealth-coach-notice.warning{border-color:#e8a308;background:#fffaf0}
+.wealth-coach-notice-title{font-size:.8rem;font-weight:700;color:var(--text)}
+.wealth-coach-notice-copy{font-size:.76rem;line-height:1.5;color:var(--text2)}
+.wealth-coach-notice-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.wealth-coach-empty{font-size:.78rem;color:var(--text2);line-height:1.5}
+.wealth-coach-foot{padding:14px 18px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:10px}
+.wealth-coach-actions{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.wealth-coach-input-row{display:flex;align-items:flex-end;gap:10px}
+.wealth-coach-input-row textarea{
+  flex:1;min-height:42px;max-height:180px;resize:none;border:1px solid var(--line);
+  border-radius:14px;padding:11px 13px;font:inherit;background:var(--surface);color:var(--text)
+}
+.wealth-coach-input-row textarea:focus{outline:none;border-color:var(--accent)}
+.wealth-coach-send{height:42px;padding:0 16px;border:0;border-radius:12px;background:var(--accent);color:#fff;font-weight:700;cursor:pointer}
+.wealth-coach-send[disabled]{opacity:.6;cursor:default}
 @media (max-width: 1100px){
   .wealth-summary-grid{grid-template-columns:repeat(2,1fr)}
   .wealth-holding-row,.wealth-holding-head{grid-template-columns:minmax(0,1.2fr) 88px 90px 108px 108px 108px 120px auto}
 }
 @media (max-width: 860px){
+  .wealth-tabs-row{align-items:stretch;flex-direction:column}
+  .wealth-toolbar-controls{width:100%;justify-content:flex-start}
   .wealth-summary-grid,.wealth-net-worth{grid-template-columns:1fr}
   .wealth-allocation-item{grid-template-columns:110px 1fr 64px}
   .wealth-holding-head{display:none}
@@ -1776,6 +1860,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
     align-items:start;
   }
   .wealth-row-actions{grid-column:1 / -1;justify-content:flex-start}
+  .wealth-coach-drawer{width:100vw;min-width:0}
 }
 </style>
 </head>
@@ -1831,6 +1916,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         <div id="aiInlineChatWrap" class="ai-inline-chat-wrap">
           <div class="ai-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 1L14.5 8.5L22 12L14.5 15.5L12 23L9.5 15.5L2 12L9.5 8.5Z"/></svg></div>
           <textarea id="aiInlineUserInput" rows="1" placeholder="Add a task, brain dump, or ask anything...  ⌘K"></textarea>
+          <span id="aiInlineProviderPill" class="ai-provider-pill tiny" title="Active AI provider"></span>
           <div class="ai-mode-toggle auto" id="aiInlineAutoApplyWrap" role="switch" aria-checked="true" tabindex="0" title="Auto mode: valid AI changes apply immediately.">
             <input id="aiInlineAutoApplyToggle" type="checkbox" style="display:none" />
             <div class="toggle-dot"></div>
@@ -2014,6 +2100,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
                   <button class="ai-provider-btn" type="button" data-ai-provider-btn="grok">Grok</button>
                   <button class="ai-provider-btn" type="button" data-ai-provider-btn="gemini">Gemini</button>
                   <button class="ai-provider-btn" type="button" data-ai-provider-btn="deepseek">DeepSeek</button>
+                  <button class="ai-provider-btn" type="button" data-ai-provider-btn="ollama" title="100% local — nothing leaves your machine">Ollama</button>
                 </div>
                 <button id="aiToggleConfigBtn" class="ghost" type="button">Settings</button>
               </div>
@@ -2026,11 +2113,13 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
                   <select id="aiProviderInput">
                     <option value="openai">OpenAI</option><option value="anthropic">Anthropic</option>
                     <option value="gemini">Google Gemini</option><option value="grok">xAI / Grok</option>
-                    <option value="deepseek">DeepSeek</option><option value="openai_compatible">OpenAI-compatible</option>
+                    <option value="deepseek">DeepSeek</option><option value="ollama">Ollama (Local)</option><option value="openai_compatible">OpenAI-compatible</option>
                   </select>
                 </label>
                 <label class="tiny" style="display:grid;gap:4px;"><span>API Key</span><input id="aiApiKeyInput" type="password" autocomplete="off" placeholder="sk-..." /></label>
+                <label class="tiny" style="display:flex;gap:6px;align-items:center;"><input id="aiSessionOnlyKeyInput" type="checkbox" style="margin:0;" /><span>Don't save key (enter each session)</span></label>
               </div>
+              <div id="aiPrivacyBadge" class="tiny" style="margin-top:6px;padding:6px 10px;border-radius:6px;border:1px solid var(--line);background:var(--card);line-height:1.4;"></div>
               <details style="margin-top:8px;"><summary class="tiny">Advanced</summary>
                 <div class="ai-config-grid" style="margin-top:8px;">
                   <label class="tiny" style="display:grid;gap:4px;"><span>Model</span>
@@ -2059,6 +2148,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
                 <button id="aiSendBtn" class="primary" type="button">Send</button>
                 <button id="aiClearChatBtn" class="ghost" type="button">Clear</button>
                 <span id="aiBusyStatus" class="tiny"></span>
+                <span id="aiChatProviderPill" class="ai-provider-pill tiny" title="Active AI provider" style="margin-left:auto;"></span>
               </div>
             </div>
             <div id="aiProposalWrap" class="ai-proposal" hidden>
@@ -2218,10 +2308,13 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
   <div class="surface tab-content" id="tab-wealth">
     <div class="wealth-layout">
       <!-- Wealth Subtabs -->
-      <div class="wealth-subtabs" id="wealthSubtabs">
-        <div class="wealth-subtab active" data-wealth-tab="overview">Overview</div>
-        <div class="wealth-subtab" data-wealth-tab="portfolio">Portfolio</div>
-        <div class="wealth-subtab" data-wealth-tab="cashflow">Cash Flow</div>
+      <div class="wealth-tabs-row">
+        <div class="wealth-subtabs" id="wealthSubtabs">
+          <div class="wealth-subtab active" data-wealth-tab="overview">Overview</div>
+          <div class="wealth-subtab" data-wealth-tab="portfolio">Portfolio</div>
+          <div class="wealth-subtab" data-wealth-tab="cashflow">Cash Flow</div>
+        </div>
+        <button class="ghost" id="wealthOpenCoachBtn" type="button" style="font-size:.75rem">Wealth Coach</button>
       </div>
 
       <!-- Overview Subtab -->
@@ -2251,10 +2344,54 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         <div class="review-card">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
             <h4 style="margin-bottom:0">Recent Transactions</h4>
-            <button class="ghost" id="wealthAddTxnBtn" type="button" style="font-size:.75rem">+ Add Transaction</button>
+            <div style="display:flex;align-items:center;gap:8px">
+              <button class="ghost" id="wealthImportSabBtn" type="button" style="font-size:.75rem">Import Transactions CSV</button>
+              <button class="ghost" id="wealthPickImportFolderBtn" type="button" style="font-size:.75rem">Scan Import Folder</button>
+              <button class="ghost" id="wealthAddTxnBtn" type="button" style="font-size:.75rem">+ Add Transaction</button>
+            </div>
           </div>
           <div id="wealthRecentTxns" class="wealth-txn-list">
             <div class="wealth-empty-state">No transactions recorded yet.</div>
+          </div>
+        </div>
+
+        <div class="review-card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+            <h4 style="margin-bottom:0">Import Review</h4>
+            <button class="ghost" id="wealthUndoLastImportBtn" type="button" style="font-size:.75rem">Undo Last Import</button>
+          </div>
+          <div id="wealthImportReviewCard" class="wealth-txn-list">
+            <div class="wealth-empty-state">No import reviewed yet.</div>
+          </div>
+        </div>
+
+        <div class="review-card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+            <h4 style="margin-bottom:0">Category Rules</h4>
+            <div style="display:flex;align-items:center;gap:8px">
+              <button class="ghost" id="wealthBulkOtherBtn" type="button" style="font-size:.75rem">Bulk Recategorize Other</button>
+              <button class="ghost" id="wealthAddCategoryRuleBtn" type="button" style="font-size:.75rem">+ Add Rule</button>
+            </div>
+          </div>
+          <div id="wealthCategoryRulesList" class="wealth-accounts-list">
+            <div class="wealth-empty-state">No merchant rules saved yet.</div>
+          </div>
+        </div>
+
+        <div class="review-card">
+          <h4 style="margin-bottom:12px">Import Templates</h4>
+          <div id="wealthImportTemplatesList" class="wealth-accounts-list">
+            <div class="wealth-empty-state">No CSV templates saved yet.</div>
+          </div>
+        </div>
+
+        <div class="review-card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+            <h4 style="margin-bottom:0">Import Folder</h4>
+            <button class="ghost" id="wealthRescanImportFolderBtn" type="button" style="font-size:.75rem">Rescan</button>
+          </div>
+          <div id="wealthImportFolderCard" class="wealth-accounts-list">
+            <div class="wealth-empty-state">Choose a folder to scan CSV files and import them one by one.</div>
           </div>
         </div>
       </div>
@@ -2264,7 +2401,11 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         <div class="review-card">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
             <h4 style="margin-bottom:0">Portfolio</h4>
-            <div style="display:flex;align-items:center;gap:8px">
+            <div class="wealth-toolbar-controls">
+              <div class="wealth-segmented" id="portfolioDisplayMode" aria-label="Portfolio gain display mode">
+                <button type="button" data-portfolio-display="amount" class="active">$</button>
+                <button type="button" data-portfolio-display="percent">%</button>
+              </div>
               <span id="portfolioQuoteStatus" class="tiny" style="color:var(--text2)"></span>
               <button class="ghost" id="wealthRefreshPricesBtn" type="button" style="font-size:.75rem">Refresh Prices</button>
               <button class="ghost" id="wealthAddHoldingBtn" type="button" style="font-size:.75rem">+ Add Holding</button>
@@ -2273,7 +2414,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           <div class="wealth-summary-grid">
             <div class="stat-box"><div class="stat-val" id="portfolioMarketValue">$0</div><div class="stat-label">Market Value</div></div>
             <div class="stat-box"><div class="stat-val" id="portfolioCostBasis">$0</div><div class="stat-label">Cost Basis</div></div>
-            <div class="stat-box"><div class="stat-val" id="portfolioGainLoss">$0</div><div class="stat-label">Unrealized Gain/Loss</div></div>
+            <div class="stat-box"><div class="stat-val" id="portfolioGainLoss">$0</div><div class="stat-label" id="portfolioGainLossLabel">Unrealized Gain/Loss</div></div>
             <div class="stat-box"><div class="stat-val" id="portfolioStaleCount">0</div><div class="stat-label">Quotes Needing Refresh</div></div>
           </div>
         </div>
@@ -2295,14 +2436,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         <div class="review-card">
           <h4 style="margin-bottom:12px">Holdings</h4>
           <div class="wealth-holdings-list">
-            <div class="wealth-holding-row wealth-holding-head">
-              <div>Holding</div>
-              <div class="wealth-holding-num">Units</div>
-              <div class="wealth-holding-num">Price</div>
-              <div class="wealth-holding-num">Market Value</div>
-              <div class="wealth-holding-num">Cost Basis</div>
-              <div class="wealth-holding-num">Gain/Loss</div>
-              <div>Source</div>
+            <div class="wealth-holding-row wealth-holding-head" id="portfolioHoldingsHead">
               <div style="text-align:right">Actions</div>
             </div>
             <div id="portfolioHoldingsList">
@@ -2317,11 +2451,19 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         <div class="review-card">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
             <h4 style="margin-bottom:0" id="cashflowMonthHeading">March 2026</h4>
-            <div style="display:flex;align-items:center;gap:4px;">
+            <div class="wealth-range-controls">
+              <div class="wealth-segmented" id="cashflowRangeMode" aria-label="Cash flow range">
+                <button type="button" data-cashflow-range="month" class="active">Month</button>
+                <button type="button" data-cashflow-range="quarter">Quarter</button>
+                <button type="button" data-cashflow-range="6month">6M</button>
+                <button type="button" data-cashflow-range="year">Year</button>
+              </div>
+              <input id="wealthMonthPicker" type="month" />
               <button id="wealthPrevMonthBtn" class="ghost" type="button" style="font-size:.75rem;padding:4px 8px;">← Prev</button>
               <button id="wealthNextMonthBtn" class="ghost" type="button" style="font-size:.75rem;padding:4px 8px;">Next →</button>
             </div>
           </div>
+          <div class="wealth-range-meta" id="cashflowRangeMeta"></div>
           <div class="wealth-net-worth" id="cashflowSummary">
             <div class="stat-box"><div class="stat-val" style="color:var(--accent)" id="cashflowIncome">$0</div><div class="stat-label">Income</div></div>
             <div class="stat-box"><div class="stat-val" style="color:var(--danger)" id="cashflowExpenses">$0</div><div class="stat-label">Expenses</div></div>
@@ -2340,12 +2482,37 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         <!-- Monthly Transactions -->
         <div class="review-card">
           <h4 style="margin-bottom:12px">Transactions</h4>
+          <div id="cashflowCategoryFilter" hidden></div>
           <div id="cashflowTxnList" class="wealth-txn-list">
             <div class="wealth-empty-state">No transactions this month.</div>
           </div>
         </div>
       </div>
     </div>
+    <div id="wealthCoachBackdrop" class="wealth-coach-backdrop" hidden></div>
+    <aside id="wealthCoachDrawer" class="wealth-coach-drawer" aria-hidden="true">
+      <div class="wealth-coach-head">
+        <div>
+          <h4>Wealth Coach</h4>
+          <div class="wealth-coach-meta" id="wealthCoachMeta"></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span id="wealthCoachProviderPill" class="ai-provider-pill" hidden></span>
+          <button class="ghost" id="wealthCloseCoachBtn" type="button" style="font-size:.75rem">Close</button>
+        </div>
+      </div>
+      <div id="wealthCoachMessages" class="wealth-coach-body"></div>
+      <div class="wealth-coach-foot">
+        <div class="wealth-coach-actions">
+          <span id="wealthCoachStatus" class="tiny"></span>
+          <button class="ghost" id="wealthCoachClearBtn" type="button" style="font-size:.75rem">Clear</button>
+        </div>
+        <div class="wealth-coach-input-row">
+          <textarea id="wealthCoachInput" rows="1" placeholder="Ask about spending patterns, categories, imports, or what is included in Other..."></textarea>
+          <button id="wealthCoachSendBtn" class="wealth-coach-send" type="button">Ask</button>
+        </div>
+      </div>
+    </aside>
   </div>
 
   <!-- ═══════════ HIDDEN PRODUCTION ELEMENTS ═══════════ -->
@@ -2410,6 +2577,8 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
     <button id="loadFileBtn">Load</button>
     <button id="saveFileBtn">Save</button>
     <input type="file" id="loadFileInput" accept=".json" />
+    <input type="file" id="wealthImportCsvInput" accept=".csv,text/csv" />
+    <input type="file" id="wealthImportFolderInput" webkitdirectory directory multiple />
   </div>
 
   <div id="celebration"></div>
@@ -2582,29 +2751,83 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         </div>
 
         <div id="onboardStep2" class="onboard-screen" hidden>
-          <p><strong>AI Setup (Recommended)</strong></p>
-          <p class="tiny" style="margin-top:10px;">Connect an AI provider now and let it help draft your starter board. If you prefer, skip this and continue manual setup.</p>
-          <div class="onboard-confirm-box" style="margin-top:10px;">
-            <div class="onboard-row task">
-              <select id="onboardAiProvider">
-                <option value="openai">ChatGPT (OpenAI)</option>
-                <option value="anthropic">Claude (Anthropic)</option>
-                <option value="grok">Grok (xAI)</option>
-                <option value="gemini">Gemini (Google)</option>
-                <option value="deepseek">DeepSeek</option>
-                <option value="openai_compatible">OpenAI-compatible</option>
-              </select>
-              <input id="onboardAiApiKey" type="password" autocomplete="off" placeholder="Paste API key (stored locally)" />
-              <button id="onboardAiConnectBtn" class="ghost" type="button">Connect key</button>
+          <!-- Stage A: AI opt-in / opt-out -->
+          <div id="onboardAiStageA">
+            <p><strong>AI Coaching (Optional)</strong></p>
+            <p class="tiny" style="margin-top:10px;">PPP Flow can use AI to help prioritise tasks, coach your life practices, and generate insights from your data.</p>
+            <p class="tiny" style="margin-top:8px;">When active, the AI sees: your goals, open tasks, life practices, and weekly commitments. It does <strong>not</strong> see: passwords, financial account numbers, or data from other apps.</p>
+            <div style="display:grid;gap:8px;margin-top:14px;max-width:380px;">
+              <button id="onboardAiEnableBtn" class="primary" type="button" style="padding:10px 16px;text-align:left;">Enable AI coaching (recommended)</button>
+              <button id="onboardAiSkipBtn" class="ghost" type="button" style="padding:10px 16px;text-align:left;">Skip AI &mdash; I'll use PPP Flow without it</button>
             </div>
-            <textarea id="onboardAiIntake" placeholder="Brain-dump what matters right now: goals, deadlines, life practices, constraints, and what tends to get procrastinated."></textarea>
-            <div class="controls">
-              <button id="onboardAiGenerateBtn" class="primary" type="button">Generate starter board with AI</button>
-              <span id="onboardAiStatus" class="tiny"></span>
-            </div>
-            <div id="onboardAiQuestions" class="tiny"></div>
           </div>
-          <p class="tiny" style="margin-top:8px;"><strong>Set up later?</strong> No problem. Press Next and continue manual onboarding.</p>
+
+          <!-- Stage B: Provider tier selection -->
+          <div id="onboardAiStageB" hidden>
+            <p><strong>Choose your AI provider</strong></p>
+
+            <!-- Cloud AI tier -->
+            <div style="margin-top:12px;padding:12px;border:1px solid var(--line);border-radius:8px;background:var(--card);">
+              <p class="tiny" style="font-weight:700;margin-bottom:4px;">Cloud AI</p>
+              <p class="tiny" style="opacity:.8;">Use a major foundation model via API. Fast and capable. Your data is sent to the provider's servers but is not used for training. Retained up to 30 days for safety monitoring.</p>
+              <div class="onboard-row task" style="margin-top:8px;">
+                <select id="onboardAiProvider">
+                  <option value="openai">ChatGPT (OpenAI)</option>
+                  <option value="anthropic">Claude (Anthropic)</option>
+                  <option value="grok">Grok (xAI)</option>
+                  <option value="gemini">Gemini (Google)</option>
+                  <option value="deepseek">DeepSeek</option>
+                  <option value="openai_compatible">OpenAI-compatible</option>
+                </select>
+                <input id="onboardAiApiKey" type="password" autocomplete="off" placeholder="Paste API key" />
+                <button id="onboardAiConnectBtn" class="ghost" type="button">Connect</button>
+              </div>
+              <div id="onboardAiDeepseekWarn" class="tiny" hidden style="margin-top:6px;padding:6px 8px;border-radius:4px;background:#fff3cd;color:#856404;border:1px solid #ffc107;">DeepSeek's API sends data to servers in China where national security laws can compel data handover. For privacy, consider running DeepSeek locally via Ollama instead.</div>
+            </div>
+
+            <!-- Local AI tier -->
+            <div style="margin-top:10px;padding:12px;border:1px solid var(--line);border-radius:8px;background:var(--card);">
+              <p class="tiny" style="font-weight:700;margin-bottom:4px;">Local AI (Ollama) &mdash; 100% private</p>
+              <p class="tiny" style="opacity:.8;">Run an AI model directly on your machine. Nothing leaves your computer. Requires 32GB+ RAM and Ollama installed.</p>
+              <button id="onboardOllamaSetupBtn" class="ghost" type="button" style="margin-top:8px;">Set up Local AI</button>
+
+              <div id="onboardOllamaSetup" hidden style="margin-top:10px;padding:10px;border:1px solid var(--line);border-radius:6px;">
+                <p class="tiny" style="font-weight:600;">Step 1: Install Ollama</p>
+                <p class="tiny" style="margin-top:4px;">Ollama runs AI models locally on your machine.</p>
+                <p class="tiny" style="margin-top:4px;"><a href="https://ollama.com" target="_blank" rel="noopener">Open ollama.com</a> &nbsp;or run: <code style="background:var(--bg);padding:2px 6px;border-radius:4px;">brew install ollama</code></p>
+
+                <p class="tiny" style="font-weight:600;margin-top:10px;">Step 2: Pull a model</p>
+                <p class="tiny" style="margin-top:4px;">Open Terminal and run:</p>
+                <div style="display:flex;align-items:center;gap:6px;margin-top:4px;">
+                  <code id="onboardOllamaPullCmd" style="flex:1;background:var(--bg);padding:6px 10px;border-radius:4px;font-size:.82rem;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;">ollama pull llama4-scout</code>
+                  <button id="onboardOllamaCopyBtn" class="ghost" type="button" title="Copy command" style="padding:4px 8px;">Copy</button>
+                </div>
+                <p class="tiny" style="margin-top:6px;opacity:.7;">Recommended models: <strong>llama4-scout</strong> (best balance, 32GB+ RAM) &middot; <strong>qwen3:8b</strong> (lighter, 16GB RAM) &middot; <strong>deepseek-r1:8b</strong> (DeepSeek, 100% private)</p>
+
+                <p class="tiny" style="font-weight:600;margin-top:10px;">Step 3: Verify connection</p>
+                <div style="display:flex;align-items:center;gap:8px;margin-top:6px;">
+                  <button id="onboardOllamaTestBtn" class="ghost" type="button">Test Ollama Connection</button>
+                  <span id="onboardOllamaStatus" class="tiny"></span>
+                </div>
+                <div id="onboardOllamaModelWrap" hidden style="margin-top:8px;">
+                  <label class="tiny" style="display:grid;gap:4px;"><span>Model</span><select id="onboardOllamaModel"></select></label>
+                </div>
+              </div>
+            </div>
+
+            <!-- Brain dump (shared by both tiers) -->
+            <div id="onboardAiBrainDump" style="margin-top:12px;">
+              <textarea id="onboardAiIntake" placeholder="Brain-dump what matters right now: goals, deadlines, life practices, constraints, and what tends to get procrastinated."></textarea>
+              <div class="controls">
+                <button id="onboardAiGenerateBtn" class="primary" type="button">Generate starter board with AI</button>
+                <span id="onboardAiStatus" class="tiny"></span>
+              </div>
+              <div id="onboardAiQuestions" class="tiny"></div>
+            </div>
+
+            <p class="tiny" style="margin-top:8px;"><strong>Set up later?</strong> No problem. Press Next and continue manual onboarding.</p>
+          </div>
+
           <p class="tiny" style="margin-top:12px;"><strong>How PPP Flow works:</strong> focus on one primary goal, track controllable inputs (not just results), keep a visible scoreboard, and review weekly so priorities stay honest.</p>
         </div>
 
@@ -2827,7 +3050,9 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
     const NEXT_UP_SOFT_LIMIT = 10;
     const PIPELINE_STAGES = ["backlog", "next_up", "today", "done"];
     const AI_PREF_KEY = "PPP_AI_PREFS_V1";
-    const AI_ALLOWED_PROVIDERS = ["openai", "anthropic", "gemini", "grok", "deepseek", "openai_compatible"];
+    const AI_ALLOWED_PROVIDERS = ["openai", "anthropic", "gemini", "grok", "deepseek", "ollama", "openai_compatible"];
+    let aiSessionOnlyKey = ""; // runtime-only API key, never persisted
+    let wealthCoachCloudConsent = {}; // runtime-only, per-provider consent for sending wealth data to cloud AI
     const CLOUD_SYNC_PREF_KEY = "PPP_CLOUD_SYNC_PREFS_V1";
     const FOCUS_UI_PREF_KEY = "PPP_FOCUS_UI_PREFS_V3";
     const AI_ALLOWED_STAGES = ["backlog", "next_up", "today"];
@@ -2923,11 +3148,17 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           accounts: [],
           transactions: [],
           currency: "AUD",
+          display_percentages: false,
+          holdings_sort: { key: "marketValueMinor", dir: "desc" },
           holdings: [],
           price_quotes: {},
           fx_quotes: {},
           properties: [],
-          property_estimates: {}
+          property_estimates: {},
+          import_templates: [],
+          category_rules: [],
+          last_import_review: null,
+          import_folder_label: ""
         }
       };
     }
@@ -2945,6 +3176,88 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       const parsedMinor = Number.parseInt(String(rawMinor ?? ""), 10);
       if (Number.isFinite(parsedMinor)) return parsedMinor;
       return moneyToMinor(legacyAmount);
+    }
+
+    function normalizeWealthTransactionRecord(txn, defaultCurrency = "AUD") {
+      const baseCurrency = String(defaultCurrency || "AUD").trim().toUpperCase() || "AUD";
+      const sourceMeta = txn?.source_meta && typeof txn.source_meta === "object" ? { ...txn.source_meta } : null;
+      return {
+        id: txn?.id || uid(),
+        date: txn?.date || todayISO(),
+        account_id: txn?.account_id || null,
+        type: txn?.type === "income" ? "income" : "expense",
+        amount_minor: Math.abs(normalizeMinorAmount(txn?.amount_minor, txn?.amount)),
+        category: txn?.category || "Other",
+        description: txn?.description || "",
+        currency: String(txn?.currency || baseCurrency).trim().toUpperCase() || baseCurrency,
+        native_amount_minor: txn?.native_amount_minor == null
+          ? null
+          : Math.abs(normalizeMinorAmount(txn?.native_amount_minor, txn?.native_amount)),
+        native_currency: txn?.native_currency
+          ? (String(txn.native_currency).trim().toUpperCase() || null)
+          : null,
+        source: txn?.source || null,
+        source_ref: txn?.source_ref || null,
+        source_status: txn?.source_status || null,
+        exclude_from_cashflow: !!txn?.exclude_from_cashflow,
+        source_meta: sourceMeta,
+        created_at: txn?.created_at || new Date().toISOString()
+      };
+    }
+
+    function normalizeWealthImportTemplateRecord(template) {
+      const mapping = template?.mapping && typeof template.mapping === "object" ? { ...template.mapping } : {};
+      return {
+        id: template?.id || uid(),
+        name: String(template?.name || "CSV Template").trim() || "CSV Template",
+        header_fingerprint: String(template?.header_fingerprint || "").trim(),
+        parser_id: String(template?.parser_id || "generic_csv_v1").trim() || "generic_csv_v1",
+        created_at: template?.created_at || new Date().toISOString(),
+        account_name: String(template?.account_name || "").trim(),
+        account_type: ["checking","savings","credit_card","loan","investment","cash","other"].includes(template?.account_type)
+          ? template.account_type
+          : "checking",
+        mapping: {
+          date_column: mapping.date_column || "",
+          description_column: mapping.description_column || "",
+          signed_amount_column: mapping.signed_amount_column || "",
+          debit_column: mapping.debit_column || "",
+          credit_column: mapping.credit_column || "",
+          status_column: mapping.status_column || "",
+          currency_column: mapping.currency_column || "",
+          default_currency: String(mapping.default_currency || "AUD").trim().toUpperCase() || "AUD",
+          skip_statuses: Array.isArray(mapping.skip_statuses)
+            ? mapping.skip_statuses.map(v => String(v || "").trim()).filter(Boolean)
+            : String(mapping.skip_statuses || "").split(",").map(v => v.trim()).filter(Boolean)
+        }
+      };
+    }
+
+    function normalizeWealthCategoryRuleRecord(rule) {
+      return {
+        id: rule?.id || uid(),
+        pattern: String(rule?.pattern || "").trim(),
+        category: String(rule?.category || "Other").trim() || "Other",
+        tx_type: ["income", "expense", "any"].includes(rule?.tx_type) ? rule.tx_type : "any",
+        match_mode: rule?.match_mode === "exact" ? "exact" : "contains",
+        created_at: rule?.created_at || new Date().toISOString()
+      };
+    }
+
+    function normalizeWealthImportReviewRecord(review) {
+      if (!review || typeof review !== "object") return null;
+      return {
+        id: review.id || uid(),
+        created_at: review.created_at || new Date().toISOString(),
+        file_name: String(review.file_name || "").trim(),
+        parser_id: String(review.parser_id || "").trim() || "generic_csv_v1",
+        imported_transaction_ids: Array.isArray(review.imported_transaction_ids) ? review.imported_transaction_ids.filter(Boolean) : [],
+        created_account_ids: Array.isArray(review.created_account_ids) ? review.created_account_ids.filter(Boolean) : [],
+        summary: review.summary && typeof review.summary === "object" ? { ...review.summary } : {},
+        sample_transactions: Array.isArray(review.sample_transactions)
+          ? review.sample_transactions.map(txn => normalizeWealthTransactionRecord(txn))
+          : []
+      };
     }
 
     function normalizeGoalCode(value) {
@@ -3072,6 +3385,10 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       normalized.weekly_reviews = incoming.weekly_reviews && typeof incoming.weekly_reviews === "object" ? incoming.weekly_reviews : {};
       // Wealth migration
       const iw = incoming.wealth || {};
+      const wealthSortKey = ["display_symbol", "units", "priceMinorAud", "marketValueMinor", "costBasisMinor", "gainLossMinor", "provider"].includes(iw.holdings_sort?.key)
+        ? iw.holdings_sort.key
+        : "marketValueMinor";
+      const wealthSortDir = iw.holdings_sort?.dir === "asc" ? "asc" : "desc";
       normalized.wealth = {
         accounts: Array.isArray(iw.accounts) ? iw.accounts.map(a => ({
           id: a.id || uid(),
@@ -3081,17 +3398,12 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           created_at: a.created_at || new Date().toISOString(),
           archived: !!a.archived
         })) : [],
-        transactions: Array.isArray(iw.transactions) ? iw.transactions.map(t => ({
-          id: t.id || uid(),
-          date: t.date || todayISO(),
-          account_id: t.account_id || null,
-          type: t.type === "income" ? "income" : "expense",
-          amount_minor: Math.abs(normalizeMinorAmount(t.amount_minor, t.amount)),
-          category: t.category || "Other",
-          description: t.description || "",
-          created_at: t.created_at || new Date().toISOString()
-        })) : [],
+        transactions: Array.isArray(iw.transactions)
+          ? iw.transactions.map(t => normalizeWealthTransactionRecord(t, iw.currency || "AUD"))
+          : [],
         currency: iw.currency || "AUD",
+        display_percentages: !!iw.display_percentages,
+        holdings_sort: { key: wealthSortKey, dir: wealthSortDir },
         holdings: Array.isArray(iw.holdings) ? iw.holdings.map(h => ({
           id: h.id || uid(),
           account_id: h.account_id || null,
@@ -3119,7 +3431,15 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         ) : {},
         fx_quotes: iw.fx_quotes && typeof iw.fx_quotes === "object" ? iw.fx_quotes : {},
         properties: Array.isArray(iw.properties) ? iw.properties : [],
-        property_estimates: iw.property_estimates && typeof iw.property_estimates === "object" ? iw.property_estimates : {}
+        property_estimates: iw.property_estimates && typeof iw.property_estimates === "object" ? iw.property_estimates : {},
+        import_templates: Array.isArray(iw.import_templates)
+          ? iw.import_templates.map(normalizeWealthImportTemplateRecord)
+          : [],
+        category_rules: Array.isArray(iw.category_rules)
+          ? iw.category_rules.map(normalizeWealthCategoryRuleRecord).filter(rule => rule.pattern)
+          : [],
+        last_import_review: normalizeWealthImportReviewRecord(iw.last_import_review),
+        import_folder_label: String(iw.import_folder_label || "").trim()
       };
       return normalized;
     }
@@ -3834,6 +4154,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       if (provider === "gemini") return "https://generativelanguage.googleapis.com/v1beta";
       if (provider === "grok") return "https://api.x.ai/v1";
       if (provider === "deepseek") return "https://api.deepseek.com/v1";
+      if (provider === "ollama") return "http://localhost:11434/v1";
       return "https://api.openai.com/v1";
     }
     function aiDefaultModel(provider) {
@@ -3841,7 +4162,17 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       if (provider === "gemini") return "gemini-2.5-flash";
       if (provider === "grok") return "grok-4-1-fast-non-reasoning";
       if (provider === "deepseek") return "deepseek-chat";
+      if (provider === "ollama") return "llama4-scout";
       return "gpt-4.1-mini";
+    }
+    function aiProviderNeedsKey(provider) {
+      return provider !== "ollama";
+    }
+    function aiProviderPrivacyInfo(provider) {
+      if (provider === "ollama") return { level: "local", icon: "\uD83D\uDD12", text: "Requests stay on this machine while Ollama is the active provider." };
+      if (provider === "deepseek") return { level: "warning", icon: "\u26A0\uFE0F", text: "Requests are sent to DeepSeek-hosted servers. Review current data handling and jurisdiction before using it for sensitive data." };
+      const names = { openai: "OpenAI", anthropic: "Anthropic", gemini: "Google", grok: "xAI", openai_compatible: "your endpoint" };
+      return { level: "cloud", icon: "\u2601\uFE0F", text: `Requests are sent to ${names[provider] || "provider"} servers. Review that provider's current API data handling and retention terms before using it for sensitive data.` };
     }
     function aiSanitizeStoredModel(provider, value, fallback = "") {
       const text = String(value || "").trim();
@@ -4205,7 +4536,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
     }
 
     function aiIsOpenAiCompatibleProvider(provider) {
-      return provider === "openai" || provider === "openai_compatible" || provider === "grok" || provider === "deepseek";
+      return provider === "openai" || provider === "openai_compatible" || provider === "grok" || provider === "deepseek" || provider === "ollama";
     }
     function aiDefaultProviderConfig(provider) {
       return {
@@ -4262,6 +4593,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         enabled: input.enabled === true,
         hideUiWhenDisabled: input.hideUiWhenDisabled !== false,
         inlineAutoApply: input.inlineAutoApply !== false,
+        sessionOnlyKey: input.sessionOnlyKey === true,
         provider,
         providerConfigs
       };
@@ -4938,11 +5270,15 @@ Use only supported action types and enum values from the schema.`;
       const baseInput = document.getElementById("aiBaseUrlInput");
       const formPrefs = aiConfigOpen ? aiDraftPrefsFromSettingsForm() : aiPrefs;
       const providerCfg = aiGetProviderConfig(formPrefs.provider, formPrefs);
+      const liveSessionOnly = !!formPrefs.sessionOnlyKey;
+      const liveDraftKey = liveSessionOnly
+        ? String(formPrefs._runtimeSessionKey || aiSessionOnlyKey || "").trim()
+        : String(providerCfg.apiKey || "").trim();
       if (enabledInput) enabledInput.checked = !!formPrefs.enabled;
       if (hideInput) hideInput.checked = !!formPrefs.hideUiWhenDisabled;
       if (providerInput) providerInput.value = formPrefs.provider;
       if (keyInput) {
-        keyInput.value = providerCfg.apiKey || "";
+        keyInput.value = liveDraftKey;
         keyInput.dataset.provider = formPrefs.provider;
       }
       if (baseInput) {
@@ -4964,10 +5300,42 @@ Use only supported action types and enum values from the schema.`;
       const toggleConfigBtn = document.getElementById("aiToggleConfigBtn");
       if (toggleConfigBtn) toggleConfigBtn.textContent = aiConfigOpen ? "Hide Settings" : "Settings";
 
+      // Privacy badge
+      const privacyBadge = document.getElementById("aiPrivacyBadge");
+      if (privacyBadge) {
+        const info = aiProviderPrivacyInfo(formPrefs.provider);
+        privacyBadge.textContent = `${info.icon} ${info.text}`;
+        privacyBadge.style.borderColor = info.level === "warning" ? "#ffc107" : info.level === "local" ? "var(--green, #22c55e)" : "var(--line)";
+      }
+      // Session-only key checkbox state
+      const sessionKeyCheckbox = document.getElementById("aiSessionOnlyKeyInput");
+      if (sessionKeyCheckbox) sessionKeyCheckbox.checked = liveSessionOnly;
+      // Ollama doesn't need a key — hide key input when Ollama selected
+      const keyLabel = keyInput?.closest("label");
+      const sessionKeyLabel = sessionKeyCheckbox?.closest("label");
+      const needsKey = aiProviderNeedsKey(formPrefs.provider);
+      if (keyLabel) keyLabel.style.display = needsKey ? "" : "none";
+      if (sessionKeyLabel) sessionKeyLabel.style.display = needsKey ? "" : "none";
+
       const typedKey = aiConfigOpen ? String(document.getElementById("aiApiKeyInput")?.value || "").trim() : "";
-      const keyMissing = !(typedKey || String(providerCfg.apiKey || "").trim());
+      const effectiveKey = typedKey || aiSessionOnlyKey || String(providerCfg.apiKey || "").trim();
+      const keyMissing = needsKey && !effectiveKey;
       const statusBadge = document.getElementById("aiStatusBadge");
       if (statusBadge) statusBadge.textContent = formPrefs.enabled ? (keyMissing ? "Enabled (missing key)" : "Enabled") : "Disabled";
+      // Ollama auto-detection: if Ollama selected and settings open, probe connection
+      if (formPrefs.provider === "ollama" && aiConfigOpen && statusBadge) {
+        fetch("http://localhost:11434/v1/models", { method: "GET", signal: AbortSignal.timeout(3000) })
+          .then(r => r.ok ? r.json() : Promise.reject(new Error("not running")))
+          .then(data => {
+            const models = (data.data || []).map(m => m.id).filter(Boolean);
+            if (statusBadge && formPrefs.provider === "ollama") {
+              statusBadge.textContent = models.length ? `Connected (${models.length} model${models.length > 1 ? "s" : ""})` : "No models found";
+            }
+          })
+          .catch(() => {
+            if (statusBadge && formPrefs.provider === "ollama") statusBadge.textContent = "Ollama not running";
+          });
+      }
       aiSetTestDiagnostics(aiLastTestDiagnostics);
       const inlineModeToggle = document.getElementById("aiInlineAutoApplyToggle");
       const inlineModeToggleWrap = document.getElementById("aiInlineAutoApplyWrap");
@@ -4981,6 +5349,18 @@ Use only supported action types and enum values from the schema.`;
         const provider = String(btn.getAttribute("data-ai-provider-btn") || "");
         btn.classList.toggle("active", provider === formPrefs.provider);
         btn.disabled = aiBusy;
+      });
+
+      // Active provider pills in chat areas
+      const providerDisplayNames = { openai: "ChatGPT", anthropic: "Claude", gemini: "Gemini", grok: "Grok", deepseek: "DeepSeek", ollama: "Ollama", openai_compatible: "Custom" };
+      const privacyIcons = { local: "\uD83D\uDD12", warning: "\u26A0", cloud: "" };
+      const pInfo = aiProviderPrivacyInfo(formPrefs.provider);
+      const pillLabel = `${privacyIcons[pInfo.level] ? privacyIcons[pInfo.level] + " " : ""}${providerDisplayNames[formPrefs.provider] || formPrefs.provider}`;
+      document.querySelectorAll(".ai-provider-pill").forEach(pill => {
+        pill.textContent = pillLabel;
+        pill.setAttribute("data-privacy", pInfo.level);
+        pill.title = pInfo.text;
+        pill.hidden = !formPrefs.enabled;
       });
 
       const disabledText = aiPrefs.enabled
@@ -5053,10 +5433,12 @@ Use only supported action types and enum values from the schema.`;
       const source = prefsLike && typeof prefsLike === "object" ? prefsLike : {};
       const provider = AI_ALLOWED_PROVIDERS.includes(source.provider) ? source.provider : "openai";
       const cfg = aiGetProviderConfig(provider, source);
+      const storedKey = String(cfg.apiKey || "").trim();
+      const effectiveKey = aiSessionOnlyKey || storedKey;
       return {
         provider,
         model: String(cfg.model || "").trim() || aiDefaultModel(provider),
-        apiKey: String(cfg.apiKey || "").trim(),
+        apiKey: aiProviderNeedsKey(provider) ? effectiveKey : "",
         baseUrl: String(cfg.baseUrl || "").trim() || aiDefaultBaseUrl(provider)
       };
     }
@@ -5087,16 +5469,27 @@ Use only supported action types and enum values from the schema.`;
       const baseValue = baseInputProvider === draft.provider
         ? String(baseInput?.value || "").trim()
         : current.baseUrl;
+      // Session-only key handling
+      const sessionOnlyCheckbox = document.getElementById("aiSessionOnlyKeyInput");
+      const isSessionOnly = !!sessionOnlyCheckbox?.checked;
+      draft.sessionOnlyKey = isSessionOnly;
+      if (isSessionOnly && keyValue) {
+        aiSessionOnlyKey = keyValue; // store in runtime variable only
+      } else {
+        aiSessionOnlyKey = ""; // clear runtime key if not session-only
+      }
       draft.providerConfigs = {
         ...buildDefaultAiProviderConfigs(),
         ...(draft.providerConfigs || {}),
         [draft.provider]: {
           model: modelValue || current.model || aiDefaultModel(draft.provider),
-          apiKey: keyValue,
+          apiKey: isSessionOnly ? "" : keyValue, // don't persist if session-only
           baseUrl: baseValue || current.baseUrl || aiDefaultBaseUrl(draft.provider)
         }
       };
-      return normalizeAiPrefs(draft);
+      const normalized = normalizeAiPrefs(draft);
+      normalized._runtimeSessionKey = isSessionOnly ? keyValue : "";
+      return normalized;
     }
     function aiModelSupportsTemperature(modelId) {
       // Newer reasoning/chat-latest models reject non-default temperature
@@ -8140,6 +8533,12 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       return new Intl.DateTimeFormat(undefined, { day: "numeric", month: "short", year: "numeric" }).format(d);
     }
 
+    function formatDateLabel(dateKey) {
+      if (!dateKey) return "";
+      const d = parseLocalDateKey(dateKey);
+      return new Intl.DateTimeFormat(undefined, { day: "numeric", month: "short" }).format(d);
+    }
+
     function collectOnboardingWig() {
       const title = (document.getElementById("onboardWigTitle")?.value || "").trim();
       const deadline = (document.getElementById("onboardWigDeadline")?.value || "").trim();
@@ -10144,10 +10543,18 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
 
     // ═══════════ WEALTH MODULE ═══════════
     let activeWealthTab = "overview";
-    let wealthMonthOffset = 0;
+    let wealthCashflowAnchorMonth = todayISO().slice(0, 7);
+    let wealthCashflowRange = "month";
+    let wealthCashflowCategoryFilter = "";
     let wealthQuoteRefreshInFlight = false;
     let wealthLastQuoteRefreshAttemptAt = 0;
     let wealthQuoteStatusText = "";
+    let wealthPendingImportSession = null;
+    let wealthScannedImportFiles = [];
+    let wealthCoachOpen = false;
+    let wealthCoachBusy = false;
+    let wealthCoachMessages = [];
+    const WEALTH_HOLDING_SORT_KEYS = ["display_symbol", "units", "priceMinorAud", "marketValueMinor", "costBasisMinor", "gainLossMinor", "provider"];
 
     const WEALTH_ACCOUNT_TYPES = {
       checking: "Checking", savings: "Savings", credit_card: "Credit Card",
@@ -10179,6 +10586,9 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
     const WEALTH_INCOME_CATEGORIES = [
       "Salary", "Freelance", "Investment", "Rental", "Refund", "Gift", "Other"
     ];
+    const WEALTH_TRANSFER_CATEGORY = "Transfer";
+    const WEALTH_SAB_ACCOUNT_NAME = "SAB Emirates Card";
+    const WEALTH_SAB_SOURCE = "sab_csv";
 
     function formatCurrency(amountMinor, currency) {
       const c = currency || state.wealth?.currency || "AUD";
@@ -10189,6 +10599,407 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       } catch {
         return `$${amount < 0 ? "-" : ""}${abs.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
       }
+    }
+
+    function formatPct(value, digits = 1) {
+      if (!Number.isFinite(value)) return "—";
+      const rounded = Number(value).toFixed(digits);
+      return `${value > 0 ? "+" : value < 0 ? "-" : ""}${Math.abs(Number(rounded)).toFixed(digits)}%`;
+    }
+
+    function trimCsvCell(value) {
+      return String(value ?? "").replace(/^\uFEFF/, "").trim();
+    }
+
+    function parseCsvText(csvText) {
+      const rows = [];
+      let current = "";
+      let row = [];
+      let inQuotes = false;
+      const text = String(csvText || "").replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+      for (let i = 0; i < text.length; i += 1) {
+        const char = text[i];
+        if (char === "\"") {
+          if (inQuotes && text[i + 1] === "\"") {
+            current += "\"";
+            i += 1;
+          } else {
+            inQuotes = !inQuotes;
+          }
+        } else if (char === "," && !inQuotes) {
+          row.push(current);
+          current = "";
+        } else if (char === "\n" && !inQuotes) {
+          row.push(current);
+          rows.push(row);
+          row = [];
+          current = "";
+        } else {
+          current += char;
+        }
+      }
+      if (current.length || row.length) {
+        row.push(current);
+        rows.push(row);
+      }
+      if (!rows.length) return [];
+      const headers = rows[0].map(cell => trimCsvCell(cell));
+      return rows.slice(1)
+        .filter(cells => cells.some(cell => trimCsvCell(cell)))
+        .map(cells => {
+          const record = {};
+          headers.forEach((header, index) => {
+            record[header] = cells[index] ?? "";
+          });
+          return record;
+        });
+    }
+
+    function parseSabDate(value) {
+      const raw = trimCsvCell(value);
+      if (!raw) return null;
+      const match = raw.match(/^(\d{1,2})\s+([A-Za-z]{3})\s+(\d{4})$/);
+      if (!match) return null;
+      const months = { Jan: "01", Feb: "02", Mar: "03", Apr: "04", May: "05", Jun: "06", Jul: "07", Aug: "08", Sep: "09", Oct: "10", Nov: "11", Dec: "12" };
+      const month = months[match[2]];
+      if (!month) return null;
+      return `${match[3]}-${month}-${String(match[1]).padStart(2, "0")}`;
+    }
+
+    function parseSabMoneyCell(value) {
+      return parseMoneyCell(value);
+    }
+
+    function parseMoneyCell(value, fallbackCurrency = null) {
+      const raw = trimCsvCell(value);
+      if (!raw) return null;
+      const normalized = raw
+        .replace(/\(([^)]+)\)/g, "-$1")
+        .replace(/[,$]/g, "")
+        .replace(/\s+/g, " ")
+        .trim();
+      const cleaned = normalized.match(/^(-?\d+(?:\.\d+)?)\s*([A-Za-z]{3})?$/i);
+      if (!cleaned) return null;
+      const amount = Number.parseFloat(cleaned[1]);
+      if (!Number.isFinite(amount)) return null;
+      return {
+        signedMinor: moneyToMinor(amount),
+        amountMinorAbs: Math.abs(moneyToMinor(amount)),
+        currency: String(cleaned[2] || fallbackCurrency || "").trim().toUpperCase() || null
+      };
+    }
+
+    function cleanSabDescription(description) {
+      return trimCsvCell(description).replace(/^\d{16}/, "").replace(/\s+/g, " ").trim();
+    }
+
+    function parseImportedDate(value) {
+      const raw = trimCsvCell(value);
+      if (!raw) return null;
+      if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+      const sabStyle = parseSabDate(raw);
+      if (sabStyle) return sabStyle;
+      const slash = raw.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{2,4})$/);
+      if (slash) {
+        let year = Number.parseInt(slash[3], 10);
+        if (year < 100) year += year >= 70 ? 1900 : 2000;
+        const a = Number.parseInt(slash[1], 10);
+        const b = Number.parseInt(slash[2], 10);
+        const day = a > 12 ? a : b;
+        const month = a > 12 ? b : a;
+        if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+          return `${String(year).padStart(4, "0")}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+        }
+      }
+      const parsed = Date.parse(raw);
+      if (!Number.isFinite(parsed)) return null;
+      return new Date(parsed).toISOString().slice(0, 10);
+    }
+
+    function hashStringFnv1a(input) {
+      let hash = 2166136261;
+      const text = String(input || "");
+      for (let i = 0; i < text.length; i += 1) {
+        hash ^= text.charCodeAt(i);
+        hash = Math.imul(hash, 16777619);
+      }
+      return (hash >>> 0).toString(16);
+    }
+
+    function categorizeImportedTransaction(description, signedMinor) {
+      const text = cleanSabDescription(description).toUpperCase();
+      let behavior = null;
+      if (text.includes("PAYMENT RECEIVED SABNET")) {
+        behavior = { type: "income", category: WEALTH_TRANSFER_CATEGORY, excludeFromCashflow: true };
+      }
+      if (!behavior && (text.includes("OPENAI") || text.includes("ANTHROPIC"))) {
+        behavior = { type: "expense", category: "Subscriptions", excludeFromCashflow: false };
+      }
+      if (!behavior && (text.includes("UBER") || text.includes("CAREEM"))) {
+        behavior = { type: "expense", category: "Transport", excludeFromCashflow: false };
+      }
+      if (!behavior && (text.includes("SALAM AIR") || text.includes("BOOKING.COM") || text.includes("FLIGHTS ON BOOKING") || text.includes("LAUNDRIES") || text.includes("LAUNDRY"))) {
+        behavior = { type: "expense", category: "Travel", excludeFromCashflow: false };
+      }
+      if (!behavior && (text.includes("FITNESS FIRST") || text.includes("NAHDI"))) {
+        behavior = { type: "expense", category: "Health", excludeFromCashflow: false };
+      }
+      if (!behavior && text.includes("STC")) {
+        behavior = { type: "expense", category: "Utilities", excludeFromCashflow: false };
+      }
+      if (!behavior && (
+        text.includes("MCDONALDS") || text.includes("HUNGERSTATION") || text.includes("TAMIMI") ||
+        text.includes("BAKERY") || text.includes("GREEK") || text.includes("DONUT") ||
+        text.includes("ACAI") || text.includes("SUBWAY") || text.includes("CAFE") ||
+        text.includes("CAFFE") || text.includes("JUICE") || text.includes("FOOD") ||
+        text.includes("RESTAURANT") || text.includes("IGA") || text.includes("COLES") ||
+        text.includes("PANDA CLICK") || text.includes("BOTTLEMART") || text.includes("MILKBAR") ||
+        text.includes("CREPE") || text.includes("OLIVE TREE") || text.includes("VERONA") ||
+        text.includes("PENNY FARTHING") || text.includes("KET BAKER") || text.includes("THE KILBURN")
+      )) {
+        behavior = { type: "expense", category: "Food", excludeFromCashflow: false };
+      }
+      if (!behavior && text.includes("NINTENDO")) {
+        behavior = { type: "expense", category: "Entertainment", excludeFromCashflow: false };
+      }
+      if (!behavior && (text.includes("SHOE") || text.includes("TANSWELLS") || text.includes("PRODUCT"))) {
+        behavior = { type: "expense", category: "Shopping", excludeFromCashflow: false };
+      }
+      if (!behavior) {
+        behavior = signedMinor > 0
+          ? { type: "income", category: "Other", excludeFromCashflow: false }
+          : { type: "expense", category: "Other", excludeFromCashflow: false };
+      }
+      return applyWealthCategoryRules(description, behavior);
+    }
+
+    function categorizeSabTransaction(description, signedSarMinor) {
+      return categorizeImportedTransaction(description, signedSarMinor);
+    }
+
+    function applyWealthCategoryRules(description, behavior) {
+      const cleanDescription = String(description || "").trim();
+      const descriptionUpper = cleanDescription.toUpperCase();
+      const rules = Array.isArray(state.wealth?.category_rules) ? state.wealth.category_rules : [];
+      for (const rule of rules) {
+        const pattern = String(rule?.pattern || "").trim();
+        if (!pattern) continue;
+        if (rule.tx_type && rule.tx_type !== "any" && rule.tx_type !== behavior.type) continue;
+        const patternUpper = pattern.toUpperCase();
+        const matches = rule.match_mode === "exact"
+          ? descriptionUpper === patternUpper
+          : descriptionUpper.includes(patternUpper);
+        if (!matches) continue;
+        return {
+          ...behavior,
+          category: rule.category || behavior.category
+        };
+      }
+      return behavior;
+    }
+
+    function buildSabFingerprintBase(row) {
+      return [
+        trimCsvCell(row["Transaction date"]),
+        trimCsvCell(row["Posting date"]),
+        cleanSabDescription(row["Description"]),
+        trimCsvCell(row["Status"]),
+        trimCsvCell(row["Amount(SAR)"]),
+        trimCsvCell(row["Amount(Other Currency)"])
+      ].join("|");
+    }
+
+    function wealthImportHeaderFingerprint(headers) {
+      return hashStringFnv1a((headers || []).map(trimCsvCell).join("|").toLowerCase());
+    }
+
+    function matchSabTranshistCsv(headers) {
+      const expected = [
+        "Transaction date",
+        "Description",
+        "Posting date",
+        "Status",
+        "Amount(SAR)",
+        "Amount(Other Currency)"
+      ];
+      return expected.every(header => headers.includes(header));
+    }
+
+    function getWealthImportTemplateByHeaders(headers) {
+      const fingerprint = wealthImportHeaderFingerprint(headers);
+      return (state.wealth?.import_templates || []).find(t => t.header_fingerprint === fingerprint) || null;
+    }
+
+    function guessCsvColumn(headers, patterns) {
+      const list = Array.isArray(headers) ? headers : [];
+      const lower = list.map(header => ({ raw: header, lower: trimCsvCell(header).toLowerCase() }));
+      for (const pattern of patterns) {
+        const match = lower.find(item => item.lower.includes(pattern));
+        if (match) return match.raw;
+      }
+      return "";
+    }
+
+    function defaultWealthImportTemplateName(fileName) {
+      return String(fileName || "Imported Transactions")
+        .replace(/\.[^.]+$/, "")
+        .replace(/[_-]+/g, " ")
+        .replace(/\s+/g, " ")
+        .trim() || "Imported Transactions";
+    }
+
+    function inferWealthImportMapping(headers, template = null, fileName = "") {
+      const normalized = template ? normalizeWealthImportTemplateRecord(template) : null;
+      const inferred = {
+        account_name: normalized?.account_name || defaultWealthImportTemplateName(fileName),
+        account_type: normalized?.account_type || "checking",
+        date_column: normalized?.mapping?.date_column || guessCsvColumn(headers, ["transaction date", "posting date", "date"]),
+        description_column: normalized?.mapping?.description_column || guessCsvColumn(headers, ["description", "details", "merchant", "narration", "reference", "transaction"]),
+        signed_amount_column: normalized?.mapping?.signed_amount_column || guessCsvColumn(headers, ["amount", "value"]),
+        debit_column: normalized?.mapping?.debit_column || guessCsvColumn(headers, ["debit", "withdrawal", "outflow", "money out", "spent"]),
+        credit_column: normalized?.mapping?.credit_column || guessCsvColumn(headers, ["credit", "deposit", "inflow", "money in", "received"]),
+        status_column: normalized?.mapping?.status_column || guessCsvColumn(headers, ["status"]),
+        currency_column: normalized?.mapping?.currency_column || guessCsvColumn(headers, ["currency", "ccy"]),
+        default_currency: normalized?.mapping?.default_currency || String(state.wealth?.currency || "AUD").trim().toUpperCase() || "AUD",
+        skip_statuses: Array.isArray(normalized?.mapping?.skip_statuses) && normalized.mapping.skip_statuses.length
+          ? normalized.mapping.skip_statuses.slice()
+          : ["Pending", "UnBilled"]
+      };
+      if (inferred.signed_amount_column && (inferred.debit_column === inferred.signed_amount_column || inferred.credit_column === inferred.signed_amount_column)) {
+        inferred.debit_column = "";
+        inferred.credit_column = "";
+      }
+      return inferred;
+    }
+
+    function buildGenericImportFingerprintBase(row, mapping) {
+      return [
+        trimCsvCell(row?.[mapping.date_column]),
+        trimCsvCell(row?.[mapping.description_column]),
+        trimCsvCell(mapping.signed_amount_column ? row?.[mapping.signed_amount_column] : ""),
+        trimCsvCell(mapping.debit_column ? row?.[mapping.debit_column] : ""),
+        trimCsvCell(mapping.credit_column ? row?.[mapping.credit_column] : ""),
+        trimCsvCell(mapping.status_column ? row?.[mapping.status_column] : ""),
+        trimCsvCell(mapping.currency_column ? row?.[mapping.currency_column] : "")
+      ].join("|");
+    }
+
+    function buildGenericImportCandidate(row, rowIndex, accountId, mapping, occurrence, fileName = "") {
+      const statusRaw = trimCsvCell(mapping.status_column ? row?.[mapping.status_column] : "");
+      const skipStatuses = new Set((mapping.skip_statuses || []).map(v => trimCsvCell(v).toLowerCase()).filter(Boolean));
+      if (statusRaw && skipStatuses.has(statusRaw.toLowerCase())) return { skip: "status", status: statusRaw };
+      const date = parseImportedDate(mapping.date_column ? row?.[mapping.date_column] : "");
+      if (!date) return { skip: "date", status: statusRaw };
+      const description = trimCsvCell(mapping.description_column ? row?.[mapping.description_column] : "");
+      if (!description) return { skip: "description", status: statusRaw };
+      const fallbackCurrency = trimCsvCell(mapping.currency_column ? row?.[mapping.currency_column] : "").toUpperCase()
+        || trimCsvCell(mapping.default_currency).toUpperCase()
+        || "AUD";
+      let amountInfo = null;
+      if (mapping.signed_amount_column) {
+        amountInfo = parseMoneyCell(row?.[mapping.signed_amount_column], fallbackCurrency);
+      } else {
+        const debitInfo = mapping.debit_column ? parseMoneyCell(row?.[mapping.debit_column], fallbackCurrency) : null;
+        const creditInfo = mapping.credit_column ? parseMoneyCell(row?.[mapping.credit_column], fallbackCurrency) : null;
+        const debitMinor = debitInfo?.amountMinorAbs || 0;
+        const creditMinor = creditInfo?.amountMinorAbs || 0;
+        if (creditMinor || debitMinor) {
+          const signedMinor = creditMinor && debitMinor ? (creditMinor - debitMinor) : (creditMinor || -debitMinor);
+          amountInfo = {
+            signedMinor,
+            amountMinorAbs: Math.abs(signedMinor),
+            currency: creditInfo?.currency || debitInfo?.currency || fallbackCurrency
+          };
+        }
+      }
+      if (!amountInfo || !amountInfo.signedMinor) return { skip: "zero", status: statusRaw };
+      const behavior = categorizeImportedTransaction(description, amountInfo.signedMinor);
+      const fingerprint = hashStringFnv1a(buildGenericImportFingerprintBase(row, mapping));
+      return {
+        skip: null,
+        source_ref: `generic_csv_v1:${accountId}:${fingerprint}:${occurrence}`,
+        date,
+        account_id: accountId,
+        description,
+        type: behavior.type,
+        category: behavior.category,
+        exclude_from_cashflow: behavior.excludeFromCashflow,
+        amount_signed_minor: amountInfo.signedMinor,
+        native_amount_minor: amountInfo.amountMinorAbs,
+        native_currency: amountInfo.currency || fallbackCurrency || "AUD",
+        source_status: statusRaw || null,
+        source_meta: {
+          csv_row_number: rowIndex + 2,
+          imported_file: fileName,
+          raw_description: description,
+          raw_date: trimCsvCell(mapping.date_column ? row?.[mapping.date_column] : ""),
+          raw_amount: trimCsvCell(mapping.signed_amount_column ? row?.[mapping.signed_amount_column] : ""),
+          raw_debit: trimCsvCell(mapping.debit_column ? row?.[mapping.debit_column] : ""),
+          raw_credit: trimCsvCell(mapping.credit_column ? row?.[mapping.credit_column] : ""),
+          raw_status: statusRaw || null
+        }
+      };
+    }
+
+    function collectGenericImportPreview(rows, mapping, sampleSize = 5) {
+      const previewRows = [];
+      const counts = {
+        totalRows: rows.length,
+        candidateRows: 0,
+        skippedStatusRows: 0,
+        skippedZeroRows: 0,
+        skippedMalformedRows: 0
+      };
+      const fingerprintCounts = new Map();
+      rows.forEach((row, rowIndex) => {
+        const base = buildGenericImportFingerprintBase(row, mapping);
+        const occurrence = (fingerprintCounts.get(base) || 0) + 1;
+        fingerprintCounts.set(base, occurrence);
+        const candidate = buildGenericImportCandidate(row, rowIndex, "__preview__", mapping, occurrence, wealthPendingImportSession?.fileName || "");
+        if (candidate.skip === "status") {
+          counts.skippedStatusRows += 1;
+          return;
+        }
+        if (candidate.skip === "zero") {
+          counts.skippedZeroRows += 1;
+          return;
+        }
+        if (candidate.skip) {
+          counts.skippedMalformedRows += 1;
+          return;
+        }
+        counts.candidateRows += 1;
+        if (previewRows.length < sampleSize) previewRows.push(candidate);
+      });
+      return { counts, previewRows };
+    }
+
+    function upsertWealthImportTemplate(template) {
+      const wealth = ensureWealthStateShape();
+      const normalized = normalizeWealthImportTemplateRecord(template);
+      const templates = Array.isArray(wealth.import_templates) ? wealth.import_templates : [];
+      const index = templates.findIndex(t => t.header_fingerprint === normalized.header_fingerprint);
+      if (index >= 0) {
+        templates[index] = { ...templates[index], ...normalized, id: templates[index].id };
+      } else {
+        templates.push(normalized);
+      }
+      wealth.import_templates = templates;
+      return normalized;
+    }
+
+    function simpleReturnPct(costBasisMinor, marketValueMinor) {
+      if (!Number.isFinite(costBasisMinor) || costBasisMinor <= 0) return null;
+      if (!Number.isFinite(marketValueMinor)) return null;
+      return ((marketValueMinor - costBasisMinor) / costBasisMinor) * 100;
+    }
+
+    function normalizeWealthSort(stateLike) {
+      const raw = stateLike?.wealth?.holdings_sort || {};
+      return {
+        key: WEALTH_HOLDING_SORT_KEYS.includes(raw.key) ? raw.key : "marketValueMinor",
+        dir: raw.dir === "asc" ? "asc" : "desc"
+      };
     }
 
     function getWealthAccount(id) {
@@ -10332,7 +11143,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       }
       const existing = getFxQuote(base, "AUD");
       if (existing && !existing.stale) return existing;
-      const url = `https://api.frankfurter.app/latest?from=${encodeURIComponent(base)}&to=AUD`;
+      const url = `https://open.er-api.com/v6/latest/${encodeURIComponent(base)}`;
       const data = await wealthFetchJson(url);
       const rate = Number.parseFloat(String(data?.rates?.AUD ?? ""));
       if (!Number.isFinite(rate) || rate <= 0) throw new Error(`Missing FX rate for ${base}/AUD`);
@@ -10345,9 +11156,57 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         rate_denominator: 1_000_000,
         fetched_at: new Date().toISOString(),
         stale_after_ms: 24 * 60 * 60 * 1000,
-        source: "frankfurter"
+        source: "open.er-api"
       };
       return getFxQuote(base, "AUD");
+    }
+
+    function wealthHistoricalFxQuoteKey(baseCurrency, quoteCurrency = "AUD", asOfDate = "") {
+      const baseKey = wealthFxQuoteKey(baseCurrency, quoteCurrency);
+      const dateKey = trimCsvCell(asOfDate);
+      return dateKey ? `${baseKey}@${dateKey}` : baseKey;
+    }
+
+    function getHistoricalFxQuote(baseCurrency, quoteCurrency = "AUD", asOfDate = "") {
+      const key = wealthHistoricalFxQuoteKey(baseCurrency, quoteCurrency, asOfDate);
+      const quote = state.wealth?.fx_quotes?.[key];
+      return hydrateWealthQuote(quote || null);
+    }
+
+    async function ensureHistoricalFxQuoteToAud(baseCurrency, asOfDate) {
+      const base = String(baseCurrency || "AUD").trim().toUpperCase();
+      const dateKey = /^\d{4}-\d{2}-\d{2}$/.test(String(asOfDate || "")) ? String(asOfDate) : "";
+      if (!dateKey) return ensureFxQuoteToAud(base);
+      if (!base || base === "AUD") {
+        return {
+          base_currency: "AUD",
+          quote_currency: "AUD",
+          rate_numerator: 1,
+          rate_denominator: 1,
+          fetched_at: new Date().toISOString(),
+          stale_after_ms: null,
+          source: "identity",
+          as_of_date: dateKey,
+          stale: false
+        };
+      }
+      const existing = getHistoricalFxQuote(base, "AUD", dateKey);
+      if (existing) return existing;
+      const fallback = await ensureFxQuoteToAud(base);
+      const key = wealthHistoricalFxQuoteKey(base, "AUD", dateKey);
+      if (!state.wealth.fx_quotes || typeof state.wealth.fx_quotes !== "object") state.wealth.fx_quotes = {};
+      state.wealth.fx_quotes[key] = {
+        base_currency: base,
+        quote_currency: "AUD",
+        rate_numerator: fallback?.rate_numerator || 1,
+        rate_denominator: fallback?.rate_denominator || 1,
+        fetched_at: new Date().toISOString(),
+        stale_after_ms: null,
+        source: fallback?.source ? `${fallback.source}_latest_fallback` : "latest_fallback",
+        as_of_date: dateKey,
+        historical_fallback: true
+      };
+      return getHistoricalFxQuote(base, "AUD", dateKey);
     }
 
     function upsertProviderQuote(provider, providerSymbol, patch) {
@@ -10468,6 +11327,877 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       await refreshPortfolioQuotes();
     }
 
+    function ensureWealthStateShape() {
+      if (!state.wealth) {
+        state.wealth = {
+          accounts: [],
+          transactions: [],
+          currency: "AUD",
+          display_percentages: false,
+          holdings_sort: { key: "marketValueMinor", dir: "desc" },
+          holdings: [],
+          price_quotes: {},
+          fx_quotes: {},
+          properties: [],
+          property_estimates: {},
+          import_templates: [],
+          category_rules: [],
+          last_import_review: null,
+          import_folder_label: ""
+        };
+      }
+      if (!Array.isArray(state.wealth.accounts)) state.wealth.accounts = [];
+      if (!Array.isArray(state.wealth.transactions)) state.wealth.transactions = [];
+      if (!Array.isArray(state.wealth.holdings)) state.wealth.holdings = [];
+      if (!Array.isArray(state.wealth.import_templates)) state.wealth.import_templates = [];
+      if (!Array.isArray(state.wealth.category_rules)) state.wealth.category_rules = [];
+      if (!state.wealth.price_quotes || typeof state.wealth.price_quotes !== "object") state.wealth.price_quotes = {};
+      if (!state.wealth.fx_quotes || typeof state.wealth.fx_quotes !== "object") state.wealth.fx_quotes = {};
+      if (typeof state.wealth.import_folder_label !== "string") state.wealth.import_folder_label = "";
+      return state.wealth;
+    }
+
+    function ensureWealthAccountByName(name, type = "checking") {
+      const wealth = ensureWealthStateShape();
+      const normalizedName = String(name || "").trim().toLowerCase();
+      const existing = wealth.accounts.find(a => !a.archived && String(a.name || "").trim().toLowerCase() === normalizedName);
+      if (existing) return { account: existing, created: false };
+      const account = {
+        id: uid(),
+        name: String(name || "Untitled Account").trim() || "Untitled Account",
+        type: ["checking","savings","credit_card","loan","investment","cash","other"].includes(type) ? type : "checking",
+        opening_balance_minor: 0,
+        created_at: new Date().toISOString(),
+        archived: false
+      };
+      wealth.accounts.push(account);
+      return { account, created: true };
+    }
+
+    function buildSabImportCandidate(row, rowIndex, accountId, occurrence) {
+      const status = trimCsvCell(row["Status"]);
+      if (status !== "Billed") return { skip: "status", status };
+      const sarAmount = parseSabMoneyCell(row["Amount(SAR)"]);
+      if (!sarAmount || !sarAmount.signedMinor) return { skip: "zero", status };
+      const postedDate = parseSabDate(row["Posting date"]) || parseSabDate(row["Transaction date"]);
+      if (!postedDate) return { skip: "date", status };
+      const description = cleanSabDescription(row["Description"]);
+      if (!description) return { skip: "description", status };
+      const otherCurrency = parseSabMoneyCell(row["Amount(Other Currency)"]);
+      const behavior = categorizeSabTransaction(description, sarAmount.signedMinor);
+      const fingerprint = hashStringFnv1a(buildSabFingerprintBase(row));
+      return {
+        skip: null,
+        source_ref: `${WEALTH_SAB_SOURCE}:${fingerprint}:${occurrence}`,
+        date: postedDate,
+        account_id: accountId,
+        description,
+        type: behavior.type,
+        category: behavior.category,
+        exclude_from_cashflow: behavior.excludeFromCashflow,
+        amount_sar_signed_minor: sarAmount.signedMinor,
+        native_amount_minor: otherCurrency?.amountMinorAbs ?? sarAmount.amountMinorAbs,
+        native_currency: otherCurrency?.currency || "SAR",
+        source_status: status,
+        source_meta: {
+          csv_row_number: rowIndex + 2,
+          transaction_date: parseSabDate(row["Transaction date"]),
+          posting_date: postedDate,
+          sar_amount_minor: sarAmount.amountMinorAbs,
+          sar_currency: "SAR",
+          other_amount_minor: otherCurrency?.amountMinorAbs ?? null,
+          other_currency: otherCurrency?.currency || null,
+          raw_description: trimCsvCell(row["Description"])
+        }
+      };
+    }
+
+    function setWealthImportBusyState(isBusy) {
+      const btn = document.getElementById("wealthImportSabBtn");
+      if (!btn) return;
+      btn.disabled = !!isBusy;
+      btn.textContent = isBusy ? "Importing..." : "Import Transactions CSV";
+    }
+
+    async function importSabCsvText(csvText, fileName = "TransHist.csv") {
+      const wealth = ensureWealthStateShape();
+      const rows = parseCsvText(csvText);
+      if (!rows.length) throw new Error("CSV is empty");
+      const headers = Object.keys(rows[0] || {});
+      const expectedHeaders = [
+        "Transaction date",
+        "Description",
+        "Posting date",
+        "Status",
+        "Amount(SAR)",
+        "Amount(Other Currency)"
+      ];
+      const missingHeaders = expectedHeaders.filter(header => !headers.includes(header));
+      if (missingHeaders.length) {
+        throw new Error("Unsupported CSV format. The current importer only supports SAB TransHist.csv.");
+      }
+      const { account, created } = ensureWealthAccountByName(WEALTH_SAB_ACCOUNT_NAME, "credit_card");
+      const existingRefs = new Set((wealth.transactions || []).map(t => t.source_ref).filter(Boolean));
+      const fingerprintCounts = new Map();
+      const candidates = [];
+      const summary = {
+        totalRows: rows.length,
+        billedRows: 0,
+        importedRows: 0,
+        duplicateRows: 0,
+        skippedStatusRows: 0,
+        skippedStatusBreakdown: {},
+        skippedZeroRows: 0,
+        skippedMalformedRows: 0,
+        transferRows: 0,
+        fallbackFxRows: 0,
+        createdAccount: created
+      };
+
+      rows.forEach((row, rowIndex) => {
+        const base = buildSabFingerprintBase(row);
+        const count = (fingerprintCounts.get(base) || 0) + 1;
+        fingerprintCounts.set(base, count);
+        const candidate = buildSabImportCandidate(row, rowIndex, account.id, count);
+        if (candidate.skip === "status") {
+          summary.skippedStatusRows += 1;
+          const key = candidate.status || "Unknown";
+          summary.skippedStatusBreakdown[key] = (summary.skippedStatusBreakdown[key] || 0) + 1;
+          return;
+        }
+        if (candidate.skip === "zero") {
+          summary.skippedZeroRows += 1;
+          return;
+        }
+        if (candidate.skip) {
+          summary.skippedMalformedRows += 1;
+          return;
+        }
+        summary.billedRows += 1;
+        candidates.push(candidate);
+      });
+
+      const imported = [];
+      const historicalFxCache = new Map();
+      for (const candidate of candidates) {
+        if (existingRefs.has(candidate.source_ref)) {
+          summary.duplicateRows += 1;
+          continue;
+        }
+        let fxQuote = historicalFxCache.get(candidate.date);
+        if (!fxQuote) {
+          fxQuote = await ensureHistoricalFxQuoteToAud("SAR", candidate.date);
+          historicalFxCache.set(candidate.date, fxQuote);
+        }
+        if (fxQuote?.historical_fallback) summary.fallbackFxRows += 1;
+        const txn = normalizeWealthTransactionRecord({
+          date: candidate.date,
+          account_id: candidate.account_id,
+          type: candidate.type,
+          amount_minor: applyFxQuoteToMinor(Math.abs(candidate.amount_sar_signed_minor), fxQuote),
+          category: candidate.category,
+          description: candidate.description,
+          currency: wealth.currency || "AUD",
+          native_amount_minor: candidate.native_amount_minor,
+          native_currency: candidate.native_currency,
+          source: WEALTH_SAB_SOURCE,
+          source_ref: candidate.source_ref,
+          source_status: candidate.source_status,
+          exclude_from_cashflow: candidate.exclude_from_cashflow,
+          source_meta: {
+            ...candidate.source_meta,
+            fx_rate_numerator: fxQuote?.rate_numerator || null,
+            fx_rate_denominator: fxQuote?.rate_denominator || null,
+            fx_source: fxQuote?.source || null,
+            imported_file: fileName
+          }
+        }, wealth.currency || "AUD");
+        imported.push(txn);
+        existingRefs.add(txn.source_ref);
+        if (candidate.exclude_from_cashflow) summary.transferRows += 1;
+      }
+
+      if (imported.length) {
+        wealth.transactions.push(...imported);
+        recordWealthImportReview({
+          fileName,
+          parserId: WEALTH_SAB_SOURCE,
+          imported,
+          summary,
+          createdAccountIds: created ? [account.id] : []
+        });
+        saveState("wealth_import_sab_csv");
+        renderWealth();
+      }
+
+      alert([
+        `SAB import complete${summary.createdAccount ? " · created account" : ""}`,
+        `Imported: ${imported.length} billed rows`,
+        `Skipped status: ${summary.skippedStatusRows}`,
+        `Skipped zero-value: ${summary.skippedZeroRows}`,
+        `Duplicates skipped: ${summary.duplicateRows}`,
+        summary.transferRows ? `Transfers excluded from cash flow: ${summary.transferRows}` : "",
+        summary.fallbackFxRows ? `Historical FX fallback used on ${summary.fallbackFxRows} rows` : ""
+      ].filter(Boolean).join("\n"));
+
+      return { imported, summary };
+    }
+
+    function readGenericImportMappingFromForm() {
+      const skipStatusesRaw = String(document.getElementById("wealthImportSkipStatuses")?.value || "");
+      return {
+        account_name: String(document.getElementById("wealthImportAccountName")?.value || "").trim(),
+        account_type: document.getElementById("wealthImportAccountType")?.value || "checking",
+        date_column: document.getElementById("wealthImportDateColumn")?.value || "",
+        description_column: document.getElementById("wealthImportDescriptionColumn")?.value || "",
+        signed_amount_column: document.getElementById("wealthImportSignedAmountColumn")?.value || "",
+        debit_column: document.getElementById("wealthImportDebitColumn")?.value || "",
+        credit_column: document.getElementById("wealthImportCreditColumn")?.value || "",
+        status_column: document.getElementById("wealthImportStatusColumn")?.value || "",
+        currency_column: document.getElementById("wealthImportCurrencyColumn")?.value || "",
+        default_currency: String(document.getElementById("wealthImportDefaultCurrency")?.value || state.wealth?.currency || "AUD").trim().toUpperCase() || "AUD",
+        skip_statuses: skipStatusesRaw
+          .split(",")
+          .map(v => v.trim())
+          .filter(Boolean)
+      };
+    }
+
+    function validateGenericImportMapping(mapping) {
+      if (!mapping.account_name) return "Choose an account name for imported transactions.";
+      if (!mapping.date_column) return "Choose the date column.";
+      if (!mapping.description_column) return "Choose the description column.";
+      if (!mapping.signed_amount_column && !mapping.debit_column && !mapping.credit_column) {
+        return "Choose a signed amount column or debit/credit columns.";
+      }
+      return "";
+    }
+
+    async function importGenericCsvRows(rows, fileName, mapping, options = {}) {
+      const wealth = ensureWealthStateShape();
+      const validationError = validateGenericImportMapping(mapping);
+      if (validationError) throw new Error(validationError);
+      const { account, created } = ensureWealthAccountByName(mapping.account_name, mapping.account_type);
+      const existingRefs = new Set((wealth.transactions || []).map(t => t.source_ref).filter(Boolean));
+      const fingerprintCounts = new Map();
+      const candidates = [];
+      const summary = {
+        totalRows: rows.length,
+        candidateRows: 0,
+        importedRows: 0,
+        duplicateRows: 0,
+        skippedStatusRows: 0,
+        skippedStatusBreakdown: {},
+        skippedZeroRows: 0,
+        skippedMalformedRows: 0,
+        transferRows: 0,
+        fallbackFxRows: 0,
+        createdAccount: created
+      };
+
+      rows.forEach((row, rowIndex) => {
+        const base = buildGenericImportFingerprintBase(row, mapping);
+        const occurrence = (fingerprintCounts.get(base) || 0) + 1;
+        fingerprintCounts.set(base, occurrence);
+        const candidate = buildGenericImportCandidate(row, rowIndex, account.id, mapping, occurrence, fileName);
+        if (candidate.skip === "status") {
+          summary.skippedStatusRows += 1;
+          const key = candidate.status || "Unknown";
+          summary.skippedStatusBreakdown[key] = (summary.skippedStatusBreakdown[key] || 0) + 1;
+          return;
+        }
+        if (candidate.skip === "zero") {
+          summary.skippedZeroRows += 1;
+          return;
+        }
+        if (candidate.skip) {
+          summary.skippedMalformedRows += 1;
+          return;
+        }
+        summary.candidateRows += 1;
+        candidates.push(candidate);
+      });
+
+      const imported = [];
+      const historicalFxCache = new Map();
+      for (const candidate of candidates) {
+        if (existingRefs.has(candidate.source_ref)) {
+          summary.duplicateRows += 1;
+          continue;
+        }
+        let amountMinor = candidate.native_amount_minor;
+        if (candidate.native_currency && candidate.native_currency !== "AUD") {
+          const fxKey = `${candidate.native_currency}:${candidate.date}`;
+          let fxQuote = historicalFxCache.get(fxKey);
+          if (!fxQuote) {
+            fxQuote = await ensureHistoricalFxQuoteToAud(candidate.native_currency, candidate.date);
+            historicalFxCache.set(fxKey, fxQuote);
+          }
+          if (fxQuote?.historical_fallback) summary.fallbackFxRows += 1;
+          amountMinor = applyFxQuoteToMinor(candidate.native_amount_minor, fxQuote);
+          candidate.source_meta.fx_rate_numerator = fxQuote?.rate_numerator || null;
+          candidate.source_meta.fx_rate_denominator = fxQuote?.rate_denominator || null;
+          candidate.source_meta.fx_source = fxQuote?.source || null;
+        }
+        const txn = normalizeWealthTransactionRecord({
+          date: candidate.date,
+          account_id: candidate.account_id,
+          type: candidate.type,
+          amount_minor: amountMinor,
+          category: candidate.category,
+          description: candidate.description,
+          currency: wealth.currency || "AUD",
+          native_amount_minor: candidate.native_amount_minor,
+          native_currency: candidate.native_currency,
+          source: options.parserId || "generic_csv_v1",
+          source_ref: candidate.source_ref,
+          source_status: candidate.source_status,
+          exclude_from_cashflow: candidate.exclude_from_cashflow,
+          source_meta: candidate.source_meta
+        }, wealth.currency || "AUD");
+        imported.push(txn);
+        existingRefs.add(txn.source_ref);
+        if (candidate.exclude_from_cashflow) summary.transferRows += 1;
+      }
+
+      if (imported.length) {
+        wealth.transactions.push(...imported);
+      }
+      if (imported.length) {
+        recordWealthImportReview({
+          fileName,
+          parserId: options.parserId || "generic_csv_v1",
+          imported,
+          summary,
+          createdAccountIds: created ? [account.id] : []
+        });
+      }
+      if (options.saveTemplate) {
+        upsertWealthImportTemplate({
+          name: options.templateName || defaultWealthImportTemplateName(fileName),
+          header_fingerprint: wealthImportHeaderFingerprint(Object.keys(rows[0] || {})),
+          parser_id: options.parserId || "generic_csv_v1",
+          account_name: mapping.account_name,
+          account_type: mapping.account_type,
+          mapping
+        });
+      }
+      if (imported.length || options.saveTemplate) {
+        saveState("wealth_import_generic_csv");
+      }
+      renderWealth();
+      return { imported, summary };
+    }
+
+    function recordWealthImportReview({ fileName, parserId, imported, summary, createdAccountIds = [] }) {
+      const wealth = ensureWealthStateShape();
+      wealth.last_import_review = normalizeWealthImportReviewRecord({
+        id: uid(),
+        created_at: new Date().toISOString(),
+        file_name: fileName,
+        parser_id: parserId || "generic_csv_v1",
+        imported_transaction_ids: (imported || []).map(txn => txn.id),
+        created_account_ids: createdAccountIds,
+        summary,
+        sample_transactions: (imported || []).slice(0, 12)
+      });
+    }
+
+    function deleteWealthTransactionsByIds(ids) {
+      const txIds = new Set((ids || []).filter(Boolean));
+      if (!txIds.size) return 0;
+      const before = state.wealth?.transactions?.length || 0;
+      state.wealth.transactions = (state.wealth?.transactions || []).filter(txn => !txIds.has(txn.id));
+      return before - state.wealth.transactions.length;
+    }
+
+    function maybeRemoveEmptyImportedAccounts(accountIds) {
+      const ids = new Set((accountIds || []).filter(Boolean));
+      if (!ids.size) return;
+      state.wealth.accounts = (state.wealth?.accounts || []).filter(account => {
+        if (!ids.has(account.id)) return true;
+        const hasTxns = (state.wealth?.transactions || []).some(txn => txn.account_id === account.id);
+        const hasHoldings = (state.wealth?.holdings || []).some(holding => holding.account_id === account.id);
+        return hasTxns || hasHoldings;
+      });
+    }
+
+    function undoLastWealthImport() {
+      const review = state.wealth?.last_import_review;
+      if (!review?.imported_transaction_ids?.length) return 0;
+      const removed = deleteWealthTransactionsByIds(review.imported_transaction_ids);
+      maybeRemoveEmptyImportedAccounts(review.created_account_ids || []);
+      state.wealth.last_import_review = null;
+      saveState("wealth_undo_last_import");
+      renderWealth();
+      return removed;
+    }
+
+    function addWealthCategoryRule(payload, options = {}) {
+      const wealth = ensureWealthStateShape();
+      const rule = normalizeWealthCategoryRuleRecord(payload);
+      if (!rule.pattern) return null;
+      const existing = wealth.category_rules.find(r =>
+        r.pattern.toUpperCase() === rule.pattern.toUpperCase() &&
+        r.category === rule.category &&
+        r.tx_type === rule.tx_type &&
+        r.match_mode === rule.match_mode
+      );
+      if (existing) return existing;
+      wealth.category_rules.push(rule);
+      if (options.applyExisting) {
+        applyWealthCategoryRuleToTransactions(rule, options.scope || "all");
+      }
+      saveState("wealth_add_category_rule");
+      renderWealth();
+      return rule;
+    }
+
+    function deleteWealthCategoryRule(ruleId) {
+      const before = state.wealth?.category_rules?.length || 0;
+      state.wealth.category_rules = (state.wealth?.category_rules || []).filter(rule => rule.id !== ruleId);
+      if ((state.wealth?.category_rules?.length || 0) === before) return;
+      saveState("wealth_delete_category_rule");
+      renderWealth();
+    }
+
+    function applyWealthCategoryRuleToTransactions(rule, scope = "all") {
+      const patternUpper = String(rule?.pattern || "").trim().toUpperCase();
+      if (!patternUpper) return 0;
+      const lastImportIds = new Set(state.wealth?.last_import_review?.imported_transaction_ids || []);
+      let updates = 0;
+      (state.wealth?.transactions || []).forEach(txn => {
+        if (scope === "last_import" && !lastImportIds.has(txn.id)) return;
+        if (rule.tx_type !== "any" && txn.type !== rule.tx_type) return;
+        const descriptionUpper = String(txn.description || "").trim().toUpperCase();
+        const matches = rule.match_mode === "exact"
+          ? descriptionUpper === patternUpper
+          : descriptionUpper.includes(patternUpper);
+        if (!matches) return;
+        if (txn.category === rule.category) return;
+        txn.category = rule.category;
+        updates += 1;
+      });
+      if (updates > 0) {
+        saveState("wealth_apply_category_rule");
+        renderWealth();
+      }
+      return updates;
+    }
+
+    function deleteWealthImportTemplate(templateId) {
+      const before = state.wealth?.import_templates?.length || 0;
+      state.wealth.import_templates = (state.wealth?.import_templates || []).filter(template => template.id !== templateId);
+      if ((state.wealth?.import_templates?.length || 0) === before) return;
+      saveState("wealth_delete_import_template");
+      renderWealth();
+    }
+
+    function renameWealthImportTemplate(templateId, nextName) {
+      const template = (state.wealth?.import_templates || []).find(item => item.id === templateId);
+      const trimmed = String(nextName || "").trim();
+      if (!template || !trimmed) return;
+      template.name = trimmed;
+      saveState("wealth_rename_import_template");
+      renderWealth();
+    }
+
+    function buildImportHeaderOptions(headers, selectedValue = "") {
+      return [`<option value=\"\">—</option>`].concat(
+        headers.map(header => `<option value="${escapeHtml(header)}" ${header === selectedValue ? "selected" : ""}>${escapeHtml(header)}</option>`)
+      ).join("");
+    }
+
+    function renderGenericImportPreview(preview) {
+      const rows = preview.previewRows || [];
+      if (!rows.length) {
+        return `<div style="font-size:.82rem;color:var(--text2)">No importable rows found with the current mapping.</div>`;
+      }
+      return `<div style="display:grid;gap:8px">
+        ${rows.map(row => `<div style="display:grid;grid-template-columns:88px 1fr auto;gap:12px;padding:10px 12px;border:1px solid var(--border);border-radius:12px;background:var(--surface2)">
+          <div style="font-size:.78rem;color:var(--text2)">${escapeHtml(formatDateLabel(row.date))}</div>
+          <div style="font-size:.86rem;font-weight:600">${escapeHtml(row.description)}</div>
+          <div style="font-size:.82rem;color:${row.type === "income" ? "var(--accent)" : "#dc2626"}">${row.type === "income" ? "+" : "-"}${escapeHtml(formatCurrency(row.native_amount_minor, row.native_currency || "AUD"))}</div>
+        </div>`).join("")}
+      </div>`;
+    }
+
+    function refreshGenericImportPreview() {
+      if (!wealthPendingImportSession?.rows?.length) return;
+      const mapping = readGenericImportMappingFromForm();
+      const preview = collectGenericImportPreview(wealthPendingImportSession.rows, mapping);
+      const summaryEl = document.getElementById("wealthImportPreviewSummary");
+      const bodyEl = document.getElementById("wealthImportPreviewBody");
+      if (summaryEl) {
+        summaryEl.textContent = `${preview.counts.candidateRows} importable · ${preview.counts.skippedStatusRows} status-skipped · ${preview.counts.skippedZeroRows} zero-value · ${preview.counts.skippedMalformedRows} malformed`;
+      }
+      if (bodyEl) {
+        bodyEl.innerHTML = renderGenericImportPreview(preview);
+      }
+    }
+
+    function showGenericCsvImportModal(rows, fileName, template = null) {
+      const headers = Object.keys(rows[0] || {});
+      const inferred = inferWealthImportMapping(headers, template, fileName);
+      wealthPendingImportSession = { rows, fileName, headers, template };
+      const options = buildImportHeaderOptions;
+      const html = `<div class="wealth-form-grid">
+        <div style="grid-column:1 / -1;font-size:.82rem;color:var(--text2)">Map this CSV once, then save the template for future imports.</div>
+        <div>
+          <label>Template Name</label>
+          <input id="wealthImportTemplateName" value="${escapeHtml(template?.name || defaultWealthImportTemplateName(fileName))}" />
+        </div>
+        <div>
+          <label>Save Template</label>
+          <select id="wealthImportSaveTemplate">
+            <option value="yes" selected>Yes</option>
+            <option value="no">No</option>
+          </select>
+        </div>
+        <div>
+          <label>Account Name</label>
+          <input id="wealthImportAccountName" value="${escapeHtml(inferred.account_name)}" />
+        </div>
+        <div>
+          <label>Account Type</label>
+          <select id="wealthImportAccountType">${Object.entries(WEALTH_ACCOUNT_TYPES).map(([k, v]) => `<option value="${k}" ${k === inferred.account_type ? "selected" : ""}>${v}</option>`).join("")}</select>
+        </div>
+        <div>
+          <label>Date Column</label>
+          <select id="wealthImportDateColumn">${options(headers, inferred.date_column)}</select>
+        </div>
+        <div>
+          <label>Description Column</label>
+          <select id="wealthImportDescriptionColumn">${options(headers, inferred.description_column)}</select>
+        </div>
+        <div>
+          <label>Signed Amount Column</label>
+          <select id="wealthImportSignedAmountColumn">${options(headers, inferred.signed_amount_column)}</select>
+        </div>
+        <div>
+          <label>Debit Column</label>
+          <select id="wealthImportDebitColumn">${options(headers, inferred.debit_column)}</select>
+        </div>
+        <div>
+          <label>Credit Column</label>
+          <select id="wealthImportCreditColumn">${options(headers, inferred.credit_column)}</select>
+        </div>
+        <div>
+          <label>Status Column</label>
+          <select id="wealthImportStatusColumn">${options(headers, inferred.status_column)}</select>
+        </div>
+        <div>
+          <label>Currency Column</label>
+          <select id="wealthImportCurrencyColumn">${options(headers, inferred.currency_column)}</select>
+        </div>
+        <div>
+          <label>Default Currency</label>
+          <input id="wealthImportDefaultCurrency" maxlength="3" value="${escapeHtml(inferred.default_currency)}" />
+        </div>
+        <div style="grid-column:1 / -1">
+          <label>Skip Statuses (comma separated)</label>
+          <input id="wealthImportSkipStatuses" value="${escapeHtml((inferred.skip_statuses || []).join(", "))}" />
+        </div>
+        <div style="grid-column:1 / -1;border:1px solid var(--border);border-radius:14px;padding:12px;background:var(--surface2)">
+          <div style="display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:8px">
+            <strong>Preview</strong>
+            <span id="wealthImportPreviewSummary" style="font-size:.8rem;color:var(--text2)"></span>
+          </div>
+          <div id="wealthImportPreviewBody"></div>
+        </div>
+        <div id="wealthImportStatus" style="grid-column:1 / -1;font-size:.82rem;color:var(--text2)" hidden></div>
+        <div style="grid-column:1 / -1;display:flex;justify-content:flex-end;gap:10px;margin-top:8px">
+          <button type="button" class="ghost" id="wealthImportCancelBtn">Cancel</button>
+          <button type="button" class="primary" id="wealthImportConfirmBtn">Import CSV</button>
+        </div>
+      </div>`;
+      showWealthModal("Map CSV Import", html);
+      requestAnimationFrame(() => {
+        const setImportStatus = (message, isError = false) => {
+          const statusEl = document.getElementById("wealthImportStatus");
+          if (!statusEl) return;
+          statusEl.hidden = !message;
+          statusEl.textContent = message || "";
+          statusEl.style.color = isError ? "#dc2626" : "var(--text2)";
+        };
+        ["wealthImportAccountName","wealthImportDateColumn","wealthImportDescriptionColumn","wealthImportSignedAmountColumn","wealthImportDebitColumn","wealthImportCreditColumn","wealthImportStatusColumn","wealthImportCurrencyColumn","wealthImportDefaultCurrency","wealthImportSkipStatuses"].forEach(id => {
+          document.getElementById(id)?.addEventListener("change", refreshGenericImportPreview);
+          document.getElementById(id)?.addEventListener("input", refreshGenericImportPreview);
+        });
+        document.getElementById("wealthImportCancelBtn")?.addEventListener("click", () => {
+          wealthPendingImportSession = null;
+          closeWealthModal();
+        });
+        document.getElementById("wealthImportConfirmBtn")?.addEventListener("click", async () => {
+          const confirmBtn = document.getElementById("wealthImportConfirmBtn");
+          const cancelBtn = document.getElementById("wealthImportCancelBtn");
+          const mapping = readGenericImportMappingFromForm();
+          const validationError = validateGenericImportMapping(mapping);
+          if (validationError) {
+            setImportStatus(validationError, true);
+            return;
+          }
+          try {
+            setImportStatus("Importing...");
+            if (confirmBtn) {
+              confirmBtn.disabled = true;
+              confirmBtn.textContent = "Importing...";
+            }
+            if (cancelBtn) cancelBtn.disabled = true;
+            const result = await importGenericCsvRows(rows, fileName, mapping, {
+              saveTemplate: (document.getElementById("wealthImportSaveTemplate")?.value || "yes") === "yes",
+              templateName: document.getElementById("wealthImportTemplateName")?.value || defaultWealthImportTemplateName(fileName),
+              parserId: template?.parser_id || "generic_csv_v1"
+            });
+            const message = [
+              result.imported.length > 0
+                ? `Imported ${result.imported.length} row${result.imported.length === 1 ? "" : "s"}`
+                : "No new rows imported",
+              result.summary.duplicateRows ? `${result.summary.duplicateRows} duplicate${result.summary.duplicateRows === 1 ? "" : "s"} skipped` : "",
+              result.summary.skippedStatusRows ? `${result.summary.skippedStatusRows} status-skipped` : "",
+              result.summary.skippedZeroRows ? `${result.summary.skippedZeroRows} zero-value skipped` : "",
+              result.summary.skippedMalformedRows ? `${result.summary.skippedMalformedRows} malformed skipped` : "",
+              result.summary.createdAccount ? "Created account" : "",
+              result.summary.transferRows ? `${result.summary.transferRows} transfer${result.summary.transferRows === 1 ? "" : "s"} excluded from cash flow` : "",
+              result.summary.fallbackFxRows ? `Historical FX fallback used on ${result.summary.fallbackFxRows} row${result.summary.fallbackFxRows === 1 ? "" : "s"}` : ""
+            ].filter(Boolean).join(" · ");
+            setImportStatus(message, false);
+            wealthPendingImportSession = null;
+            if (confirmBtn) {
+              confirmBtn.disabled = false;
+              confirmBtn.textContent = result.imported.length > 0 ? "Imported" : "No New Rows";
+            }
+            if (cancelBtn) {
+              cancelBtn.disabled = false;
+              cancelBtn.textContent = "Close";
+            }
+          } catch (err) {
+            setImportStatus(`Transaction import failed: ${err?.message || err}`, true);
+            if (confirmBtn) {
+              confirmBtn.disabled = false;
+              confirmBtn.textContent = "Import CSV";
+            }
+            if (cancelBtn) cancelBtn.disabled = false;
+          }
+        });
+        refreshGenericImportPreview();
+      });
+    }
+
+    function showWealthCategoryRuleModal(preset = {}) {
+      const defaultCategory = preset.category || "Other";
+      const defaultPattern = preset.pattern || "";
+      const defaultScope = preset.scope || "all";
+      const html = `<div class="wealth-form-grid">
+        <div>
+          <label>Merchant / Pattern</label>
+          <input id="wealthRulePattern" value="${escapeHtml(defaultPattern)}" placeholder="e.g. MCDONALDS" />
+        </div>
+        <div class="wealth-form-row">
+          <div>
+            <label>Category</label>
+            <select id="wealthRuleCategory">${WEALTH_EXPENSE_CATEGORIES.concat(WEALTH_INCOME_CATEGORIES, [WEALTH_TRANSFER_CATEGORY]).filter((value, index, list) => list.indexOf(value) === index).map(category => `<option value="${escapeHtml(category)}" ${category === defaultCategory ? "selected" : ""}>${escapeHtml(category)}</option>`).join("")}</select>
+          </div>
+          <div>
+            <label>Transaction Type</label>
+            <select id="wealthRuleTxType">
+              <option value="any" ${preset.tx_type === "any" ? "selected" : ""}>Any</option>
+              <option value="expense" ${preset.tx_type !== "income" ? "selected" : ""}>Expense</option>
+              <option value="income" ${preset.tx_type === "income" ? "selected" : ""}>Income</option>
+            </select>
+          </div>
+        </div>
+        <div class="wealth-form-row">
+          <div>
+            <label>Match Mode</label>
+            <select id="wealthRuleMatchMode">
+              <option value="contains" ${preset.match_mode !== "exact" ? "selected" : ""}>Contains</option>
+              <option value="exact" ${preset.match_mode === "exact" ? "selected" : ""}>Exact</option>
+            </select>
+          </div>
+          <div>
+            <label>Apply To</label>
+            <select id="wealthRuleApplyScope">
+              <option value="all" ${defaultScope === "all" ? "selected" : ""}>All matching transactions</option>
+              <option value="last_import" ${defaultScope === "last_import" ? "selected" : ""}>Last import only</option>
+            </select>
+          </div>
+        </div>
+        <label style="display:flex;align-items:center;gap:8px"><input id="wealthRuleApplyExisting" type="checkbox" checked />Apply to existing matching transactions now</label>
+        <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:8px">
+          <button class="ghost" id="wealthRuleCancelBtn" type="button">Cancel</button>
+          <button class="primary" id="wealthRuleSaveBtn" type="button">Save Rule</button>
+        </div>
+      </div>`;
+      showWealthModal("Category Rule", html);
+      requestAnimationFrame(() => {
+        document.getElementById("wealthRulePattern")?.focus();
+        document.getElementById("wealthRuleCancelBtn")?.addEventListener("click", closeWealthModal);
+        document.getElementById("wealthRuleSaveBtn")?.addEventListener("click", () => {
+          const pattern = String(document.getElementById("wealthRulePattern")?.value || "").trim();
+          if (!pattern) return;
+          addWealthCategoryRule({
+            pattern,
+            category: document.getElementById("wealthRuleCategory")?.value || "Other",
+            tx_type: document.getElementById("wealthRuleTxType")?.value || "any",
+            match_mode: document.getElementById("wealthRuleMatchMode")?.value || "contains"
+          }, {
+            applyExisting: !!document.getElementById("wealthRuleApplyExisting")?.checked,
+            scope: document.getElementById("wealthRuleApplyScope")?.value || "all"
+          });
+          closeWealthModal();
+        });
+      });
+    }
+
+    function showWealthBulkOtherModal() {
+      const html = `<div class="wealth-form-grid">
+        <div class="tiny" style="line-height:1.5;color:var(--text2)">Reclassify matching transactions that are currently in <strong>Other</strong>. You can also save a reusable merchant rule.</div>
+        <div>
+          <label>Match Text</label>
+          <input id="wealthBulkOtherPattern" placeholder="e.g. MCDONALDS" />
+        </div>
+        <div class="wealth-form-row">
+          <div>
+            <label>New Category</label>
+            <select id="wealthBulkOtherCategory">${WEALTH_EXPENSE_CATEGORIES.map(category => `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`).join("")}</select>
+          </div>
+          <div>
+            <label>Scope</label>
+            <select id="wealthBulkOtherScope">
+              <option value="all">All transactions</option>
+              <option value="last_import">Last import only</option>
+            </select>
+          </div>
+        </div>
+        <label style="display:flex;align-items:center;gap:8px"><input id="wealthBulkOtherSaveRule" type="checkbox" checked />Save as reusable rule</label>
+        <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:8px">
+          <button class="ghost" id="wealthBulkOtherCancelBtn" type="button">Cancel</button>
+          <button class="primary" id="wealthBulkOtherApplyBtn" type="button">Apply</button>
+        </div>
+      </div>`;
+      showWealthModal("Bulk Recategorize Other", html);
+      requestAnimationFrame(() => {
+        document.getElementById("wealthBulkOtherPattern")?.focus();
+        document.getElementById("wealthBulkOtherCancelBtn")?.addEventListener("click", closeWealthModal);
+        document.getElementById("wealthBulkOtherApplyBtn")?.addEventListener("click", () => {
+          const pattern = String(document.getElementById("wealthBulkOtherPattern")?.value || "").trim();
+          const category = document.getElementById("wealthBulkOtherCategory")?.value || "Other";
+          const scope = document.getElementById("wealthBulkOtherScope")?.value || "all";
+          if (!pattern) return;
+          let updates = 0;
+          const reviewIds = new Set(state.wealth?.last_import_review?.imported_transaction_ids || []);
+          (state.wealth?.transactions || []).forEach(txn => {
+            if (txn.category !== "Other") return;
+            if (scope === "last_import" && !reviewIds.has(txn.id)) return;
+            if (!String(txn.description || "").toUpperCase().includes(pattern.toUpperCase())) return;
+            txn.category = category;
+            updates += 1;
+          });
+          if (updates > 0) saveState("wealth_bulk_recategorize_other");
+          if (document.getElementById("wealthBulkOtherSaveRule")?.checked) {
+            addWealthCategoryRule({ pattern, category, tx_type: "expense", match_mode: "contains" }, { applyExisting: false });
+          } else {
+            renderWealth();
+          }
+          closeWealthModal();
+          alert(`Updated ${updates} transaction${updates === 1 ? "" : "s"}.`);
+        });
+      });
+    }
+
+    function showRenameImportTemplateModal(templateId) {
+      const template = (state.wealth?.import_templates || []).find(item => item.id === templateId);
+      if (!template) return;
+      const html = `<div class="wealth-form-grid">
+        <div>
+          <label>Template Name</label>
+          <input id="wealthRenameTemplateInput" value="${escapeHtml(template.name)}" />
+        </div>
+        <div class="wealth-rule-meta">
+          <span>${escapeHtml(template.account_name || "No account")}</span>
+          <span>${escapeHtml(template.mapping.date_column || "No date")}</span>
+          <span>${escapeHtml(template.mapping.signed_amount_column || [template.mapping.debit_column, template.mapping.credit_column].filter(Boolean).join(" / ") || "No amount")}</span>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:8px">
+          <button class="ghost" id="wealthRenameTemplateCancelBtn" type="button">Cancel</button>
+          <button class="primary" id="wealthRenameTemplateSaveBtn" type="button">Save</button>
+        </div>
+      </div>`;
+      showWealthModal("Rename Import Template", html);
+      requestAnimationFrame(() => {
+        document.getElementById("wealthRenameTemplateInput")?.focus();
+        document.getElementById("wealthRenameTemplateCancelBtn")?.addEventListener("click", closeWealthModal);
+        document.getElementById("wealthRenameTemplateSaveBtn")?.addEventListener("click", () => {
+          renameWealthImportTemplate(templateId, document.getElementById("wealthRenameTemplateInput")?.value || "");
+          closeWealthModal();
+        });
+      });
+    }
+
+    async function importScannedFolderFile(fileId) {
+      const file = wealthScannedImportFiles.find(item => item.id === fileId);
+      if (!file) return;
+      setWealthImportBusyState(true);
+      try {
+        const text = await file.file.text();
+        await handleWealthCsvImportText(text, file.displayName);
+      } catch (err) {
+        alert(`Transaction import failed: ${err?.message || err}`);
+      } finally {
+        setWealthImportBusyState(false);
+      }
+    }
+
+    async function handleWealthCsvImportText(csvText, fileName) {
+      const rows = parseCsvText(csvText);
+      if (!rows.length) throw new Error("CSV is empty");
+      const headers = Object.keys(rows[0] || {});
+      if (matchSabTranshistCsv(headers)) {
+        return importSabCsvText(csvText, fileName);
+      }
+      const matchedTemplate = getWealthImportTemplateByHeaders(headers);
+      if (matchedTemplate) {
+        const useTemplate = confirm(`Use saved import template "${matchedTemplate.name}" for ${fileName}?`);
+        if (useTemplate) {
+          const mapping = inferWealthImportMapping(headers, matchedTemplate, fileName);
+          const result = await importGenericCsvRows(rows, fileName, mapping, {
+            saveTemplate: false,
+            templateName: matchedTemplate.name,
+            parserId: matchedTemplate.parser_id || "generic_csv_v1"
+          });
+          alert([
+            `CSV import complete${result.summary.createdAccount ? " · created account" : ""}`,
+            `Imported: ${result.imported.length} rows`,
+            `Skipped status: ${result.summary.skippedStatusRows}`,
+            `Skipped zero-value: ${result.summary.skippedZeroRows}`,
+            `Skipped malformed: ${result.summary.skippedMalformedRows}`,
+            `Duplicates skipped: ${result.summary.duplicateRows}`,
+            result.summary.transferRows ? `Transfers excluded from cash flow: ${result.summary.transferRows}` : "",
+            result.summary.fallbackFxRows ? `Historical FX fallback used on ${result.summary.fallbackFxRows} rows` : ""
+          ].filter(Boolean).join("\n"));
+          return result;
+        }
+      }
+      showGenericCsvImportModal(rows, fileName, matchedTemplate);
+      return null;
+    }
+
+    function scanWealthImportFolder(files) {
+      const selected = Array.from(files || []).filter(file => /\.csv$/i.test(file.name || ""));
+      wealthScannedImportFiles = selected.map(file => ({
+        id: uid(),
+        file,
+        displayName: file.name || "transactions.csv",
+        folderLabel: String(file.webkitRelativePath || "").split("/").slice(0, -1).join("/")
+      }));
+      const firstFolder = wealthScannedImportFiles[0]?.folderLabel || "";
+      if (state.wealth) state.wealth.import_folder_label = firstFolder;
+      saveState("wealth_scan_import_folder");
+      renderWealth();
+      return wealthScannedImportFiles.length;
+    }
+
     function computeAccountBalance(accountId) {
       const account = getWealthAccount(accountId);
       if (!account) return 0;
@@ -10508,6 +12238,61 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       };
     }
 
+    function clampWealthMonthKey(value) {
+      const raw = String(value || "").trim();
+      if (/^\d{4}-\d{2}$/.test(raw)) return raw;
+      return todayISO().slice(0, 7);
+    }
+
+    function addMonthsToMonthKey(monthKey, delta) {
+      const base = clampWealthMonthKey(monthKey);
+      const [year, month] = base.split("-").map(Number);
+      const d = new Date(year, (month - 1) + Number(delta || 0), 1);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    }
+
+    function getMonthRangeFromKey(monthKey) {
+      const safe = clampWealthMonthKey(monthKey);
+      const [year, month] = safe.split("-").map(Number);
+      const start = new Date(year, month - 1, 1);
+      const end = new Date(year, month, 0);
+      return {
+        monthKey: safe,
+        start: start.toISOString().slice(0, 10),
+        end: end.toISOString().slice(0, 10),
+        label: start.toLocaleDateString("en-AU", { month: "long", year: "numeric" })
+      };
+    }
+
+    function getWealthCashflowRange() {
+      const anchor = clampWealthMonthKey(wealthCashflowAnchorMonth);
+      const months = wealthCashflowRange === "quarter"
+        ? 3
+        : wealthCashflowRange === "6month"
+          ? 6
+          : wealthCashflowRange === "year"
+            ? 12
+            : 1;
+      const endMonth = getMonthRangeFromKey(anchor);
+      const startMonth = getMonthRangeFromKey(addMonthsToMonthKey(anchor, -(months - 1)));
+      const label = months === 1
+        ? endMonth.label
+        : `${startMonth.label} – ${endMonth.label}`;
+      return {
+        range: wealthCashflowRange,
+        months,
+        anchorMonth: anchor,
+        start: startMonth.start,
+        end: endMonth.end,
+        label
+      };
+    }
+
+    function wealthTxnsForCashflowRange() {
+      const { start, end } = getWealthCashflowRange();
+      return (state.wealth?.transactions || []).filter(t => t.date >= start && t.date <= end);
+    }
+
     function wealthTxnsForMonth(offset) {
       const { start, end } = getMonthRange(offset);
       return (state.wealth?.transactions || []).filter(t => t.date >= start && t.date <= end);
@@ -10530,8 +12315,42 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         quote,
         marketValueMinor,
         costBasisMinor,
-        gainLossMinor
+        gainLossMinor,
+        returnPct: quote ? simpleReturnPct(costBasisMinor, marketValueMinor) : null
       };
+    }
+
+    function getHoldingSortValue(holding, key) {
+      switch (key) {
+        case "display_symbol": return String(holding.display_symbol || "").toUpperCase();
+        case "units": return Number(holding.units || 0);
+        case "priceMinorAud": return Number(holding.quote?.price_minor_aud ?? Number.NEGATIVE_INFINITY);
+        case "marketValueMinor": return Number(holding.marketValueMinor || 0);
+        case "costBasisMinor": return Number(holding.costBasisMinor || 0);
+        case "gainLossMinor": return Number(holding.gainLossMinor ?? Number.NEGATIVE_INFINITY);
+        case "provider": return String(holding.quote?.provider || holding.provider || "").toUpperCase();
+        default: return Number(holding.marketValueMinor || 0);
+      }
+    }
+
+    function sortHoldingViews(holdingViews, sortKey, sortDir) {
+      const multiplier = sortDir === "asc" ? 1 : -1;
+      return [...holdingViews].sort((a, b) => {
+        const av = getHoldingSortValue(a, sortKey);
+        const bv = getHoldingSortValue(b, sortKey);
+        const aMissing = av == null || av === Number.NEGATIVE_INFINITY || av === Number.POSITIVE_INFINITY;
+        const bMissing = bv == null || bv === Number.NEGATIVE_INFINITY || bv === Number.POSITIVE_INFINITY;
+        if (aMissing && bMissing) return a.display_symbol.localeCompare(b.display_symbol);
+        if (aMissing) return 1;
+        if (bMissing) return -1;
+        if (typeof av === "string" || typeof bv === "string") {
+          const cmp = String(av).localeCompare(String(bv));
+          return cmp === 0 ? a.display_symbol.localeCompare(b.display_symbol) : cmp * multiplier;
+        }
+        const diff = Number(av) - Number(bv);
+        if (diff === 0) return a.display_symbol.localeCompare(b.display_symbol);
+        return diff * multiplier;
+      });
     }
 
     function getPortfolioSnapshot() {
@@ -10564,7 +12383,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
     }
 
     function addWealthAccount(name, type, openingBalance) {
-      if (!state.wealth) state.wealth = { accounts: [], transactions: [], currency: "AUD", holdings: [], price_quotes: {}, fx_quotes: {}, properties: [], property_estimates: {} };
+      ensureWealthStateShape();
       const account = {
         id: uid(),
         name: name || "New Account",
@@ -10593,18 +12412,17 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
     }
 
     function addWealthTransaction(date, accountId, type, amount, category, description) {
-      if (!state.wealth) state.wealth = { accounts: [], transactions: [], currency: "AUD", holdings: [], price_quotes: {}, fx_quotes: {}, properties: [], property_estimates: {} };
-      const txn = {
-        id: uid(),
+      const wealth = ensureWealthStateShape();
+      const txn = normalizeWealthTransactionRecord({
         date: date || todayISO(),
         account_id: accountId || null,
         type: type === "income" ? "income" : "expense",
         amount_minor: Math.abs(moneyToMinor(amount)),
         category: category || "Other",
         description: description || "",
-        created_at: new Date().toISOString()
-      };
-      state.wealth.transactions.push(txn);
+        currency: wealth.currency || "AUD"
+      }, wealth.currency || "AUD");
+      wealth.transactions.push(txn);
       saveState("wealth_add_txn");
       renderWealth();
       return txn;
@@ -10616,6 +12434,8 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
           accounts: [],
           transactions: [],
           currency: "AUD",
+          display_percentages: false,
+          holdings_sort: { key: "marketValueMinor", dir: "desc" },
           holdings: [],
           price_quotes: {},
           fx_quotes: {},
@@ -10676,6 +12496,124 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       renderWealthOverview();
       renderWealthPortfolio();
       renderWealthCashflow();
+      renderWealthCoach();
+    }
+
+    function renderWealthImportReview() {
+      const el = document.getElementById("wealthImportReviewCard");
+      const undoBtn = document.getElementById("wealthUndoLastImportBtn");
+      if (!el) return;
+      const review = state.wealth?.last_import_review;
+      if (undoBtn) undoBtn.disabled = !review?.imported_transaction_ids?.length;
+      if (!review) {
+        el.innerHTML = '<div class="wealth-empty-state">No import reviewed yet.</div>';
+        return;
+      }
+      const importedCount = review.imported_transaction_ids?.length || 0;
+      const summary = review.summary || {};
+      const importedTxns = (state.wealth?.transactions || [])
+        .filter(txn => (review.imported_transaction_ids || []).includes(txn.id))
+        .sort((a, b) => a.date.localeCompare(b.date));
+      const importedStart = importedTxns[0]?.date || review.sample_transactions?.map(txn => txn.date).filter(Boolean).sort()[0] || "";
+      const importedEnd = importedTxns[importedTxns.length - 1]?.date || review.sample_transactions?.map(txn => txn.date).filter(Boolean).sort().slice(-1)[0] || "";
+      const jumpMonth = importedEnd ? String(importedEnd).slice(0, 7) : "";
+      const jumpLabel = jumpMonth ? getMonthRangeFromKey(jumpMonth).label : "";
+      el.innerHTML = `
+        <div class="wealth-concentration-item" style="margin-bottom:8px">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+            <strong>${escapeHtml(review.file_name || "Imported CSV")}</strong>
+            ${jumpMonth ? `<button class="wealth-inline-btn" type="button" data-import-jump-month="${escapeHtml(jumpMonth)}">Jump to ${escapeHtml(jumpLabel)}</button>` : ""}
+          </div>
+          <div class="wealth-rule-meta">
+            <span>${importedCount} imported</span>
+            <span>${summary.duplicateRows || 0} duplicates skipped</span>
+            <span>${summary.skippedStatusRows || 0} status-skipped</span>
+            <span>${summary.skippedMalformedRows || 0} malformed</span>
+            <span>${summary.skippedZeroRows || 0} zero-value</span>
+            ${importedStart && importedEnd ? `<span>${escapeHtml(formatDateLabel(importedStart))} – ${escapeHtml(formatDateLabel(importedEnd))}</span>` : ""}
+          </div>
+        </div>
+        ${(review.sample_transactions || []).length
+          ? review.sample_transactions.map(txn => {
+              const isIncome = txn.type === "income";
+              return `<div class="wealth-txn-row">
+                <span class="wealth-txn-date">${escapeHtml(formatDateLabel(txn.date))}</span>
+                <span class="wealth-txn-desc">${escapeHtml(txn.description || txn.category)}</span>
+                <span class="wealth-txn-cat">${escapeHtml(txn.category)}</span>
+                <span class="wealth-txn-amount ${isIncome ? "income" : "expense"}">${isIncome ? "+" : "-"}${formatCurrency(txn.amount_minor || 0)}</span>
+                <span style="display:flex;justify-content:flex-end"><button class="wealth-inline-btn" type="button" data-import-rule-from-txn="${escapeHtml(txn.id)}">Rule</button></span>
+              </div>`;
+            }).join("")
+          : '<div class="wealth-empty-state">No sample rows stored.</div>'}
+      `;
+    }
+
+    function renderWealthCategoryRules() {
+      const el = document.getElementById("wealthCategoryRulesList");
+      if (!el) return;
+      const rules = state.wealth?.category_rules || [];
+      if (!rules.length) {
+        el.innerHTML = '<div class="wealth-empty-state">No merchant rules saved yet.</div>';
+        return;
+      }
+      el.innerHTML = rules.map(rule => `<div class="wealth-account-row">
+        <div>
+          <div class="wealth-account-name">${escapeHtml(rule.pattern)}</div>
+          <div class="wealth-rule-meta">
+            <span>${escapeHtml(rule.match_mode === "exact" ? "Exact match" : "Contains")}</span>
+            <span>${escapeHtml(rule.tx_type === "any" ? "Any type" : rule.tx_type)}</span>
+            <span>→ ${escapeHtml(rule.category)}</span>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <button class="wealth-inline-btn" type="button" data-apply-category-rule="${escapeHtml(rule.id)}">Apply</button>
+          <button class="wealth-inline-btn warn" type="button" data-delete-category-rule="${escapeHtml(rule.id)}">Delete</button>
+        </div>
+      </div>`).join("");
+    }
+
+    function renderWealthImportTemplates() {
+      const el = document.getElementById("wealthImportTemplatesList");
+      if (!el) return;
+      const templates = state.wealth?.import_templates || [];
+      if (!templates.length) {
+        el.innerHTML = '<div class="wealth-empty-state">No CSV templates saved yet.</div>';
+        return;
+      }
+      el.innerHTML = templates.map(template => `<div class="wealth-account-row">
+        <div>
+          <div class="wealth-account-name">${escapeHtml(template.name)}</div>
+          <div class="wealth-rule-meta">
+            <span>${escapeHtml(template.account_name || "No account")}</span>
+            <span>${escapeHtml(WEALTH_ACCOUNT_TYPES[template.account_type] || template.account_type)}</span>
+            <span>${escapeHtml(template.mapping.date_column || "No date column")}</span>
+            <span>${escapeHtml(template.mapping.signed_amount_column || [template.mapping.debit_column, template.mapping.credit_column].filter(Boolean).join(" / ") || "No amount mapping")}</span>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <button class="wealth-inline-btn" type="button" data-rename-import-template="${escapeHtml(template.id)}">Rename</button>
+          <button class="wealth-inline-btn warn" type="button" data-delete-import-template="${escapeHtml(template.id)}">Delete</button>
+        </div>
+      </div>`).join("");
+    }
+
+    function renderWealthImportFolder() {
+      const el = document.getElementById("wealthImportFolderCard");
+      const rescanBtn = document.getElementById("wealthRescanImportFolderBtn");
+      if (!el) return;
+      if (rescanBtn) rescanBtn.disabled = wealthScannedImportFiles.length === 0;
+      if (!wealthScannedImportFiles.length) {
+        const label = state.wealth?.import_folder_label;
+        el.innerHTML = `<div class="wealth-empty-state">${label ? `Last selected folder: ${escapeHtml(label)}. Choose it again to rescan.` : "Choose a folder to scan CSV files and import them one by one."}</div>`;
+        return;
+      }
+      el.innerHTML = wealthScannedImportFiles.map(file => `<div class="wealth-folder-file">
+        <div>
+          <strong>${escapeHtml(file.displayName)}</strong>
+          <small>${escapeHtml(file.folderLabel || state.wealth?.import_folder_label || "")}</small>
+        </div>
+        <button class="wealth-inline-btn" type="button" data-import-folder-file="${escapeHtml(file.id)}">Import</button>
+      </div>`).join("");
     }
 
     function renderWealthOverview() {
@@ -10723,6 +12661,11 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         return;
       }
       txnEl.innerHTML = txns.map(t => renderTxnRow(t)).join("");
+
+      renderWealthImportReview();
+      renderWealthCategoryRules();
+      renderWealthImportTemplates();
+      renderWealthImportFolder();
     }
 
     function renderTxnRow(t) {
@@ -10737,12 +12680,22 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       </div>`;
     }
 
+    function renderPortfolioSortHeader(label, key) {
+      const sort = normalizeWealthSort(state);
+      const isActive = sort.key === key;
+      const indicator = isActive ? (sort.dir === "asc" ? "▲" : "▼") : "↕";
+      return `<button class="wealth-sort-btn ${isActive ? "active" : ""}" type="button" data-holding-sort="${escapeHtml(key)}">${escapeHtml(label)} <span class="wealth-sort-indicator">${indicator}</span></button>`;
+    }
+
     function renderPortfolioHoldingRow(h) {
+      const displayPercentages = !!state.wealth?.display_percentages;
       const isGainPositive = (h.gainLossMinor || 0) >= 0;
       const sourceClass = !h.quote ? "missing" : h.quote.stale ? "stale" : "";
       const priceText = h.quote ? formatCurrency(h.quote.price_minor_aud || 0) : "—";
       const marketText = h.quote ? formatCurrency(h.marketValueMinor) : "—";
-      const gainText = h.quote ? `${isGainPositive ? "+" : "-"}${formatCurrency(Math.abs(h.gainLossMinor || 0))}` : "—";
+      const gainText = h.quote
+        ? (displayPercentages ? formatPct(h.returnPct) : `${isGainPositive ? "+" : "-"}${formatCurrency(Math.abs(h.gainLossMinor || 0))}`)
+        : "—";
       return `<div class="wealth-holding-row" data-holding-id="${escapeHtml(h.id)}">
         <div>
           <div class="wealth-holding-symbol">${escapeHtml(h.display_symbol)}</div>
@@ -10770,18 +12723,28 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
 
     function renderWealthPortfolio() {
       const snapshot = getPortfolioSnapshot();
+      const displayPercentages = !!state.wealth?.display_percentages;
+      const sort = normalizeWealthSort(state);
+      const totalReturnPct = simpleReturnPct(snapshot.totalCostBasisMinor, snapshot.totalMarketValueMinor);
       setPortfolioQuoteStatus(wealthQuoteRefreshInFlight ? "Refreshing prices..." : wealthQuoteStatusText);
       const marketEl = document.getElementById("portfolioMarketValue");
       const costEl = document.getElementById("portfolioCostBasis");
       const gainEl = document.getElementById("portfolioGainLoss");
+      const gainLabelEl = document.getElementById("portfolioGainLossLabel");
       const staleEl = document.getElementById("portfolioStaleCount");
       if (marketEl) marketEl.textContent = formatCurrency(snapshot.totalMarketValueMinor);
       if (costEl) costEl.textContent = formatCurrency(snapshot.totalCostBasisMinor);
       if (gainEl) {
-        gainEl.textContent = `${snapshot.unrealizedGainLossMinor >= 0 ? "+" : "-"}${formatCurrency(Math.abs(snapshot.unrealizedGainLossMinor))}`;
+        gainEl.textContent = displayPercentages
+          ? formatPct(totalReturnPct)
+          : `${snapshot.unrealizedGainLossMinor >= 0 ? "+" : "-"}${formatCurrency(Math.abs(snapshot.unrealizedGainLossMinor))}`;
         gainEl.style.color = snapshot.unrealizedGainLossMinor >= 0 ? "var(--accent)" : "var(--danger)";
       }
+      if (gainLabelEl) gainLabelEl.textContent = displayPercentages ? "Simple Return" : "Unrealized Gain/Loss";
       if (staleEl) staleEl.textContent = String(snapshot.missingOrStaleCount);
+      document.querySelectorAll("#portfolioDisplayMode [data-portfolio-display]").forEach(btn => {
+        btn.classList.toggle("active", btn.getAttribute("data-portfolio-display") === (displayPercentages ? "percent" : "amount"));
+      });
 
       const allocationEl = document.getElementById("portfolioAllocation");
       if (allocationEl) {
@@ -10812,11 +12775,24 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
           : '<div class="wealth-empty-state">No priced holdings yet.</div>';
       }
 
+      const holdingsHeadEl = document.getElementById("portfolioHoldingsHead");
+      if (holdingsHeadEl) {
+        holdingsHeadEl.innerHTML = `
+          <div>${renderPortfolioSortHeader("Holding", "display_symbol")}</div>
+          <div class="wealth-holding-num">${renderPortfolioSortHeader("Units", "units")}</div>
+          <div class="wealth-holding-num">${renderPortfolioSortHeader("Price", "priceMinorAud")}</div>
+          <div class="wealth-holding-num">${renderPortfolioSortHeader("Market Value", "marketValueMinor")}</div>
+          <div class="wealth-holding-num">${renderPortfolioSortHeader("Cost Basis", "costBasisMinor")}</div>
+          <div class="wealth-holding-num">${renderPortfolioSortHeader(displayPercentages ? "Return %" : "Gain/Loss", "gainLossMinor")}</div>
+          <div>${renderPortfolioSortHeader("Source", "provider")}</div>
+          <div style="text-align:right">Actions</div>
+        `;
+      }
+
       const holdingsEl = document.getElementById("portfolioHoldingsList");
       if (holdingsEl) {
         holdingsEl.innerHTML = snapshot.holdingViews.length
-          ? snapshot.holdingViews
-              .sort((a, b) => b.marketValueMinor - a.marketValueMinor || a.display_symbol.localeCompare(b.display_symbol))
+          ? sortHoldingViews(snapshot.holdingViews, sort.key, sort.dir)
               .map(renderPortfolioHoldingRow)
               .join("")
           : '<div class="wealth-empty-state">No holdings yet. Add one to start tracking portfolio value.</div>';
@@ -10825,14 +12801,26 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
     }
 
     function renderWealthCashflow() {
-      const { label } = getMonthRange(wealthMonthOffset);
+      const rangeInfo = getWealthCashflowRange();
       const heading = document.getElementById("cashflowMonthHeading");
-      if (heading) heading.textContent = label;
+      if (heading) heading.textContent = rangeInfo.label;
+      const monthPicker = document.getElementById("wealthMonthPicker");
+      if (monthPicker) monthPicker.value = rangeInfo.anchorMonth;
+      document.querySelectorAll("#cashflowRangeMode [data-cashflow-range]").forEach(btn => {
+        btn.classList.toggle("active", btn.getAttribute("data-cashflow-range") === wealthCashflowRange);
+      });
+      const rangeMeta = document.getElementById("cashflowRangeMeta");
+      if (rangeMeta) {
+        rangeMeta.textContent = rangeInfo.months === 1
+          ? `Showing imported wealth cash-flow activity for ${rangeInfo.label}.`
+          : `Showing ${rangeInfo.months} months of imported wealth cash-flow activity ending ${getMonthRangeFromKey(rangeInfo.anchorMonth).label}.`;
+      }
 
-      const txns = wealthTxnsForMonth(wealthMonthOffset);
+      const txns = wealthTxnsForCashflowRange();
       let income = 0, expenses = 0;
       const catTotals = {};
       for (const t of txns) {
+        if (t.exclude_from_cashflow) continue;
         if (t.type === "income") {
           income += t.amount_minor || 0;
         } else {
@@ -10862,25 +12850,306 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
           const maxCat = cats[0][1] || 1;
           catEl.innerHTML = cats.map(([cat, total]) => {
             const pct = Math.round((total / maxCat) * 100);
+            const active = wealthCashflowCategoryFilter === cat;
             return `<div class="wealth-category-row">
-              <div style="flex:1">
+              <button class="wealth-category-btn ${active ? "active" : ""}" type="button" data-cashflow-category="${escapeHtml(cat)}">
                 <div style="display:flex;justify-content:space-between"><span>${escapeHtml(cat)}</span><span style="font-weight:600;font-variant-numeric:tabular-nums">${formatCurrency(total)}</span></div>
                 <div class="wealth-category-bar" style="width:${pct}%"></div>
-              </div>
+              </button>
             </div>`;
           }).join("");
         }
       }
 
       // Monthly txn list
+      const filterWrap = document.getElementById("cashflowCategoryFilter");
+      if (filterWrap) {
+        const selected = wealthCashflowCategoryFilter;
+        filterWrap.hidden = !selected;
+        filterWrap.innerHTML = selected
+          ? `<div class="wealth-category-filter"><span>Filtering transactions to <strong>${escapeHtml(selected)}</strong>.</span><button class="ghost" type="button" id="cashflowClearCategoryBtn" style="font-size:.72rem">Clear Filter</button></div>`
+          : "";
+      }
       const txnList = document.getElementById("cashflowTxnList");
       if (txnList) {
-        const sorted = [...txns].sort((a, b) => b.date.localeCompare(a.date) || b.created_at.localeCompare(a.created_at));
+        const filtered = wealthCashflowCategoryFilter
+          ? txns.filter(t => t.category === wealthCashflowCategoryFilter)
+          : txns;
+        const sorted = [...filtered].sort((a, b) => b.date.localeCompare(a.date) || b.created_at.localeCompare(a.created_at));
         if (!sorted.length) {
-          txnList.innerHTML = '<div class="wealth-empty-state">No transactions this month.</div>';
+          txnList.innerHTML = `<div class="wealth-empty-state">No transactions for ${wealthCashflowCategoryFilter ? escapeHtml(wealthCashflowCategoryFilter) + " in this range" : "this range"}.</div>`;
         } else {
           txnList.innerHTML = sorted.map(t => renderTxnRow(t)).join("");
         }
+      }
+    }
+
+    function wealthCategorySummaryForTxns(txns) {
+      const totals = {};
+      txns.forEach(t => {
+        if (t.exclude_from_cashflow || t.type !== "expense") return;
+        totals[t.category] = (totals[t.category] || 0) + (t.amount_minor || 0);
+      });
+      return Object.entries(totals)
+        .sort((a, b) => b[1] - a[1])
+        .map(([category, totalMinor]) => ({ category, total_minor: totalMinor }));
+    }
+
+    function buildWealthCoachSnapshot() {
+      const rangeInfo = getWealthCashflowRange();
+      const txns = wealthTxnsForCashflowRange().filter(t => !t.exclude_from_cashflow);
+      const filteredTxns = wealthCashflowCategoryFilter
+        ? txns.filter(t => t.category === wealthCashflowCategoryFilter)
+        : txns;
+      let incomeMinor = 0;
+      let expenseMinor = 0;
+      filteredTxns.forEach(t => {
+        if (t.type === "income") incomeMinor += t.amount_minor || 0;
+        else expenseMinor += t.amount_minor || 0;
+      });
+      const categorySummary = wealthCategorySummaryForTxns(txns);
+      const otherTransactions = txns
+        .filter(t => t.category === "Other")
+        .sort((a, b) => b.date.localeCompare(a.date) || b.created_at.localeCompare(a.created_at))
+        .slice(0, 20)
+        .map(t => ({
+          date: t.date,
+          description: t.description,
+          amount_minor: t.amount_minor,
+          account: getWealthAccount(t.account_id)?.name || null
+        }));
+      const accountSummary = (state.wealth?.accounts || [])
+        .filter(a => !a.archived)
+        .map(a => ({
+          name: a.name,
+          type: a.type,
+          balance_minor: computeAccountBalance(a.id)
+        }))
+        .sort((a, b) => Math.abs(b.balance_minor) - Math.abs(a.balance_minor));
+      const portfolio = getPortfolioSnapshot();
+      const review = state.wealth?.last_import_review;
+      return {
+        currency: state.wealth?.currency || "AUD",
+        active_wealth_tab: activeWealthTab,
+        cashflow_view: {
+          range: rangeInfo.range,
+          months: rangeInfo.months,
+          anchor_month: rangeInfo.anchorMonth,
+          start_date: rangeInfo.start,
+          end_date: rangeInfo.end,
+          selected_category: wealthCashflowCategoryFilter || null,
+          income_minor: incomeMinor,
+          expense_minor: expenseMinor,
+          net_minor: incomeMinor - expenseMinor,
+          category_summary: categorySummary,
+          visible_transactions: filteredTxns
+            .sort((a, b) => b.date.localeCompare(a.date) || b.created_at.localeCompare(a.created_at))
+            .slice(0, 40)
+            .map(t => ({
+              date: t.date,
+              description: t.description,
+              category: t.category,
+              type: t.type,
+              amount_minor: t.amount_minor,
+              account: getWealthAccount(t.account_id)?.name || null
+            })),
+          other_breakdown: otherTransactions
+        },
+        balance_sheet: computeNetWorth(),
+        accounts: accountSummary,
+        portfolio: {
+          market_value_minor: portfolio.totalMarketValueMinor,
+          cost_basis_minor: portfolio.totalCostBasisMinor,
+          unrealized_gain_loss_minor: portfolio.unrealizedGainLossMinor,
+          missing_or_stale_quotes: portfolio.missingOrStaleCount,
+          holdings: portfolio.holdingViews
+            .slice(0, 20)
+            .map(h => ({
+              symbol: h.display_symbol,
+              name: h.name,
+              asset_type: h.asset_type,
+              market_value_minor: h.marketValueMinor,
+              cost_basis_minor: h.costBasisMinor,
+              return_pct: h.returnPct,
+              quote_source: h.quote?.provider || null,
+              quote_freshness: quoteFreshnessLabel(h.quote)
+            }))
+        },
+        latest_import: review ? {
+          file_name: review.file_name || null,
+          imported_count: review.imported_transaction_ids?.length || 0,
+          summary: review.summary || {}
+        } : null,
+        category_rules: (state.wealth?.category_rules || []).slice(0, 20).map(rule => ({
+          pattern: rule.pattern,
+          category: rule.category,
+          tx_type: rule.tx_type,
+          match_mode: rule.match_mode
+        }))
+      };
+    }
+
+    function wealthCoachActiveProvider() {
+      return aiResolveConfig(aiPrefs).provider;
+    }
+
+    function wealthCoachProviderLabel(provider) {
+      const providerDisplayNames = {
+        openai: "ChatGPT",
+        anthropic: "Claude",
+        gemini: "Gemini",
+        grok: "Grok",
+        deepseek: "DeepSeek",
+        ollama: "Ollama",
+        openai_compatible: "Custom"
+      };
+      return providerDisplayNames[provider] || provider || "AI";
+    }
+
+    function wealthCoachNeedsCloudConsent(provider = wealthCoachActiveProvider()) {
+      return !!aiPrefs.enabled && !!provider && provider !== "ollama" && !wealthCoachCloudConsent[provider];
+    }
+
+    function allowWealthCoachCloudConsent(provider = wealthCoachActiveProvider()) {
+      if (!provider || provider === "ollama") return;
+      wealthCoachCloudConsent[provider] = true;
+      renderWealthCoach();
+    }
+
+    function openAiSettingsFromWealthCoach() {
+      wealthCoachOpen = false;
+      aiPanelForcedVisible = true;
+      aiConfigOpen = true;
+      setActiveTab("assistant");
+      renderWealthCoach();
+      renderAiAssistant();
+    }
+
+    function wealthCoachSystemPrompt() {
+      return `You are the PPP Flow Wealth Coach.
+
+Your job is to help the user understand the current wealth data inside the app.
+
+You can answer two kinds of questions:
+1. Product-use questions about what the imported data means inside PPP Flow.
+2. Descriptive analysis questions about spending, categories, account balances, and portfolio state.
+
+Rules:
+- Use only the structured snapshot provided. Do not invent data.
+- This is not financial advice. Do not recommend specific securities, trades, or guaranteed outcomes.
+- Be explicit when data is incomplete, imported, estimated, filtered, or limited to the selected range.
+- If the user asks what is in "Other", inspect the provided other_breakdown and name the major transactions.
+- If the user asks where they could save money, focus on the largest expense categories, repeated merchants, and ambiguous categories that deserve recategorization.
+- If the user asks a platform question, answer directly and concretely using the current app behavior.
+- Keep answers concise and structured.
+
+Prefer this response shape:
+Current picture
+What stands out
+Suggested next check
+Data caveat`;
+    }
+
+    function renderWealthCoach() {
+      const drawer = document.getElementById("wealthCoachDrawer");
+      const backdrop = document.getElementById("wealthCoachBackdrop");
+      const meta = document.getElementById("wealthCoachMeta");
+      const messagesEl = document.getElementById("wealthCoachMessages");
+      const statusEl = document.getElementById("wealthCoachStatus");
+      const sendBtn = document.getElementById("wealthCoachSendBtn");
+      const activeProvider = wealthCoachActiveProvider();
+      const needsConsent = wealthCoachNeedsCloudConsent(activeProvider);
+      const providerInfo = aiProviderPrivacyInfo(activeProvider);
+      const providerName = wealthCoachProviderLabel(activeProvider);
+      const consentNotice = needsConsent ? `<div class="wealth-coach-notice ${providerInfo.level === "warning" ? "warning" : ""}">
+        <div class="wealth-coach-notice-title">Cloud analysis is blocked for this session</div>
+        <div class="wealth-coach-notice-copy">
+          Wealth Coach is currently set to use ${escapeHtml(providerName)}. Asking a question will send imported financial data to that provider.
+          Switch to Ollama for local-only analysis, or explicitly allow cloud analysis for this session.
+        </div>
+        <div class="wealth-coach-notice-actions">
+          <button class="ghost" type="button" data-wealth-consent-action="settings">AI Settings</button>
+          <button class="primary" type="button" data-wealth-consent-action="allow">Allow This Session</button>
+        </div>
+      </div>` : "";
+      if (drawer) {
+        drawer.classList.toggle("open", wealthCoachOpen);
+        drawer.setAttribute("aria-hidden", wealthCoachOpen ? "false" : "true");
+      }
+      if (backdrop) {
+        backdrop.hidden = !wealthCoachOpen;
+        backdrop.classList.toggle("open", wealthCoachOpen);
+      }
+      if (meta) {
+        const rangeInfo = getWealthCashflowRange();
+        const pills = [
+          `Range: ${rangeInfo.label}`,
+          wealthCashflowCategoryFilter ? `Filter: ${wealthCashflowCategoryFilter}` : null,
+          activeWealthTab === "cashflow" ? "Source: Cash Flow" : `Source: ${activeWealthTab}`
+        ].filter(Boolean);
+        meta.innerHTML = pills.map(text => `<span>${escapeHtml(text)}</span>`).join("");
+      }
+      if (statusEl) statusEl.textContent = wealthCoachBusy ? "Thinking..." : (needsConsent ? "Cloud consent required" : "");
+      if (sendBtn) sendBtn.disabled = wealthCoachBusy || needsConsent;
+      if (!messagesEl) return;
+      if (!wealthCoachMessages.length) {
+        messagesEl.innerHTML = `${consentNotice}<div class="wealth-coach-empty">
+          Ask about the imported wealth data in the current tab and range.
+          Examples: "What is included in Other?", "Where could I save money?", "Why is Portfolio empty?", or "How did this CSV import change the data?"
+        </div>`;
+        return;
+      }
+      messagesEl.innerHTML = `${consentNotice}${wealthCoachMessages.map(msg => `
+        <div class="wealth-coach-msg ${msg.role === "user" ? "user" : "assistant"}">${escapeHtml(msg.content)}</div>
+      `).join("")}`;
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    function openWealthCoach() {
+      wealthCoachOpen = true;
+      renderWealthCoach();
+      requestAnimationFrame(() => {
+        document.getElementById("wealthCoachInput")?.focus();
+      });
+    }
+
+    function closeWealthCoach() {
+      wealthCoachOpen = false;
+      renderWealthCoach();
+    }
+
+    async function requestWealthCoaching() {
+      const input = document.getElementById("wealthCoachInput");
+      const question = String(input?.value || "").trim();
+      if (!question || wealthCoachBusy) return;
+      const activeProvider = wealthCoachActiveProvider();
+      if (wealthCoachNeedsCloudConsent(activeProvider)) {
+        renderWealthCoach();
+        return;
+      }
+      wealthCoachMessages.push({ role: "user", content: question });
+      if (input) {
+        input.value = "";
+        autoGrowTextarea(input);
+      }
+      renderWealthCoach();
+      if (!aiPrefs.enabled) {
+        wealthCoachMessages.push({ role: "assistant", content: "AI is currently disabled. Enable AI in Settings to use Wealth Coach." });
+        renderWealthCoach();
+        return;
+      }
+      wealthCoachBusy = true;
+      renderWealthCoach();
+      try {
+        const snapshot = buildWealthCoachSnapshot();
+        const userPrompt = `User question:\n${question}\n\nCurrent wealth snapshot:\n${JSON.stringify(snapshot, null, 2)}`;
+        const raw = await aiCallProvider(wealthCoachSystemPrompt(), userPrompt);
+        wealthCoachMessages.push({ role: "assistant", content: String(raw || "").trim() || "No answer returned." });
+      } catch (err) {
+        wealthCoachMessages.push({ role: "assistant", content: `I couldn't answer that from the current data. ${String(err?.message || err || "Unknown error")}` });
+      } finally {
+        wealthCoachBusy = false;
+        renderWealthCoach();
       }
     }
 
@@ -11120,11 +13389,11 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       if (!overlay) {
         overlay = document.createElement("div");
         overlay.id = "wealthModalOverlay";
-        overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:1000;display:flex;align-items:center;justify-content:center";
+        overlay.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:1000;display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:24px 16px";
         document.body.appendChild(overlay);
         overlay.addEventListener("click", e => { if (e.target === overlay) closeWealthModal(); });
       }
-      overlay.innerHTML = `<div style="background:var(--surface);border-radius:var(--radius);padding:24px;width:420px;max-width:90vw;box-shadow:var(--shadow-lg)">
+      overlay.innerHTML = `<div style="background:var(--surface);border-radius:var(--radius);padding:24px;width:min(560px, 92vw);max-width:92vw;max-height:calc(100vh - 48px);overflow:auto;box-shadow:var(--shadow-lg);margin:auto 0">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
           <h4 style="margin:0">${title}</h4>
           <button class="ghost" type="button" onclick="closeWealthModal()" style="font-size:.8rem">✕</button>
@@ -11422,6 +13691,19 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
     document.getElementById("onboardWigTitle").addEventListener("input", refreshOnboardingSummary);
     document.getElementById("onboardWigDeadline").addEventListener("change", refreshOnboardingSummary);
     document.getElementById("onboardWigMeasure").addEventListener("input", refreshOnboardingSummary);
+    // Onboarding Stage A: AI opt-in / opt-out
+    document.getElementById("onboardAiEnableBtn")?.addEventListener("click", () => {
+      const stageA = document.getElementById("onboardAiStageA");
+      const stageB = document.getElementById("onboardAiStageB");
+      if (stageA) stageA.hidden = true;
+      if (stageB) stageB.hidden = false;
+    });
+    document.getElementById("onboardAiSkipBtn")?.addEventListener("click", () => {
+      aiPrefs.enabled = false;
+      saveAiPrefs();
+      setOnboardingStep(onboardingStep + 1);
+    });
+    // Onboarding: DeepSeek warning toggle
     document.getElementById("onboardAiProvider").addEventListener("change", e => {
       const provider = String(e.target.value || "").trim();
       if (!AI_ALLOWED_PROVIDERS.includes(provider)) return;
@@ -11430,6 +13712,49 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       const cfg = aiGetProviderConfig(provider);
       if (keyInput) keyInput.value = cfg.apiKey || "";
       if (statusEl) statusEl.textContent = "";
+      const dsWarn = document.getElementById("onboardAiDeepseekWarn");
+      if (dsWarn) dsWarn.hidden = provider !== "deepseek";
+    });
+    // Onboarding: Ollama setup panel toggle
+    document.getElementById("onboardOllamaSetupBtn")?.addEventListener("click", () => {
+      const panel = document.getElementById("onboardOllamaSetup");
+      if (panel) panel.hidden = !panel.hidden;
+    });
+    // Onboarding: Copy ollama pull command
+    document.getElementById("onboardOllamaCopyBtn")?.addEventListener("click", () => {
+      const cmd = document.getElementById("onboardOllamaPullCmd")?.textContent || "ollama pull llama4-scout";
+      navigator.clipboard.writeText(cmd).then(() => {
+        const btn = document.getElementById("onboardOllamaCopyBtn");
+        if (btn) { btn.textContent = "Copied!"; setTimeout(() => { btn.textContent = "Copy"; }, 1500); }
+      });
+    });
+    // Onboarding: Test Ollama connection
+    document.getElementById("onboardOllamaTestBtn")?.addEventListener("click", async () => {
+      const statusEl = document.getElementById("onboardOllamaStatus");
+      const modelWrap = document.getElementById("onboardOllamaModelWrap");
+      const modelSelect = document.getElementById("onboardOllamaModel");
+      if (statusEl) statusEl.textContent = "Checking...";
+      try {
+        const res = await fetch("http://localhost:11434/v1/models", { method: "GET", signal: AbortSignal.timeout(5000) });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        const models = (data.data || []).map(m => m.id).filter(Boolean);
+        if (models.length === 0) throw new Error("No models found. Run: ollama pull llama4-scout");
+        if (statusEl) statusEl.textContent = `Connected (${models.length} model${models.length > 1 ? "s" : ""})`;
+        if (statusEl) statusEl.style.color = "var(--green, #22c55e)";
+        if (modelSelect) {
+          modelSelect.innerHTML = models.map(m => `<option value="${m}">${m}</option>`).join("");
+        }
+        if (modelWrap) modelWrap.hidden = false;
+        // Auto-configure Ollama as the provider
+        aiPrefs.provider = "ollama";
+        aiPrefs.enabled = true;
+        aiSetProviderConfig("ollama", { model: models[0], apiKey: "", baseUrl: "http://localhost:11434/v1" });
+        saveAiPrefs();
+      } catch (err) {
+        if (statusEl) { statusEl.textContent = "Not connected. " + (err.message || "Is Ollama running?"); statusEl.style.color = "var(--red, #ef4444)"; }
+        if (modelWrap) modelWrap.hidden = true;
+      }
     });
     document.getElementById("onboardAiConnectBtn").addEventListener("click", connectOnboardingAiKey);
     document.getElementById("onboardAiGenerateBtn").addEventListener("click", ()=>{ void runOnboardingAiSetup(); });
@@ -11743,9 +14068,17 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       setAiProvider(provider);
       aiPrefs.enabled = document.getElementById("aiEnabledInput").checked;
       aiPrefs.hideUiWhenDisabled = document.getElementById("aiHideDisabledInput").checked;
+      const isSessionOnly = !!document.getElementById("aiSessionOnlyKeyInput")?.checked;
+      const typedKey = document.getElementById("aiApiKeyInput").value;
+      aiPrefs.sessionOnlyKey = isSessionOnly;
+      if (isSessionOnly && typedKey) {
+        aiSessionOnlyKey = typedKey;
+      } else {
+        aiSessionOnlyKey = "";
+      }
       aiSetProviderConfig(aiPrefs.provider, {
         model: document.getElementById("aiModelInput").value,
-        apiKey: document.getElementById("aiApiKeyInput").value,
+        apiKey: isSessionOnly ? "" : typedKey,
         baseUrl: document.getElementById("aiBaseUrlInput").value
       });
       aiPrefs = normalizeAiPrefs(aiPrefs);
@@ -11838,14 +14171,155 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       });
     });
     document.getElementById("wealthAddAccountBtn")?.addEventListener("click", () => showAddAccountModal());
+    document.getElementById("wealthImportSabBtn")?.addEventListener("click", () => {
+      const input = document.getElementById("wealthImportCsvInput");
+      if (!input) return;
+      input.value = "";
+      input.click();
+    });
+    document.getElementById("wealthPickImportFolderBtn")?.addEventListener("click", () => {
+      const input = document.getElementById("wealthImportFolderInput");
+      if (!input) return;
+      input.value = "";
+      input.click();
+    });
+    document.getElementById("wealthRescanImportFolderBtn")?.addEventListener("click", () => {
+      const input = document.getElementById("wealthImportFolderInput");
+      if (!input) return;
+      input.value = "";
+      input.click();
+    });
     document.getElementById("wealthAddHoldingBtn")?.addEventListener("click", () => showAddHoldingModal());
     document.getElementById("wealthRefreshPricesBtn")?.addEventListener("click", () => { void refreshPortfolioQuotes({ force: true }); });
     document.getElementById("wealthAddTxnBtn")?.addEventListener("click", () => showAddTxnModal());
-    document.getElementById("wealthPrevMonthBtn")?.addEventListener("click", () => { wealthMonthOffset--; renderWealthCashflow(); });
-    document.getElementById("wealthNextMonthBtn")?.addEventListener("click", () => { wealthMonthOffset++; renderWealthCashflow(); });
+    document.getElementById("wealthOpenCoachBtn")?.addEventListener("click", () => openWealthCoach());
+    document.getElementById("wealthCloseCoachBtn")?.addEventListener("click", () => closeWealthCoach());
+    document.getElementById("wealthCoachBackdrop")?.addEventListener("click", () => closeWealthCoach());
+    document.getElementById("wealthCoachClearBtn")?.addEventListener("click", () => {
+      wealthCoachMessages = [];
+      renderWealthCoach();
+    });
+    document.getElementById("wealthCoachMessages")?.addEventListener("click", e => {
+      const btn = e.target?.closest?.("[data-wealth-consent-action]");
+      if (!btn) return;
+      const action = String(btn.getAttribute("data-wealth-consent-action") || "");
+      if (action === "allow") {
+        allowWealthCoachCloudConsent();
+      } else if (action === "settings") {
+        openAiSettingsFromWealthCoach();
+      }
+    });
+    document.getElementById("wealthCoachSendBtn")?.addEventListener("click", () => { void requestWealthCoaching(); });
+    document.getElementById("wealthCoachInput")?.addEventListener("input", e => {
+      autoGrowTextarea(e.currentTarget);
+    });
+    document.getElementById("wealthCoachInput")?.addEventListener("keydown", e => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        void requestWealthCoaching();
+      }
+    });
+    document.getElementById("wealthUndoLastImportBtn")?.addEventListener("click", () => {
+      const review = state.wealth?.last_import_review;
+      if (!review?.imported_transaction_ids?.length) return;
+      const removed = undoLastWealthImport();
+      alert(`Removed ${removed} imported transaction${removed === 1 ? "" : "s"}.`);
+    });
+    document.getElementById("wealthAddCategoryRuleBtn")?.addEventListener("click", () => showWealthCategoryRuleModal());
+    document.getElementById("wealthBulkOtherBtn")?.addEventListener("click", () => showWealthBulkOtherModal());
+    document.getElementById("wealthPrevMonthBtn")?.addEventListener("click", () => {
+      wealthCashflowAnchorMonth = addMonthsToMonthKey(wealthCashflowAnchorMonth, -getWealthCashflowRange().months);
+      renderWealthCashflow();
+      renderWealthCoach();
+    });
+    document.getElementById("wealthNextMonthBtn")?.addEventListener("click", () => {
+      wealthCashflowAnchorMonth = addMonthsToMonthKey(wealthCashflowAnchorMonth, getWealthCashflowRange().months);
+      renderWealthCashflow();
+      renderWealthCoach();
+    });
+    document.getElementById("wealthMonthPicker")?.addEventListener("change", e => {
+      wealthCashflowAnchorMonth = clampWealthMonthKey(e.target?.value || todayISO().slice(0, 7));
+      renderWealthCashflow();
+      renderWealthCoach();
+    });
+    document.getElementById("wealthImportCsvInput")?.addEventListener("change", async e => {
+      const input = e.target;
+      const file = input?.files?.[0];
+      if (!file) return;
+      setWealthImportBusyState(true);
+      try {
+        const text = await file.text();
+        await handleWealthCsvImportText(text, file.name || "transactions.csv");
+      } catch (err) {
+        alert(`Transaction import failed: ${err?.message || err}`);
+      } finally {
+        setWealthImportBusyState(false);
+        input.value = "";
+      }
+    });
+    document.getElementById("wealthImportFolderInput")?.addEventListener("change", e => {
+      const input = e.target;
+      const count = scanWealthImportFolder(input?.files || []);
+      if (!count) alert("No CSV files found in that folder.");
+      input.value = "";
+    });
 
     // Wealth list delegation
     document.getElementById("tab-wealth")?.addEventListener("click", e => {
+      const displayBtn = e.target.closest("[data-portfolio-display]");
+      if (displayBtn) {
+        const mode = displayBtn.getAttribute("data-portfolio-display");
+        if (!state.wealth) return;
+        state.wealth.display_percentages = mode === "percent";
+        saveState("wealth_toggle_display_percentages");
+        renderWealthPortfolio();
+        return;
+      }
+      const rangeBtn = e.target.closest("[data-cashflow-range]");
+      if (rangeBtn) {
+        wealthCashflowRange = String(rangeBtn.getAttribute("data-cashflow-range") || "month");
+        wealthCashflowCategoryFilter = "";
+        renderWealthCashflow();
+        renderWealthCoach();
+        return;
+      }
+      const categoryBtn = e.target.closest("[data-cashflow-category]");
+      if (categoryBtn) {
+        const category = String(categoryBtn.getAttribute("data-cashflow-category") || "").trim();
+        wealthCashflowCategoryFilter = wealthCashflowCategoryFilter === category ? "" : category;
+        renderWealthCashflow();
+        renderWealthCoach();
+        return;
+      }
+      const jumpMonthBtn = e.target.closest("[data-import-jump-month]");
+      if (jumpMonthBtn) {
+        wealthCashflowAnchorMonth = clampWealthMonthKey(jumpMonthBtn.getAttribute("data-import-jump-month") || "");
+        activeWealthTab = "cashflow";
+        document.querySelectorAll(".wealth-subtab").forEach(t => t.classList.toggle("active", t.dataset.wealthTab === "cashflow"));
+        document.querySelectorAll(".wealth-panel").forEach(p => p.classList.toggle("active", p.id === "wealth-panel-cashflow"));
+        renderWealth();
+        return;
+      }
+      const clearCategoryBtn = e.target.closest("#cashflowClearCategoryBtn");
+      if (clearCategoryBtn) {
+        wealthCashflowCategoryFilter = "";
+        renderWealthCashflow();
+        renderWealthCoach();
+        return;
+      }
+      const sortBtn = e.target.closest("[data-holding-sort]");
+      if (sortBtn) {
+        const key = sortBtn.getAttribute("data-holding-sort");
+        if (!state.wealth || !WEALTH_HOLDING_SORT_KEYS.includes(String(key || ""))) return;
+        const current = normalizeWealthSort(state);
+        state.wealth.holdings_sort = {
+          key,
+          dir: current.key === key && current.dir === "desc" ? "asc" : "desc"
+        };
+        saveState("wealth_sort_holdings");
+        renderWealthPortfolio();
+        return;
+      }
       const delAcct = e.target.closest("[data-delete-account]");
       if (delAcct) {
         const id = delAcct.dataset.deleteAccount;
@@ -11856,6 +14330,53 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       if (delHolding) {
         const id = delHolding.dataset.deleteHolding;
         if (id && confirm("Delete this holding?")) deleteWealthHolding(id);
+        return;
+      }
+      const addRuleBtn = e.target.closest("[data-import-rule-from-txn]");
+      if (addRuleBtn) {
+        const txnId = addRuleBtn.dataset.importRuleFromTxn;
+        const txn = (state.wealth?.transactions || []).find(item => item.id === txnId)
+          || (state.wealth?.last_import_review?.sample_transactions || []).find(item => item.id === txnId);
+        if (!txn) return;
+        showWealthCategoryRuleModal({
+          pattern: String(txn.description || "").trim(),
+          category: txn.category || "Other",
+          tx_type: txn.type || "expense",
+          scope: "last_import"
+        });
+        return;
+      }
+      const applyRuleBtn = e.target.closest("[data-apply-category-rule]");
+      if (applyRuleBtn) {
+        const ruleId = applyRuleBtn.dataset.applyCategoryRule;
+        const rule = (state.wealth?.category_rules || []).find(item => item.id === ruleId);
+        if (!rule) return;
+        const updated = applyWealthCategoryRuleToTransactions(rule, "all");
+        alert(`Updated ${updated} transaction${updated === 1 ? "" : "s"}.`);
+        return;
+      }
+      const deleteRuleBtn = e.target.closest("[data-delete-category-rule]");
+      if (deleteRuleBtn) {
+        const ruleId = deleteRuleBtn.dataset.deleteCategoryRule;
+        if (ruleId && confirm("Delete this category rule?")) deleteWealthCategoryRule(ruleId);
+        return;
+      }
+      const renameTemplateBtn = e.target.closest("[data-rename-import-template]");
+      if (renameTemplateBtn) {
+        const templateId = renameTemplateBtn.dataset.renameImportTemplate;
+        if (templateId) showRenameImportTemplateModal(templateId);
+        return;
+      }
+      const deleteTemplateBtn = e.target.closest("[data-delete-import-template]");
+      if (deleteTemplateBtn) {
+        const templateId = deleteTemplateBtn.dataset.deleteImportTemplate;
+        if (templateId && confirm("Delete this import template?")) deleteWealthImportTemplate(templateId);
+        return;
+      }
+      const importFolderBtn = e.target.closest("[data-import-folder-file]");
+      if (importFolderBtn) {
+        const fileId = importFolderBtn.dataset.importFolderFile;
+        if (fileId) { void importScannedFolderFile(fileId); }
         return;
       }
       const setPrice = e.target.closest("[data-set-holding-price]");

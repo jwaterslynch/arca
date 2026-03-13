@@ -360,6 +360,7 @@ async fn http_get_text(url: String) -> Result<HttpTextResponse, String> {
         "api.coingecko.com",
         "query1.finance.yahoo.com",
         "api.frankfurter.app",
+        "open.er-api.com",
     ];
     if !allowed_hosts.contains(&host) {
         return Err(format!("Host not allowed: {host}"));
