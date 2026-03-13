@@ -1534,6 +1534,41 @@ button.warn {
 .cloud-config-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
 .ai-config-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
 .ai-settings-panel { padding:12px; background:var(--bg); border-radius:var(--radius-sm); margin-top:8px; }
+.ollama-setup-card { margin-top:8px; padding:10px 12px; background:#f7fbf9; border:1px solid var(--line); border-radius:var(--radius-sm); display:grid; gap:8px; }
+.ollama-setup-card[hidden] { display:none !important; }
+.ollama-setup-card .row { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.ollama-setup-card .tiny { line-height:1.45; }
+.local-ai-modal { max-width:760px; }
+.local-ai-wizard-body { display:grid; gap:14px; }
+.local-ai-hero { padding:14px; border:1px solid var(--line); border-radius:14px; background:#f7fbf9; display:grid; gap:6px; }
+.local-ai-hero h4 { margin:0; font-size:1rem; font-weight:700; }
+.local-ai-hero p { margin:0; font-size:.84rem; color:var(--text2); line-height:1.45; }
+.local-ai-status-card { padding:14px; border:1px solid var(--line); border-radius:14px; background:var(--surface); display:grid; gap:10px; }
+.local-ai-status-card.local { border-color:#90d2c3; background:#f3fbf8; }
+.local-ai-status-card.warning { border-color:#e6d6a3; background:#fffaf0; }
+.local-ai-status-card.error { border-color:#efc7c7; background:#fff7f7; }
+.local-ai-status-line { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.local-ai-badge { display:inline-flex; align-items:center; gap:6px; padding:5px 10px; border-radius:999px; font-size:.72rem; font-weight:700; border:1px solid var(--line); background:#fff; color:var(--text2); }
+.local-ai-badge.ok { color:var(--accent); border-color:#90d2c3; background:#eef9f5; }
+.local-ai-badge.warn { color:#8a6d00; border-color:#e8c84a; background:#fdf3d7; }
+.local-ai-badge.muted { color:var(--text2); }
+.local-ai-actions { display:flex; gap:8px; flex-wrap:wrap; }
+.local-ai-model-grid { display:grid; gap:10px; }
+.local-ai-model-card { display:grid; gap:8px; padding:12px; border:1px solid var(--line); border-radius:12px; background:#fff; }
+.local-ai-model-card.active { border-color:#90d2c3; background:#f3fbf8; }
+.local-ai-model-card h5 { margin:0; font-size:.88rem; font-weight:700; }
+.local-ai-model-card p { margin:0; font-size:.76rem; color:var(--text2); line-height:1.45; }
+.local-ai-model-meta { display:flex; gap:8px; flex-wrap:wrap; font-size:.7rem; color:var(--text2); }
+.local-ai-progress { display:grid; gap:6px; }
+.local-ai-progress-bar { height:8px; border-radius:999px; background:var(--bg); overflow:hidden; }
+.local-ai-progress-fill { height:100%; width:0%; background:var(--accent); transition:width .2s ease; }
+.local-ai-inline-status { margin-top:8px; font-size:.74rem; color:var(--text2); line-height:1.45; }
+.local-ai-inline-status.ok { color:var(--accent); }
+.local-ai-inline-status.warn { color:#8a6d00; }
+.local-ai-inline-status.error { color:var(--danger); }
+.local-ai-wizard-note { font-size:.76rem; color:var(--text2); line-height:1.45; }
+.local-ai-installed-list { display:flex; flex-wrap:wrap; gap:6px; }
+.local-ai-installed-list .tag { font-size:.72rem; }
 
 /* Focus mode */
 body.focus-mode .app-shell > *:not(#tab-execute):not(.focus-overlay) { opacity:0; pointer-events:none; transition:opacity .3s; }
@@ -2127,6 +2162,13 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
                 <label class="tiny" style="display:flex;gap:6px;align-items:center;"><input id="aiSessionOnlyKeyInput" type="checkbox" style="margin:0;" /><span>Don't save key (enter each session)</span></label>
               </div>
               <div id="aiPrivacyBadge" class="tiny" style="margin-top:6px;padding:6px 10px;border-radius:6px;border:1px solid var(--line);background:var(--card);line-height:1.4;"></div>
+              <div id="aiOllamaSetupCard" class="ollama-setup-card" hidden>
+                <div class="row">
+                  <strong style="font-size:.82rem;">Local AI Setup</strong>
+                  <button id="aiOpenOllamaWizardBtn" class="ghost" type="button">Open Setup Wizard</button>
+                </div>
+                <div id="aiOllamaSetupSummary" class="tiny">Detect Ollama, download a starter model, and configure PPP Flow to keep requests on this machine.</div>
+              </div>
               <details style="margin-top:8px;"><summary class="tiny">Advanced</summary>
                 <div class="ai-config-grid" style="margin-top:8px;">
                   <label class="tiny" style="display:grid;gap:4px;"><span>Model</span>
@@ -2662,6 +2704,19 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
     </div>
   </div>
 
+  <div id="localAiWizardModal" class="modal-backdrop" hidden aria-hidden="true">
+    <div class="modal-panel local-ai-modal" role="dialog" aria-modal="true" aria-labelledby="localAiWizardTitle">
+      <div class="modal-head">
+        <div>
+          <h3 id="localAiWizardTitle">Local AI Setup</h3>
+          <div id="localAiWizardMeta" class="tiny">Detect Ollama, download a local model, and configure PPP Flow to keep requests on this machine.</div>
+        </div>
+        <button id="localAiWizardCloseBtn" class="ghost" type="button">Close</button>
+      </div>
+      <div id="localAiWizardBody" class="local-ai-wizard-body"></div>
+    </div>
+  </div>
+
   <div id="pipelineTaskModal" class="modal-backdrop" hidden aria-hidden="true">
     <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="pipelineTaskModalTitle">
       <div class="modal-head">
@@ -2802,29 +2857,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
               <p class="tiny" style="font-weight:700;margin-bottom:4px;">Local AI (Ollama) &mdash; 100% private</p>
               <p class="tiny" style="opacity:.8;">Run an AI model directly on your machine. Nothing leaves your computer. Requires 32GB+ RAM and Ollama installed.</p>
               <button id="onboardOllamaSetupBtn" class="ghost" type="button" style="margin-top:8px;">Set up Local AI</button>
-
-              <div id="onboardOllamaSetup" hidden style="margin-top:10px;padding:10px;border:1px solid var(--line);border-radius:6px;">
-                <p class="tiny" style="font-weight:600;">Step 1: Install Ollama</p>
-                <p class="tiny" style="margin-top:4px;">Ollama runs AI models locally on your machine.</p>
-                <p class="tiny" style="margin-top:4px;"><a href="https://ollama.com" target="_blank" rel="noopener">Open ollama.com</a> &nbsp;or run: <code style="background:var(--bg);padding:2px 6px;border-radius:4px;">brew install ollama</code></p>
-
-                <p class="tiny" style="font-weight:600;margin-top:10px;">Step 2: Pull a model</p>
-                <p class="tiny" style="margin-top:4px;">Open Terminal and run:</p>
-                <div style="display:flex;align-items:center;gap:6px;margin-top:4px;">
-                  <code id="onboardOllamaPullCmd" style="flex:1;background:var(--bg);padding:6px 10px;border-radius:4px;font-size:.82rem;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;">ollama pull llama4-scout</code>
-                  <button id="onboardOllamaCopyBtn" class="ghost" type="button" title="Copy command" style="padding:4px 8px;">Copy</button>
-                </div>
-                <p class="tiny" style="margin-top:6px;opacity:.7;">Recommended models: <strong>llama4-scout</strong> (best balance, 32GB+ RAM) &middot; <strong>qwen3:8b</strong> (lighter, 16GB RAM) &middot; <strong>deepseek-r1:8b</strong> (DeepSeek, 100% private)</p>
-
-                <p class="tiny" style="font-weight:600;margin-top:10px;">Step 3: Verify connection</p>
-                <div style="display:flex;align-items:center;gap:8px;margin-top:6px;">
-                  <button id="onboardOllamaTestBtn" class="ghost" type="button">Test Ollama Connection</button>
-                  <span id="onboardOllamaStatus" class="tiny"></span>
-                </div>
-                <div id="onboardOllamaModelWrap" hidden style="margin-top:8px;">
-                  <label class="tiny" style="display:grid;gap:4px;"><span>Model</span><select id="onboardOllamaModel"></select></label>
-                </div>
-              </div>
+              <div id="onboardOllamaQuickStatus" class="local-ai-inline-status">The setup wizard can detect Ollama, download a starter model, and configure PPP Flow to use it locally.</div>
             </div>
 
             <!-- Brain dump (shared by both tiers) -->
@@ -3037,6 +3070,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
     let lifeManagerOpen = false;
     let onboardingStep = 1;
     let onboardingMode = "first_run"; // first_run | reset
+    let onboardingLocalAiSelected = false;
     let pomoAudioContext = null;
     let linkedDataFileHandle = null;
     const pomodoro = {
@@ -3081,6 +3115,30 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
     let aiPanelForcedVisible = false;
     let aiConfigOpen = false;
     let aiBusy = false;
+    const LOCAL_AI_RECOMMENDED_MODELS = [
+      { name: "llama3.2", label: "Llama 3.2", note: "Balanced starter for general use." },
+      { name: "qwen2.5:3b", label: "Qwen 2.5 3B", note: "Smaller and faster on lighter machines." },
+      { name: "qwen2.5:7b", label: "Qwen 2.5 7B", note: "Stronger model if you have more headroom." }
+    ];
+    let localAiWizard = {
+      open: false,
+      source: "settings",
+      status: "idle",
+      error: "",
+      binaryFound: null,
+      appFound: null,
+      running: false,
+      models: [],
+      selectedModel: "llama3.2",
+      loading: false,
+      pulling: false,
+      pullModel: "",
+      pullStatus: "",
+      pullCompleted: 0,
+      pullTotal: 0,
+      installedSummary: "",
+      lastCheckedAt: ""
+    };
     let aiModelDropdownRequestSeq = 0;
     let aiLastTestDiagnostics = null;
     let aiInlineToastTimer = null;
@@ -4210,7 +4268,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       if (provider === "gemini") return "gemini-2.5-flash";
       if (provider === "grok") return "grok-4-1-fast-non-reasoning";
       if (provider === "deepseek") return "deepseek-chat";
-      if (provider === "ollama") return "llama4-scout";
+      if (provider === "ollama") return "llama3.2";
       return "gpt-4.1-mini";
     }
     function aiProviderNeedsKey(provider) {
@@ -4221,6 +4279,351 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       if (provider === "deepseek") return { level: "warning", icon: "\u26A0\uFE0F", text: "Requests are sent to DeepSeek-hosted servers. Review current data handling and jurisdiction before using it for sensitive data." };
       const names = { openai: "OpenAI", anthropic: "Anthropic", gemini: "Google", grok: "xAI", openai_compatible: "your endpoint" };
       return { level: "cloud", icon: "\u2601\uFE0F", text: `Requests are sent to ${names[provider] || "provider"} servers. Review that provider's current API data handling and retention terms before using it for sensitive data.` };
+    }
+    function localAiWizardRecommendedModel() {
+      return LOCAL_AI_RECOMMENDED_MODELS[0]?.name || aiDefaultModel("ollama");
+    }
+    function normalizeOllamaModelNames(input) {
+      return Array.isArray(input)
+        ? input.map(item => {
+            if (typeof item === "string") return item.trim();
+            if (item && typeof item === "object") {
+              return String(item.name || item.model || item.id || "").trim();
+            }
+            return "";
+          }).filter(Boolean)
+        : [];
+    }
+    function localAiWizardSummaryText() {
+      if (aiPrefs.enabled && aiPrefs.provider === "ollama") {
+        const model = aiGetProviderConfig("ollama").model || localAiWizard.selectedModel || aiDefaultModel("ollama");
+        return { text: `Configured for local AI · ${model}`, tone: "ok" };
+      }
+      if (localAiWizard.pulling) {
+        return { text: `Downloading ${localAiWizard.pullModel || "model"} · ${localAiWizard.pullStatus || "Preparing..."}`, tone: "warn" };
+      }
+      switch (localAiWizard.status) {
+        case "ready":
+          return { text: `${localAiWizard.models.length} local model${localAiWizard.models.length === 1 ? "" : "s"} available${localAiWizard.lastCheckedAt ? ` · checked ${localAiWizard.lastCheckedAt}` : ""}`, tone: "ok" };
+        case "running_no_models":
+          return { text: "Ollama is running but no models are installed yet.", tone: "warn" };
+        case "installed_not_running":
+          return { text: "Ollama appears installed but not running. Open the app, then check again.", tone: "warn" };
+        case "missing":
+          return { text: "Ollama is not installed on this machine yet.", tone: "error" };
+        case "checking":
+          return { text: "Checking local AI status…", tone: "warn" };
+        default:
+          return { text: "Use the setup wizard to detect Ollama and download a starter model.", tone: "" };
+      }
+    }
+    function renderLocalAiEntryPoints(activeProvider = aiPrefs.provider) {
+      const summary = localAiWizardSummaryText();
+      const onboardStatus = document.getElementById("onboardOllamaQuickStatus");
+      if (onboardStatus) {
+        onboardStatus.textContent = summary.text;
+        onboardStatus.className = `local-ai-inline-status${summary.tone ? ` ${summary.tone}` : ""}`;
+      }
+      const setupCard = document.getElementById("aiOllamaSetupCard");
+      if (setupCard) setupCard.hidden = !(aiConfigOpen && activeProvider === "ollama");
+      const setupSummary = document.getElementById("aiOllamaSetupSummary");
+      if (setupSummary) setupSummary.textContent = summary.text;
+    }
+    function renderLocalAiWizard() {
+      const modal = document.getElementById("localAiWizardModal");
+      const body = document.getElementById("localAiWizardBody");
+      if (!modal || !body) return;
+      modal.hidden = !localAiWizard.open;
+      modal.setAttribute("aria-hidden", localAiWizard.open ? "false" : "true");
+      if (!localAiWizard.open) return;
+
+      const probeTone = localAiWizard.status === "ready"
+        ? "local"
+        : localAiWizard.status === "missing" || localAiWizard.status === "installed_not_running"
+          ? "warning"
+          : localAiWizard.status === "error"
+            ? "error"
+            : "";
+      const badgeClass = localAiWizard.status === "ready"
+        ? "ok"
+        : localAiWizard.status === "missing" || localAiWizard.status === "installed_not_running" || localAiWizard.status === "running_no_models" || localAiWizard.status === "checking" || localAiWizard.status === "pulling"
+          ? "warn"
+          : "muted";
+      const selectedModel = localAiWizard.selectedModel || aiGetProviderConfig("ollama").model || localAiWizardRecommendedModel();
+      const installedOptions = localAiWizard.models.length
+        ? `<label class="tiny" style="display:grid;gap:6px;">
+            <span>Installed models</span>
+            <select id="localAiWizardModelSelect">
+              ${localAiWizard.models.map(model => `<option value="${escapeHtml(model)}" ${model === selectedModel ? "selected" : ""}>${escapeHtml(model)}</option>`).join("")}
+            </select>
+          </label>`
+        : "";
+      const installedTags = localAiWizard.models.length
+        ? `<div class="local-ai-installed-list">${localAiWizard.models.map(model => `<span class="tag">${escapeHtml(model)}</span>`).join("")}</div>`
+        : "";
+      const recommendedCards = LOCAL_AI_RECOMMENDED_MODELS.map(model => {
+        const active = selectedModel === model.name;
+        const downloading = localAiWizard.pulling && localAiWizard.pullModel === model.name;
+        return `<div class="local-ai-model-card${active ? " active" : ""}">
+          <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;">
+            <div>
+              <h5>${escapeHtml(model.label)}</h5>
+              <p>${escapeHtml(model.note)}</p>
+            </div>
+            <button class="ghost" type="button" data-local-ai-action="${localAiWizard.models.includes(model.name) ? "select-model" : "pull-model"}" data-local-ai-model="${escapeHtml(model.name)}" ${localAiWizard.pulling ? "disabled" : ""}>
+              ${localAiWizard.models.includes(model.name) ? (active ? "Selected" : "Use") : (downloading ? "Downloading…" : "Download")}
+            </button>
+          </div>
+          <div class="local-ai-model-meta"><span><code>${escapeHtml(model.name)}</code></span></div>
+        </div>`;
+      }).join("");
+      const progressPct = localAiWizard.pullTotal > 0
+        ? Math.max(0, Math.min(100, Math.round((localAiWizard.pullCompleted / localAiWizard.pullTotal) * 100)))
+        : 0;
+
+      let heading = "Check your local AI status";
+      let message = "PPP Flow will detect whether Ollama is installed, whether the local server is running, and whether a model is ready to use.";
+      if (localAiWizard.status === "missing") {
+        heading = "Install Ollama first";
+        message = "PPP Flow could not detect Ollama on this machine. Install the macOS app, launch it once, then return here and check again.";
+      } else if (localAiWizard.status === "installed_not_running") {
+        heading = "Ollama is installed but not running";
+        message = "Open the Ollama app from Applications or start the server, then click Check Again.";
+      } else if (localAiWizard.status === "running_no_models") {
+        heading = "Download a starter model";
+        message = "Ollama is running. Pick one starter model below and PPP Flow will download it for you.";
+      } else if (localAiWizard.status === "pulling") {
+        heading = `Downloading ${localAiWizard.pullModel || "model"}`;
+        message = localAiWizard.pullStatus || "Keep PPP Flow open while the local model downloads.";
+      } else if (localAiWizard.status === "ready") {
+        heading = "Local AI is ready";
+        message = "Choose which installed model PPP Flow should use, then apply it.";
+      } else if (localAiWizard.status === "checking") {
+        heading = "Checking Ollama";
+        message = "PPP Flow is probing the local Ollama runtime now.";
+      }
+
+      body.innerHTML = `
+        <div class="local-ai-hero">
+          <h4>${escapeHtml(heading)}</h4>
+          <p>${escapeHtml(message)}</p>
+        </div>
+        <div class="local-ai-status-card ${probeTone}">
+          <div class="local-ai-status-line">
+            <span class="local-ai-badge ${badgeClass}">${escapeHtml(
+              localAiWizard.status === "ready" ? "Ready"
+                : localAiWizard.status === "running_no_models" ? "No models"
+                : localAiWizard.status === "installed_not_running" ? "Installed"
+                : localAiWizard.status === "missing" ? "Missing"
+                : localAiWizard.status === "pulling" ? "Downloading"
+                : localAiWizard.status === "checking" ? "Checking"
+                : "Idle"
+            )}</span>
+            ${localAiWizard.binaryFound ? '<span class="tiny">CLI detected</span>' : ""}
+            ${localAiWizard.appFound ? '<span class="tiny">App detected</span>' : ""}
+            ${localAiWizard.installedSummary ? `<span class="tiny">${escapeHtml(localAiWizard.installedSummary)}</span>` : ""}
+          </div>
+          ${localAiWizard.error ? `<div class="local-ai-wizard-note" style="color:var(--danger)">${escapeHtml(localAiWizard.error)}</div>` : ""}
+          ${localAiWizard.status === "pulling" ? `
+            <div class="local-ai-progress">
+              <div class="local-ai-progress-bar"><div class="local-ai-progress-fill" style="width:${progressPct}%"></div></div>
+              <div class="tiny">${escapeHtml(localAiWizard.pullStatus || "Downloading…")}${localAiWizard.pullTotal > 0 ? ` · ${progressPct}%` : ""}</div>
+            </div>` : ""}
+          <div class="local-ai-actions">
+            ${localAiWizard.status === "missing" ? `<button class="primary" type="button" data-local-ai-action="install">Install Ollama</button>` : ""}
+            ${(localAiWizard.status === "installed_not_running" || localAiWizard.status === "missing" || localAiWizard.status === "running_no_models" || localAiWizard.status === "ready" || localAiWizard.status === "error") ? `<button class="ghost" type="button" data-local-ai-action="refresh">${localAiWizard.loading ? "Checking…" : "Check Again"}</button>` : ""}
+            ${localAiWizard.status === "ready" ? `<button class="primary" type="button" data-local-ai-action="apply-model" ${selectedModel ? "" : "disabled"}>Use Selected Model</button>` : ""}
+          </div>
+        </div>
+        ${(localAiWizard.status === "ready" || localAiWizard.status === "running_no_models" || localAiWizard.status === "pulling") ? `
+          <div class="local-ai-status-card">
+            ${installedOptions}
+            ${installedTags}
+            <div class="local-ai-model-grid">${recommendedCards}</div>
+          </div>` : ""}
+        <div class="local-ai-wizard-note">
+          Local models keep prompts on your machine. PPP Flow uses Ollama's local API at <code>http://localhost:11434</code>.
+        </div>
+      `;
+    }
+    async function probeOllamaLocalApi() {
+      try {
+        const res = await fetch("http://127.0.0.1:11434/api/tags", {
+          method: "GET",
+          signal: AbortSignal.timeout(3000)
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        return {
+          binaryFound: null,
+          appFound: null,
+          running: true,
+          models: normalizeOllamaModelNames(data.models),
+          version: "",
+          error: ""
+        };
+      } catch (err) {
+        return {
+          binaryFound: null,
+          appFound: null,
+          running: false,
+          models: [],
+          version: "",
+          error: String(err?.message || err || "Could not reach Ollama")
+        };
+      }
+    }
+    async function probeLocalAiRuntime() {
+      const invoke = getTauriInvoke();
+      if (invoke) {
+        try {
+          const result = await invoke("ollama_probe");
+          return {
+            binaryFound: result?.binaryFound === true,
+            appFound: result?.appFound === true,
+            running: result?.running === true,
+            models: normalizeOllamaModelNames(result?.models),
+            version: String(result?.version || "").trim(),
+            error: String(result?.error || "").trim()
+          };
+        } catch {}
+      }
+      return probeOllamaLocalApi();
+    }
+    async function refreshLocalAiWizardState(options = {}) {
+      const { preserveSelection = true } = options;
+      localAiWizard.loading = true;
+      localAiWizard.error = "";
+      localAiWizard.status = "checking";
+      renderLocalAiWizard();
+      renderLocalAiEntryPoints();
+      const probe = await probeLocalAiRuntime();
+      localAiWizard.loading = false;
+      localAiWizard.binaryFound = probe.binaryFound;
+      localAiWizard.appFound = probe.appFound;
+      localAiWizard.running = probe.running;
+      localAiWizard.models = probe.models;
+      localAiWizard.error = probe.error || "";
+      localAiWizard.installedSummary = probe.version || "";
+      localAiWizard.lastCheckedAt = new Date().toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+      if (!preserveSelection || !localAiWizard.selectedModel) {
+        localAiWizard.selectedModel = probe.models[0] || aiGetProviderConfig("ollama").model || localAiWizardRecommendedModel();
+      } else if (probe.models.length && !probe.models.includes(localAiWizard.selectedModel)) {
+        localAiWizard.selectedModel = probe.models[0];
+      }
+      if (probe.running && probe.models.length) {
+        localAiWizard.status = "ready";
+      } else if (probe.running) {
+        localAiWizard.status = "running_no_models";
+      } else if (probe.binaryFound || probe.appFound) {
+        localAiWizard.status = "installed_not_running";
+      } else {
+        localAiWizard.status = "missing";
+      }
+      renderLocalAiWizard();
+      renderLocalAiEntryPoints();
+    }
+    function openExternalUrl(url) {
+      try {
+        const popup = window.open(url, "_blank", "noopener,noreferrer");
+        if (popup) return;
+      } catch {}
+      const link = document.createElement("a");
+      link.href = url;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    }
+    function openLocalAiWizard(source = "settings") {
+      localAiWizard.open = true;
+      localAiWizard.source = source;
+      localAiWizard.selectedModel = aiGetProviderConfig("ollama").model || localAiWizard.selectedModel || localAiWizardRecommendedModel();
+      renderLocalAiWizard();
+      void refreshLocalAiWizardState({ preserveSelection: true });
+    }
+    function closeLocalAiWizard() {
+      localAiWizard.open = false;
+      renderLocalAiWizard();
+    }
+    function applyLocalAiWizardModel(modelName) {
+      const model = String(modelName || localAiWizard.selectedModel || aiDefaultModel("ollama")).trim();
+      if (!model) return;
+      setAiProvider("ollama");
+      aiPrefs.enabled = true;
+      aiSetProviderConfig("ollama", { model, apiKey: "", baseUrl: aiDefaultBaseUrl("ollama") });
+      aiPrefs = normalizeAiPrefs(aiPrefs);
+      saveAiPrefs();
+      const onboardStatus = document.getElementById("onboardAiStatus");
+      if (localAiWizard.source === "onboarding" && onboardStatus) {
+        onboardingLocalAiSelected = true;
+        onboardStatus.textContent = `Local AI ready with ${model}. Use Generate starter board with AI when you're ready.`;
+      }
+      closeLocalAiWizard();
+      render();
+    }
+    async function startLocalAiModelPull(modelName) {
+      const model = String(modelName || localAiWizard.selectedModel || localAiWizardRecommendedModel()).trim();
+      if (!model || localAiWizard.pulling) return;
+      localAiWizard.pulling = true;
+      localAiWizard.pullModel = model;
+      localAiWizard.pullStatus = `Starting download for ${model}…`;
+      localAiWizard.pullCompleted = 0;
+      localAiWizard.pullTotal = 0;
+      localAiWizard.status = "pulling";
+      localAiWizard.error = "";
+      renderLocalAiWizard();
+      renderLocalAiEntryPoints();
+      try {
+        const response = await fetch("http://127.0.0.1:11434/api/pull", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: model, stream: true })
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const decoder = new TextDecoder();
+        const consumeLine = line => {
+          const trimmed = String(line || "").trim();
+          if (!trimmed) return;
+          let payload = null;
+          try { payload = JSON.parse(trimmed); } catch { return; }
+          localAiWizard.pullStatus = String(payload.status || localAiWizard.pullStatus || "");
+          if (Number.isFinite(payload.completed)) localAiWizard.pullCompleted = Number(payload.completed);
+          if (Number.isFinite(payload.total)) localAiWizard.pullTotal = Number(payload.total);
+          if (payload.status === "success") {
+            localAiWizard.pullCompleted = localAiWizard.pullTotal || localAiWizard.pullCompleted || 1;
+          }
+          renderLocalAiWizard();
+          renderLocalAiEntryPoints();
+        };
+        if (response.body?.getReader) {
+          const reader = response.body.getReader();
+          let buffer = "";
+          while (true) {
+            const { value, done } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split("\n");
+            buffer = lines.pop() || "";
+            lines.forEach(consumeLine);
+          }
+          if (buffer.trim()) consumeLine(buffer);
+        } else {
+          const text = await response.text();
+          text.split("\n").forEach(consumeLine);
+        }
+        localAiWizard.selectedModel = model;
+        localAiWizard.pullStatus = `${model} downloaded`;
+        await refreshLocalAiWizardState({ preserveSelection: true });
+      } catch (err) {
+        localAiWizard.error = `Model download failed: ${String(err?.message || err)}`;
+        localAiWizard.status = "error";
+      } finally {
+        localAiWizard.pulling = false;
+        renderLocalAiWizard();
+        renderLocalAiEntryPoints();
+      }
     }
     function aiSanitizeStoredModel(provider, value, fallback = "") {
       const text = String(value || "").trim();
@@ -5370,19 +5773,21 @@ Use only supported action types and enum values from the schema.`;
       const keyMissing = needsKey && !effectiveKey;
       const statusBadge = document.getElementById("aiStatusBadge");
       if (statusBadge) statusBadge.textContent = formPrefs.enabled ? (keyMissing ? "Enabled (missing key)" : "Enabled") : "Disabled";
-      // Ollama auto-detection: if Ollama selected and settings open, probe connection
       if (formPrefs.provider === "ollama" && aiConfigOpen && statusBadge) {
-        fetch("http://localhost:11434/v1/models", { method: "GET", signal: AbortSignal.timeout(3000) })
-          .then(r => r.ok ? r.json() : Promise.reject(new Error("not running")))
-          .then(data => {
-            const models = (data.data || []).map(m => m.id).filter(Boolean);
-            if (statusBadge && formPrefs.provider === "ollama") {
-              statusBadge.textContent = models.length ? `Connected (${models.length} model${models.length > 1 ? "s" : ""})` : "No models found";
-            }
-          })
-          .catch(() => {
-            if (statusBadge && formPrefs.provider === "ollama") statusBadge.textContent = "Ollama not running";
-          });
+        if (localAiWizard.loading) {
+          statusBadge.textContent = "Checking Ollama…";
+        } else if (localAiWizard.status === "ready") {
+          statusBadge.textContent = `Connected (${localAiWizard.models.length} model${localAiWizard.models.length === 1 ? "" : "s"})`;
+        } else if (localAiWizard.status === "running_no_models") {
+          statusBadge.textContent = "Ollama running · no models";
+        } else if (localAiWizard.status === "installed_not_running") {
+          statusBadge.textContent = "Ollama installed · not running";
+        } else if (localAiWizard.status === "missing") {
+          statusBadge.textContent = "Ollama not installed";
+        }
+        if (!localAiWizard.lastCheckedAt && !localAiWizard.loading) {
+          void refreshLocalAiWizardState({ preserveSelection: true });
+        }
       }
       aiSetTestDiagnostics(aiLastTestDiagnostics);
       const inlineModeToggle = document.getElementById("aiInlineAutoApplyToggle");
@@ -5410,6 +5815,7 @@ Use only supported action types and enum values from the schema.`;
         pill.title = pInfo.text;
         pill.hidden = !formPrefs.enabled;
       });
+      renderLocalAiEntryPoints(formPrefs.provider);
 
       const disabledText = aiPrefs.enabled
         ? (keyMissing ? "AI is enabled but API key is missing. Open Settings, add a key, and save." : "")
@@ -8663,41 +9069,72 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
     }
 
     async function runOnboardingAiSetup() {
-      const provider = String(document.getElementById("onboardAiProvider")?.value || "").trim();
+      const selectedProvider = String(document.getElementById("onboardAiProvider")?.value || "").trim();
       const apiKey = String(document.getElementById("onboardAiApiKey")?.value || "").trim();
       const intake = String(document.getElementById("onboardAiIntake")?.value || "").trim();
       const statusEl = document.getElementById("onboardAiStatus");
       const questionsEl = document.getElementById("onboardAiQuestions");
-      if (!AI_ALLOWED_PROVIDERS.includes(provider)) {
-        if (statusEl) statusEl.textContent = "Pick a provider first.";
-        return;
-      }
-      if (!apiKey) {
-        if (statusEl) statusEl.textContent = "Add an API key first.";
-        return;
-      }
       if (!intake) {
         if (statusEl) statusEl.textContent = "Add a short brain-dump so AI can propose a starter setup.";
         return;
       }
-      setAiProvider(provider);
-      aiPrefs.enabled = true;
-      aiSetProviderConfig(provider, { apiKey });
-      aiPrefs = normalizeAiPrefs(aiPrefs);
-      saveAiPrefs();
-      renderAiAssistant();
-      const providerCfg = aiGetProviderConfig(provider);
-      const override = {
-        provider,
-        providerConfigs: {
-          ...buildDefaultAiProviderConfigs(),
-          ...(aiPrefs.providerConfigs || {}),
-          [provider]: {
-            ...providerCfg,
-            apiKey
-          }
+      let provider = selectedProvider;
+      let override = null;
+      if (onboardingLocalAiSelected) {
+        const model = String(aiGetProviderConfig("ollama").model || localAiWizard.selectedModel || "").trim();
+        if (!model) {
+          if (statusEl) statusEl.textContent = "Set up Local AI first, then generate your starter board.";
+          return;
         }
-      };
+        provider = "ollama";
+        setAiProvider("ollama");
+        aiPrefs.enabled = true;
+        aiSetProviderConfig("ollama", { model, apiKey: "", baseUrl: aiDefaultBaseUrl("ollama") });
+        aiPrefs = normalizeAiPrefs(aiPrefs);
+        saveAiPrefs();
+        renderAiAssistant();
+        const providerCfg = aiGetProviderConfig("ollama");
+        override = {
+          provider: "ollama",
+          providerConfigs: {
+            ...buildDefaultAiProviderConfigs(),
+            ...(aiPrefs.providerConfigs || {}),
+            ollama: {
+              ...providerCfg,
+              model,
+              apiKey: "",
+              baseUrl: aiDefaultBaseUrl("ollama")
+            }
+          }
+        };
+      } else {
+        if (!AI_ALLOWED_PROVIDERS.includes(provider)) {
+          if (statusEl) statusEl.textContent = "Pick a provider first.";
+          return;
+        }
+        if (!apiKey) {
+          if (statusEl) statusEl.textContent = "Add an API key first.";
+          return;
+        }
+        setAiProvider(provider);
+        aiPrefs.enabled = true;
+        aiSetProviderConfig(provider, { apiKey });
+        aiPrefs = normalizeAiPrefs(aiPrefs);
+        saveAiPrefs();
+        renderAiAssistant();
+        const providerCfg = aiGetProviderConfig(provider);
+        override = {
+          provider,
+          providerConfigs: {
+            ...buildDefaultAiProviderConfigs(),
+            ...(aiPrefs.providerConfigs || {}),
+            [provider]: {
+              ...providerCfg,
+              apiKey
+            }
+          }
+        };
+      }
       if (statusEl) statusEl.textContent = "Generating starter setup...";
       if (questionsEl) questionsEl.textContent = "";
       try {
@@ -8723,6 +9160,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       const provider = String(document.getElementById("onboardAiProvider")?.value || "").trim();
       const apiKey = String(document.getElementById("onboardAiApiKey")?.value || "").trim();
       const statusEl = document.getElementById("onboardAiStatus");
+      onboardingLocalAiSelected = false;
       if (!AI_ALLOWED_PROVIDERS.includes(provider)) {
         if (statusEl) statusEl.textContent = "Pick a provider first.";
         return;
@@ -8862,13 +9300,22 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       const onboardAiKeyEl = document.getElementById("onboardAiApiKey");
       const onboardAiStatusEl = document.getElementById("onboardAiStatus");
       const onboardAiQuestionsEl = document.getElementById("onboardAiQuestions");
+      onboardingLocalAiSelected = !!(aiPrefs.enabled && aiPrefs.provider === "ollama" && aiGetProviderConfig("ollama").model);
+      const onboardingCloudProvider = AI_ALLOWED_PROVIDERS.includes(aiPrefs.provider) ? aiPrefs.provider : "openai";
       if (wigTitleEl && !wigTitleEl.value) wigTitleEl.value = onboardingMode === "reset" ? (state.focus?.wig?.title || "") : "";
       if (wigDeadlineEl) wigDeadlineEl.value = state.focus?.wig?.deadline || defaultOnboardingDeadline();
       if (wigMeasureEl && !wigMeasureEl.value) wigMeasureEl.value = onboardingMode === "reset" ? (state.focus?.wig?.measure || "") : "";
-      if (onboardAiProviderEl) onboardAiProviderEl.value = aiPrefs.provider || "openai";
-      if (onboardAiKeyEl) onboardAiKeyEl.value = aiGetProviderConfig(aiPrefs.provider || "openai").apiKey || "";
-      if (onboardAiStatusEl) onboardAiStatusEl.textContent = "";
+      if (onboardAiProviderEl) onboardAiProviderEl.value = onboardingCloudProvider;
+      if (onboardAiKeyEl) onboardAiKeyEl.value = aiGetProviderConfig(onboardingCloudProvider).apiKey || "";
+      if (onboardAiStatusEl) {
+        onboardAiStatusEl.textContent = onboardingLocalAiSelected
+          ? `Local AI ready with ${aiGetProviderConfig("ollama").model}.`
+          : "";
+      }
       if (onboardAiQuestionsEl) onboardAiQuestionsEl.textContent = "";
+      const dsWarn = document.getElementById("onboardAiDeepseekWarn");
+      if (dsWarn) dsWarn.hidden = onboardingCloudProvider !== "deepseek";
+      renderLocalAiEntryPoints(onboardingLocalAiSelected ? "ollama" : onboardingCloudProvider);
       const confirmInput = document.getElementById("onboardConfirmText");
       const confirmAck = document.getElementById("onboardConfirmAcknowledge");
       if (confirmInput) confirmInput.value = "";
@@ -13532,6 +13979,7 @@ Data caveat`;
       renderWeeklyReview();
       renderPlanSidebar();
       renderWealth();
+      renderLocalAiWizard();
     }
 
     // ── Plan Sidebar Display ──
@@ -13812,6 +14260,7 @@ Data caveat`;
     document.getElementById("onboardAiProvider").addEventListener("change", e => {
       const provider = String(e.target.value || "").trim();
       if (!AI_ALLOWED_PROVIDERS.includes(provider)) return;
+      onboardingLocalAiSelected = false;
       const keyInput = document.getElementById("onboardAiApiKey");
       const statusEl = document.getElementById("onboardAiStatus");
       const cfg = aiGetProviderConfig(provider);
@@ -13819,47 +14268,49 @@ Data caveat`;
       if (statusEl) statusEl.textContent = "";
       const dsWarn = document.getElementById("onboardAiDeepseekWarn");
       if (dsWarn) dsWarn.hidden = provider !== "deepseek";
+      renderLocalAiEntryPoints(provider);
     });
-    // Onboarding: Ollama setup panel toggle
     document.getElementById("onboardOllamaSetupBtn")?.addEventListener("click", () => {
-      const panel = document.getElementById("onboardOllamaSetup");
-      if (panel) panel.hidden = !panel.hidden;
+      openLocalAiWizard("onboarding");
     });
-    // Onboarding: Copy ollama pull command
-    document.getElementById("onboardOllamaCopyBtn")?.addEventListener("click", () => {
-      const cmd = document.getElementById("onboardOllamaPullCmd")?.textContent || "ollama pull llama4-scout";
-      navigator.clipboard.writeText(cmd).then(() => {
-        const btn = document.getElementById("onboardOllamaCopyBtn");
-        if (btn) { btn.textContent = "Copied!"; setTimeout(() => { btn.textContent = "Copy"; }, 1500); }
-      });
+    document.getElementById("aiOpenOllamaWizardBtn")?.addEventListener("click", () => {
+      openLocalAiWizard("settings");
     });
-    // Onboarding: Test Ollama connection
-    document.getElementById("onboardOllamaTestBtn")?.addEventListener("click", async () => {
-      const statusEl = document.getElementById("onboardOllamaStatus");
-      const modelWrap = document.getElementById("onboardOllamaModelWrap");
-      const modelSelect = document.getElementById("onboardOllamaModel");
-      if (statusEl) statusEl.textContent = "Checking...";
-      try {
-        const res = await fetch("http://localhost:11434/v1/models", { method: "GET", signal: AbortSignal.timeout(5000) });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-        const models = (data.data || []).map(m => m.id).filter(Boolean);
-        if (models.length === 0) throw new Error("No models found. Run: ollama pull llama4-scout");
-        if (statusEl) statusEl.textContent = `Connected (${models.length} model${models.length > 1 ? "s" : ""})`;
-        if (statusEl) statusEl.style.color = "var(--green, #22c55e)";
-        if (modelSelect) {
-          modelSelect.innerHTML = models.map(m => `<option value="${m}">${m}</option>`).join("");
-        }
-        if (modelWrap) modelWrap.hidden = false;
-        // Auto-configure Ollama as the provider
-        aiPrefs.provider = "ollama";
-        aiPrefs.enabled = true;
-        aiSetProviderConfig("ollama", { model: models[0], apiKey: "", baseUrl: "http://localhost:11434/v1" });
-        saveAiPrefs();
-      } catch (err) {
-        if (statusEl) { statusEl.textContent = "Not connected. " + (err.message || "Is Ollama running?"); statusEl.style.color = "var(--red, #ef4444)"; }
-        if (modelWrap) modelWrap.hidden = true;
+    document.getElementById("localAiWizardCloseBtn")?.addEventListener("click", closeLocalAiWizard);
+    document.getElementById("localAiWizardModal")?.addEventListener("click", e => {
+      if (e.target && e.target.id === "localAiWizardModal") closeLocalAiWizard();
+    });
+    document.getElementById("localAiWizardBody")?.addEventListener("click", e => {
+      const actionEl = e.target.closest("[data-local-ai-action]");
+      if (!actionEl) return;
+      const action = String(actionEl.dataset.localAiAction || "").trim();
+      const model = String(actionEl.dataset.localAiModel || "").trim();
+      if (action === "install") {
+        void openExternalUrl("https://ollama.com/download");
+        return;
       }
+      if (action === "refresh") {
+        void refreshLocalAiWizardState({ preserveSelection: true });
+        return;
+      }
+      if (action === "pull-model") {
+        void startLocalAiModelPull(model);
+        return;
+      }
+      if (action === "select-model") {
+        localAiWizard.selectedModel = model;
+        renderLocalAiWizard();
+        return;
+      }
+      if (action === "apply-model") {
+        applyLocalAiWizardModel(model || localAiWizard.selectedModel);
+      }
+    });
+    document.getElementById("localAiWizardBody")?.addEventListener("change", e => {
+      const select = e.target.closest("#localAiWizardModelSelect");
+      if (!select) return;
+      localAiWizard.selectedModel = String(select.value || "").trim();
+      renderLocalAiWizard();
     });
     document.getElementById("onboardAiConnectBtn").addEventListener("click", connectOnboardingAiKey);
     document.getElementById("onboardAiGenerateBtn").addEventListener("click", ()=>{ void runOnboardingAiSetup(); });
@@ -14520,6 +14971,13 @@ Data caveat`;
 
     // Quick exit from focus mode
     document.addEventListener("keydown",e=>{
+      const localAiModal = document.getElementById("localAiWizardModal");
+      if (localAiModal && !localAiModal.hidden && e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        closeLocalAiWizard();
+        return;
+      }
       const onboarding = document.getElementById("onboardingModal");
       if (onboarding && !onboarding.hidden) {
         if (e.key === "Escape") {

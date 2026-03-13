@@ -1,11 +1,13 @@
 use std::fs;
 use std::io::ErrorKind;
 use std::path::PathBuf;
+use std::process::Command;
 use std::time::Duration;
 
 use chrono::Local;
 use rusqlite::{params, types::Value, Connection};
 use serde::{Deserialize, Serialize};
+use serde_json::Value as JsonValue;
 use tauri::{AppHandle, Manager};
 
 const APP_STATE_FILENAME: &str = "PPP_DATA.json";
@@ -42,6 +44,17 @@ struct HttpTextResponse {
     body: String,
     final_url: String,
     content_type: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct OllamaProbeResponse {
+    binary_found: bool,
+    app_found: bool,
+    running: bool,
+    models: Vec<String>,
+    version: Option<String>,
+    error: Option<String>,
 }
 
 fn app_data_dir(app: &AppHandle) -> Result<PathBuf, String> {
@@ -390,6 +403,92 @@ async fn http_get_text(url: String) -> Result<HttpTextResponse, String> {
     })
 }
 
+#[tauri::command]
+async fn ollama_probe() -> Result<OllamaProbeResponse, String> {
+    let binary_output = Command::new("which").arg("ollama").output();
+    let binary_found = binary_output
+        .as_ref()
+        .map(|output| output.status.success() && !String::from_utf8_lossy(&output.stdout).trim().is_empty())
+        .unwrap_or(false);
+
+    let home_dir = std::env::var_os("HOME")
+        .map(PathBuf::from)
+        .unwrap_or_default();
+    let app_found = PathBuf::from("/Applications/Ollama.app").exists()
+        || home_dir.join("Applications/Ollama.app").exists();
+
+    let version = if binary_found {
+        Command::new("ollama")
+            .arg("--version")
+            .output()
+            .ok()
+            .and_then(|output| {
+                if output.status.success() {
+                    Some(String::from_utf8_lossy(&output.stdout).trim().to_string())
+                } else {
+                    None
+                }
+            })
+            .filter(|value| !value.is_empty())
+    } else {
+        None
+    };
+
+    let client = reqwest::Client::builder()
+        .timeout(Duration::from_secs(3))
+        .user_agent("PPP Flow Desktop/0.1")
+        .build()
+        .map_err(|e| e.to_string())?;
+
+    let response = client
+        .get("http://127.0.0.1:11434/api/tags")
+        .send()
+        .await;
+
+    match response {
+        Ok(resp) => {
+            let status = resp.status();
+            let body = resp.text().await.map_err(|e| e.to_string())?;
+            let json: JsonValue = serde_json::from_str(&body).map_err(|e| e.to_string())?;
+            let models = json
+                .get("models")
+                .and_then(|value| value.as_array())
+                .map(|items| {
+                    items.iter()
+                        .filter_map(|item| {
+                            item.get("name")
+                                .and_then(|value| value.as_str())
+                                .or_else(|| item.get("model").and_then(|value| value.as_str()))
+                                .map(str::to_string)
+                        })
+                        .collect::<Vec<_>>()
+                })
+                .unwrap_or_default();
+
+            Ok(OllamaProbeResponse {
+                binary_found,
+                app_found,
+                running: status.is_success(),
+                models,
+                version,
+                error: if status.is_success() {
+                    None
+                } else {
+                    Some(format!("Ollama responded with HTTP {}", status.as_u16()))
+                },
+            })
+        }
+        Err(err) => Ok(OllamaProbeResponse {
+            binary_found,
+            app_found,
+            running: false,
+            models: Vec::new(),
+            version,
+            error: Some(err.to_string()),
+        }),
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -403,7 +502,8 @@ pub fn run() {
             ledger_path,
             backup_path,
             play_native_chime,
-            http_get_text
+            http_get_text,
+            ollama_probe
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
