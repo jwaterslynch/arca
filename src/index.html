@@ -2815,6 +2815,13 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           <p class="tiny" style="margin-top:10px;">
             PPP Flow gives you a system to protect time for high-value work, track whether you're actually spending that time, and build a weekly rhythm of accountability to yourself.
           </p>
+          <div class="controls" style="margin-top:16px;justify-content:flex-start;flex-wrap:wrap;">
+            <button id="onboardChooseBoardBtn" class="primary" type="button">Set Up Board</button>
+            <button id="onboardChooseAiOnlyBtn" class="ghost" type="button">Set Up AI Only</button>
+          </div>
+          <div id="onboardPathHint" class="tiny" style="margin-top:10px;opacity:.8;">
+            Choose the full board setup, or jump straight to AI setup if you only want to test the Ollama/provider flow.
+          </div>
         </div>
 
         <div id="onboardStep2" class="onboard-screen" hidden>
@@ -3069,7 +3076,8 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
     let reviewWeekOffset = 0;
     let lifeManagerOpen = false;
     let onboardingStep = 1;
-    let onboardingMode = "first_run"; // first_run | reset
+    let onboardingMode = "first_run"; // first_run | reset | preview
+    let onboardingPath = "full"; // full | ai_only
     let onboardingLocalAiSelected = false;
     let pomoAudioContext = null;
     let linkedDataFileHandle = null;
@@ -8972,7 +8980,19 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
     }
 
     function onboardingMaxStep() {
-      return 6;
+      return onboardingPath === "ai_only" ? 2 : 6;
+    }
+
+    function setOnboardingPath(path) {
+      onboardingPath = path === "ai_only" ? "ai_only" : "full";
+      const hintEl = document.getElementById("onboardPathHint");
+      if (hintEl) {
+        hintEl.textContent = onboardingPath === "ai_only"
+          ? "AI-only mode stops after provider setup and will not create or replace your board."
+          : "Full setup will walk through goal, practices, and first tasks.";
+      }
+      const nextBtn = document.getElementById("onboardingNextBtn");
+      if (nextBtn) nextBtn.textContent = onboardingPath === "ai_only" && onboardingStep === 1 ? "Go to AI Setup" : "Next";
     }
 
     function defaultOnboardingDeadline() {
@@ -9233,20 +9253,38 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         const pill = document.getElementById(`onboardStepPill${n}`);
         const screen = document.getElementById(`onboardStep${n}`);
         if (pill) pill.classList.toggle("active", n === onboardingStep);
+        if (pill) pill.hidden = n > maxStep;
         if (screen) screen.hidden = n !== onboardingStep;
       });
 
       const step6Pill = document.getElementById("onboardStepPill6");
-      if (step6Pill) step6Pill.textContent = onboardingMode === "reset" ? "6. Confirm reset" : "6. Start";
+      if (step6Pill) {
+        step6Pill.textContent = onboardingMode === "reset"
+          ? "6. Confirm reset"
+          : onboardingMode === "preview"
+            ? "6. Preview"
+            : "6. Start";
+      }
 
       const prevBtn = document.getElementById("onboardingPrevBtn");
       const nextBtn = document.getElementById("onboardingNextBtn");
       const finishBtn = document.getElementById("onboardingFinishBtn");
       if (prevBtn) prevBtn.disabled = onboardingStep === 1;
       if (nextBtn) nextBtn.hidden = onboardingStep >= maxStep;
+      if (nextBtn) {
+        nextBtn.textContent = onboardingPath === "ai_only" && onboardingStep === 1 ? "Go to AI Setup" : "Next";
+      }
       if (finishBtn) {
         finishBtn.hidden = onboardingStep !== maxStep;
-        finishBtn.textContent = onboardingMode === "reset" ? "Reset Board and Apply Setup" : "Create My Board";
+        finishBtn.textContent = onboardingMode === "reset"
+          ? "Reset Board and Apply Setup"
+          : onboardingPath === "ai_only"
+            ? onboardingMode === "preview"
+              ? "Close Preview"
+              : "Finish AI Setup"
+          : onboardingMode === "preview"
+            ? "Close Preview"
+            : "Create My Board";
       }
 
       const resetWarning = document.getElementById("onboardResetWarning");
@@ -9260,7 +9298,11 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         const stamp = new Date().toISOString().replaceAll(":", "-").replaceAll(".", "-");
         backupHint.textContent = onboardingMode === "reset"
           ? `A JSON backup will be exported first (e.g. PPP_RESET_BACKUP_${stamp}.json). Restore via Import JSON File.`
-          : "A JSON backup is exported automatically before reset. Restore via Import JSON File.";
+          : onboardingPath === "ai_only"
+            ? "AI-only setup will save your AI configuration and leave goal/practice/task data untouched."
+          : onboardingMode === "preview"
+            ? "Preview mode is safe: testing the onboarding flow here will not change your current board."
+            : "A JSON backup is exported automatically before reset. Restore via Import JSON File.";
       }
 
       if (onboardingStep === 6) refreshOnboardingSummary();
@@ -9283,16 +9325,25 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       const modal = document.getElementById("onboardingModal");
       if (!modal) return;
       onboardingMode = options.mode || "first_run";
+      setOnboardingPath(options.path || "full");
       const titleEl = document.getElementById("onboardingTitle");
       const metaEl = document.getElementById("onboardingMeta");
       const skipBtn = document.getElementById("onboardingSkipBtn");
-      if (titleEl) titleEl.textContent = onboardingMode === "reset" ? "Set Up New Board" : "Welcome to PPP Flow";
+      if (titleEl) {
+        titleEl.textContent = onboardingMode === "reset"
+          ? "Set Up New Board"
+          : onboardingMode === "preview"
+            ? "Preview PPP Flow Onboarding"
+            : "Welcome to PPP Flow";
+      }
       if (metaEl) {
         metaEl.textContent = onboardingMode === "reset"
           ? "Preview the setup first. Reset requires double confirmation and auto-backup."
-          : "Set up in under 5 minutes";
+          : onboardingMode === "preview"
+            ? "Test the onboarding and local AI setup flow safely. Your existing board will not be changed."
+            : "Set up in under 5 minutes";
       }
-      if (skipBtn) skipBtn.textContent = onboardingMode === "reset" ? "Cancel" : "Skip setup";
+      if (skipBtn) skipBtn.textContent = onboardingMode === "reset" ? "Cancel" : onboardingMode === "preview" ? "Close preview" : "Skip setup";
       const wigTitleEl = document.getElementById("onboardWigTitle");
       const wigDeadlineEl = document.getElementById("onboardWigDeadline");
       const wigMeasureEl = document.getElementById("onboardWigMeasure");
@@ -9333,6 +9384,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       modal.setAttribute("aria-hidden", "true");
       modal.classList.remove("fullscreen");
       onboardingMode = "first_run";
+      onboardingPath = "full";
     }
 
     function collectOnboardingPractices() {
@@ -9390,6 +9442,24 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
           state.onboarding = { completed_at: nowIso, skipped_at: nowIso };
           saveState("onboarding_skip");
         }
+        closeOnboarding();
+        setActiveTab("execute");
+        render();
+        return;
+      }
+
+      if (onboardingPath === "ai_only") {
+        if (onboardingMode === "first_run") {
+          state.onboarding = { completed_at: nowIso, skipped_at: null };
+          saveState("onboarding_ai_only_complete");
+        }
+        closeOnboarding();
+        setActiveTab("execute");
+        render();
+        return;
+      }
+
+      if (onboardingMode === "preview") {
         closeOnboarding();
         setActiveTab("execute");
         render();
@@ -14239,6 +14309,14 @@ Data caveat`;
     });
     document.getElementById("onboardingFinishBtn").addEventListener("click",()=>completeOnboarding(false));
     document.getElementById("onboardingSkipBtn").addEventListener("click",()=>completeOnboarding(true));
+    document.getElementById("onboardChooseBoardBtn")?.addEventListener("click", () => {
+      setOnboardingPath("full");
+      setOnboardingStep(2);
+    });
+    document.getElementById("onboardChooseAiOnlyBtn")?.addEventListener("click", () => {
+      setOnboardingPath("ai_only");
+      setOnboardingStep(2);
+    });
     document.getElementById("onboardConfirmAcknowledge").addEventListener("change", updateOnboardingResetConfirmState);
     document.getElementById("onboardConfirmText").addEventListener("input", updateOnboardingResetConfirmState);
     document.getElementById("onboardWigTitle").addEventListener("input", refreshOnboardingSummary);
@@ -14254,6 +14332,10 @@ Data caveat`;
     document.getElementById("onboardAiSkipBtn")?.addEventListener("click", () => {
       aiPrefs.enabled = false;
       saveAiPrefs();
+      if (onboardingPath === "ai_only") {
+        completeOnboarding(false);
+        return;
+      }
       setOnboardingStep(onboardingStep + 1);
     });
     // Onboarding: DeepSeek warning toggle
@@ -14976,6 +15058,14 @@ Data caveat`;
         e.preventDefault();
         e.stopPropagation();
         closeLocalAiWizard();
+        return;
+      }
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && !e.altKey && String(e.key || "").toLowerCase() === "o") {
+        const openModal = document.querySelector(".modal-backdrop:not([hidden])");
+        if (openModal) return;
+        e.preventDefault();
+        e.stopPropagation();
+        openOnboarding({ mode: "preview" });
         return;
       }
       const onboarding = document.getElementById("onboardingModal");
