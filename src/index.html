@@ -1515,20 +1515,138 @@ button.warn {
 .task-modal-grid .span-2 { grid-column:1 / -1; }
 
 /* Onboarding modal (full screen) */
-#onboardingModal .modal-panel { max-width:100vw; width:100vw; max-height:100vh; height:100vh; border-radius:0; display:flex; flex-direction:column; }
-.modal-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
-.modal-head h3 { font-size:1.1rem; font-weight:700; }
-.modal-head button { background:transparent; border:none; font-size:1.4rem; cursor:pointer; color:var(--text2); }
-.onboard-body { flex:1; overflow-y:auto; padding:20px; }
-.onboard-screen { max-width:800px; margin:0 auto; display:grid; gap:16px; align-content:start; }
-.onboard-foot { display:flex; align-items:center; justify-content:space-between; padding:16px 20px; border-top:1px solid var(--line); }
-.onboard-step-pill { font-size:.72rem; font-weight:600; padding:4px 10px; border-radius:20px; background:var(--bg); color:var(--text2); }
+#onboardingModal .modal-panel {
+  max-width:100vw; width:100vw; max-height:100vh; height:100vh; border-radius:0;
+  display:flex; flex-direction:column; gap:12px;
+  background:
+    radial-gradient(circle at top right, rgba(35,150,91,.08), transparent 28%),
+    linear-gradient(180deg, #f7fbf8 0%, #ffffff 24%);
+  padding:22px 28px 16px;
+}
+.modal-head { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:2px; }
+.modal-head h3 { font-size:clamp(30px,3.2vw,56px); font-weight:800; line-height:1.02; letter-spacing:-.04em; }
+.modal-head button {
+  background:rgba(255,255,255,.72); border:1px solid var(--line); font-size:1rem; cursor:pointer;
+  color:var(--text2); padding:12px 16px; border-radius:16px; font-weight:700;
+}
+.onboard-steps { display:flex; gap:10px; padding:2px 0 0; overflow-x:auto; }
+.onboard-body { flex:1; overflow-y:auto; padding:4px 4px 0; }
+.onboard-screen { max-width:1220px; margin:0 auto; display:grid; gap:16px; align-content:start; }
+.onboard-foot { display:flex; align-items:center; justify-content:space-between; padding:10px 4px 0; border-top:1px solid rgba(24,62,51,.08); }
+.onboard-step-pill {
+  font-size:.92rem; font-weight:700; padding:10px 18px; border-radius:999px;
+  background:rgba(255,255,255,.78); color:var(--text2); border:1px solid rgba(24,62,51,.08);
+  white-space:nowrap;
+}
+.onboard-step-pill.active {
+  background:#e8f7ee; color:var(--accent); border-color:rgba(35,150,91,.28);
+  box-shadow:0 6px 16px rgba(35,150,91,.10);
+}
 .onboard-row { display:grid; gap:8px; grid-template-columns:1fr auto auto; align-items:center; padding:6px 0; }
 .onboard-row.task { grid-template-columns:1fr auto auto auto; }
-.onboard-practice-grid, .onboard-task-grid { display:grid; gap:4px; }
+.onboard-practice-grid, .onboard-task-grid {
+  display:grid; gap:10px;
+  background:rgba(255,255,255,.84);
+  border:1px solid rgba(24,62,51,.08);
+  border-radius:20px;
+  padding:18px;
+  box-shadow:0 10px 30px rgba(15,23,42,.05);
+}
 .onboard-danger { background:#fef2f2; color:var(--danger); padding:10px; border-radius:var(--radius-sm); font-size:.78rem; }
-.onboard-confirm-box { background:var(--bg); padding:14px; border-radius:var(--radius-sm); }
-.onboard-footnote { font-size:.72rem; color:var(--text2); }
+.onboard-confirm-box {
+  background:rgba(255,255,255,.84); padding:16px 18px; border-radius:20px;
+  border:1px solid rgba(24,62,51,.08); box-shadow:0 10px 30px rgba(15,23,42,.05);
+}
+.onboard-footnote { font-size:.82rem; color:var(--text2); }
+.onboard-card{
+  background:rgba(255,255,255,.88);
+  border:1px solid rgba(24,62,51,.07);
+  border-radius:20px;
+  padding:22px 24px;
+  box-shadow:0 8px 32px rgba(15,23,42,.04), 0 1px 3px rgba(15,23,42,.06);
+}
+.onboard-eyebrow{
+  font-size:.72rem; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:var(--accent); margin-bottom:2px;
+}
+.onboard-section-title{
+  margin:0; font-size:clamp(22px,1.9vw,30px); line-height:1.12; letter-spacing:-.025em; color:var(--text); font-weight:700;
+}
+.onboard-section-copy{display:grid; gap:12px;}
+.onboard-section-head{display:grid; gap:6px;}
+.onboard-welcome-screen,.onboard-ai-screen{gap:14px;}
+.onboard-hero-grid{
+  display:grid; grid-template-columns:minmax(0,1.3fr) minmax(320px,1fr);
+  gap:18px; align-items:stretch;
+}
+.onboard-highlight-list{
+  display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px;
+}
+.onboard-highlight-item{
+  display:grid; gap:4px; padding:14px 16px; border-radius:14px;
+  background:#f3faf6; border:1px solid rgba(35,150,91,.12);
+  transition:box-shadow .15s;
+}
+.onboard-highlight-item:hover{box-shadow:0 4px 16px rgba(35,150,91,.10);}
+.onboard-highlight-item strong{
+  font-size:.72rem; font-weight:800; letter-spacing:.07em; text-transform:uppercase; color:var(--accent);
+}
+.onboard-highlight-item span{
+  font-size:.9rem; line-height:1.4; color:var(--text);
+}
+.onboard-action-stack{display:grid; gap:14px; align-content:center;}
+.onboard-muted-note{font-size:.86rem; line-height:1.5; color:var(--text2);}
+.onboard-muted-strip{padding:10px 4px; opacity:.55;}
+.onboard-ai-grid{
+  display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; align-items:start;
+}
+.onboard-provider-card{display:grid; gap:10px;}
+.onboard-ai-grid .onboard-row.task,
+.onboard-provider-row{
+  grid-template-columns:minmax(0,1.05fr) minmax(220px,.95fr) auto;
+}
+.onboard-intake-card{display:grid; gap:10px;}
+.onboard-intake-card .controls{justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;}
+#onboardAiStatus{flex:1; min-height:1lh;}
+#onboardingModal .modal-head .tiny{
+  font-size:clamp(16px,1.35vw,22px); line-height:1.35; color:#50666d; max-width:1100px;
+}
+#onboardingModal .onboard-screen > p:first-child { margin:0; font-size:clamp(26px,2.2vw,36px); line-height:1.12; }
+#onboardingModal .onboard-body p { margin:0; font-size:clamp(18px,1.45vw,24px); line-height:1.48; }
+#onboardingModal .onboard-body p.tiny { font-size:clamp(13px,1vw,16px); line-height:1.48; color:#50666d; }
+#onboardingModal input,
+#onboardingModal select,
+#onboardingModal textarea { font-size:16px; padding:12px 14px; border-radius:14px; }
+#onboardingModal textarea { min-height:108px; }
+#onboardingModal .onboard-danger { font-size:.92rem; padding:14px; border-radius:16px; }
+#onboardingModal .onboard-confirm-box .tiny,
+#onboardingModal .onboard-row label.tiny { font-size:.85rem; }
+#onboardingModal .onboard-footnote {
+  max-width:1220px; width:100%; margin:0 auto; padding:10px 4px 6px;
+  border-top:1px solid rgba(24,62,51,.08); line-height:1.45; color:#5a6b71;
+}
+#onboardingModal .onboard-footnote a { color:var(--accent); }
+#onboardingModal .onboard-foot { margin-top:0; border-top:none; }
+#onboardingModal .onboard-foot button { font-size:1rem; padding:12px 22px; border-radius:16px; }
+@media (max-width: 1180px){
+  .onboard-hero-grid,
+  .onboard-ai-grid,
+  .onboard-highlight-list{
+    grid-template-columns:1fr;
+  }
+  .onboard-ai-grid .onboard-row.task,
+  .onboard-provider-row{
+    grid-template-columns:1fr;
+  }
+}
+@media (max-width: 780px){
+  #onboardingModal .modal-panel{padding:18px 18px 14px;}
+  #onboardingModal .modal-head h3{font-size:clamp(26px,8vw,40px);}
+  #onboardingModal .modal-head .tiny{font-size:16px;}
+  #onboardingModal .onboard-step-pill{font-size:.82rem;padding:8px 14px;}
+  #onboardingModal .onboard-body p{font-size:18px;}
+  #onboardingModal .onboard-foot{gap:10px;flex-wrap:wrap;}
+  #onboardingModal .onboard-foot button{width:100%;justify-content:center;}
+}
 
 /* Cloud sync config */
 .cloud-config-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
@@ -2804,47 +2922,71 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         <span id="onboardStepPill6" class="onboard-step-pill">6. Start</span>
       </div>
       <div class="onboard-body">
-        <div id="onboardStep1" class="onboard-screen">
-          <p><strong>Welcome to PPP Flow</strong></p>
-          <p class="tiny" style="margin-top:10px;">
-            PPP Flow — <strong>Prioritisation, Productivity &amp; Procrastination</strong> — is a single dashboard for focusing your effort on the goals that actually matter, both work and personal.
-          </p>
-          <p class="tiny" style="margin-top:10px;">
-            Most days are consumed by reactive work: emails, meetings, logistics, other people's priorities. This day-to-day has to happen — but left unchecked, it devours all the time you needed for the things that move the needle.
-          </p>
-          <p class="tiny" style="margin-top:10px;">
-            PPP Flow gives you a system to protect time for high-value work, track whether you're actually spending that time, and build a weekly rhythm of accountability to yourself.
-          </p>
-          <div class="controls" style="margin-top:16px;justify-content:flex-start;flex-wrap:wrap;">
-            <button id="onboardChooseBoardBtn" class="primary" type="button">Set Up Board</button>
-            <button id="onboardChooseAiOnlyBtn" class="ghost" type="button">Set Up AI Only</button>
+        <div id="onboardStep1" class="onboard-screen onboard-welcome-screen">
+          <div class="onboard-hero-grid">
+            <div class="onboard-card onboard-section-copy">
+              <div class="onboard-eyebrow">Welcome</div>
+              <h4 class="onboard-section-title">A calmer operating system for focused work.</h4>
+              <p>PPP Flow keeps one primary goal visible, protects time for high-value work, and makes weekly review part of the system instead of an afterthought.</p>
+              <div class="onboard-highlight-list">
+                <div class="onboard-highlight-item">
+                  <strong>Execute</strong>
+                  <span>Capture tasks, run focus blocks, and keep Today realistic.</span>
+                </div>
+                <div class="onboard-highlight-item">
+                  <strong>Plan</strong>
+                  <span>Turn priorities into a clean board with next actions and commitments.</span>
+                </div>
+                <div class="onboard-highlight-item">
+                  <strong>Review</strong>
+                  <span>See whether the week matched your intent and where drift started.</span>
+                </div>
+              </div>
+            </div>
+            <div class="onboard-card onboard-action-stack">
+              <div class="onboard-eyebrow">Choose your path</div>
+              <h4 class="onboard-section-title">Test AI only, or set up the full board.</h4>
+              <p class="tiny">Full setup walks through your goal, practices, and first tasks. AI-only mode lets you test providers or set up Ollama.</p>
+              <div class="controls" style="justify-content:flex-start;flex-wrap:wrap;gap:10px;">
+                <button id="onboardChooseBoardBtn" class="primary" type="button">Set Up Board</button>
+                <button id="onboardChooseAiOnlyBtn" class="ghost" type="button">Set Up AI Only</button>
+              </div>
+              <p id="onboardPathHint" class="tiny" style="opacity:.6;font-size:.82rem;">Full setup walks through goal, life practices, and first tasks.</p>
+            </div>
           </div>
-          <div id="onboardPathHint" class="tiny" style="margin-top:10px;opacity:.8;">
-            Choose the full board setup, or jump straight to AI setup if you only want to test the Ollama/provider flow.
+          <div class="onboard-muted-strip">
+            <p class="tiny"><strong>Framework:</strong> one primary goal, controllable inputs, a visible scoreboard, and weekly review so priorities stay honest.</p>
           </div>
         </div>
 
-        <div id="onboardStep2" class="onboard-screen" hidden>
+        <div id="onboardStep2" class="onboard-screen onboard-ai-screen" hidden>
           <!-- Stage A: AI opt-in / opt-out -->
-          <div id="onboardAiStageA">
-            <p><strong>AI Coaching (Optional)</strong></p>
-            <p class="tiny" style="margin-top:10px;">PPP Flow can use AI to help prioritise tasks, coach your life practices, and generate insights from your data.</p>
-            <p class="tiny" style="margin-top:8px;">When active, the AI sees: your goals, open tasks, life practices, and weekly commitments. It does <strong>not</strong> see: passwords, financial account numbers, or data from other apps.</p>
-            <div style="display:grid;gap:8px;margin-top:14px;max-width:380px;">
-              <button id="onboardAiEnableBtn" class="primary" type="button" style="padding:10px 16px;text-align:left;">Enable AI coaching (recommended)</button>
-              <button id="onboardAiSkipBtn" class="ghost" type="button" style="padding:10px 16px;text-align:left;">Skip AI &mdash; I'll use PPP Flow without it</button>
+          <div id="onboardAiStageA" class="onboard-card onboard-section-copy">
+            <div class="onboard-eyebrow">AI assist</div>
+            <h4 class="onboard-section-title">Choose whether PPP Flow should use AI coaching.</h4>
+            <p class="tiny">AI can help prioritise tasks, coach life practices, and generate a starter setup from a short brain-dump. When active, it sees your goals, open tasks, practices, and commitments. It does <strong>not</strong> see passwords, financial accounts, or data from other apps.</p>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px;">
+              <button id="onboardAiEnableBtn" class="primary" type="button">Enable AI coaching (recommended)</button>
+              <button id="onboardAiSkipBtn" class="ghost" type="button">Skip AI</button>
             </div>
           </div>
 
           <!-- Stage B: Provider tier selection -->
           <div id="onboardAiStageB" hidden>
-            <p><strong>Choose your AI provider</strong></p>
+            <div class="onboard-section-head">
+              <div class="onboard-eyebrow">AI provider</div>
+              <h4 class="onboard-section-title">Choose cloud or local AI.</h4>
+              <p class="tiny">Cloud AI is fastest to start. Ollama keeps prompts on your machine. You can change providers later in settings.</p>
+            </div>
 
-            <!-- Cloud AI tier -->
-            <div style="margin-top:12px;padding:12px;border:1px solid var(--line);border-radius:8px;background:var(--card);">
-              <p class="tiny" style="font-weight:700;margin-bottom:4px;">Cloud AI</p>
-              <p class="tiny" style="opacity:.8;">Use a major foundation model via API. Fast and capable. Your data is sent to the provider's servers but is not used for training. Retained up to 30 days for safety monitoring.</p>
-              <div class="onboard-row task" style="margin-top:8px;">
+            <div class="onboard-ai-grid">
+              <!-- Cloud AI tier -->
+              <div class="onboard-card onboard-provider-card">
+                <div>
+                  <p class="tiny" style="font-weight:700;margin-bottom:4px;">Cloud AI</p>
+                  <p class="tiny" style="opacity:.8;">Use a major foundation model via API. Fast and capable. Your prompts are sent to the provider you choose. Review that provider's current privacy and retention terms before use.</p>
+                </div>
+                <div class="onboard-row task onboard-provider-row">
                 <select id="onboardAiProvider">
                   <option value="openai">ChatGPT (OpenAI)</option>
                   <option value="anthropic">Claude (Anthropic)</option>
@@ -2855,20 +2997,29 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
                 </select>
                 <input id="onboardAiApiKey" type="password" autocomplete="off" placeholder="Paste API key" />
                 <button id="onboardAiConnectBtn" class="ghost" type="button">Connect</button>
+                </div>
+                <div id="onboardAiDeepseekWarn" class="tiny" hidden style="padding:6px 8px;border-radius:10px;background:#fff3cd;color:#856404;border:1px solid #ffc107;">DeepSeek's API sends data to servers in China where national security laws can compel data handover. For privacy, consider running DeepSeek locally via Ollama instead.</div>
               </div>
-              <div id="onboardAiDeepseekWarn" class="tiny" hidden style="margin-top:6px;padding:6px 8px;border-radius:4px;background:#fff3cd;color:#856404;border:1px solid #ffc107;">DeepSeek's API sends data to servers in China where national security laws can compel data handover. For privacy, consider running DeepSeek locally via Ollama instead.</div>
-            </div>
 
-            <!-- Local AI tier -->
-            <div style="margin-top:10px;padding:12px;border:1px solid var(--line);border-radius:8px;background:var(--card);">
-              <p class="tiny" style="font-weight:700;margin-bottom:4px;">Local AI (Ollama) &mdash; 100% private</p>
-              <p class="tiny" style="opacity:.8;">Run an AI model directly on your machine. Nothing leaves your computer. Requires 32GB+ RAM and Ollama installed.</p>
-              <button id="onboardOllamaSetupBtn" class="ghost" type="button" style="margin-top:8px;">Set up Local AI</button>
+              <!-- Local AI tier -->
+              <div class="onboard-card onboard-provider-card">
+                <div>
+                  <p class="tiny" style="font-weight:700;margin-bottom:4px;">Local AI (Ollama) &mdash; 100% private</p>
+                  <p class="tiny" style="opacity:.8;">Run an AI model directly on your machine. Nothing leaves your computer. Requires 32GB+ RAM and Ollama installed.</p>
+                </div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <button id="onboardOllamaSetupBtn" class="ghost" type="button">Set up Local AI</button>
+                <button id="onboardOllamaRefreshBtn" class="ghost" type="button" hidden>Check Again</button>
+              </div>
               <div id="onboardOllamaQuickStatus" class="local-ai-inline-status">The setup wizard can detect Ollama, download a starter model, and configure PPP Flow to use it locally.</div>
+              <div id="onboardOllamaModelHint" class="tiny onboard-muted-note" style="margin-top:6px;">Starter model: Llama 3.2 for general use.</div>
+            </div>
             </div>
 
             <!-- Brain dump (shared by both tiers) -->
-            <div id="onboardAiBrainDump" style="margin-top:12px;">
+            <div id="onboardAiBrainDump" class="onboard-card onboard-intake-card">
+              <div class="onboard-eyebrow">Starter setup</div>
+              <h4 class="onboard-section-title">Describe what matters right now.</h4>
               <textarea id="onboardAiIntake" placeholder="Brain-dump what matters right now: goals, deadlines, life practices, constraints, and what tends to get procrastinated."></textarea>
               <div class="controls">
                 <button id="onboardAiGenerateBtn" class="primary" type="button">Generate starter board with AI</button>
@@ -2877,21 +3028,21 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
               <div id="onboardAiQuestions" class="tiny"></div>
             </div>
 
-            <p class="tiny" style="margin-top:8px;"><strong>Set up later?</strong> No problem. Press Next and continue manual onboarding.</p>
+            <p class="tiny onboard-muted-note"><strong>Set up later?</strong> No problem. Press Next and continue manual onboarding.</p>
           </div>
 
-          <p class="tiny" style="margin-top:12px;"><strong>How PPP Flow works:</strong> focus on one primary goal, track controllable inputs (not just results), keep a visible scoreboard, and review weekly so priorities stay honest.</p>
+          <div class="onboard-muted-strip">
+            <p class="tiny"><strong>How PPP Flow works:</strong> focus on one primary goal, track controllable inputs, keep a visible scoreboard, and review weekly so priorities stay honest.</p>
+          </div>
         </div>
 
         <div id="onboardStep3" class="onboard-screen" hidden>
-          <p><strong>Set Your Primary Goal</strong></p>
-          <p class="tiny" style="margin-top:8px;">
-            If you could only achieve <em>one thing</em> in the next 30–90 days that would make everything else easier or more meaningful — what would it be?
-          </p>
-          <p class="tiny" style="margin-top:8px;">
-            A good goal is <strong>specific</strong> (not vague), <strong>measurable</strong> (you'll know when it's done), and <strong>time-bound</strong> (has a deadline). Think of it as: <em>"From X to Y by when."</em>
-          </p>
-          <div class="onboard-practice-grid" style="margin-top:10px;">
+          <div class="onboard-card onboard-section-copy">
+            <div class="onboard-eyebrow">Primary goal</div>
+            <h4 class="onboard-section-title">If you could only achieve one thing in the next 30–90 days, what would it be?</h4>
+            <p class="tiny">Choose something that would make everything else easier or more meaningful. A good goal is specific, measurable, and time-bound — think <em>"From X to Y by when."</em></p>
+          </div>
+          <div class="onboard-practice-grid">
             <input id="onboardWigTitle" placeholder="Goal (required) — e.g. Submit paper revision to Nature by 15 April" />
             <input id="onboardWigDeadline" type="date" />
             <input id="onboardWigMeasure" placeholder="How will you measure success? — e.g. Submission confirmed" />
@@ -2899,9 +3050,12 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         </div>
 
         <div id="onboardStep4" class="onboard-screen" hidden>
-          <p><strong>Daily Life Practices</strong></p>
-          <p class="tiny" style="margin-top:8px;">Not everything important is a work goal. These are recurring personal practices — the daily habits that keep you grounded. Frequency matters more than ambition. Set a minimum target you can actually hit every day.</p>
-          <div class="onboard-practice-grid" style="margin-top:10px;">
+          <div class="onboard-card onboard-section-copy">
+            <div class="onboard-eyebrow">Life practices</div>
+            <h4 class="onboard-section-title">The daily habits that keep you grounded.</h4>
+            <p class="tiny">Not everything important is a work goal. These are recurring personal practices — meditation, exercise, reading, music. Frequency matters more than ambition. Set a minimum you can actually hit every day.</p>
+          </div>
+          <div class="onboard-practice-grid">
             <div class="onboard-row">
               <input id="onboardPractice1" placeholder="Practice 1 (e.g. Meditation)" />
               <input id="onboardPractice1Min" type="number" min="1" max="240" step="1" placeholder="Min" />
@@ -2931,11 +3085,12 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         </div>
 
         <div id="onboardStep5" class="onboard-screen" hidden>
-          <p><strong>Your First Tasks</strong></p>
-          <p class="tiny" style="margin-top:8px;">Now break your goal into concrete tasks you can work on this week. Each maps to one of two types:</p>
-          <p class="tiny" style="margin-top:8px;"><strong>Strategic</strong> — tasks that directly advance your primary goal. These are your inputs: the work that predicts whether you'll hit the target. Protect time for these.</p>
-          <p class="tiny" style="margin-top:6px;"><strong>Maintenance</strong> — everything else. Emails, admin, meetings, logistics. The day-to-day. It needs doing, but it shouldn't crowd out strategic work. This is the Eisenhower principle: important work rarely feels urgent, and urgent work is rarely important.</p>
-          <div class="onboard-task-grid" style="margin-top:10px;">
+          <div class="onboard-card onboard-section-copy">
+            <div class="onboard-eyebrow">First tasks</div>
+            <h4 class="onboard-section-title">Break your goal into concrete tasks for this week.</h4>
+            <p class="tiny"><strong>Strategic</strong> tasks directly advance your primary goal — the work that predicts whether you'll hit the target. <strong>Maintenance</strong> is everything else: emails, admin, meetings. It needs doing, but shouldn't crowd out strategic work.</p>
+          </div>
+          <div class="onboard-task-grid">
             <div class="onboard-row task">
               <input id="onboardTask1" placeholder="Task 1" />
               <select id="onboardTask1Category">
@@ -3015,16 +3170,19 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         </div>
 
         <div id="onboardStep6" class="onboard-screen" hidden>
-          <p><strong>Review and Start</strong></p>
-          <div class="onboard-confirm-box" style="margin-top:10px;">
+          <div class="onboard-card onboard-section-copy">
+            <div class="onboard-eyebrow">Preview</div>
+            <h4 class="onboard-section-title">Review your setup before launching.</h4>
+          </div>
+          <div class="onboard-confirm-box">
             <div id="onboardSummaryWig" class="tiny"></div>
             <div id="onboardSummaryPractices" class="tiny"></div>
             <div id="onboardSummaryTasks" class="tiny"></div>
           </div>
-          <div id="onboardResetWarning" class="onboard-danger" style="margin-top:10px;" hidden>
+          <div id="onboardResetWarning" class="onboard-danger" hidden>
             <strong>Reset warning:</strong> this will replace tasks, sessions, notes, daily logs, weekly reviews, and streak history with a fresh board.
           </div>
-          <div id="onboardResetConfirmBox" class="onboard-confirm-box" style="margin-top:10px;" hidden>
+          <div id="onboardResetConfirmBox" class="onboard-confirm-box" hidden>
             <label class="tiny"><input id="onboardConfirmAcknowledge" type="checkbox" /> I understand this replaces my current board data.</label>
             <input id="onboardConfirmText" placeholder="Type RESET to enable reset" />
             <div id="onboardBackupHint" class="tiny">A JSON backup is exported automatically before reset. Restore via Import JSON File.</div>
@@ -3032,8 +3190,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         </div>
       </div>
       <div id="onboardingFootnote" class="onboard-footnote">
-        Inspired by several execution and productivity frameworks including the Eisenhower matrix, deep work principles, and goal-focused execution methods.
-        <a href="https://en.wikipedia.org/wiki/Eisenhower_matrix" target="_blank" rel="noopener">Further reading →</a>
+        Inspired by the Eisenhower matrix, deep work principles, and goal-focused execution methods.&nbsp; <a href="https://en.wikipedia.org/wiki/Eisenhower_matrix" target="_blank" rel="noopener" style="white-space:nowrap;">Further reading&nbsp;→</a>
       </div>
       <div class="onboard-foot">
         <button id="onboardingPrevBtn" class="ghost" type="button" disabled>Back</button>
@@ -4291,6 +4448,9 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
     function localAiWizardRecommendedModel() {
       return LOCAL_AI_RECOMMENDED_MODELS[0]?.name || aiDefaultModel("ollama");
     }
+    function localAiWizardRecommendedModelMeta() {
+      return LOCAL_AI_RECOMMENDED_MODELS.find(model => model.name === localAiWizardRecommendedModel()) || LOCAL_AI_RECOMMENDED_MODELS[0] || null;
+    }
     function normalizeOllamaModelNames(input) {
       return Array.isArray(input)
         ? input.map(item => {
@@ -4325,17 +4485,70 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           return { text: "Use the setup wizard to detect Ollama and download a starter model.", tone: "" };
       }
     }
+    function localAiEntryPrimaryAction() {
+      if (aiPrefs.enabled && aiPrefs.provider === "ollama" && aiGetProviderConfig("ollama").model) {
+        return { label: "Review Local AI", action: "wizard" };
+      }
+      switch (localAiWizard.status) {
+        case "missing":
+          return { label: "Install Ollama", action: "install" };
+        case "installed_not_running":
+          return { label: "Open Setup Wizard", action: "wizard" };
+        case "running_no_models":
+          return { label: "Download Starter Model", action: "pull" };
+        case "ready":
+          return { label: "Use Local AI", action: "apply" };
+        case "checking":
+          return { label: "Checking…", action: "refresh", disabled: true };
+        case "pulling":
+          return { label: "Downloading…", action: "wizard", disabled: true };
+        default:
+          return { label: "Set up Local AI", action: "wizard" };
+      }
+    }
     function renderLocalAiEntryPoints(activeProvider = aiPrefs.provider) {
       const summary = localAiWizardSummaryText();
+      const recommendedModel = localAiWizardRecommendedModelMeta();
       const onboardStatus = document.getElementById("onboardOllamaQuickStatus");
+      const onboardPrimaryBtn = document.getElementById("onboardOllamaSetupBtn");
+      const onboardRefreshBtn = document.getElementById("onboardOllamaRefreshBtn");
+      const onboardModelHint = document.getElementById("onboardOllamaModelHint");
       if (onboardStatus) {
         onboardStatus.textContent = summary.text;
         onboardStatus.className = `local-ai-inline-status${summary.tone ? ` ${summary.tone}` : ""}`;
+      }
+      if (onboardPrimaryBtn) {
+        const primary = localAiEntryPrimaryAction();
+        onboardPrimaryBtn.textContent = primary.label;
+        onboardPrimaryBtn.dataset.localAiAction = primary.action;
+        onboardPrimaryBtn.disabled = !!primary.disabled;
+      }
+      if (onboardRefreshBtn) {
+        const showRefresh = ["missing", "installed_not_running", "running_no_models", "ready", "error"].includes(localAiWizard.status);
+        onboardRefreshBtn.hidden = !showRefresh;
+        onboardRefreshBtn.disabled = !!localAiWizard.loading || !!localAiWizard.pulling;
+      }
+      if (onboardModelHint) {
+        if (localAiWizard.pulling && localAiWizard.pullModel) {
+          const progressPct = localAiWizard.pullTotal > 0
+            ? Math.max(0, Math.min(100, Math.round((localAiWizard.pullCompleted / localAiWizard.pullTotal) * 100)))
+            : null;
+          onboardModelHint.textContent = `${localAiWizard.pullModel} is downloading${progressPct != null ? ` · ${progressPct}%` : "…"} ${localAiWizard.pullStatus ? `· ${localAiWizard.pullStatus}` : ""}`;
+        } else if (localAiWizard.status === "ready" && localAiWizard.models.length) {
+          onboardModelHint.textContent = `Installed models: ${localAiWizard.models.join(", ")}`;
+        } else if (recommendedModel) {
+          onboardModelHint.textContent = `Starter model: ${recommendedModel.label} · ${recommendedModel.note}`;
+        } else {
+          onboardModelHint.textContent = "";
+        }
       }
       const setupCard = document.getElementById("aiOllamaSetupCard");
       if (setupCard) setupCard.hidden = !(aiConfigOpen && activeProvider === "ollama");
       const setupSummary = document.getElementById("aiOllamaSetupSummary");
       if (setupSummary) setupSummary.textContent = summary.text;
+      if (!localAiWizard.loading && !localAiWizard.lastCheckedAt && localAiWizard.status !== "pulling") {
+        void refreshLocalAiWizardState({ preserveSelection: true });
+      }
     }
     function renderLocalAiWizard() {
       const modal = document.getElementById("localAiWizardModal");
@@ -4624,6 +4837,10 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         localAiWizard.selectedModel = model;
         localAiWizard.pullStatus = `${model} downloaded`;
         await refreshLocalAiWizardState({ preserveSelection: true });
+        if (localAiWizard.source === "onboarding" && localAiWizard.status === "ready") {
+          applyLocalAiWizardModel(model);
+          return;
+        }
       } catch (err) {
         localAiWizard.error = `Model download failed: ${String(err?.message || err)}`;
         localAiWizard.status = "error";
@@ -9176,10 +9393,11 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       }
     }
 
-    function connectOnboardingAiKey() {
+    async function connectOnboardingAiKey() {
       const provider = String(document.getElementById("onboardAiProvider")?.value || "").trim();
       const apiKey = String(document.getElementById("onboardAiApiKey")?.value || "").trim();
       const statusEl = document.getElementById("onboardAiStatus");
+      const connectBtn = document.getElementById("onboardAiConnectBtn");
       onboardingLocalAiSelected = false;
       if (!AI_ALLOWED_PROVIDERS.includes(provider)) {
         if (statusEl) statusEl.textContent = "Pick a provider first.";
@@ -9189,13 +9407,84 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         if (statusEl) statusEl.textContent = "Paste an API key first.";
         return;
       }
-      setAiProvider(provider);
-      aiPrefs.enabled = true;
-      aiSetProviderConfig(provider, { apiKey });
-      aiPrefs = normalizeAiPrefs(aiPrefs);
-      saveAiPrefs();
-      if (statusEl) statusEl.textContent = `${provider} key saved locally. You can now generate starter setup with AI.`;
-      renderAiAssistant();
+      const originalLabel = connectBtn?.textContent || "Connect";
+      if (connectBtn) {
+        connectBtn.disabled = true;
+        connectBtn.textContent = "Testing…";
+      }
+      if (statusEl) statusEl.textContent = "Testing connection…";
+      const providerConfigs = {
+        ...buildDefaultAiProviderConfigs(),
+        ...(aiPrefs.providerConfigs || {}),
+        [provider]: {
+          ...aiDefaultProviderConfig(provider),
+          ...(aiPrefs.providerConfigs?.[provider] || {}),
+          apiKey
+        }
+      };
+      const draftPrefs = normalizeAiPrefs({
+        ...aiPrefs,
+        enabled: true,
+        provider,
+        providerConfigs
+      });
+      const cfg = aiResolveConfig(draftPrefs);
+      let selectedModel = cfg.model || aiDefaultModel(provider);
+      let availableCount = 0;
+      try {
+        const started = Date.now();
+        try {
+          const availableModels = await aiFetchAvailableModels(cfg);
+          availableCount = availableModels.length;
+          selectedModel = aiChooseModel(cfg.provider, cfg.model, availableModels) || selectedModel;
+        } catch (_modelErr) {
+          selectedModel = cfg.model || aiDefaultModel(provider);
+        }
+        const testPrefs = normalizeAiPrefs({
+          ...draftPrefs,
+          providerConfigs: {
+            ...providerConfigs,
+            [provider]: {
+              ...providerConfigs[provider],
+              model: selectedModel,
+              apiKey
+            }
+          }
+        });
+        const raw = await aiCallProvider(
+          "You are a concise assistant.",
+          "Reply with exactly: ok",
+          testPrefs
+        );
+        let isConnected = false;
+        try {
+          const parsed = extractJsonObject(raw);
+          isConnected = parsed?.ok === true;
+        } catch (_ignore) {
+          isConnected = String(raw || "").trim().length > 0;
+        }
+        if (!isConnected) throw new Error("Provider responded, but the test reply was not recognized.");
+
+        setAiProvider(provider);
+        aiPrefs.enabled = true;
+        aiSetProviderConfig(provider, {
+          apiKey,
+          model: selectedModel
+        });
+        aiPrefs = normalizeAiPrefs(aiPrefs);
+        saveAiPrefs();
+        renderAiAssistant();
+        if (statusEl) {
+          statusEl.textContent = `Connected (${Date.now() - started}ms). ${selectedModel ? `Using ${selectedModel}. ` : ""}Saved locally${availableCount ? ` · ${availableCount} model${availableCount === 1 ? "" : "s"} available.` : "."}`;
+        }
+      } catch (err) {
+        if (statusEl) statusEl.textContent = `Failed: ${String(err?.message || err || "Unknown error")}`;
+      } finally {
+        if (connectBtn) {
+          connectBtn.disabled = false;
+          connectBtn.textContent = originalLabel;
+        }
+      }
     }
 
     function refreshOnboardingSummary() {
@@ -14353,7 +14642,38 @@ Data caveat`;
       renderLocalAiEntryPoints(provider);
     });
     document.getElementById("onboardOllamaSetupBtn")?.addEventListener("click", () => {
+      const btn = document.getElementById("onboardOllamaSetupBtn");
+      const action = String(btn?.dataset.localAiAction || "wizard").trim();
+      const statusEl = document.getElementById("onboardAiStatus");
+      if (action === "install") {
+        if (statusEl) statusEl.textContent = "Opening Ollama download page. Install the app, open it once, then click Check Again.";
+        void openExternalUrl("https://ollama.com/download");
+        return;
+      }
+      if (action === "pull") {
+        const recommended = localAiWizardRecommendedModel();
+        if (statusEl) statusEl.textContent = `Downloading ${recommended}. Keep PPP Flow open while the model is installed.`;
+        localAiWizard.source = "onboarding";
+        void startLocalAiModelPull(recommended);
+        return;
+      }
+      if (action === "apply") {
+        const model = localAiWizard.selectedModel || localAiWizard.models[0] || aiGetProviderConfig("ollama").model;
+        if (model) {
+          applyLocalAiWizardModel(model);
+          return;
+        }
+      }
       openLocalAiWizard("onboarding");
+    });
+    document.getElementById("onboardOllamaRefreshBtn")?.addEventListener("click", () => {
+      const statusEl = document.getElementById("onboardAiStatus");
+      if (statusEl) statusEl.textContent = "Checking local AI status…";
+      void refreshLocalAiWizardState({ preserveSelection: true }).then(() => {
+        if (!statusEl) return;
+        const summary = localAiWizardSummaryText();
+        statusEl.textContent = summary.text;
+      });
     });
     document.getElementById("aiOpenOllamaWizardBtn")?.addEventListener("click", () => {
       openLocalAiWizard("settings");
@@ -14394,7 +14714,7 @@ Data caveat`;
       localAiWizard.selectedModel = String(select.value || "").trim();
       renderLocalAiWizard();
     });
-    document.getElementById("onboardAiConnectBtn").addEventListener("click", connectOnboardingAiKey);
+    document.getElementById("onboardAiConnectBtn").addEventListener("click", () => { void connectOnboardingAiKey(); });
     document.getElementById("onboardAiGenerateBtn").addEventListener("click", ()=>{ void runOnboardingAiSetup(); });
     document.getElementById("onboardAiIntake").addEventListener("keydown", e => {
       if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
