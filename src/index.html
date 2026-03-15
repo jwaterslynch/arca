@@ -1459,9 +1459,13 @@ button.warn {
   display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:999px;
   font-size:.65rem;font-weight:600;letter-spacing:.02em;color:var(--text2);
   background:var(--surface, var(--bg));border:1px solid var(--line);white-space:nowrap;
-  user-select:none;cursor:default;opacity:.7;transition:opacity .15s;
+  user-select:none;cursor:default;opacity:.7;transition:opacity .15s;font-family:var(--font);appearance:none;-webkit-appearance:none;
 }
 .ai-provider-pill:hover{opacity:1}
+.ai-provider-pill.ai-switch-trigger{cursor:pointer}
+.ai-provider-pill.ai-switch-trigger::after{content:"▾";font-size:.58rem;opacity:.72}
+.ai-surface-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+.ai-surface-head h4{margin:0}
 .ai-provider-pill[data-privacy="local"]{border-color:var(--green,#22c55e);color:var(--green,#22c55e)}
 .ai-provider-pill[data-privacy="warning"]{border-color:#e8a308;color:#b8860b}
 .ai-inline-toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:var(--text); color:#fff; padding:10px 20px; border-radius:var(--radius); font:600 .85rem var(--font); box-shadow:var(--shadow-lg); z-index:100; }
@@ -1511,6 +1515,12 @@ button.warn {
 .modal-backdrop { position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:200; display:flex; align-items:center; justify-content:center; }
 .modal-backdrop[hidden] { display:none !important; }
 .modal-panel { background:var(--surface); border-radius:16px; max-width:680px; width:92%; max-height:85vh; overflow-y:auto; padding:28px; box-shadow:var(--shadow-lg); }
+.ai-quick-switch-modal{max-width:720px}
+.ai-quick-switch-body{display:grid;gap:14px}
+.ai-quick-switch-providers{padding-top:2px}
+.ai-quick-switch-grid{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:end}
+.ai-quick-switch-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.ai-quick-switch-privacy{padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--bg);line-height:1.45}
 .task-modal-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
 .task-modal-grid .span-2 { grid-column:1 / -1; }
 
@@ -1831,6 +1841,8 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
   .plan-layout { grid-template-columns:1fr !important; }
   .focus-grid { grid-template-columns:1fr; }
   .cloud-config-grid, .ai-config-grid { grid-template-columns:1fr; }
+  .ai-quick-switch-grid { grid-template-columns:1fr; }
+  .ai-quick-switch-actions { justify-content:flex-start; }
   .commitment-add-grid { grid-template-columns:1fr; }
 }
 
@@ -2122,7 +2134,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         <div id="aiInlineChatWrap" class="ai-inline-chat-wrap">
           <div class="ai-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 1L14.5 8.5L22 12L14.5 15.5L12 23L9.5 15.5L2 12L9.5 8.5Z"/></svg></div>
           <textarea id="aiInlineUserInput" rows="1" placeholder="Add a task, brain dump, or ask anything...  ⌘K"></textarea>
-          <span id="aiInlineProviderPill" class="ai-provider-pill tiny" title="Active AI provider"></span>
+          <button id="aiInlineProviderPill" class="ai-provider-pill tiny ai-switch-trigger" data-open-ai-switch="execute" type="button" title="Switch AI"></button>
           <div class="ai-mode-toggle auto" id="aiInlineAutoApplyWrap" role="switch" aria-checked="true" tabindex="0" title="Auto mode: valid AI changes apply immediately.">
             <input id="aiInlineAutoApplyToggle" type="checkbox" style="display:none" />
             <div class="toggle-dot"></div>
@@ -2363,7 +2375,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
                 <button id="aiSendBtn" class="primary" type="button">Send</button>
                 <button id="aiClearChatBtn" class="ghost" type="button">Clear</button>
                 <span id="aiBusyStatus" class="tiny"></span>
-                <span id="aiChatProviderPill" class="ai-provider-pill tiny" title="Active AI provider" style="margin-left:auto;"></span>
+                <button id="aiChatProviderPill" class="ai-provider-pill tiny ai-switch-trigger" data-open-ai-switch="assistant" type="button" title="Switch AI" style="margin-left:auto;"></button>
               </div>
             </div>
             <div id="aiProposalWrap" class="ai-proposal" hidden>
@@ -2466,7 +2478,10 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
 
         <!-- AI Assistant Chat (mirrors AI workspace) -->
         <div class="plan-card ai-chat" id="planSidebarAiChat">
-          <h4>AI Assistant <span style="font-size:.7rem;font-weight:500;color:var(--text2);margin-left:6px" id="planAiModeLabel">Review mode</span></h4>
+          <div class="ai-surface-head">
+            <h4>AI Assistant <span style="font-size:.7rem;font-weight:500;color:var(--text2);margin-left:6px" id="planAiModeLabel">Review mode</span></h4>
+            <button id="planSidebarProviderPill" class="ai-provider-pill tiny ai-switch-trigger" data-open-ai-switch="plan-sidebar" type="button" title="Switch AI"></button>
+          </div>
           <div class="chat-messages" id="planSidebarMessages"></div>
           <div class="chat-input-row" style="margin-top:8px">
             <textarea class="chat-input" id="planSidebarChatInput" rows="1" placeholder="Brain dump, plan, or ask for advice..."></textarea>
@@ -2527,6 +2542,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           <div class="health-subtab active" data-health-tab="overview">Overview</div>
           <div class="health-subtab" data-health-tab="exercise">Exercise</div>
         </div>
+        <button id="healthAiProviderPill" class="ai-provider-pill tiny ai-switch-trigger" data-open-ai-switch="health" type="button" title="Switch AI"></button>
       </div>
 
       <div class="health-panel active" id="health-panel-overview">
@@ -2591,7 +2607,10 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           <div class="wealth-subtab" data-wealth-tab="portfolio">Portfolio</div>
           <div class="wealth-subtab" data-wealth-tab="cashflow">Cash Flow</div>
         </div>
-        <button class="ghost" id="wealthOpenCoachBtn" type="button" style="font-size:.75rem">Wealth Coach</button>
+        <div style="display:flex;align-items:center;gap:8px">
+          <button id="wealthAiProviderPill" class="ai-provider-pill tiny ai-switch-trigger" data-open-ai-switch="wealth" type="button" title="Switch AI"></button>
+          <button class="ghost" id="wealthOpenCoachBtn" type="button" style="font-size:.75rem">Wealth Coach</button>
+        </div>
       </div>
 
       <!-- Overview Subtab -->
@@ -2779,7 +2798,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           <div class="wealth-coach-meta" id="wealthCoachMeta"></div>
         </div>
         <div style="display:flex;align-items:center;gap:8px">
-          <span id="wealthCoachProviderPill" class="ai-provider-pill" hidden></span>
+          <button id="wealthCoachProviderPill" class="ai-provider-pill ai-switch-trigger" data-open-ai-switch="wealth-coach" type="button" title="Switch AI" hidden></button>
           <button class="ghost" id="wealthCloseCoachBtn" type="button" style="font-size:.75rem">Close</button>
         </div>
       </div>
@@ -2942,6 +2961,45 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         <button id="localAiWizardCloseBtn" class="ghost" type="button">Close</button>
       </div>
       <div id="localAiWizardBody" class="local-ai-wizard-body"></div>
+    </div>
+  </div>
+
+  <div id="aiQuickSwitchModal" class="modal-backdrop" hidden aria-hidden="true">
+    <div class="modal-panel ai-quick-switch-modal" role="dialog" aria-modal="true" aria-labelledby="aiQuickSwitchTitle">
+      <div class="modal-head">
+        <div>
+          <h3 id="aiQuickSwitchTitle">Switch AI</h3>
+          <div id="aiQuickSwitchMeta" class="tiny">Change provider or model without leaving this page.</div>
+        </div>
+        <button id="aiQuickSwitchCloseBtn" class="ghost" type="button">Close</button>
+      </div>
+      <div class="ai-quick-switch-body">
+        <div class="ai-provider-switch ai-quick-switch-providers" id="aiQuickSwitchProviders">
+          <button class="ai-provider-btn" type="button" data-ai-quick-provider-btn="openai">ChatGPT</button>
+          <button class="ai-provider-btn" type="button" data-ai-quick-provider-btn="anthropic">Claude</button>
+          <button class="ai-provider-btn" type="button" data-ai-quick-provider-btn="grok">Grok</button>
+          <button class="ai-provider-btn" type="button" data-ai-quick-provider-btn="gemini">Gemini</button>
+          <button class="ai-provider-btn" type="button" data-ai-quick-provider-btn="mistral">Mistral</button>
+          <button class="ai-provider-btn" type="button" data-ai-quick-provider-btn="deepseek">DeepSeek</button>
+          <button class="ai-provider-btn" type="button" data-ai-quick-provider-btn="ollama" title="100% local — nothing leaves your machine">Ollama</button>
+        </div>
+        <div class="ai-quick-switch-grid">
+          <label class="tiny" style="display:grid;gap:6px;">
+            <span>Model</span>
+            <select id="aiQuickSwitchModelSelect">
+              <option value="">Default</option>
+            </select>
+          </label>
+          <div class="ai-quick-switch-actions">
+            <button id="aiQuickSwitchRefreshBtn" class="ghost" type="button">Refresh Models</button>
+            <button id="aiQuickSwitchLocalSetupBtn" class="ghost" type="button" hidden>Local Setup</button>
+            <button id="aiQuickSwitchSettingsBtn" class="ghost" type="button">Settings</button>
+            <button id="aiQuickSwitchApplyBtn" class="primary" type="button">Use This AI</button>
+          </div>
+        </div>
+        <div id="aiQuickSwitchStatus" class="tiny"></div>
+        <div id="aiQuickSwitchPrivacy" class="tiny ai-quick-switch-privacy"></div>
+      </div>
     </div>
   </div>
 
@@ -3416,6 +3474,15 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       pullTotal: 0,
       installedSummary: "",
       lastCheckedAt: ""
+    };
+    let aiQuickSwitch = {
+      open: false,
+      source: "",
+      provider: "openai",
+      selectedModel: "",
+      models: [],
+      loading: false,
+      error: ""
     };
     let aiModelDropdownRequestSeq = 0;
     let aiLastTestDiagnostics = null;
@@ -4664,6 +4731,164 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       if (!localAiWizard.loading && !localAiWizard.lastCheckedAt && localAiWizard.status !== "pulling") {
         void refreshLocalAiWizardState({ preserveSelection: true });
       }
+    }
+    function aiProviderDisplayName(provider) {
+      const names = {
+        openai: "ChatGPT",
+        anthropic: "Claude",
+        gemini: "Gemini",
+        grok: "Grok",
+        deepseek: "DeepSeek",
+        mistral: "Mistral",
+        ollama: "Ollama",
+        openai_compatible: "Custom"
+      };
+      return names[String(provider || "").trim()] || String(provider || "AI").trim() || "AI";
+    }
+    function aiShortModelLabel(modelName) {
+      const label = String(modelName || "").trim();
+      if (!label) return "";
+      return label.length > 18 ? `${label.slice(0, 18)}…` : label;
+    }
+    function aiTriggerLabel(provider = aiPrefs.provider, sourcePrefs = aiPrefs) {
+      const cfg = aiGetProviderConfig(provider, sourcePrefs);
+      const providerLabel = aiProviderDisplayName(provider);
+      const modelLabel = aiShortModelLabel(cfg.model || aiDefaultModel(provider));
+      return modelLabel ? `${providerLabel} · ${modelLabel}` : providerLabel;
+    }
+    function aiQuickSwitchDraftPrefs() {
+      return {
+        ...aiPrefs,
+        provider: aiQuickSwitch.provider,
+        providerConfigs: aiPrefs.providerConfigs
+      };
+    }
+    function aiQuickSwitchResolvedConfig() {
+      return aiResolveConfig(aiQuickSwitchDraftPrefs());
+    }
+    async function refreshAiQuickSwitchModels(options = {}) {
+      const preserveSelection = options.preserveSelection !== false;
+      const provider = AI_ALLOWED_PROVIDERS.includes(aiQuickSwitch.provider) ? aiQuickSwitch.provider : aiPrefs.provider;
+      aiQuickSwitch.provider = provider;
+      aiQuickSwitch.loading = true;
+      aiQuickSwitch.error = "";
+      renderAiQuickSwitch();
+      const resolved = aiQuickSwitchResolvedConfig();
+      try {
+        const models = await aiFetchAvailableModels(resolved);
+        aiQuickSwitch.models = Array.isArray(models) ? models.filter(Boolean) : [];
+      } catch (err) {
+        aiQuickSwitch.models = aiPreferredModelHints(provider);
+        aiQuickSwitch.error = String(err?.message || err || "Could not load models");
+      } finally {
+        aiQuickSwitch.loading = false;
+      }
+      const fallbackModel = aiGetProviderConfig(provider).model || aiDefaultModel(provider);
+      if (!preserveSelection || !aiQuickSwitch.selectedModel) {
+        aiQuickSwitch.selectedModel = aiQuickSwitch.models[0] || fallbackModel;
+      } else if (aiQuickSwitch.models.length && !aiQuickSwitch.models.includes(aiQuickSwitch.selectedModel)) {
+        aiQuickSwitch.selectedModel = aiQuickSwitch.models[0];
+      } else if (!aiQuickSwitch.models.length) {
+        aiQuickSwitch.selectedModel = fallbackModel;
+      }
+      renderAiQuickSwitch();
+    }
+    function renderAiQuickSwitch() {
+      const modal = document.getElementById("aiQuickSwitchModal");
+      const modelSelect = document.getElementById("aiQuickSwitchModelSelect");
+      const refreshBtn = document.getElementById("aiQuickSwitchRefreshBtn");
+      const applyBtn = document.getElementById("aiQuickSwitchApplyBtn");
+      const settingsBtn = document.getElementById("aiQuickSwitchSettingsBtn");
+      const localSetupBtn = document.getElementById("aiQuickSwitchLocalSetupBtn");
+      const statusEl = document.getElementById("aiQuickSwitchStatus");
+      const privacyEl = document.getElementById("aiQuickSwitchPrivacy");
+      const metaEl = document.getElementById("aiQuickSwitchMeta");
+      if (!modal || !modelSelect || !refreshBtn || !applyBtn || !settingsBtn || !localSetupBtn || !statusEl || !privacyEl || !metaEl) return;
+      modal.hidden = !aiQuickSwitch.open;
+      modal.setAttribute("aria-hidden", aiQuickSwitch.open ? "false" : "true");
+      if (!aiQuickSwitch.open) return;
+
+      document.querySelectorAll("[data-ai-quick-provider-btn]").forEach(btn => {
+        const provider = String(btn.getAttribute("data-ai-quick-provider-btn") || "");
+        btn.classList.toggle("active", provider === aiQuickSwitch.provider);
+      });
+
+      const resolved = aiQuickSwitchResolvedConfig();
+      const needsKey = aiProviderNeedsKey(aiQuickSwitch.provider) && !resolved.apiKey;
+      const options = (aiQuickSwitch.models.length ? aiQuickSwitch.models : aiPreferredModelHints(aiQuickSwitch.provider)).filter(Boolean);
+      modelSelect.innerHTML = options.length
+        ? options.map(model => `<option value="${escapeHtml(model)}">${escapeHtml(model)}</option>`).join("")
+        : `<option value="${escapeHtml(aiDefaultModel(aiQuickSwitch.provider))}">${escapeHtml(aiDefaultModel(aiQuickSwitch.provider))}</option>`;
+      const fallbackModel = aiQuickSwitch.selectedModel || aiGetProviderConfig(aiQuickSwitch.provider).model || aiDefaultModel(aiQuickSwitch.provider);
+      modelSelect.value = fallbackModel;
+      if (!modelSelect.value) {
+        const opt = document.createElement("option");
+        opt.value = fallbackModel;
+        opt.textContent = fallbackModel;
+        modelSelect.appendChild(opt);
+        modelSelect.value = fallbackModel;
+      }
+      modelSelect.disabled = aiQuickSwitch.loading;
+      refreshBtn.disabled = aiQuickSwitch.loading;
+      refreshBtn.textContent = aiQuickSwitch.loading ? "Loading…" : "Refresh Models";
+      settingsBtn.disabled = aiQuickSwitch.loading;
+      localSetupBtn.hidden = aiQuickSwitch.provider !== "ollama";
+      localSetupBtn.disabled = aiQuickSwitch.loading;
+      const ollamaReady = aiQuickSwitch.provider !== "ollama"
+        ? true
+        : (aiQuickSwitch.models.length > 0 || (localAiWizard.status === "ready" && localAiWizard.models.length > 0));
+      const canApply = !aiQuickSwitch.loading
+        && !needsKey
+        && ollamaReady;
+      applyBtn.disabled = !canApply;
+      applyBtn.textContent = aiQuickSwitch.provider === "ollama" ? "Use Local AI" : "Use This AI";
+      const info = aiProviderPrivacyInfo(aiQuickSwitch.provider);
+      privacyEl.textContent = `${info.icon} ${info.text}`;
+      metaEl.textContent = `Switch provider or model from ${aiQuickSwitch.source || "this surface"}.`;
+      if (needsKey) {
+        statusEl.textContent = `${aiProviderDisplayName(aiQuickSwitch.provider)} needs an API key in Settings before it can be used here.`;
+      } else if (aiQuickSwitch.provider === "ollama" && !ollamaReady) {
+        statusEl.textContent = localAiWizardSummaryText().text;
+      } else if (aiQuickSwitch.error) {
+        statusEl.textContent = `${aiQuickSwitch.error}. Showing available defaults.`;
+      } else {
+        statusEl.textContent = `${options.length} model${options.length === 1 ? "" : "s"} available for ${aiProviderDisplayName(aiQuickSwitch.provider)}.`;
+      }
+    }
+    function openAiQuickSwitch(source = "") {
+      aiQuickSwitch.open = true;
+      aiQuickSwitch.source = source;
+      aiQuickSwitch.provider = aiPrefs.provider;
+      aiQuickSwitch.selectedModel = aiGetProviderConfig(aiPrefs.provider).model || aiDefaultModel(aiPrefs.provider);
+      aiQuickSwitch.models = [];
+      aiQuickSwitch.loading = false;
+      aiQuickSwitch.error = "";
+      renderAiQuickSwitch();
+      if (aiQuickSwitch.provider === "ollama" && !localAiWizard.loading) {
+        void refreshLocalAiWizardState({ preserveSelection: true });
+      }
+      void refreshAiQuickSwitchModels({ preserveSelection: true });
+      requestAnimationFrame(() => {
+        document.getElementById("aiQuickSwitchModelSelect")?.focus();
+      });
+    }
+    function closeAiQuickSwitch() {
+      aiQuickSwitch.open = false;
+      aiQuickSwitch.loading = false;
+      renderAiQuickSwitch();
+    }
+    function applyAiQuickSwitch() {
+      const provider = AI_ALLOWED_PROVIDERS.includes(aiQuickSwitch.provider) ? aiQuickSwitch.provider : aiPrefs.provider;
+      const model = String(aiQuickSwitch.selectedModel || aiGetProviderConfig(provider).model || aiDefaultModel(provider)).trim();
+      if (!model) return;
+      setAiProvider(provider);
+      aiPrefs.enabled = true;
+      aiSetProviderConfig(provider, { model });
+      aiPrefs = normalizeAiPrefs(aiPrefs);
+      saveAiPrefs();
+      aiResetTestFeedback();
+      closeAiQuickSwitch();
+      render();
     }
     function renderLocalAiWizard() {
       const modal = document.getElementById("localAiWizardModal");
@@ -6188,17 +6413,22 @@ If you do propose actions, they must exactly match the supported schema in the u
       });
 
       // Active provider pills in chat areas
-      const providerDisplayNames = { openai: "ChatGPT", anthropic: "Claude", gemini: "Gemini", grok: "Grok", deepseek: "DeepSeek", mistral: "Mistral", ollama: "Ollama", openai_compatible: "Custom" };
       const privacyIcons = { local: "\uD83D\uDD12", warning: "\u26A0", cloud: "" };
       const pInfo = aiProviderPrivacyInfo(formPrefs.provider);
-      const pillLabel = `${privacyIcons[pInfo.level] ? privacyIcons[pInfo.level] + " " : ""}${providerDisplayNames[formPrefs.provider] || formPrefs.provider}`;
+      const providerName = aiProviderDisplayName(formPrefs.provider);
+      const pillLabel = `${privacyIcons[pInfo.level] ? privacyIcons[pInfo.level] + " " : ""}${providerName}`;
       document.querySelectorAll(".ai-provider-pill").forEach(pill => {
         pill.textContent = pillLabel;
         pill.setAttribute("data-privacy", pInfo.level);
         pill.title = pInfo.text;
         pill.hidden = !formPrefs.enabled;
       });
+      document.querySelectorAll("[data-open-ai-switch]").forEach(btn => {
+        btn.title = `Switch AI · ${aiTriggerLabel(formPrefs.provider, formPrefs)}. ${pInfo.text}`;
+        btn.setAttribute("aria-label", `Switch AI · ${providerName}`);
+      });
       renderLocalAiEntryPoints(formPrefs.provider);
+      renderAiQuickSwitch();
 
       const disabledText = aiPrefs.enabled
         ? (keyMissing ? "AI is enabled but API key is missing. Open Settings, add a key, and save." : "")
@@ -9385,13 +9615,77 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       setActiveTab("execute");
       render();
       requestAnimationFrame(() => {
-        const input = document.getElementById("aiInlineUserInput");
-        if (!input || input.disabled) return;
-        input.focus();
-        autoGrowTextarea(input);
-        const end = input.value.length;
-        if (typeof input.setSelectionRange === "function") input.setSelectionRange(end, end);
+        focusAiInputElement(document.getElementById("aiInlineUserInput"));
       });
+    }
+
+    function focusAiInputElement(input) {
+      if (!(input instanceof HTMLTextAreaElement) || input.disabled) return false;
+      input.focus();
+      autoGrowTextarea(input);
+      const end = input.value.length;
+      if (typeof input.setSelectionRange === "function") input.setSelectionRange(end, end);
+      return true;
+    }
+
+    function focusPlanSidebarAiInput() {
+      aiPanelForcedVisible = true;
+      setActiveTab("plan");
+      render();
+      requestAnimationFrame(() => {
+        focusAiInputElement(document.getElementById("planSidebarChatInput"));
+      });
+    }
+
+    function focusPlanAssistantAiInput() {
+      aiPanelForcedVisible = true;
+      setActiveTab("assistant");
+      render();
+      requestAnimationFrame(() => {
+        focusAiInputElement(document.getElementById("aiUserInput"));
+      });
+    }
+
+    function focusHealthAiInput() {
+      aiPanelForcedVisible = true;
+      activeHealthTab = "exercise";
+      setActiveTab("health");
+      render();
+      requestAnimationFrame(() => {
+        const input = document.querySelector("[data-health-coach-practice]");
+        if (focusAiInputElement(input)) return;
+        focusPlanAssistantAiInput();
+      });
+    }
+
+    function focusWealthAiInput() {
+      aiPanelForcedVisible = true;
+      setActiveTab("wealth");
+      render();
+      requestAnimationFrame(() => {
+        openWealthCoach();
+      });
+    }
+
+    function focusBestAiEntry() {
+      const activeTopTab = String(document.querySelector(".tab.active")?.getAttribute("data-tab") || "execute").trim();
+      if (activeTopTab === "wealth") {
+        focusWealthAiInput();
+        return;
+      }
+      if (activeTopTab === "health") {
+        focusHealthAiInput();
+        return;
+      }
+      if (activeTopTab === "plan") {
+        if (activePlanTab === "assistant") {
+          focusPlanAssistantAiInput();
+          return;
+        }
+        focusPlanSidebarAiInput();
+        return;
+      }
+      focusExecuteAiInput();
     }
 
     function autoGrowTextarea(target) {
@@ -14379,13 +14673,17 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       renderWealthCoach();
     }
 
-    function openAiSettingsFromWealthCoach() {
-      wealthCoachOpen = false;
+    function openAiSettingsPanel() {
       aiPanelForcedVisible = true;
       aiConfigOpen = true;
       setActiveTab("assistant");
-      renderWealthCoach();
       renderAiAssistant();
+    }
+
+    function openAiSettingsFromWealthCoach() {
+      wealthCoachOpen = false;
+      openAiSettingsPanel();
+      renderWealthCoach();
     }
 
     function wealthCoachSystemPrompt() {
@@ -15436,6 +15734,41 @@ Data caveat`;
       aiConfigOpen = !aiConfigOpen;
       renderAiAssistant();
     });
+    document.querySelectorAll("[data-open-ai-switch]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        openAiQuickSwitch(String(btn.getAttribute("data-open-ai-switch") || "").trim());
+      });
+    });
+    document.querySelectorAll("[data-ai-quick-provider-btn]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const provider = String(btn.getAttribute("data-ai-quick-provider-btn") || "").trim();
+        if (!AI_ALLOWED_PROVIDERS.includes(provider)) return;
+        aiQuickSwitch.provider = provider;
+        aiQuickSwitch.selectedModel = aiGetProviderConfig(provider).model || aiDefaultModel(provider);
+        aiQuickSwitch.models = [];
+        renderAiQuickSwitch();
+        void refreshAiQuickSwitchModels({ preserveSelection: true });
+      });
+    });
+    document.getElementById("aiQuickSwitchCloseBtn")?.addEventListener("click", closeAiQuickSwitch);
+    document.getElementById("aiQuickSwitchModal")?.addEventListener("click", e => {
+      if (e.target && e.target.id === "aiQuickSwitchModal") closeAiQuickSwitch();
+    });
+    document.getElementById("aiQuickSwitchModelSelect")?.addEventListener("change", e => {
+      aiQuickSwitch.selectedModel = String(e.currentTarget?.value || "").trim();
+    });
+    document.getElementById("aiQuickSwitchRefreshBtn")?.addEventListener("click", () => {
+      void refreshAiQuickSwitchModels({ preserveSelection: true });
+    });
+    document.getElementById("aiQuickSwitchSettingsBtn")?.addEventListener("click", () => {
+      closeAiQuickSwitch();
+      openAiSettingsPanel();
+    });
+    document.getElementById("aiQuickSwitchLocalSetupBtn")?.addEventListener("click", () => {
+      closeAiQuickSwitch();
+      openLocalAiWizard("quick_switch");
+    });
+    document.getElementById("aiQuickSwitchApplyBtn")?.addEventListener("click", applyAiQuickSwitch);
     document.getElementById("aiInlineAutoApplyWrap").addEventListener("click",e=>{
       if (e.target && e.target.id === "aiInlineAutoApplyToggle") return;
       const toggle = document.getElementById("aiInlineAutoApplyToggle");
@@ -15467,6 +15800,8 @@ Data caveat`;
         const provider = String(btn.getAttribute("data-ai-provider-btn") || "");
         if (!provider) return;
         setAiProvider(provider);
+        aiPrefs = normalizeAiPrefs(aiPrefs);
+        saveAiPrefs();
         const providerInput = document.getElementById("aiProviderInput");
         if (providerInput) providerInput.value = provider;
         aiResetTestFeedback();
@@ -15850,6 +16185,13 @@ Data caveat`;
 
     // Quick exit from focus mode
     document.addEventListener("keydown",e=>{
+      const quickSwitchModal = document.getElementById("aiQuickSwitchModal");
+      if (quickSwitchModal && !quickSwitchModal.hidden && e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        closeAiQuickSwitch();
+        return;
+      }
       const localAiModal = document.getElementById("localAiWizardModal");
       if (localAiModal && !localAiModal.hidden && e.key === "Escape") {
         e.preventDefault();
@@ -15876,10 +16218,12 @@ Data caveat`;
       if ((e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey && String(e.key || "").toLowerCase() === "k") {
         const openModal = document.querySelector(".modal-backdrop:not([hidden])");
         if (openModal) return;
-        if (isEditableElement(e.target) && e.target?.id !== "aiInlineUserInput") return;
+        const targetId = String(e.target?.id || "").trim();
+        const allowWhileEditing = new Set(["aiInlineUserInput", "aiUserInput", "planSidebarChatInput", "wealthCoachInput", "onboardAiIntake"]);
+        if (isEditableElement(e.target) && !allowWhileEditing.has(targetId)) return;
         e.preventDefault();
         e.stopPropagation();
-        focusExecuteAiInput();
+        focusBestAiEntry();
         return;
       }
       if (e.key === "Escape") {
