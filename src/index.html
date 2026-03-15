@@ -2106,6 +2106,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
             <button class="ai-provider-btn" data-ai-provider-btn="grok">Grok</button>
             <button class="ai-provider-btn" data-ai-provider-btn="gemini">Gemini</button>
             <button class="ai-provider-btn" data-ai-provider-btn="deepseek">DeepSeek</button>
+            <button class="ai-provider-btn" data-ai-provider-btn="mistral">Mistral</button>
           </div>
           <button id="aiInlineOpenSettingsBtn" style="display:none" type="button">AI Settings</button>
           <button id="aiInlineOpenAssistantBtn" style="display:none" type="button">Open Plan</button>
@@ -2260,6 +2261,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
                   <button class="ai-provider-btn" type="button" data-ai-provider-btn="grok">Grok</button>
                   <button class="ai-provider-btn" type="button" data-ai-provider-btn="gemini">Gemini</button>
                   <button class="ai-provider-btn" type="button" data-ai-provider-btn="deepseek">DeepSeek</button>
+                  <button class="ai-provider-btn" type="button" data-ai-provider-btn="mistral">Mistral</button>
                   <button class="ai-provider-btn" type="button" data-ai-provider-btn="ollama" title="100% local — nothing leaves your machine">Ollama</button>
                 </div>
                 <button id="aiToggleConfigBtn" class="ghost" type="button">Settings</button>
@@ -2273,7 +2275,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
                   <select id="aiProviderInput">
                     <option value="openai">OpenAI</option><option value="anthropic">Anthropic</option>
                     <option value="gemini">Google Gemini</option><option value="grok">xAI / Grok</option>
-                    <option value="deepseek">DeepSeek</option><option value="ollama">Ollama (Local)</option><option value="openai_compatible">OpenAI-compatible</option>
+                    <option value="deepseek">DeepSeek</option><option value="mistral">Mistral</option><option value="ollama">Ollama (Local)</option><option value="openai_compatible">OpenAI-compatible</option>
                   </select>
                 </label>
                 <label class="tiny" style="display:grid;gap:4px;"><span>API Key</span><input id="aiApiKeyInput" type="password" autocomplete="off" placeholder="sk-..." /></label>
@@ -2993,6 +2995,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
                   <option value="grok">Grok (xAI)</option>
                   <option value="gemini">Gemini (Google)</option>
                   <option value="deepseek">DeepSeek</option>
+                  <option value="mistral">Mistral</option>
                   <option value="openai_compatible">OpenAI-compatible</option>
                 </select>
                 <input id="onboardAiApiKey" type="password" autocomplete="off" placeholder="Paste API key" />
@@ -3005,14 +3008,14 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
               <div class="onboard-card onboard-provider-card">
                 <div>
                   <p class="tiny" style="font-weight:700;margin-bottom:4px;">Local AI (Ollama) &mdash; 100% private</p>
-                  <p class="tiny" style="opacity:.8;">Run an AI model directly on your machine. Nothing leaves your computer. Requires 32GB+ RAM and Ollama installed.</p>
+                  <p class="tiny" style="opacity:.8;">Run an AI model directly on your machine. Nothing leaves your computer. Start with Llama, then optionally add Qwen, Mistral, or DeepSeek locally via Ollama.</p>
                 </div>
               <div style="display:flex;gap:8px;flex-wrap:wrap;">
                 <button id="onboardOllamaSetupBtn" class="ghost" type="button">Set up Local AI</button>
                 <button id="onboardOllamaRefreshBtn" class="ghost" type="button" hidden>Check Again</button>
               </div>
               <div id="onboardOllamaQuickStatus" class="local-ai-inline-status">The setup wizard can detect Ollama, download a starter model, and configure PPP Flow to use it locally.</div>
-              <div id="onboardOllamaModelHint" class="tiny onboard-muted-note" style="margin-top:6px;">Starter model: Llama 3.2 for general use.</div>
+              <div id="onboardOllamaModelHint" class="tiny onboard-muted-note" style="margin-top:6px;">Starter model: Llama 3.2. Optional local upgrades: Qwen 7B, Mistral Small 3.1, DeepSeek R1.</div>
             </div>
             </div>
 
@@ -3261,7 +3264,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
     const NEXT_UP_SOFT_LIMIT = 10;
     const PIPELINE_STAGES = ["backlog", "next_up", "today", "done"];
     const AI_PREF_KEY = "PPP_AI_PREFS_V1";
-    const AI_ALLOWED_PROVIDERS = ["openai", "anthropic", "gemini", "grok", "deepseek", "ollama", "openai_compatible"];
+    const AI_ALLOWED_PROVIDERS = ["openai", "anthropic", "gemini", "grok", "deepseek", "mistral", "ollama", "openai_compatible"];
     let aiSessionOnlyKey = ""; // runtime-only API key, never persisted
     let wealthCoachCloudConsent = {}; // runtime-only, per-provider consent for sending wealth data to cloud AI
     const CLOUD_SYNC_PREF_KEY = "PPP_CLOUD_SYNC_PREFS_V1";
@@ -3281,9 +3284,11 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
     let aiConfigOpen = false;
     let aiBusy = false;
     const LOCAL_AI_RECOMMENDED_MODELS = [
-      { name: "llama3.2", label: "Llama 3.2", note: "Balanced starter for general use." },
-      { name: "qwen2.5:3b", label: "Qwen 2.5 3B", note: "Smaller and faster on lighter machines." },
-      { name: "qwen2.5:7b", label: "Qwen 2.5 7B", note: "Stronger model if you have more headroom." }
+      { name: "llama3.2", label: "Llama 3.2", tier: "Starter", note: "Balanced starter for general use and fastest setup." },
+      { name: "qwen2.5:7b", label: "Qwen 2.5 7B", tier: "Quality upgrade", note: "Better conversational depth and stronger general reasoning." },
+      { name: "mistral-small3.1:24b", label: "Mistral Small 3.1 24B", tier: "Larger upgrade", note: "Best local all-rounder here if your machine has the headroom." },
+      { name: "deepseek-r1:8b", label: "DeepSeek R1 8B", tier: "Reasoning option", note: "Useful when you want a more deliberate reasoning-style local model." },
+      { name: "qwen2.5:3b", label: "Qwen 2.5 3B", tier: "Fast lightweight", note: "Smaller and faster if you want a lighter local fallback." }
     ];
     let localAiWizard = {
       open: false,
@@ -4425,6 +4430,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       if (provider === "gemini") return "https://generativelanguage.googleapis.com/v1beta";
       if (provider === "grok") return "https://api.x.ai/v1";
       if (provider === "deepseek") return "https://api.deepseek.com/v1";
+      if (provider === "mistral") return "https://api.mistral.ai/v1";
       if (provider === "ollama") return "http://localhost:11434/v1";
       return "https://api.openai.com/v1";
     }
@@ -4433,6 +4439,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       if (provider === "gemini") return "gemini-2.5-flash";
       if (provider === "grok") return "grok-4-1-fast-non-reasoning";
       if (provider === "deepseek") return "deepseek-chat";
+      if (provider === "mistral") return "mistral-small-latest";
       if (provider === "ollama") return "llama3.2";
       return "gpt-4.1-mini";
     }
@@ -4440,9 +4447,9 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       return provider !== "ollama";
     }
     function aiProviderPrivacyInfo(provider) {
-      if (provider === "ollama") return { level: "local", icon: "\uD83D\uDD12", text: "Requests stay on this machine while Ollama is the active provider." };
+      if (provider === "ollama") return { level: "local", icon: "\uD83D\uDD12", text: "Requests stay on this machine while Ollama is the active provider. For stricter local-only use, keep Ollama local, avoid cloud-backed features, and only use models you trust." };
       if (provider === "deepseek") return { level: "warning", icon: "\u26A0\uFE0F", text: "Requests are sent to DeepSeek-hosted servers. Review current data handling and jurisdiction before using it for sensitive data." };
-      const names = { openai: "OpenAI", anthropic: "Anthropic", gemini: "Google", grok: "xAI", openai_compatible: "your endpoint" };
+      const names = { openai: "OpenAI", anthropic: "Anthropic", gemini: "Google", grok: "xAI", deepseek: "DeepSeek", mistral: "Mistral", openai_compatible: "your endpoint" };
       return { level: "cloud", icon: "\u2601\uFE0F", text: `Requests are sent to ${names[provider] || "provider"} servers. Review that provider's current API data handling and retention terms before using it for sensitive data.` };
     }
     function localAiWizardRecommendedModel() {
@@ -4589,6 +4596,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;">
             <div>
               <h5>${escapeHtml(model.label)}</h5>
+              <div class="tiny" style="font-weight:700;color:var(--accent);margin-bottom:4px;">${escapeHtml(model.tier || "Model")}</div>
               <p>${escapeHtml(model.note)}</p>
             </div>
             <button class="ghost" type="button" data-local-ai-action="${localAiWizard.models.includes(model.name) ? "select-model" : "pull-model"}" data-local-ai-model="${escapeHtml(model.name)}" ${localAiWizard.pulling ? "disabled" : ""}>
@@ -4611,8 +4619,8 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         heading = "Ollama is installed but not running";
         message = "Open the Ollama app from Applications or start the server, then click Check Again.";
       } else if (localAiWizard.status === "running_no_models") {
-        heading = "Download a starter model";
-        message = "Ollama is running. Pick one starter model below and PPP Flow will download it for you.";
+        heading = "Download a local model";
+        message = "Ollama is running. Start with the recommended starter model, then optionally add stronger local models like Qwen, Mistral, or DeepSeek.";
       } else if (localAiWizard.status === "pulling") {
         heading = `Downloading ${localAiWizard.pullModel || "model"}`;
         message = localAiWizard.pullStatus || "Keep PPP Flow open while the local model downloads.";
@@ -4663,7 +4671,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
             <div class="local-ai-model-grid">${recommendedCards}</div>
           </div>` : ""}
         <div class="local-ai-wizard-note">
-          Local models keep prompts on your machine. PPP Flow uses Ollama's local API at <code>http://localhost:11434</code>.
+          Local models keep prompts on your machine. PPP Flow uses Ollama's local API at <code>http://localhost:11434</code>. Local inference materially reduces exposure versus cloud APIs, but your privacy still depends on the runtime, downloaded weights, and what network access you allow on this machine.
         </div>
       `;
     }
@@ -4876,6 +4884,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         "grok-3"
       ];
       if (provider === "deepseek") return ["deepseek-chat", "deepseek-reasoner"];
+      if (provider === "mistral") return ["mistral-medium-latest", "mistral-small-latest", "mistral-large-latest", "magistral-medium-latest"];
       return [];
     }
     function aiNormalizeModelId(provider, value) {
@@ -5033,7 +5042,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
     async function aiFetchAvailableModels(cfgLike) {
       const cfg = cfgLike && typeof cfgLike === "object" ? cfgLike : aiResolveConfig(aiPrefs);
       const baseUrl = String(cfg.baseUrl || "").trim().replace(/\/+$/, "");
-      if (!cfg.apiKey) throw new Error("API key is required.");
+      if (aiProviderNeedsKey(cfg.provider) && !cfg.apiKey) throw new Error("API key is required.");
       if (!baseUrl) throw new Error("Base URL is required.");
 
       if (cfg.provider === "grok") {
@@ -5102,9 +5111,11 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       if (!aiIsOpenAiCompatibleProvider(cfg.provider)) {
         throw new Error(`Unsupported provider: ${cfg.provider}`);
       }
+      const headers = {};
+      if (cfg.apiKey) headers.Authorization = `Bearer ${cfg.apiKey}`;
       const res = await fetch(`${baseUrl}/models`, {
         method: "GET",
-        headers: { "Authorization": `Bearer ${cfg.apiKey}` }
+        headers
       });
       if (!res.ok) throw new Error(`Model list error ${res.status}: ${await res.text()}`);
       const data = await res.json();
@@ -5132,7 +5143,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         const activeProvider = String(providerInput?.value || "").trim();
         return requestSeq !== aiModelDropdownRequestSeq || (activeProvider && activeProvider !== cfg.provider);
       };
-      if (!cfg.apiKey) {
+      if (aiProviderNeedsKey(cfg.provider) && !cfg.apiKey) {
         // No key yet — show preferred hints as static options
         if (isStaleRequest()) return;
         const hints = aiPreferredModelHints(cfg.provider);
@@ -5212,7 +5223,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
     }
 
     function aiIsOpenAiCompatibleProvider(provider) {
-      return provider === "openai" || provider === "openai_compatible" || provider === "grok" || provider === "deepseek" || provider === "ollama";
+      return provider === "openai" || provider === "openai_compatible" || provider === "grok" || provider === "deepseek" || provider === "mistral" || provider === "ollama";
     }
     function aiDefaultProviderConfig(provider) {
       return {
@@ -5400,8 +5411,17 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         }
       };
     }
-    function aiBuildSystemPrompt() {
-      return `You are the AI assistant for PPP Flow — a personal operating system built around one central truth: every day is consumed by reactive work. Emails, meetings, logistics, other people's priorities. This is the day-to-day. It has to happen — but left unchecked, it devours all the time needed for the work that actually moves the needle.
+    function aiResolveInteractionMode(inputId = "aiUserInput") {
+      const activeTopTab = String(document.querySelector(".tab.active")?.getAttribute("data-tab") || "execute").trim();
+      if (inputId === "aiUserInput") return "coach";
+      if (inputId === "aiInlineUserInput") {
+        if (activeTopTab === "execute") return "proposal";
+        if (activeTopTab === "plan" && (activePlanTab === "review" || activePlanTab === "assistant")) return "coach";
+      }
+      return "proposal";
+    }
+    function aiBuildSystemPrompt(mode = "proposal") {
+      const sharedContext = `You are the AI assistant for PPP Flow — a personal operating system built around one central truth: every day is consumed by reactive work. Emails, meetings, logistics, other people's priorities. This is the day-to-day. It has to happen — but left unchecked, it devours all the time needed for the work that actually moves the needle.
 
 PPP Flow — Prioritisation, Productivity & Procrastination — exists to protect that time. Your role is to help the user manage their board in service of that goal.
 
@@ -5436,10 +5456,35 @@ For task.create: the nested 'task' object MUST include title (required string), 
 If the user explicitly asks to remove something, use the matching delete action rather than marking it complete unless they asked to complete it.
 If no board action is needed, return actions: [] and explain in summary.
 Use only supported action types and enum values from the schema.`;
+      if (mode === "coach") {
+        return `${sharedContext}
+
+YOUR ROLE
+
+You are a thoughtful coach and thinking partner. Answer the user's actual question first. Be natural, direct, and specific. You can discuss the board, the review data, the product's behavior, priorities, trade-offs, and what you can or cannot do. Do not force every exchange into a task mutation.
+
+STYLE
+
+- Sound like an intelligent human collaborator, not a workflow engine.
+- Do not refer to the user as "the user" or yourself as "the assistant" in the reply.
+- Use natural language, not rigid template-speak.
+- If the user is asking an open-ended question, answer it openly.
+- If a concrete board change would help, you may propose actions, but only when they are genuinely useful.
+
+OUTPUT RULES (strict)
+
+Return valid JSON only. No markdown, no prose outside the JSON, no code fences.
+Top-level keys: summary (string), actions (array), assumptions (array of strings), questions (array of strings).
+The summary should read like a direct reply to the user in normal language.
+Actions are optional. If no board action is needed, return actions: [].
+If you do propose actions, they must exactly match the supported schema in the user prompt.`;
+      }
+      return sharedContext;
     }
-    function aiBuildUserPrompt(userInput) {
+    function aiBuildUserPrompt(userInput, mode = "proposal") {
       const context = aiBuildContext();
       const recent = aiMessages.slice(-8).map(m => ({ role: m.role, content: m.content }));
+      const activeTopTab = String(document.querySelector(".tab.active")?.getAttribute("data-tab") || "execute").trim();
       const schemaHint = {
         action_types: [
           "task.create",
@@ -5498,10 +5543,15 @@ Use only supported action types and enum values from the schema.`;
         ]
       };
       return [
+        `INTERACTION_MODE: ${mode}`,
+        `ACTIVE_VIEW_JSON:\n${JSON.stringify({ top_level_tab: activeTopTab, plan_tab: activePlanTab })}`,
         `BOARD_CONTEXT_JSON:\n${JSON.stringify(context)}`,
         `RECENT_CHAT_JSON:\n${JSON.stringify(recent)}`,
         `SCHEMA_HINT_JSON:\n${JSON.stringify(schemaHint)}`,
         `USER_REQUEST:\n${userInput}`,
+        mode === "coach"
+          ? "This is a conversational coaching context. Answer the question directly in summary. Use actions only if they would clearly help."
+          : "This is an execution/proposal context. Prioritise concrete, valid board actions when appropriate.",
         "Return a JSON object with keys: summary (string), actions (array of complete action objects matching the schema examples above), assumptions (array of strings), questions (array of strings)."
       ].join("\n\n");
     }
@@ -6030,7 +6080,7 @@ Use only supported action types and enum values from the schema.`;
       });
 
       // Active provider pills in chat areas
-      const providerDisplayNames = { openai: "ChatGPT", anthropic: "Claude", gemini: "Gemini", grok: "Grok", deepseek: "DeepSeek", ollama: "Ollama", openai_compatible: "Custom" };
+      const providerDisplayNames = { openai: "ChatGPT", anthropic: "Claude", gemini: "Gemini", grok: "Grok", deepseek: "DeepSeek", mistral: "Mistral", ollama: "Ollama", openai_compatible: "Custom" };
       const privacyIcons = { local: "\uD83D\uDD12", warning: "\u26A0", cloud: "" };
       const pInfo = aiProviderPrivacyInfo(formPrefs.provider);
       const pillLabel = `${privacyIcons[pInfo.level] ? privacyIcons[pInfo.level] + " " : ""}${providerDisplayNames[formPrefs.provider] || formPrefs.provider}`;
@@ -6177,7 +6227,7 @@ Use only supported action types and enum values from the schema.`;
       return true;
     }
 
-    async function aiCallProvider(systemPrompt, userPrompt, prefsOverride = null) {
+    async function aiCallProvider(systemPrompt, userPrompt, prefsOverride = null, options = {}) {
       const cfg = aiResolveConfig(prefsOverride || aiPrefs);
       let model = aiNormalizeModelId(cfg.provider, cfg.model);
       if (!model) throw new Error("Model is required.");
@@ -6190,15 +6240,20 @@ Use only supported action types and enum values from the schema.`;
             { role: "user", content: userPrompt }
           ]
         };
+        const requestedTemperature = Number(options?.temperature);
+        if (Number.isFinite(requestedTemperature) && aiModelSupportsTemperature(modelId)) {
+          chatBody.temperature = requestedTemperature;
+        }
         const url = `${baseUrl}/chat/completions`;
         let res;
         try {
+          const headers = {
+            "Content-Type": "application/json"
+          };
+          if (cfg.apiKey) headers.Authorization = `Bearer ${cfg.apiKey}`;
           res = await fetch(url, {
             method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${cfg.apiKey}`
-            },
+            headers,
             body: JSON.stringify(chatBody)
           });
         } catch (err) {
@@ -6396,7 +6451,7 @@ Use only supported action types and enum values from the schema.`;
         modelListStatus: "not run",
         requestStatus: "not run"
       };
-      if (!cfg.apiKey) {
+      if (aiProviderNeedsKey(cfg.provider) && !cfg.apiKey) {
         if (statusEl) statusEl.textContent = "Add API key first.";
         diagnostics.requestStatus = "skipped";
         aiSetTestDiagnostics(diagnostics);
@@ -6725,8 +6780,14 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
     async function requestPracticeCoaching(practiceId, userQuestion) {
       const practice = (state.life_practices?.practices || []).find(p => p.id === practiceId);
       if (!practice) return;
-      if (!aiPrefs.enabled || !aiResolveConfig(aiPrefs).apiKey) {
-        showAiInlineToast("Enable AI and add an API key in Settings first.", "error");
+      const cfg = aiResolveConfig(aiPrefs);
+      if (!aiPrefs.enabled || (aiProviderNeedsKey(cfg.provider) && !cfg.apiKey)) {
+        showAiInlineToast(
+          aiProviderNeedsKey(cfg.provider)
+            ? "Enable AI and add an API key in Settings first."
+            : "Enable AI in Settings first.",
+          "error"
+        );
         return;
       }
 
@@ -6840,7 +6901,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         return;
       }
       const cfg = aiResolveConfig(aiPrefs);
-      if (!cfg.apiKey) {
+      if (aiProviderNeedsKey(cfg.provider) && !cfg.apiKey) {
         alert("Add an API key in AI Settings first.");
         return;
       }
@@ -6848,7 +6909,8 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       const text = String(input?.value || "").trim();
       if (!text) return;
       const inlineSource = inputId === "aiInlineUserInput";
-      const autoApplyInline = inlineSource && aiPrefs.inlineAutoApply;
+      const interactionMode = aiResolveInteractionMode(inputId);
+      const autoApplyInline = inlineSource && interactionMode === "proposal" && aiPrefs.inlineAutoApply;
       const savedText = text;  /* Save before clearing so we can restore on error */
 
       aiMessages.push({ role: "user", content: text, at: new Date().toISOString() });
@@ -6861,11 +6923,18 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
 
       renderAiAssistant();
       try {
-        const raw = await aiCallProvider(aiBuildSystemPrompt(), aiBuildUserPrompt(text));
+        const raw = await aiCallProvider(
+          aiBuildSystemPrompt(interactionMode),
+          aiBuildUserPrompt(text, interactionMode),
+          null,
+          { temperature: interactionMode === "coach" ? 0.7 : 0.2 }
+        );
         const parsed = extractJsonObject(raw);
         buildAiProposal(parsed);
         aiMessages.push({ role: "assistant", content: aiProposal.summary, at: new Date().toISOString() });
-        if (inlineSource && !autoApplyInline) {
+        if (interactionMode === "coach") {
+          // Conversational mode answers inline without pushing proposal-review toasts.
+        } else if (inlineSource && !autoApplyInline) {
           const validCount = aiProposal.items.filter(item => item.valid && item.action).length;
           showAiInlineToast(
             validCount > 0
@@ -13911,6 +13980,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         gemini: "Gemini",
         grok: "Grok",
         deepseek: "DeepSeek",
+        mistral: "Mistral",
         ollama: "Ollama",
         openai_compatible: "Custom"
       };
@@ -14717,7 +14787,7 @@ Data caveat`;
     document.getElementById("onboardAiConnectBtn").addEventListener("click", () => { void connectOnboardingAiKey(); });
     document.getElementById("onboardAiGenerateBtn").addEventListener("click", ()=>{ void runOnboardingAiSetup(); });
     document.getElementById("onboardAiIntake").addEventListener("keydown", e => {
-      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+      if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
         void runOnboardingAiSetup();
       }
@@ -15053,7 +15123,7 @@ Data caveat`;
     document.getElementById("aiSendBtn").addEventListener("click",()=>{ void requestAiProposal("aiUserInput"); });
     document.getElementById("aiInlineSendBtn").addEventListener("click",()=>{ void requestAiProposal("aiInlineUserInput"); });
     document.getElementById("aiUserInput").addEventListener("keydown",e=>{
-      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+      if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
         void requestAiProposal("aiUserInput");
       }
