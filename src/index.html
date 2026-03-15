@@ -1834,6 +1834,46 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
   .commitment-add-grid { grid-template-columns:1fr; }
 }
 
+/* ═══════════ HEALTH TAB ═══════════ */
+.health-layout{padding:20px 24px;max-width:900px;margin:0 auto;overflow-y:auto;max-height:calc(100vh - 56px)}
+.health-tabs-row{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:16px}
+.health-subtabs{display:flex;gap:0;border-bottom:2px solid var(--line);margin-bottom:0}
+.health-subtab{
+  padding:8px 20px;font:600 .82rem var(--font);color:var(--text2);cursor:pointer;
+  border:none;background:transparent;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s;
+}
+.health-subtab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.health-subtab:hover:not(.active){color:var(--text)}
+.health-panel{display:none}
+.health-panel.active{display:block}
+.health-summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:8px}
+.health-list{display:flex;flex-direction:column;gap:8px}
+.health-row{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:10px 14px;background:var(--bg);border-radius:var(--radius-sm);
+}
+.health-row-main{min-width:0}
+.health-row-title{font-size:.82rem;font-weight:700}
+.health-row-meta{font-size:.72rem;color:var(--text2);margin-top:2px}
+.health-row-value{font-size:.8rem;font-weight:700;color:var(--accent);white-space:nowrap}
+.health-empty-state{
+  font-size:.8rem;color:var(--text2);padding:16px 0;text-align:center
+}
+.health-activity-row{
+  display:grid;grid-template-columns:72px minmax(0,1fr) auto;gap:12px;align-items:center;
+  padding:10px 14px;background:var(--bg);border-radius:var(--radius-sm);
+}
+.health-activity-date{font-size:.72rem;color:var(--text2);font-variant-numeric:tabular-nums}
+.health-activity-detail{font-size:.8rem;font-weight:500}
+.health-activity-practice{font-size:.68rem;color:var(--text2);text-align:right}
+.health-metric-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.health-metric-chip{
+  display:inline-flex;align-items:center;padding:4px 8px;border-radius:999px;
+  font-size:.67rem;font-weight:700;background:var(--accent-light);color:var(--accent)
+}
+.health-card-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px}
+.health-card-note{font-size:.72rem;color:var(--text2);margin-top:10px}
+
 /* ═══════════ WEALTH TAB ═══════════ */
 .wealth-layout{padding:20px 24px;max-width:900px;margin:0 auto;overflow-y:auto;max-height:calc(100vh - 56px)}
 .wealth-tabs-row{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:16px}
@@ -2006,10 +2046,15 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
 .wealth-coach-send{height:42px;padding:0 16px;border:0;border-radius:12px;background:var(--accent);color:#fff;font-weight:700;cursor:pointer}
 .wealth-coach-send[disabled]{opacity:.6;cursor:default}
 @media (max-width: 1100px){
+  .health-summary-grid{grid-template-columns:repeat(2,1fr)}
   .wealth-summary-grid{grid-template-columns:repeat(2,1fr)}
   .wealth-holding-row,.wealth-holding-head{grid-template-columns:minmax(0,1.2fr) 88px 90px 108px 108px 108px 120px auto}
 }
 @media (max-width: 860px){
+  .health-tabs-row{align-items:stretch;flex-direction:column}
+  .health-summary-grid{grid-template-columns:1fr}
+  .health-activity-row{grid-template-columns:1fr}
+  .health-activity-practice{text-align:left}
   .wealth-tabs-row{align-items:stretch;flex-direction:column}
   .wealth-toolbar-controls{width:100%;justify-content:flex-start}
   .wealth-summary-grid,.wealth-net-worth{grid-template-columns:1fr}
@@ -2033,6 +2078,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
     <div class="mode-switcher">
       <button class="mode-btn tab active" data-tab="execute" type="button">Execute</button>
       <button class="mode-btn tab" data-tab="plan" type="button">Plan</button>
+      <button class="mode-btn tab" data-tab="health" type="button">Health</button>
       <button class="mode-btn tab" data-tab="wealth" type="button">Wealth</button>
     </div>
     <div class="top-right">
@@ -2468,6 +2514,68 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
               </div>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ HEALTH SURFACE ═══════════ -->
+  <div class="surface tab-content" id="tab-health">
+    <div class="health-layout">
+      <div class="health-tabs-row">
+        <div class="health-subtabs" id="healthSubtabs">
+          <div class="health-subtab active" data-health-tab="overview">Overview</div>
+          <div class="health-subtab" data-health-tab="exercise">Exercise</div>
+        </div>
+      </div>
+
+      <div class="health-panel active" id="health-panel-overview">
+        <div class="review-card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:12px;flex-wrap:wrap">
+            <h4 style="margin-bottom:0">Health Overview</h4>
+            <div class="health-card-actions" style="margin-top:0">
+              <button class="ghost" type="button" data-health-nav="execute">Open Execute Logging</button>
+              <button class="ghost" type="button" data-health-nav="review">Open Review Trends</button>
+            </div>
+          </div>
+          <div class="health-summary-grid" id="healthOverviewSummary">
+            <div class="stat-box"><div class="stat-val">0</div><div class="stat-label">Sessions This Week</div></div>
+            <div class="stat-box"><div class="stat-val">0m</div><div class="stat-label">Minutes This Week</div></div>
+            <div class="stat-box"><div class="stat-val">0 / 7</div><div class="stat-label">Consistency</div></div>
+            <div class="stat-box"><div class="stat-val">—</div><div class="stat-label">Last Session</div></div>
+          </div>
+          <div class="health-card-note">H1 uses your existing exercise practice logs. Sleep, nutrition, and vitals come later.</div>
+        </div>
+
+        <div class="review-card">
+          <h4 style="margin-bottom:12px">Active Health Practices</h4>
+          <div id="healthPracticeSummaryList" class="health-list">
+            <div class="health-empty-state">No health practices yet. Log an exercise session in Execute to start building this view.</div>
+          </div>
+        </div>
+
+        <div class="review-card">
+          <h4 style="margin-bottom:12px">Recent Activity</h4>
+          <div id="healthRecentActivityList" class="health-list">
+            <div class="health-empty-state">No recent health activity yet.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="health-panel" id="health-panel-exercise">
+        <div class="review-card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:12px;flex-wrap:wrap">
+            <h4 style="margin-bottom:0">Exercise</h4>
+            <div class="health-card-actions" style="margin-top:0">
+              <button class="ghost" type="button" data-health-nav="execute">Log in Execute</button>
+              <button class="ghost" type="button" data-health-nav="review">Open in Review</button>
+            </div>
+          </div>
+          <div class="health-card-note">H1 keeps exercise coaching in Review. This tab surfaces the data and history cleanly first.</div>
+        </div>
+
+        <div id="healthExerciseList" class="health-list">
+          <div class="health-empty-state">No exercise practices found yet.</div>
         </div>
       </div>
     </div>
@@ -6777,7 +6885,34 @@ ${hint}
 USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
     }
 
-    async function requestPracticeCoaching(practiceId, userQuestion) {
+    function getPracticeCoachUi(practiceId, preferredSurface = "") {
+      const pid = String(practiceId || "").trim();
+      if (!pid) return null;
+      const findReviewUi = () => ({
+        surface: "review",
+        btn: document.querySelector(`[data-coach-send="${pid}"]`),
+        inputEl: document.querySelector(`[data-coach-practice="${pid}"]`),
+        responseEl: document.getElementById(`pdCoachResponse_${pid}`)
+      });
+      const findHealthUi = () => ({
+        surface: "health",
+        btn: document.querySelector(`[data-health-coach-send="${pid}"]`),
+        inputEl: document.querySelector(`[data-health-coach-practice="${pid}"]`),
+        responseEl: document.getElementById(`healthCoachResponse_${pid}`)
+      });
+      if (preferredSurface === "health") return findHealthUi();
+      if (preferredSurface === "review") return findReviewUi();
+      const healthActive = document.getElementById("tab-health")?.classList.contains("active");
+      if (healthActive) {
+        const healthUi = findHealthUi();
+        if (healthUi.btn || healthUi.inputEl || healthUi.responseEl) return healthUi;
+      }
+      const reviewUi = findReviewUi();
+      if (reviewUi.btn || reviewUi.inputEl || reviewUi.responseEl) return reviewUi;
+      return findHealthUi();
+    }
+
+    async function requestPracticeCoaching(practiceId, userQuestion, options = {}) {
       const practice = (state.life_practices?.practices || []).find(p => p.id === practiceId);
       if (!practice) return;
       const cfg = aiResolveConfig(aiPrefs);
@@ -6791,9 +6926,11 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         return;
       }
 
-      const btn = document.querySelector(`[data-coach-send="${practiceId}"]`);
-      const responseEl = document.getElementById(`pdCoachResponse_${practiceId}`);
-      const inputEl = document.querySelector(`[data-coach-practice="${practiceId}"]`);
+      const ui = getPracticeCoachUi(practiceId, options.surface || "");
+      const btn = ui?.btn || null;
+      const responseEl = ui?.responseEl || null;
+      const inputEl = ui?.inputEl || null;
+      const coachSurface = ui?.surface || (options.surface || "review");
       if (btn) btn.classList.add("working");
 
       try {
@@ -6821,7 +6958,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
                 : a.type === "life_practice.log" ? `Log: ${a.entry?.text || (a.entry?.minutes ? a.entry.minutes + " min" : "entry")}`
                 : a.type === "life_practice.update" ? `Set target: ${a.patch?.target_value || ""}${a.patch?.target_unit ? " " + a.patch.target_unit : ""}${a.patch?.target_period ? "/" + a.patch.target_period : ""}`
                 : `${a.type}`;
-              return `<button class="pd-coach-action-btn" data-coach-action-idx="${i}" data-coach-action-practice="${escapeHtml(practiceId)}">${escapeHtml(label)}</button>`;
+              return `<button class="pd-coach-action-btn" data-coach-action-idx="${i}" data-coach-action-practice="${escapeHtml(practiceId)}" data-coach-surface="${escapeHtml(coachSurface)}">${escapeHtml(label)}</button>`;
             }).join("")}</div>`;
             /* Stash actions for later apply */
             responseEl._coachActions = parsed.actions;
@@ -6840,8 +6977,9 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
     }
 
     /* Apply a single coach-proposed action with undo support */
-    function applyCoachAction(practiceId, actionIdx) {
-      const responseEl = document.getElementById(`pdCoachResponse_${practiceId}`);
+    function applyCoachAction(practiceId, actionIdx, options = {}) {
+      const ui = getPracticeCoachUi(practiceId, options.surface || "");
+      const responseEl = ui?.responseEl || null;
       const actions = responseEl?._coachActions;
       if (!actions || !actions[actionIdx]) return;
       const action = actions[actionIdx];
@@ -6867,7 +7005,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       showAiInlineToast(label, "success");
 
       /* Disable the button */
-      const btn = document.querySelector(`[data-coach-action-idx="${actionIdx}"][data-coach-action-practice="${practiceId}"]`);
+      const btn = document.querySelector(`[data-coach-action-idx="${actionIdx}"][data-coach-action-practice="${practiceId}"][data-coach-surface="${ui?.surface || options.surface || "review"}"]`);
       if (btn) { btn.disabled = true; btn.textContent = "✓ Applied"; }
 
       /* Flash highlight on affected elements */
@@ -9186,8 +9324,8 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
     function setActiveTab(tabName) {
       const requested = String(tabName || "").trim() || "execute";
       const planTabs = ["focus", "assistant", "review"];
-      const topLevelTabs = ["execute", "plan", "wealth"];
-      let mode = requested === "wealth" ? "wealth" : requested === "execute" ? "execute" : "plan";
+      const topLevelTabs = ["execute", "plan", "health", "wealth"];
+      let mode = requested === "wealth" ? "wealth" : requested === "health" ? "health" : requested === "execute" ? "execute" : "plan";
       let planTab = activePlanTab;
       if (planTabs.includes(requested)) { mode = "plan"; planTab = requested; }
       if (mode === "plan") {
@@ -9209,9 +9347,11 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
 
       const executeSurface = document.getElementById("tab-execute");
       const planSurface = document.getElementById("surface-plan");
+      const healthSurface = document.getElementById("tab-health");
       const wealthSurface = document.getElementById("tab-wealth");
       if (executeSurface) executeSurface.classList.toggle("active", mode === "execute");
       if (planSurface) planSurface.classList.toggle("active", mode === "plan");
+      if (healthSurface) healthSurface.classList.toggle("active", mode === "health");
       if (wealthSurface) wealthSurface.classList.toggle("active", mode === "wealth");
 
       document.querySelectorAll(".tab-content").forEach(panel => panel.classList.remove("active"));
@@ -9223,6 +9363,11 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       if (mode === "wealth") {
         if (wealthSurface) wealthSurface.classList.add("active");
         renderWealth();
+        return;
+      }
+      if (mode === "health") {
+        if (healthSurface) healthSurface.classList.add("active");
+        renderHealth();
         return;
       }
       const planPanel = document.getElementById(`tab-${planTab}`);
@@ -11207,14 +11352,24 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
           </div>
           <div class="pd-week-strip">${strip}</div>
           ${weekEntries ? `<div class="practice-entries" style="margin-top:4px">${weekEntries}</div>` : ""}
-          ${p.coach_enabled !== false ? `
+          ${p.coach_enabled !== false
+            ? (isHealthPractice(p)
+              ? `
+          <div class="pd-coach" data-practice-id="${escapeHtml(p.id)}">
+            <div class="health-card-note">Exercise coaching moved to Health → Exercise so the Health module becomes the source of truth.</div>
+            <div class="health-card-actions">
+              <button type="button" class="ghost" data-open-health-exercise="${escapeHtml(p.id)}">Open Health Coaching</button>
+            </div>
+          </div>`
+              : `
           <div class="pd-coach" data-practice-id="${escapeHtml(p.id)}">
             <div class="pd-coach-response" id="pdCoachResponse_${escapeHtml(p.id)}" hidden></div>
             <div class="pd-coach-input-row">
               <textarea rows="1" class="pd-coach-input" data-coach-practice="${escapeHtml(p.id)}" placeholder="Ask your coach about ${escapeHtml(p.title.toLowerCase())}..."></textarea>
               <button type="button" class="pd-coach-btn" data-coach-send="${escapeHtml(p.id)}" title="Get coaching">✦</button>
             </div>
-          </div>` : ""}
+          </div>`)
+            : ""}
         </div>`;
       }).join("");
     }
@@ -11464,7 +11619,234 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       renderDeepTrend(weekStart);
     }
 
+    // ═══════════ HEALTH MODULE ═══════════
+    function normalizeHealthTab(value) {
+      return String(value || "").trim().toLowerCase() === "exercise" ? "exercise" : "overview";
+    }
+
+    function isHealthPractice(practice) {
+      return inferPracticeCoachKey(practice) === "gym";
+    }
+
+    function getHealthPractices() {
+      return sortPracticesForDisplay((state.life_practices?.practices || []).filter(isHealthPractice));
+    }
+
+    function getRecentDateKeys(days, anchorDateKey = todayISO()) {
+      const anchor = parseLocalDateKey(anchorDateKey);
+      const keys = [];
+      for (let i = days - 1; i >= 0; i -= 1) {
+        const date = new Date(anchor);
+        date.setDate(anchor.getDate() - i);
+        keys.push(localDateKey(date));
+      }
+      return keys;
+    }
+
+    function practiceEntriesInDates(practiceId, dateKeys) {
+      const keys = Array.from(new Set((dateKeys || []).filter(Boolean))).sort().reverse();
+      const entries = [];
+      keys.forEach(dateKey => {
+        practiceEntriesForDate(practiceId, dateKey).forEach(entry => {
+          entries.push({ date: dateKey, ...entry });
+        });
+      });
+      return entries.sort((a, b) => new Date(b.at || `${b.date}T00:00:00`) - new Date(a.at || `${a.date}T00:00:00`));
+    }
+
+    function practiceDoneSummaryForDates(practice, dateKeys) {
+      let sessions = 0;
+      let minutes = 0;
+      let lastDate = "";
+      (dateKeys || []).forEach(dateKey => {
+        const day = practiceLogEntry(practice.id, dateKey);
+        if (!day?.done) return;
+        sessions += 1;
+        minutes += Number(day.minutes) || 0;
+        if (!lastDate || dateKey > lastDate) lastDate = dateKey;
+      });
+      return { sessions, minutes, lastDate };
+    }
+
+    function recentHealthActivity(limit = 6) {
+      const dateKeys = Object.keys(state.life_practices?.daily_log || {});
+      return getHealthPractices()
+        .flatMap(practice => practiceEntriesInDates(practice.id, dateKeys).map(entry => ({
+          ...entry,
+          practiceTitle: practice.title,
+          practiceId: practice.id
+        })))
+        .sort((a, b) => new Date(b.at || `${b.date}T00:00:00`) - new Date(a.at || `${a.date}T00:00:00`))
+        .slice(0, limit);
+    }
+
+    function formatPracticeTarget(practice) {
+      if (Number.isFinite(Number(practice?.target_value)) && practice?.target_unit && practice?.target_period) {
+        return `Target: ${Number(practice.target_value)} ${practice.target_unit}/${practice.target_period}`;
+      }
+      if (Number.isFinite(Number(practice?.minimum_minutes)) && Number(practice.minimum_minutes) > 0) {
+        return `${Number(practice.minimum_minutes)} min minimum`;
+      }
+      return "No target set";
+    }
+
+    function openHealthExerciseSurface() {
+      activeHealthTab = "exercise";
+      setActiveTab("health");
+      render();
+      requestAnimationFrame(() => {
+        document.getElementById("healthExerciseList")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    }
+
+    function openReviewPracticeSection() {
+      setActiveTab("review");
+      render();
+      requestAnimationFrame(() => {
+        document.getElementById("practiceDetailCard")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    }
+
+    function renderHealthOverview() {
+      const summaryEl = document.getElementById("healthOverviewSummary");
+      const practicesEl = document.getElementById("healthPracticeSummaryList");
+      const recentEl = document.getElementById("healthRecentActivityList");
+      if (!summaryEl || !practicesEl || !recentEl) return;
+
+      const practices = getHealthPractices();
+      const weekDates = getWeekDates(0);
+      const recent = recentHealthActivity(6);
+
+      let sessionCount = 0;
+      let totalMinutes = 0;
+      const loggedDays = new Set();
+      practices.forEach(practice => {
+        const stats = practiceDoneSummaryForDates(practice, weekDates);
+        sessionCount += stats.sessions;
+        totalMinutes += stats.minutes;
+        weekDates.forEach(dateKey => {
+          if (practiceLogEntry(practice.id, dateKey)?.done) loggedDays.add(dateKey);
+        });
+      });
+
+      const lastEntry = recent[0] || null;
+      const lastSessionLabel = lastEntry ? fmtEntryDate(lastEntry.date) : "—";
+      summaryEl.innerHTML = `
+        <div class="stat-box"><div class="stat-val">${sessionCount}</div><div class="stat-label">Sessions This Week</div></div>
+        <div class="stat-box"><div class="stat-val">${totalMinutes}m</div><div class="stat-label">Minutes This Week</div></div>
+        <div class="stat-box"><div class="stat-val">${loggedDays.size} / 7</div><div class="stat-label">Consistency</div></div>
+        <div class="stat-box"><div class="stat-val">${escapeHtml(lastSessionLabel)}</div><div class="stat-label">Last Session</div></div>
+      `;
+
+      if (!practices.length) {
+        practicesEl.innerHTML = '<div class="health-empty-state">No exercise practices found yet. Create or log one in Execute to populate Health.</div>';
+      } else {
+        practicesEl.innerHTML = practices.map(practice => {
+          const stats = practiceDoneSummaryForDates(practice, weekDates);
+          const metaBits = [formatPracticeTarget(practice)];
+          if (stats.lastDate) metaBits.push(`Last logged ${fmtEntryDate(stats.lastDate)}`);
+          return `
+            <div class="health-row">
+              <div class="health-row-main">
+                <div class="health-row-title">${escapeHtml(practice.title)}</div>
+                <div class="health-row-meta">${escapeHtml(metaBits.join(" · "))}</div>
+              </div>
+              <div class="health-row-value">${stats.sessions} sessions · ${stats.minutes}m</div>
+            </div>
+          `;
+        }).join("");
+      }
+
+      if (!recent.length) {
+        recentEl.innerHTML = '<div class="health-empty-state">No recent exercise activity yet.</div>';
+      } else {
+        recentEl.innerHTML = recent.map(entry => `
+          <div class="health-activity-row">
+            <div class="health-activity-date">${escapeHtml(fmtEntryDate(entry.date))}</div>
+            <div class="health-activity-detail">${escapeHtml(practiceEntryDisplayText(entry))}</div>
+            <div class="health-activity-practice">${escapeHtml(entry.practiceTitle)}</div>
+          </div>
+        `).join("");
+      }
+    }
+
+    function renderHealthExercise() {
+      const listEl = document.getElementById("healthExerciseList");
+      if (!listEl) return;
+      const practices = getHealthPractices();
+      if (!practices.length) {
+        listEl.innerHTML = '<div class="health-empty-state">No exercise practices found yet. Use Execute to add or log one first.</div>';
+        return;
+      }
+
+      const recent30Days = getRecentDateKeys(30);
+      listEl.innerHTML = practices.map(practice => {
+        const recentEvents = practiceEntriesInDates(practice.id, recent30Days);
+        const daySummary = practiceDoneSummaryForDates(practice, recent30Days);
+        const metrics = summarizePracticeMetrics(practice, recentEvents);
+        const chips = [
+          `${daySummary.sessions} sessions / 30d`,
+          `${daySummary.minutes}m total`
+        ];
+        if (Number.isFinite(metrics?.max_weight_kg) && metrics.max_weight_kg > 0) chips.push(`max ${metrics.max_weight_kg}kg`);
+        if (Number.isFinite(metrics?.total_sets) && metrics.total_sets > 0) chips.push(`${metrics.total_sets} sets`);
+        if (Number.isFinite(metrics?.total_reps) && metrics.total_reps > 0) chips.push(`${metrics.total_reps} reps`);
+        if (Number.isFinite(metrics?.avg_energy) && metrics.avg_energy > 0) chips.push(`energy ${metrics.avg_energy}/10`);
+        const recentItems = recentEvents.slice(0, 5);
+        return `
+          <div class="review-card">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">
+              <div>
+                <h4 style="margin-bottom:4px">${escapeHtml(practice.title)}</h4>
+                <div class="health-card-note">${escapeHtml(formatPracticeTarget(practice))}</div>
+              </div>
+              <div class="health-card-actions" style="margin-top:0">
+                <button class="ghost" type="button" data-health-nav="execute">Log in Execute</button>
+                <button class="ghost" type="button" data-health-nav="review">Open Review Trends</button>
+              </div>
+            </div>
+            <div class="health-metric-chips">
+              ${chips.map(label => `<span class="health-metric-chip">${escapeHtml(label)}</span>`).join("")}
+            </div>
+            <div class="health-list" style="margin-top:12px">
+              ${recentItems.length
+                ? recentItems.map(entry => `
+                  <div class="health-activity-row">
+                    <div class="health-activity-date">${escapeHtml(fmtEntryDate(entry.date))}</div>
+                    <div class="health-activity-detail">${escapeHtml(practiceEntryDisplayText(entry))}</div>
+                    <div class="health-activity-practice">${entry.minutes ? `${entry.minutes}m` : "Logged"}</div>
+                  </div>
+                `).join("")
+                : '<div class="health-empty-state">No exercise entries in the last 30 days.</div>'}
+            </div>
+            ${practice.coach_enabled !== false ? `
+              <div class="pd-coach" data-practice-id="${escapeHtml(practice.id)}">
+                <div class="health-card-note">Exercise coaching now lives here. Local AI is recommended for private health data.</div>
+                <div class="pd-coach-response" id="healthCoachResponse_${escapeHtml(practice.id)}" hidden></div>
+                <div class="pd-coach-input-row">
+                  <textarea rows="1" class="pd-coach-input" data-health-coach-practice="${escapeHtml(practice.id)}" placeholder="Ask your coach about ${escapeHtml(practice.title.toLowerCase())}..."></textarea>
+                  <button type="button" class="pd-coach-btn" data-health-coach-send="${escapeHtml(practice.id)}" title="Get coaching">✦</button>
+                </div>
+              </div>` : ""}
+          </div>
+        `;
+      }).join("");
+    }
+
+    function renderHealth() {
+      activeHealthTab = normalizeHealthTab(activeHealthTab);
+      document.querySelectorAll(".health-subtab").forEach(tab => {
+        tab.classList.toggle("active", (tab.dataset.healthTab || "overview") === activeHealthTab);
+      });
+      document.querySelectorAll(".health-panel").forEach(panel => {
+        panel.classList.toggle("active", panel.id === `health-panel-${activeHealthTab}`);
+      });
+      renderHealthOverview();
+      renderHealthExercise();
+    }
+
     // ═══════════ WEALTH MODULE ═══════════
+    let activeHealthTab = "overview";
     let activeWealthTab = "overview";
     let wealthCashflowAnchorMonth = todayISO().slice(0, 7);
     let wealthCashflowRange = "month";
@@ -14407,6 +14789,7 @@ Data caveat`;
       renderAiAssistant();
       renderWeeklyReview();
       renderPlanSidebar();
+      renderHealth();
       renderWealth();
       renderLocalAiWizard();
     }
@@ -15189,6 +15572,30 @@ Data caveat`;
       });
     });
 
+    // Health tab events
+    document.querySelectorAll(".health-subtab").forEach(tab => {
+      tab.addEventListener("click", () => {
+        activeHealthTab = normalizeHealthTab(tab.dataset.healthTab || "overview");
+        renderHealth();
+      });
+    });
+    document.getElementById("tab-health")?.addEventListener("click", e => {
+      const navBtn = e.target.closest("[data-health-nav]");
+      if (!navBtn) return;
+      const target = String(navBtn.dataset.healthNav || "");
+      if (target === "execute") {
+        setActiveTab("execute");
+        render();
+        requestAnimationFrame(() => {
+          document.getElementById("lifePracticesList")?.scrollIntoView({ behavior: "smooth", block: "start" });
+        });
+        return;
+      }
+      if (target === "review") {
+        openReviewPracticeSection();
+      }
+    });
+
     // Wealth tab events
     document.querySelectorAll(".wealth-subtab").forEach(tab => {
       tab.addEventListener("click", () => {
@@ -15547,13 +15954,18 @@ Data caveat`;
     const pdGrid = document.getElementById("practiceDetailGrid");
     if (pdGrid) {
       pdGrid.addEventListener("click", e => {
+        const healthBtn = e.target.closest("[data-open-health-exercise]");
+        if (healthBtn) {
+          openHealthExerciseSurface();
+          return;
+        }
         /* Coach send button */
         const sendBtn = e.target.closest("[data-coach-send]");
         if (sendBtn) {
           const pid = sendBtn.dataset.coachSend;
           const input = pdGrid.querySelector(`[data-coach-practice="${pid}"]`);
           const q = input ? input.value.trim() : "";
-          void requestPracticeCoaching(pid, q || null);
+          void requestPracticeCoaching(pid, q || null, { surface: "review" });
           if (input) input.value = "";
           return;
         }
@@ -15562,7 +15974,7 @@ Data caveat`;
         if (actionBtn) {
           const pid = actionBtn.dataset.coachActionPractice;
           const idx = Number(actionBtn.dataset.coachActionIdx);
-          applyCoachAction(pid, idx);
+          applyCoachAction(pid, idx, { surface: actionBtn.dataset.coachSurface || "review" });
           return;
         }
       });
@@ -15574,7 +15986,39 @@ Data caveat`;
         e.preventDefault();
         const pid = input.dataset.coachPractice;
         const q = input.value.trim();
-        void requestPracticeCoaching(pid, q || null);
+        void requestPracticeCoaching(pid, q || null, { surface: "review" });
+        input.value = "";
+      });
+    }
+
+    const healthExerciseList = document.getElementById("healthExerciseList");
+    if (healthExerciseList) {
+      healthExerciseList.addEventListener("click", e => {
+        const sendBtn = e.target.closest("[data-health-coach-send]");
+        if (sendBtn) {
+          const pid = sendBtn.dataset.healthCoachSend;
+          const input = healthExerciseList.querySelector(`[data-health-coach-practice="${pid}"]`);
+          const q = input ? input.value.trim() : "";
+          void requestPracticeCoaching(pid, q || null, { surface: "health" });
+          if (input) input.value = "";
+          return;
+        }
+        const actionBtn = e.target.closest("[data-coach-action-idx]");
+        if (actionBtn) {
+          const pid = actionBtn.dataset.coachActionPractice;
+          const idx = Number(actionBtn.dataset.coachActionIdx);
+          applyCoachAction(pid, idx, { surface: actionBtn.dataset.coachSurface || "health" });
+        }
+      });
+      healthExerciseList.addEventListener("keydown", e => {
+        if (e.key !== "Enter") return;
+        if (e.shiftKey) return;
+        const input = e.target.closest("[data-health-coach-practice]");
+        if (!input) return;
+        e.preventDefault();
+        const pid = input.dataset.healthCoachPractice;
+        const q = input.value.trim();
+        void requestPracticeCoaching(pid, q || null, { surface: "health" });
         input.value = "";
       });
     }
