@@ -3960,6 +3960,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           cashflow_account_filter: "",
           holdings_sort: { key: "marketValueMinor", dir: "desc" },
           holdings: [],
+          trades: [],
           price_quotes: {},
           fx_quotes: {},
           properties: [],
@@ -4030,6 +4031,30 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         cashflow_scope: inferWealthTransactionCashflowScope(txn),
         source_meta: sourceMeta,
         created_at: txn?.created_at || new Date().toISOString()
+      };
+    }
+
+    function normalizeWealthTradeRecord(trade) {
+      const tradeType = ["buy", "sell", "opening_balance", "split", "merger"].includes(trade?.trade_type)
+        ? trade.trade_type
+        : "buy";
+      const units = Number.isFinite(Number(trade?.units)) ? Math.abs(Number(trade.units)) : 0;
+      const priceMinor = normalizeMinorAmount(trade?.price_minor, trade?.price);
+      const feesMinor = Math.abs(normalizeMinorAmount(trade?.fees_minor, trade?.fees));
+      const computedTotalMinor = units > 0 ? Math.round((units * priceMinor) + feesMinor) : feesMinor;
+      return {
+        id: trade?.id || uid(),
+        holding_id: String(trade?.holding_id || "").trim() || null,
+        trade_type: tradeType,
+        trade_date: String(trade?.trade_date || trade?.date || todayISO()).trim() || todayISO(),
+        units,
+        price_minor: Math.abs(priceMinor),
+        fees_minor: feesMinor,
+        total_minor: Math.abs(normalizeMinorAmount(trade?.total_minor, trade?.total)) || computedTotalMinor,
+        status: trade?.status === "pending" ? "pending" : "confirmed",
+        notes: String(trade?.notes || "").trim(),
+        created_at: trade?.created_at || new Date().toISOString(),
+        source: ["manual", "csv_import", "opening_balance"].includes(trade?.source) ? trade.source : "manual"
       };
     }
 
@@ -4388,8 +4413,10 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           units: Number.isFinite(Number(h.units)) ? Number(h.units) : 0,
           cost_basis_minor: normalizeMinorAmount(h.cost_basis_minor, h.cost_basis),
           quote_currency: String(h.quote_currency || iw.currency || "AUD").trim().toUpperCase(),
-          added_at: h.added_at || new Date().toISOString()
+          added_at: h.added_at || new Date().toISOString(),
+          trade_history_seeded: !!h.trade_history_seeded
         })) : [],
+        trades: Array.isArray(iw.trades) ? iw.trades.map(normalizeWealthTradeRecord).filter(trade => trade.holding_id) : [],
         price_quotes: iw.price_quotes && typeof iw.price_quotes === "object" ? Object.fromEntries(
           Object.entries(iw.price_quotes).map(([key, q]) => [key, {
             provider_symbol: String(q?.provider_symbol || "").trim(),
@@ -4414,6 +4441,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         last_import_review: normalizeWealthImportReviewRecord(iw.last_import_review),
         import_folder_label: String(iw.import_folder_label || "").trim()
       };
+      migrateWealthHoldingsToTrades(normalized.wealth);
       if (normalized.wealth.last_import_review?.sample_transactions?.length) {
         normalized.wealth.last_import_review.sample_transactions = normalized.wealth.last_import_review.sample_transactions.map(txn => ({
           ...txn,
@@ -14792,6 +14820,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
           cashflow_account_filter: "",
           holdings_sort: { key: "marketValueMinor", dir: "desc" },
           holdings: [],
+          trades: [],
           price_quotes: {},
           fx_quotes: {},
           properties: [],
@@ -14805,6 +14834,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       if (!Array.isArray(state.wealth.accounts)) state.wealth.accounts = [];
       if (!Array.isArray(state.wealth.transactions)) state.wealth.transactions = [];
       if (!Array.isArray(state.wealth.holdings)) state.wealth.holdings = [];
+      if (!Array.isArray(state.wealth.trades)) state.wealth.trades = [];
       if (!Array.isArray(state.wealth.import_templates)) state.wealth.import_templates = [];
       if (!Array.isArray(state.wealth.category_rules)) state.wealth.category_rules = [];
       if (!state.wealth.price_quotes || typeof state.wealth.price_quotes !== "object") state.wealth.price_quotes = {};
@@ -14812,6 +14842,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       state.wealth.cashflow_scope_filter = normalizeWealthCashflowScopeFilter(state.wealth.cashflow_scope_filter);
       if (typeof state.wealth.cashflow_account_filter !== "string") state.wealth.cashflow_account_filter = "";
       if (typeof state.wealth.import_folder_label !== "string") state.wealth.import_folder_label = "";
+      migrateWealthHoldingsToTrades(state.wealth);
       return state.wealth;
     }
 
@@ -15824,24 +15855,100 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       return (state.wealth?.transactions || []).filter(t => t.date >= start && t.date <= end);
     }
 
-    function getHoldingMarketValueMinor(holding) {
+    function migrateWealthHoldingsToTrades(wealthLike = ensureWealthStateShape()) {
+      if (!wealthLike || !Array.isArray(wealthLike.holdings)) return;
+      if (!Array.isArray(wealthLike.trades)) wealthLike.trades = [];
+      wealthLike.holdings.forEach(holding => {
+        if (!holding?.id) return;
+        if (holding.trade_history_seeded) return;
+        const hasTrades = wealthLike.trades.some(trade => trade.holding_id === holding.id);
+        if (hasTrades) {
+          holding.trade_history_seeded = true;
+          return;
+        }
+        const units = Number(holding.units || 0);
+        const costBasisMinor = Number(holding.cost_basis_minor || 0);
+        if (units <= 0 && costBasisMinor <= 0) {
+          holding.trade_history_seeded = true;
+          return;
+        }
+        const priceMinor = units > 0 ? Math.round(costBasisMinor / units) : 0;
+        wealthLike.trades.push(normalizeWealthTradeRecord({
+          holding_id: holding.id,
+          trade_type: "opening_balance",
+          trade_date: String(holding.added_at || todayISO()).slice(0, 10),
+          units,
+          price_minor: priceMinor,
+          fees_minor: 0,
+          total_minor: costBasisMinor,
+          status: "confirmed",
+          source: "opening_balance",
+          notes: "Synthetic opening balance migrated from legacy holding fields.",
+          created_at: holding.added_at || new Date().toISOString()
+        }));
+        holding.trade_history_seeded = true;
+      });
+    }
+
+    function getTradesForHolding(holdingId, { includePending = false } = {}) {
+      const trades = (state.wealth?.trades || []).filter(trade => trade.holding_id === holdingId);
+      return trades
+        .filter(trade => includePending || trade.status === "confirmed")
+        .sort((a, b) => (a.trade_date || "").localeCompare(b.trade_date || "") || (a.created_at || "").localeCompare(b.created_at || ""));
+    }
+
+    function computeHoldingPosition(holdingId) {
+      const trades = getTradesForHolding(holdingId);
+      let unitsHeld = 0;
+      let costBasisMinor = 0;
+      trades.forEach(trade => {
+        const units = Number(trade.units || 0);
+        const totalMinor = Number(trade.total_minor || 0);
+        if (trade.trade_type === "buy" || trade.trade_type === "opening_balance") {
+          unitsHeld += units;
+          costBasisMinor += totalMinor;
+          return;
+        }
+        if (trade.trade_type === "sell") {
+          if (unitsHeld <= 0 || units <= 0) return;
+          const soldUnits = Math.min(unitsHeld, units);
+          const avgCostPerUnit = unitsHeld > 0 ? costBasisMinor / unitsHeld : 0;
+          costBasisMinor = Math.max(0, costBasisMinor - Math.round(avgCostPerUnit * soldUnits));
+          unitsHeld = Math.max(0, unitsHeld - soldUnits);
+          if (unitsHeld === 0) costBasisMinor = 0;
+        }
+      });
+      return {
+        units: unitsHeld,
+        costBasisMinor,
+        tradeCount: trades.length,
+        trades
+      };
+    }
+
+    function getHoldingMarketValueMinor(holding, unitsOverride = null) {
       const quote = getHoldingQuote(holding);
       if (!quote) return 0;
-      return Math.round((holding.units || 0) * (quote.price_minor_aud || 0));
+      const units = unitsOverride == null ? Number(holding.units || 0) : Number(unitsOverride || 0);
+      return Math.round(units * (quote.price_minor_aud || 0));
     }
 
     function buildHoldingView(holding) {
+      const position = computeHoldingPosition(holding.id);
       const quote = getHoldingQuote(holding);
-      const marketValueMinor = getHoldingMarketValueMinor(holding);
-      const costBasisMinor = holding.cost_basis_minor || 0;
+      const marketValueMinor = getHoldingMarketValueMinor(holding, position.units);
+      const costBasisMinor = position.costBasisMinor || 0;
       const gainLossMinor = quote ? marketValueMinor - costBasisMinor : null;
       return {
         ...holding,
+        units: position.units,
         account: getWealthAccount(holding.account_id),
         quote,
         marketValueMinor,
         costBasisMinor,
         gainLossMinor,
+        tradeCount: position.tradeCount,
+        trades: position.trades,
         returnPct: quote ? simpleReturnPct(costBasisMinor, marketValueMinor) : null
       };
     }
@@ -15930,6 +16037,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       state.wealth.accounts = state.wealth.accounts.filter(a => a.id !== accountId);
       state.wealth.transactions = state.wealth.transactions.filter(t => t.account_id !== accountId);
       state.wealth.holdings = (state.wealth.holdings || []).filter(h => h.account_id !== accountId);
+      state.wealth.trades = (state.wealth.trades || []).filter(trade => !removedHoldingIds.includes(trade.holding_id));
       if (state.wealth.price_quotes) {
         removedHoldingIds.forEach(id => { delete state.wealth.price_quotes[wealthManualQuoteKey(id)]; });
       }
@@ -15965,6 +16073,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
           display_percentages: false,
           holdings_sort: { key: "marketValueMinor", dir: "desc" },
           holdings: [],
+          trades: [],
           price_quotes: {},
           fx_quotes: {},
           properties: [],
@@ -15972,6 +16081,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         };
       }
       if (!Array.isArray(state.wealth.holdings)) state.wealth.holdings = [];
+      if (!Array.isArray(state.wealth.trades)) state.wealth.trades = [];
       const holding = {
         id: uid(),
         account_id: payload.account_id || null,
@@ -15983,9 +16093,23 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         units: Number.parseFloat(String(payload.units || "0")) || 0,
         cost_basis_minor: moneyToMinor(payload.cost_basis),
         quote_currency: String(payload.quote_currency || state.wealth.currency || "AUD").trim().toUpperCase(),
-        added_at: new Date().toISOString()
+        added_at: new Date().toISOString(),
+        trade_history_seeded: true
       };
       state.wealth.holdings.push(holding);
+      state.wealth.trades.push(normalizeWealthTradeRecord({
+        holding_id: holding.id,
+        trade_type: "opening_balance",
+        trade_date: todayISO(),
+        units: holding.units,
+        price_minor: holding.units > 0 ? Math.round((holding.cost_basis_minor || 0) / holding.units) : 0,
+        fees_minor: 0,
+        total_minor: holding.cost_basis_minor,
+        status: "confirmed",
+        source: "opening_balance",
+        notes: "Created from Add Holding flow.",
+        created_at: holding.added_at
+      }));
       if (payload.manual_price && moneyToMinor(payload.manual_price)) {
         if (!state.wealth.price_quotes) state.wealth.price_quotes = {};
         state.wealth.price_quotes[wealthManualQuoteKey(holding.id)] = {
@@ -16007,6 +16131,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
     function deleteWealthHolding(holdingId) {
       if (!state.wealth) return;
       state.wealth.holdings = (state.wealth.holdings || []).filter(h => h.id !== holdingId);
+      state.wealth.trades = (state.wealth.trades || []).filter(trade => trade.holding_id !== holdingId);
       if (state.wealth.price_quotes) delete state.wealth.price_quotes[wealthManualQuoteKey(holdingId)];
       saveState("wealth_delete_holding");
       renderWealth();
@@ -16244,6 +16369,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
             <span>${escapeHtml(h.name)}</span>
             <span class="wealth-holding-type">${escapeHtml(WEALTH_ASSET_TYPES[h.asset_type] || h.asset_type)}</span>
             <span>· ${escapeHtml(h.account?.name || "No account")}</span>
+            <span>· ${h.tradeCount || 0} trade${h.tradeCount === 1 ? "" : "s"}</span>
           </div>
         </div>
         <div class="wealth-holding-num">${(h.units || 0).toLocaleString(undefined, { maximumFractionDigits: 8 })}</div>
@@ -16256,6 +16382,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
           <span class="wealth-source-text">${escapeHtml(quoteFreshnessLabel(h.quote))}</span>
         </div>
         <div class="wealth-row-actions">
+          <button class="wealth-inline-btn" type="button" data-open-holding-trades="${escapeHtml(h.id)}">Trades</button>
           <button class="wealth-inline-btn" type="button" data-set-holding-price="${escapeHtml(h.id)}">${h.quote ? "Update Price" : "Set Price"}</button>
           <button class="wealth-inline-btn" type="button" data-delete-holding="${escapeHtml(h.id)}">Delete</button>
         </div>
@@ -17023,6 +17150,168 @@ Data caveat`;
           if (!moneyToMinor(price)) return;
           setWealthManualPrice(holdingId, price);
           closeWealthModal();
+        });
+      });
+    }
+
+    function deleteWealthTrade(tradeId) {
+      if (!state.wealth) return;
+      state.wealth.trades = (state.wealth.trades || []).filter(trade => trade.id !== tradeId);
+      saveState("wealth_delete_trade");
+      renderWealth();
+    }
+
+    function showWealthHoldingTradesModal(holdingId) {
+      const holding = getWealthHolding(holdingId);
+      if (!holding) return;
+      const position = computeHoldingPosition(holdingId);
+      const trades = getTradesForHolding(holdingId, { includePending: true }).slice().reverse();
+      const bodyHtml = `<div class="wealth-form-grid">
+        <div class="wealth-form-row">
+          <div>
+            <label>Holding</label>
+            <div style="font-weight:700">${escapeHtml(holding.display_symbol)} · ${escapeHtml(holding.name)}</div>
+            <div class="tiny" style="margin-top:4px;color:var(--text2)">${escapeHtml(holding.account_id ? (getWealthAccount(holding.account_id)?.name || "No account") : "No account")}</div>
+          </div>
+          <div>
+            <label>Computed Position</label>
+            <div style="font-weight:700">${position.units.toLocaleString(undefined, { maximumFractionDigits: 8 })} units</div>
+            <div class="tiny" style="margin-top:4px;color:var(--text2)">Cost basis ${formatCurrency(position.costBasisMinor)}</div>
+          </div>
+        </div>
+        <div class="controls" style="justify-content:space-between;align-items:center">
+          <div class="tiny" style="color:var(--text2)">Cost basis now comes from confirmed trades using average-cost logic for sells.</div>
+          <button class="primary" id="wealthAddTradeBtn" type="button">Add Trade</button>
+        </div>
+        <div class="wealth-list" style="display:flex;flex-direction:column;gap:8px">
+          ${trades.length ? trades.map(trade => {
+            const typeLabel = trade.trade_type === "opening_balance"
+              ? "Opening balance"
+              : trade.trade_type.charAt(0).toUpperCase() + trade.trade_type.slice(1);
+            return `<div class="wealth-row" style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--bg)">
+              <div style="min-width:0">
+                <div style="font-weight:700">${escapeHtml(typeLabel)} · ${escapeHtml(fmtEntryDate(trade.trade_date))}</div>
+                <div class="tiny" style="color:var(--text2);margin-top:4px">
+                  ${trade.units.toLocaleString(undefined, { maximumFractionDigits: 8 })} units
+                  · ${formatCurrency(trade.price_minor)} / unit
+                  · Fees ${formatCurrency(trade.fees_minor)}
+                  · Total ${formatCurrency(trade.total_minor)}
+                  · ${trade.status}
+                </div>
+                ${trade.notes ? `<div class="tiny" style="margin-top:6px;color:var(--text2)">${escapeHtml(trade.notes)}</div>` : ""}
+              </div>
+              <div class="health-card-actions" style="margin-top:0;flex-shrink:0">
+                <button class="ghost" type="button" data-edit-holding-trade="${escapeHtml(trade.id)}" data-holding-id="${escapeHtml(holding.id)}">Edit</button>
+                <button class="ghost" type="button" data-delete-holding-trade="${escapeHtml(trade.id)}" data-holding-id="${escapeHtml(holding.id)}">Delete</button>
+              </div>
+            </div>`;
+          }).join("") : '<div class="wealth-empty-state" style="text-align:left">No trades yet. Add one to define this holding properly.</div>'}
+        </div>
+      </div>`;
+      showWealthModal("Holding Trades", bodyHtml);
+      requestAnimationFrame(() => {
+        document.getElementById("wealthAddTradeBtn")?.addEventListener("click", () => showWealthTradeModal(holdingId));
+        document.querySelectorAll("[data-edit-holding-trade]").forEach(btn => {
+          btn.addEventListener("click", () => {
+            const tradeId = String(btn.getAttribute("data-edit-holding-trade") || "").trim();
+            if (tradeId) showWealthTradeModal(holdingId, tradeId);
+          });
+        });
+        document.querySelectorAll("[data-delete-holding-trade]").forEach(btn => {
+          btn.addEventListener("click", () => {
+            const tradeId = String(btn.getAttribute("data-delete-holding-trade") || "").trim();
+            if (!tradeId || !confirm("Delete this trade?")) return;
+            deleteWealthTrade(tradeId);
+            showWealthHoldingTradesModal(holdingId);
+          });
+        });
+      });
+    }
+
+    function showWealthTradeModal(holdingId, tradeId = "") {
+      const holding = getWealthHolding(holdingId);
+      if (!holding) return;
+      const existing = tradeId ? (state.wealth?.trades || []).find(trade => trade.id === tradeId && trade.holding_id === holdingId) || null : null;
+      const bodyHtml = `<div class="wealth-form-grid">
+        <div>
+          <label>Holding</label>
+          <div style="font-weight:700">${escapeHtml(holding.display_symbol)} · ${escapeHtml(holding.name)}</div>
+        </div>
+        <div class="wealth-form-row">
+          <div>
+            <label>Trade Date</label>
+            <input id="wealthTradeDateInput" type="date" value="${escapeHtml(existing?.trade_date || todayISO())}" />
+          </div>
+          <div>
+            <label>Trade Type</label>
+            <select id="wealthTradeTypeInput">
+              <option value="buy" ${existing?.trade_type === "buy" ? "selected" : ""}>Buy</option>
+              <option value="sell" ${existing?.trade_type === "sell" ? "selected" : ""}>Sell</option>
+              <option value="opening_balance" ${existing?.trade_type === "opening_balance" ? "selected" : ""}>Opening Balance</option>
+            </select>
+          </div>
+        </div>
+        <div class="wealth-form-row">
+          <div>
+            <label>Units</label>
+            <input id="wealthTradeUnitsInput" type="number" step="0.00000001" value="${escapeHtml(existing?.units ?? "")}" placeholder="0" />
+          </div>
+          <div>
+            <label>Price (${escapeHtml(state.wealth?.currency || "AUD")} / unit)</label>
+            <input id="wealthTradePriceInput" type="number" step="0.01" value="${existing ? escapeHtml(((existing.price_minor || 0) / 100).toFixed(2)) : ""}" placeholder="0.00" />
+          </div>
+        </div>
+        <div class="wealth-form-row">
+          <div>
+            <label>Fees (${escapeHtml(state.wealth?.currency || "AUD")})</label>
+            <input id="wealthTradeFeesInput" type="number" step="0.01" value="${existing ? escapeHtml(((existing.fees_minor || 0) / 100).toFixed(2)) : ""}" placeholder="0.00" />
+          </div>
+          <div>
+            <label>Status</label>
+            <select id="wealthTradeStatusInput">
+              <option value="confirmed" ${existing?.status !== "pending" ? "selected" : ""}>Confirmed</option>
+              <option value="pending" ${existing?.status === "pending" ? "selected" : ""}>Pending</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label>Notes</label>
+          <textarea id="wealthTradeNotesInput" rows="3" placeholder="Optional note...">${escapeHtml(existing?.notes || "")}</textarea>
+        </div>
+        <div class="controls" style="justify-content:space-between">
+          <button class="ghost" id="wealthTradeBackBtn" type="button">Back</button>
+          <button class="primary" id="wealthTradeSubmitBtn" type="button">${existing ? "Save Trade" : "Add Trade"}</button>
+        </div>
+      </div>`;
+      showWealthModal(existing ? "Edit Trade" : "Add Trade", bodyHtml);
+      requestAnimationFrame(() => {
+        document.getElementById("wealthTradeUnitsInput")?.focus();
+        document.getElementById("wealthTradeBackBtn")?.addEventListener("click", () => showWealthHoldingTradesModal(holdingId));
+        document.getElementById("wealthTradeSubmitBtn")?.addEventListener("click", () => {
+          const wealth = ensureWealthStateShape();
+          const units = Number.parseFloat(String(document.getElementById("wealthTradeUnitsInput")?.value || "0")) || 0;
+          const priceMinor = moneyToMinor(document.getElementById("wealthTradePriceInput")?.value || "0");
+          const feesMinor = Math.abs(moneyToMinor(document.getElementById("wealthTradeFeesInput")?.value || "0"));
+          if (units <= 0) return;
+          const record = normalizeWealthTradeRecord({
+            id: existing?.id || uid(),
+            holding_id: holdingId,
+            trade_type: document.getElementById("wealthTradeTypeInput")?.value || "buy",
+            trade_date: document.getElementById("wealthTradeDateInput")?.value || todayISO(),
+            units,
+            price_minor: priceMinor,
+            fees_minor: feesMinor,
+            total_minor: Math.round((units * priceMinor) + feesMinor),
+            status: document.getElementById("wealthTradeStatusInput")?.value || "confirmed",
+            notes: (document.getElementById("wealthTradeNotesInput")?.value || "").trim(),
+            created_at: existing?.created_at || new Date().toISOString(),
+            source: existing?.source || "manual"
+          });
+          wealth.trades = (wealth.trades || []).filter(trade => trade.id !== record.id);
+          wealth.trades.push(record);
+          saveState(existing ? "wealth_edit_trade" : "wealth_add_trade");
+          renderWealth();
+          showWealthHoldingTradesModal(holdingId);
         });
       });
     }
@@ -18178,6 +18467,29 @@ Data caveat`;
       if (delHolding) {
         const id = delHolding.dataset.deleteHolding;
         if (id && confirm("Delete this holding?")) deleteWealthHolding(id);
+        return;
+      }
+      const openTradesBtn = e.target.closest("[data-open-holding-trades]");
+      if (openTradesBtn) {
+        const id = String(openTradesBtn.getAttribute("data-open-holding-trades") || "").trim();
+        if (id) showWealthHoldingTradesModal(id);
+        return;
+      }
+      const editTradeBtn = e.target.closest("[data-edit-holding-trade]");
+      if (editTradeBtn) {
+        const holdingId = String(editTradeBtn.getAttribute("data-holding-id") || "").trim();
+        const tradeId = String(editTradeBtn.getAttribute("data-edit-holding-trade") || "").trim();
+        if (holdingId && tradeId) showWealthTradeModal(holdingId, tradeId);
+        return;
+      }
+      const deleteTradeBtn = e.target.closest("[data-delete-holding-trade]");
+      if (deleteTradeBtn) {
+        const holdingId = String(deleteTradeBtn.getAttribute("data-holding-id") || "").trim();
+        const tradeId = String(deleteTradeBtn.getAttribute("data-delete-holding-trade") || "").trim();
+        if (tradeId && confirm("Delete this trade?")) {
+          deleteWealthTrade(tradeId);
+          if (holdingId) showWealthHoldingTradesModal(holdingId);
+        }
         return;
       }
       const addRuleBtn = e.target.closest("[data-import-rule-from-txn]");
