@@ -2693,6 +2693,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           <div class="health-subtab active" data-health-tab="overview">Overview</div>
           <div class="health-subtab" data-health-tab="exercise">Exercise</div>
           <div class="health-subtab" data-health-tab="nutrition">Nutrition</div>
+          <div class="health-subtab" data-health-tab="measurements">Measurements</div>
         </div>
         <button id="healthAiProviderPill" class="ai-provider-pill tiny ai-switch-trigger" data-open-ai-switch="health" type="button" title="Switch AI"></button>
       </div>
@@ -2878,6 +2879,48 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           </div>
           <div id="healthNutritionLogsList" class="health-list">
             <div class="health-empty-state">No nutrition logs yet.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="health-panel" id="health-panel-measurements">
+        <div class="review-card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:12px;flex-wrap:wrap">
+            <div>
+              <h4 style="margin-bottom:0">Measurements</h4>
+              <div class="health-card-note" style="margin-top:4px">Biweekly or periodic body-composition check-ins, plus a simple progress-photo checklist.</div>
+            </div>
+            <div class="health-card-actions" style="margin-top:0">
+              <button class="ghost" type="button" data-health-measurement-open>Log Measurement</button>
+            </div>
+          </div>
+          <div id="healthMeasurementsSummary" class="health-mini-stat-grid">
+            <div class="health-mini-stat"><div class="health-mini-stat-label">Latest Check-in</div><div class="health-mini-stat-value">—</div></div>
+            <div class="health-mini-stat"><div class="health-mini-stat-label">Waist / Hips</div><div class="health-mini-stat-value">—</div></div>
+            <div class="health-mini-stat"><div class="health-mini-stat-label">Waist-to-Hip</div><div class="health-mini-stat-value">—</div></div>
+            <div class="health-mini-stat"><div class="health-mini-stat-label">Photos</div><div class="health-mini-stat-value">—</div></div>
+          </div>
+        </div>
+
+        <div class="health-section-grid">
+          <div class="review-card">
+            <h4 style="margin-bottom:12px">Measurement Signals</h4>
+            <div id="healthMeasurementSignals" class="health-list">
+              <div class="health-empty-state">Add at least two measurements to see deltas.</div>
+            </div>
+          </div>
+          <div class="review-card">
+            <h4 style="margin-bottom:12px">Recent Check-ins</h4>
+            <div id="healthMeasurementCheckins" class="health-list">
+              <div class="health-empty-state">No measurement check-ins yet.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="review-card">
+          <h4 style="margin-bottom:12px">Measurement History</h4>
+          <div id="healthMeasurementsHistory" class="health-list">
+            <div class="health-empty-state">No body measurements yet.</div>
           </div>
         </div>
       </div>
@@ -3939,7 +3982,9 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           },
           session_templates: [],
           nutrition_targets: [],
-          nutrition_logs: []
+          nutrition_logs: [],
+          body_measurements: [],
+          progress_checkins: []
         },
         life_practices: { practices: defaultLifePractices(), daily_log: {} },
         onboarding: { completed_at: null, skipped_at: null },
@@ -4241,6 +4286,37 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       };
     }
 
+    function normalizeHealthMeasurementRecord(record) {
+      const measurement = record && typeof record === "object" ? record : {};
+      const parseValue = key => {
+        const value = Number(measurement[key]);
+        return Number.isFinite(value) ? value : null;
+      };
+      return {
+        id: measurement.id || uid(),
+        date: /^\d{4}-\d{2}-\d{2}$/.test(String(measurement.date || "").trim()) ? String(measurement.date).trim() : todayISO(),
+        chest_cm: parseValue("chest_cm"),
+        arm_r_cm: parseValue("arm_r_cm"),
+        arm_l_cm: parseValue("arm_l_cm"),
+        waist_cm: parseValue("waist_cm"),
+        hips_cm: parseValue("hips_cm"),
+        thigh_r_cm: parseValue("thigh_r_cm"),
+        thigh_l_cm: parseValue("thigh_l_cm"),
+        updated_at: measurement.updated_at || new Date().toISOString()
+      };
+    }
+
+    function normalizeHealthProgressCheckinRecord(record) {
+      const checkin = record && typeof record === "object" ? record : {};
+      return {
+        id: checkin.id || uid(),
+        date: /^\d{4}-\d{2}-\d{2}$/.test(String(checkin.date || "").trim()) ? String(checkin.date).trim() : todayISO(),
+        photos_taken: !!checkin.photos_taken,
+        note: String(checkin.note || "").trim(),
+        updated_at: checkin.updated_at || new Date().toISOString()
+      };
+    }
+
     function normalizePipelineStage(value) {
       if (value === "pipeline") return "next_up";
       if (value === "execute") return "today";
@@ -4323,6 +4399,12 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           : [],
         nutrition_logs: Array.isArray(incoming.health?.nutrition_logs)
           ? incoming.health.nutrition_logs.map(normalizeHealthNutritionLog)
+          : [],
+        body_measurements: Array.isArray(incoming.health?.body_measurements)
+          ? incoming.health.body_measurements.map(normalizeHealthMeasurementRecord)
+          : [],
+        progress_checkins: Array.isArray(incoming.health?.progress_checkins)
+          ? incoming.health.progress_checkins.map(normalizeHealthProgressCheckinRecord)
           : []
       };
       normalized.life_practices = {
@@ -12472,7 +12554,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
     // ═══════════ HEALTH MODULE ═══════════
     function normalizeHealthTab(value) {
       const normalized = String(value || "").trim().toLowerCase();
-      return ["overview", "exercise", "nutrition"].includes(normalized) ? normalized : "overview";
+      return ["overview", "exercise", "nutrition", "measurements"].includes(normalized) ? normalized : "overview";
     }
 
     const HEALTH_DAY_OPTIONS = [
@@ -12580,7 +12662,9 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
           training_block: normalizeHealthTrainingBlock(null),
           session_templates: [],
           nutrition_targets: [],
-          nutrition_logs: []
+          nutrition_logs: [],
+          body_measurements: [],
+          progress_checkins: []
         };
       } else if (!state.health.profile || typeof state.health.profile !== "object") {
         state.health.profile = normalizeHealthProfile(null);
@@ -12600,6 +12684,12 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         : [];
       state.health.nutrition_logs = Array.isArray(state.health.nutrition_logs)
         ? state.health.nutrition_logs.map(normalizeHealthNutritionLog)
+        : [];
+      state.health.body_measurements = Array.isArray(state.health.body_measurements)
+        ? state.health.body_measurements.map(normalizeHealthMeasurementRecord)
+        : [];
+      state.health.progress_checkins = Array.isArray(state.health.progress_checkins)
+        ? state.health.progress_checkins.map(normalizeHealthProgressCheckinRecord)
         : [];
       return state.health;
     }
@@ -13533,6 +13623,155 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       renderHealth();
     }
 
+    function getHealthMeasurements() {
+      return ensureHealthStateShape().body_measurements
+        .slice()
+        .sort((a, b) => (b.date || "").localeCompare(a.date || "") || (b.updated_at || "").localeCompare(a.updated_at || ""));
+    }
+
+    function getHealthProgressCheckins() {
+      return ensureHealthStateShape().progress_checkins
+        .slice()
+        .sort((a, b) => (b.date || "").localeCompare(a.date || "") || (b.updated_at || "").localeCompare(a.updated_at || ""));
+    }
+
+    function getHealthMeasurementByDate(dateKey) {
+      return getHealthMeasurements().find(item => item.date === dateKey) || null;
+    }
+
+    function getHealthProgressCheckinByDate(dateKey) {
+      return getHealthProgressCheckins().find(item => item.date === dateKey) || null;
+    }
+
+    function healthWaistToHipRatio(record) {
+      const waist = Number(record?.waist_cm);
+      const hips = Number(record?.hips_cm);
+      if (!Number.isFinite(waist) || !Number.isFinite(hips) || hips <= 0) return null;
+      return waist / hips;
+    }
+
+    function healthMeasurementDelta(current, previous, key) {
+      const a = Number(current?.[key]);
+      const b = Number(previous?.[key]);
+      if (!Number.isFinite(a) || !Number.isFinite(b)) return null;
+      return a - b;
+    }
+
+    function showHealthMeasurementModal(dateKey = todayISO()) {
+      const existing = getHealthMeasurementByDate(dateKey);
+      const existingCheckin = getHealthProgressCheckinByDate(dateKey);
+      let overlay = document.getElementById("healthMeasurementModalOverlay");
+      if (!overlay) {
+        overlay = document.createElement("div");
+        overlay.id = "healthMeasurementModalOverlay";
+        overlay.className = "modal-backdrop";
+        overlay.hidden = true;
+        document.body.appendChild(overlay);
+        overlay.addEventListener("click", event => {
+          if (event.target === overlay) closeHealthMeasurementModal();
+        });
+      }
+      overlay.innerHTML = `
+        <div class="modal-panel health-modal" role="dialog" aria-modal="true" aria-labelledby="healthMeasurementModalTitle">
+          <div class="modal-head">
+            <div>
+              <h3 id="healthMeasurementModalTitle">${existing ? "Edit Measurement Check-in" : "Measurement Check-in"}</h3>
+              <div class="tiny">Log body measurements on a slower cadence. Waist-to-hip and change signals are derived automatically.</div>
+            </div>
+            <button id="healthMeasurementCloseBtn" class="ghost" type="button">Close</button>
+          </div>
+          <form id="healthMeasurementForm" class="health-profile-form" data-measurement-date="${escapeHtml(existing?.date || dateKey)}">
+            <div class="health-profile-form-section">
+              <h4 style="margin:0">Measurements</h4>
+              <div class="health-profile-form-grid">
+                <label class="tiny"><span>Date</span><input id="healthMeasurementDateInput" type="date" value="${escapeHtml(existing?.date || dateKey)}" /></label>
+                <label class="tiny"><span>Chest (cm)</span><input id="healthMeasurementChestInput" type="number" min="0" step="0.1" value="${existing?.chest_cm ?? ""}" /></label>
+                <label class="tiny"><span>Arm R (cm)</span><input id="healthMeasurementArmRInput" type="number" min="0" step="0.1" value="${existing?.arm_r_cm ?? ""}" /></label>
+                <label class="tiny"><span>Arm L (cm)</span><input id="healthMeasurementArmLInput" type="number" min="0" step="0.1" value="${existing?.arm_l_cm ?? ""}" /></label>
+                <label class="tiny"><span>Waist (cm)</span><input id="healthMeasurementWaistInput" type="number" min="0" step="0.1" value="${existing?.waist_cm ?? ""}" /></label>
+                <label class="tiny"><span>Hips (cm)</span><input id="healthMeasurementHipsInput" type="number" min="0" step="0.1" value="${existing?.hips_cm ?? ""}" /></label>
+                <label class="tiny"><span>Thigh R (cm)</span><input id="healthMeasurementThighRInput" type="number" min="0" step="0.1" value="${existing?.thigh_r_cm ?? ""}" /></label>
+                <label class="tiny"><span>Thigh L (cm)</span><input id="healthMeasurementThighLInput" type="number" min="0" step="0.1" value="${existing?.thigh_l_cm ?? ""}" /></label>
+              </div>
+            </div>
+            <div class="health-profile-form-section">
+              <h4 style="margin:0">Check-in</h4>
+              <label class="health-profile-checkbox">
+                <input id="healthMeasurementPhotosInput" type="checkbox" ${existingCheckin?.photos_taken ? "checked" : ""} />
+                <span>Progress photos taken</span>
+              </label>
+              <label class="tiny">
+                <span>Check-in note</span>
+                <textarea id="healthMeasurementNoteInput" placeholder="Anything notable about this check-in...">${escapeHtml(existingCheckin?.note || "")}</textarea>
+              </label>
+            </div>
+            <div class="controls" style="justify-content:flex-end">
+              <button id="healthMeasurementCancelBtn" class="ghost" type="button">Cancel</button>
+              <button id="healthMeasurementSaveBtn" class="primary" type="submit">Save Check-in</button>
+            </div>
+          </form>
+        </div>
+      `;
+      overlay.hidden = false;
+      const close = () => closeHealthMeasurementModal();
+      overlay.querySelector("#healthMeasurementCloseBtn")?.addEventListener("click", close);
+      overlay.querySelector("#healthMeasurementCancelBtn")?.addEventListener("click", close);
+      overlay.querySelector("#healthMeasurementForm")?.addEventListener("submit", event => {
+        event.preventDefault();
+        saveHealthMeasurementFromForm(event.currentTarget);
+      });
+    }
+
+    function closeHealthMeasurementModal() {
+      const overlay = document.getElementById("healthMeasurementModalOverlay");
+      if (overlay) overlay.hidden = true;
+    }
+    window.closeHealthMeasurementModal = closeHealthMeasurementModal;
+
+    function saveHealthMeasurementFromForm(form) {
+      const health = ensureHealthStateShape();
+      const existingDate = String(form.getAttribute("data-measurement-date") || "").trim();
+      const date = String(form.querySelector("#healthMeasurementDateInput")?.value || todayISO()).trim();
+      const measurement = normalizeHealthMeasurementRecord({
+        id: getHealthMeasurementByDate(existingDate)?.id || uid(),
+        date,
+        chest_cm: parseHealthFloatInput(form, "#healthMeasurementChestInput"),
+        arm_r_cm: parseHealthFloatInput(form, "#healthMeasurementArmRInput"),
+        arm_l_cm: parseHealthFloatInput(form, "#healthMeasurementArmLInput"),
+        waist_cm: parseHealthFloatInput(form, "#healthMeasurementWaistInput"),
+        hips_cm: parseHealthFloatInput(form, "#healthMeasurementHipsInput"),
+        thigh_r_cm: parseHealthFloatInput(form, "#healthMeasurementThighRInput"),
+        thigh_l_cm: parseHealthFloatInput(form, "#healthMeasurementThighLInput"),
+        updated_at: new Date().toISOString()
+      });
+      const checkin = normalizeHealthProgressCheckinRecord({
+        id: getHealthProgressCheckinByDate(existingDate)?.id || uid(),
+        date,
+        photos_taken: !!form.querySelector("#healthMeasurementPhotosInput")?.checked,
+        note: String(form.querySelector("#healthMeasurementNoteInput")?.value || "").trim(),
+        updated_at: new Date().toISOString()
+      });
+      health.body_measurements = health.body_measurements
+        .filter(item => item.date !== existingDate && item.date !== date)
+        .concat(measurement)
+        .map(normalizeHealthMeasurementRecord);
+      health.progress_checkins = health.progress_checkins
+        .filter(item => item.date !== existingDate && item.date !== date)
+        .concat(checkin)
+        .map(normalizeHealthProgressCheckinRecord);
+      saveState("health_measurement_save");
+      closeHealthMeasurementModal();
+      renderHealth();
+    }
+
+    function deleteHealthMeasurement(dateKey) {
+      const health = ensureHealthStateShape();
+      health.body_measurements = health.body_measurements.filter(item => item.date !== dateKey);
+      health.progress_checkins = health.progress_checkins.filter(item => item.date !== dateKey);
+      saveState("health_measurement_delete");
+      renderHealth();
+    }
+
     function isHealthPractice(practice) {
       return inferPracticeCoachKey(practice) === "gym";
     }
@@ -13999,6 +14238,93 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         : '<div class="health-empty-state">No nutrition logs yet.</div>';
     }
 
+    function renderHealthMeasurements() {
+      const summaryEl = document.getElementById("healthMeasurementsSummary");
+      const signalsEl = document.getElementById("healthMeasurementSignals");
+      const checkinsEl = document.getElementById("healthMeasurementCheckins");
+      const historyEl = document.getElementById("healthMeasurementsHistory");
+      if (!summaryEl || !signalsEl || !checkinsEl || !historyEl) return;
+
+      const measurements = getHealthMeasurements();
+      const checkins = getHealthProgressCheckins();
+      const latest = measurements[0] || null;
+      const previous = measurements[1] || null;
+      const latestCheckin = latest ? getHealthProgressCheckinByDate(latest.date) : null;
+      const ratio = latest ? healthWaistToHipRatio(latest) : null;
+      const photosCount = checkins.filter(item => item.photos_taken).length;
+
+      summaryEl.innerHTML = `
+        <div class="health-mini-stat"><div class="health-mini-stat-label">Latest Check-in</div><div class="health-mini-stat-value">${latest ? escapeHtml(fmtEntryDate(latest.date)) : "—"}</div></div>
+        <div class="health-mini-stat"><div class="health-mini-stat-label">Waist / Hips</div><div class="health-mini-stat-value">${latest && Number.isFinite(latest.waist_cm) && Number.isFinite(latest.hips_cm) ? `${latest.waist_cm.toFixed(1)} / ${latest.hips_cm.toFixed(1)} cm` : "—"}</div></div>
+        <div class="health-mini-stat"><div class="health-mini-stat-label">Waist-to-Hip</div><div class="health-mini-stat-value">${Number.isFinite(ratio) ? ratio.toFixed(2) : "—"}</div></div>
+        <div class="health-mini-stat"><div class="health-mini-stat-label">Photos</div><div class="health-mini-stat-value">${latestCheckin?.photos_taken ? "Taken" : photosCount ? `${photosCount} total` : "—"}</div></div>
+      `;
+
+      if (latest && previous) {
+        const rows = [
+          { label: "Waist", delta: healthMeasurementDelta(latest, previous, "waist_cm"), suffix: " cm" },
+          { label: "Chest", delta: healthMeasurementDelta(latest, previous, "chest_cm"), suffix: " cm" },
+          { label: "Hips", delta: healthMeasurementDelta(latest, previous, "hips_cm"), suffix: " cm" },
+          { label: "Waist-to-Hip", delta: (Number.isFinite(ratio) && Number.isFinite(healthWaistToHipRatio(previous))) ? ratio - healthWaistToHipRatio(previous) : null, suffix: "" }
+        ];
+        signalsEl.innerHTML = rows.map(row => `
+          <div class="health-row">
+            <div class="health-row-main">
+              <div class="health-row-title">${row.label}</div>
+              <div class="health-row-meta">Change since ${escapeHtml(fmtEntryDate(previous.date))}</div>
+            </div>
+            <div class="health-row-value">${row.delta == null ? "—" : `${row.delta > 0 ? "+" : ""}${row.delta.toFixed(2)}${row.suffix}`}</div>
+          </div>
+        `).join("");
+      } else {
+        signalsEl.innerHTML = '<div class="health-empty-state">Add at least two measurements to see deltas.</div>';
+      }
+
+      const recentCheckins = measurements.slice(0, 6).map(measurement => {
+        const checkin = getHealthProgressCheckinByDate(measurement.date);
+        return { measurement, checkin };
+      });
+      checkinsEl.innerHTML = recentCheckins.length
+        ? recentCheckins.map(({ measurement, checkin }) => `
+          <div class="health-row">
+            <div class="health-row-main">
+              <div class="health-row-title">${escapeHtml(fmtEntryDate(measurement.date))}</div>
+              <div class="health-row-meta">
+                ${Number.isFinite(measurement.waist_cm) ? `Waist ${measurement.waist_cm.toFixed(1)} cm` : "No waist logged"}
+                ${Number.isFinite(measurement.hips_cm) ? ` · Hips ${measurement.hips_cm.toFixed(1)} cm` : ""}
+                ${checkin?.photos_taken ? " · Photos taken" : ""}
+              </div>
+              ${checkin?.note ? `<div class="health-card-note" style="margin-top:6px">${escapeHtml(checkin.note)}</div>` : ""}
+            </div>
+          </div>
+        `).join("")
+        : '<div class="health-empty-state">No measurement check-ins yet.</div>';
+
+      historyEl.innerHTML = measurements.length
+        ? measurements.map(measurement => `
+          <div class="health-row">
+            <div class="health-row-main">
+              <div class="health-row-title">${escapeHtml(fmtEntryDate(measurement.date))}</div>
+              <div class="health-row-meta">
+                ${Number.isFinite(measurement.chest_cm) ? `Chest ${measurement.chest_cm.toFixed(1)} cm` : ""}
+                ${Number.isFinite(measurement.arm_r_cm) ? ` · Arm R ${measurement.arm_r_cm.toFixed(1)} cm` : ""}
+                ${Number.isFinite(measurement.arm_l_cm) ? ` · Arm L ${measurement.arm_l_cm.toFixed(1)} cm` : ""}
+                ${Number.isFinite(measurement.waist_cm) ? ` · Waist ${measurement.waist_cm.toFixed(1)} cm` : ""}
+                ${Number.isFinite(measurement.hips_cm) ? ` · Hips ${measurement.hips_cm.toFixed(1)} cm` : ""}
+                ${Number.isFinite(measurement.thigh_r_cm) ? ` · Thigh R ${measurement.thigh_r_cm.toFixed(1)} cm` : ""}
+                ${Number.isFinite(measurement.thigh_l_cm) ? ` · Thigh L ${measurement.thigh_l_cm.toFixed(1)} cm` : ""}
+              </div>
+            </div>
+            <div class="health-card-actions" style="margin-top:0">
+              <span class="health-row-value">${Number.isFinite(healthWaistToHipRatio(measurement)) ? healthWaistToHipRatio(measurement).toFixed(2) : "—"}</span>
+              <button class="ghost" type="button" data-health-measurement-edit="${escapeHtml(measurement.date)}">Edit</button>
+              <button class="ghost" type="button" data-health-measurement-delete="${escapeHtml(measurement.date)}">Delete</button>
+            </div>
+          </div>
+        `).join("")
+        : '<div class="health-empty-state">No body measurements yet.</div>';
+    }
+
     function renderHealth() {
       activeHealthTab = normalizeHealthTab(activeHealthTab);
       document.querySelectorAll(".health-subtab").forEach(tab => {
@@ -14010,6 +14336,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       renderHealthOverview();
       renderHealthExercise();
       renderHealthNutrition();
+      renderHealthMeasurements();
     }
 
     // ═══════════ WEALTH MODULE ═══════════
@@ -18228,6 +18555,22 @@ Data caveat`;
         if (dateKey && confirm("Delete this nutrition log?")) deleteHealthNutritionLog(dateKey);
         return;
       }
+      const measurementOpenBtn = e.target.closest("[data-health-measurement-open]");
+      if (measurementOpenBtn) {
+        showHealthMeasurementModal();
+        return;
+      }
+      const measurementEditBtn = e.target.closest("[data-health-measurement-edit]");
+      if (measurementEditBtn) {
+        showHealthMeasurementModal(String(measurementEditBtn.getAttribute("data-health-measurement-edit") || ""));
+        return;
+      }
+      const measurementDeleteBtn = e.target.closest("[data-health-measurement-delete]");
+      if (measurementDeleteBtn) {
+        const dateKey = String(measurementDeleteBtn.getAttribute("data-health-measurement-delete") || "").trim();
+        if (dateKey && confirm("Delete this measurement check-in?")) deleteHealthMeasurement(dateKey);
+        return;
+      }
       const navBtn = e.target.closest("[data-health-nav]");
       if (!navBtn) return;
       const target = String(navBtn.dataset.healthNav || "");
@@ -18605,6 +18948,13 @@ Data caveat`;
         e.preventDefault();
         e.stopPropagation();
         closeHealthNutritionLogModal();
+        return;
+      }
+      const healthMeasurementModal = document.getElementById("healthMeasurementModalOverlay");
+      if (healthMeasurementModal && !healthMeasurementModal.hidden && e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        closeHealthMeasurementModal();
         return;
       }
       if ((e.metaKey || e.ctrlKey) && e.shiftKey && !e.altKey && String(e.key || "").toLowerCase() === "o") {
