@@ -1937,6 +1937,40 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
 .health-profile-checkbox input{margin:0}
 .health-profile-form .tiny{display:grid;gap:6px}
 .health-profile-form textarea{min-height:96px}
+.health-block-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.health-block-stat{
+  padding:12px 14px;background:var(--bg);border-radius:var(--radius-sm);display:grid;gap:4px;
+}
+.health-block-stat-label{font-size:.68rem;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.02em}
+.health-block-stat-value{font-size:.9rem;font-weight:800;color:var(--text)}
+.health-template-list{display:flex;flex-direction:column;gap:8px}
+.health-template-row{
+  display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;
+  padding:12px 14px;background:var(--bg);border-radius:var(--radius-sm);
+}
+.health-template-order{
+  width:28px;height:28px;border-radius:999px;background:var(--accent-light);color:var(--accent);
+  display:flex;align-items:center;justify-content:center;font-size:.72rem;font-weight:800;
+}
+.health-template-main{min-width:0;display:grid;gap:3px}
+.health-template-title{font-size:.8rem;font-weight:700;color:var(--text)}
+.health-template-meta{font-size:.72rem;color:var(--text2);display:flex;gap:8px;flex-wrap:wrap}
+.health-template-day{
+  font-size:.68rem;font-weight:700;color:var(--accent);background:#fff;border:1px solid var(--line);
+  border-radius:999px;padding:5px 9px;white-space:nowrap;
+}
+.health-block-note{
+  font-size:.74rem;color:var(--text2);line-height:1.45;padding:12px 14px;background:var(--bg);border-radius:var(--radius-sm);
+}
+.health-compare-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.health-compare-card{
+  padding:12px 14px;background:var(--bg);border-radius:var(--radius-sm);display:grid;gap:4px;
+}
+.health-compare-card strong{font-size:1rem;color:var(--text)}
+.health-compare-card span{font-size:.72rem;color:var(--text2)}
+.health-training-block-card{display:grid;gap:12px}
+.health-training-block-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.health-training-inline-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 
 /* ═══════════ WEALTH TAB ═══════════ */
 .wealth-layout{padding:20px 24px;max-width:900px;margin:0 auto;overflow-y:auto;max-height:calc(100vh - 56px)}
@@ -2162,6 +2196,8 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
   .health-summary-grid{grid-template-columns:repeat(2,1fr)}
   .health-mini-stat-grid{grid-template-columns:repeat(2,1fr)}
   .health-profile-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .health-block-grid,
+  .health-compare-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
   .health-section-grid{grid-template-columns:1fr}
   .wealth-summary-grid{grid-template-columns:repeat(2,1fr)}
   .wealth-holding-row,.wealth-holding-head{grid-template-columns:minmax(0,1.2fr) 88px 90px 108px 108px 108px 120px auto}
@@ -2174,10 +2210,14 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
   .health-summary-grid{grid-template-columns:1fr}
   .health-mini-stat-grid{grid-template-columns:1fr}
   .health-profile-grid{grid-template-columns:1fr}
+  .health-block-grid,
+  .health-compare-grid{grid-template-columns:1fr}
   .health-profile-form-grid,
   .health-profile-checkbox-grid{grid-template-columns:1fr}
   .health-activity-row{grid-template-columns:1fr}
   .health-activity-practice{text-align:left}
+  .health-template-row{grid-template-columns:auto minmax(0,1fr)}
+  .health-template-day{grid-column:2}
   .wealth-tabs-row{align-items:stretch;flex-direction:column}
   .wealth-toolbar-controls{width:100%;justify-content:flex-start}
   .wealth-summary-grid,.wealth-net-worth{grid-template-columns:1fr}
@@ -2688,6 +2728,22 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         </div>
 
         <div class="review-card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:12px;flex-wrap:wrap">
+            <div>
+              <h4 style="margin-bottom:0">Current Training Block</h4>
+              <div class="health-card-note" style="margin-top:4px">Set the current block once so Health can scaffold planned sessions against your actual logging.</div>
+            </div>
+            <div class="health-card-actions" style="margin-top:0">
+              <button class="ghost" type="button" data-health-block-open>Set Up Block</button>
+              <button class="ghost" type="button" data-health-nav="exercise">Open Exercise Block</button>
+            </div>
+          </div>
+          <div id="healthTrainingBlockOverview" class="health-training-block-card">
+            <div class="health-empty-state">No training block yet. Set one up to turn Health from exercise logging into planned progression.</div>
+          </div>
+        </div>
+
+        <div class="review-card">
           <h4 style="margin-bottom:12px">Active Health Practices</h4>
           <div id="healthPracticeSummaryList" class="health-list">
             <div class="health-empty-state">No health practices yet. Log an exercise session in Execute to start building this view.</div>
@@ -2726,7 +2782,32 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
               <button class="ghost" type="button" data-health-nav="review">Open in Review</button>
             </div>
           </div>
-          <div class="health-card-note">Exercise coaching lives here now. Training blocks, nutrition, and measurements come next.</div>
+          <div class="health-card-note">Exercise coaching and the first training-block scaffold live here now. Nutrition and measurements come next.</div>
+        </div>
+
+        <div class="review-card">
+          <div class="health-training-block-header">
+            <div>
+              <h4 style="margin-bottom:0">Current Training Block</h4>
+              <div class="health-card-note" style="margin-top:4px">This is the scaffold. Session generation and full planned-vs-actual comparison can build on it next.</div>
+            </div>
+            <div class="health-training-inline-actions">
+              <button class="ghost" type="button" data-health-block-open>Set Up Block</button>
+            </div>
+          </div>
+          <div id="healthTrainingBlockExercise" class="health-training-block-card">
+            <div class="health-empty-state">No training block yet. Set one up so Exercise can show a planned structure instead of only historical logs.</div>
+          </div>
+        </div>
+
+        <div class="review-card">
+          <h4 style="margin-bottom:12px">Planned vs Actual This Week</h4>
+          <div id="healthTrainingComparison" class="health-compare-grid">
+            <div class="health-compare-card"><strong>—</strong><span>Planned Sessions</span></div>
+            <div class="health-compare-card"><strong>—</strong><span>Actual Sessions</span></div>
+            <div class="health-compare-card"><strong>—</strong><span>Remaining</span></div>
+            <div class="health-compare-card"><strong>—</strong><span>Next Session</span></div>
+          </div>
         </div>
 
         <div class="review-card">
@@ -3786,7 +3867,20 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
               weighted_sled: false,
               functional_space: false
             }
-          }
+          },
+          training_block: {
+            id: null,
+            title: "",
+            start_date: "",
+            weeks: null,
+            sessions_per_week: null,
+            split: "",
+            deload_week: null,
+            focus_note: "",
+            created_at: null,
+            updated_at: null
+          },
+          session_templates: []
         },
         life_practices: { practices: defaultLifePractices(), daily_log: {} },
         onboarding: { completed_at: null, skipped_at: null },
@@ -3985,6 +4079,37 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       };
     }
 
+    function normalizeHealthTrainingBlock(rawBlock) {
+      const base = emptyState().health.training_block;
+      const block = rawBlock && typeof rawBlock === "object" ? rawBlock : {};
+      const weeks = Number.parseInt(String(block.weeks ?? ""), 10);
+      const sessionsPerWeek = Number.parseInt(String(block.sessions_per_week ?? ""), 10);
+      const deloadWeek = Number.parseInt(String(block.deload_week ?? ""), 10);
+      return {
+        id: block.id || null,
+        title: String(block.title || "").trim(),
+        start_date: /^\d{4}-\d{2}-\d{2}$/.test(String(block.start_date || "").trim()) ? String(block.start_date).trim() : "",
+        weeks: Number.isFinite(weeks) && weeks > 0 ? weeks : base.weeks,
+        sessions_per_week: Number.isFinite(sessionsPerWeek) && sessionsPerWeek > 0 ? sessionsPerWeek : null,
+        split: String(block.split || "").trim(),
+        deload_week: Number.isFinite(deloadWeek) && deloadWeek > 0 ? deloadWeek : null,
+        focus_note: String(block.focus_note || "").trim(),
+        created_at: block.created_at || null,
+        updated_at: block.updated_at || null
+      };
+    }
+
+    function normalizeHealthSessionTemplate(record) {
+      const template = record && typeof record === "object" ? record : {};
+      return {
+        id: template.id || uid(),
+        order: Number.isFinite(Number(template.order)) ? Number(template.order) : 1,
+        title: String(template.title || "").trim() || "Training Session",
+        day_key: String(template.day_key || "").trim().toLowerCase(),
+        focus: String(template.focus || "").trim()
+      };
+    }
+
     function normalizePipelineStage(value) {
       if (value === "pipeline") return "next_up";
       if (value === "execute") return "today";
@@ -4057,7 +4182,11 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         ...(incoming.sync || {})
       };
       normalized.health = {
-        profile: normalizeHealthProfile(incoming.health?.profile || base.health.profile)
+        profile: normalizeHealthProfile(incoming.health?.profile || base.health.profile),
+        training_block: normalizeHealthTrainingBlock(incoming.health?.training_block || base.health.training_block),
+        session_templates: Array.isArray(incoming.health?.session_templates)
+          ? incoming.health.session_templates.map(normalizeHealthSessionTemplate)
+          : []
       };
       normalized.life_practices = {
         practices: normalizeLifePractices(Array.isArray(incoming.life_practices?.practices) ? incoming.life_practices.practices : base.life_practices.practices),
@@ -12305,13 +12434,252 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
 
     function ensureHealthStateShape() {
       if (!state.health || typeof state.health !== "object") {
-        state.health = { profile: normalizeHealthProfile(null) };
+        state.health = {
+          profile: normalizeHealthProfile(null),
+          training_block: normalizeHealthTrainingBlock(null),
+          session_templates: []
+        };
       } else if (!state.health.profile || typeof state.health.profile !== "object") {
         state.health.profile = normalizeHealthProfile(null);
       } else {
         state.health.profile = normalizeHealthProfile(state.health.profile);
       }
+      if (!state.health.training_block || typeof state.health.training_block !== "object") {
+        state.health.training_block = normalizeHealthTrainingBlock(null);
+      } else {
+        state.health.training_block = normalizeHealthTrainingBlock(state.health.training_block);
+      }
+      state.health.session_templates = Array.isArray(state.health.session_templates)
+        ? state.health.session_templates.map(normalizeHealthSessionTemplate)
+        : [];
       return state.health;
+    }
+
+    function healthTrainingBlockHasData(block) {
+      return !!(
+        block?.title ||
+        block?.start_date ||
+        Number.isFinite(Number(block?.weeks)) ||
+        Number.isFinite(Number(block?.sessions_per_week)) ||
+        block?.split ||
+        Number.isFinite(Number(block?.deload_week)) ||
+        block?.focus_note
+      );
+    }
+
+    function healthDayLabel(dayKey) {
+      return HEALTH_DAY_OPTIONS.find(option => option.key === dayKey)?.label || "Any day";
+    }
+
+    function healthSuggestedTrainingDays(profile, sessionsPerWeek) {
+      const count = Math.max(0, Math.min(Number(sessionsPerWeek) || 0, 7));
+      if (!count) return [];
+      const blocked = new Set(profile?.blocked_days || []);
+      let available = HEALTH_DAY_OPTIONS.map(option => option.key).filter(dayKey => !blocked.has(dayKey));
+      if (available.length < count) available = HEALTH_DAY_OPTIONS.map(option => option.key);
+      return available.slice(0, count);
+    }
+
+    function healthTemplateSequenceForSplit(split, count, profile) {
+      const targetMuscles = (profile?.target_muscle_groups || []).filter(Boolean);
+      const genericTitles = Array.from({ length: count }, (_, index) => `Training Session ${index + 1}`);
+      if (!split) return genericTitles;
+      if (split === "Full body") {
+        const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+        return Array.from({ length: count }, (_, index) => `Full Body ${letters[index] || index + 1}`);
+      }
+      if (split === "Push / Pull") {
+        return Array.from({ length: count }, (_, index) => (index % 2 === 0 ? "Push" : "Pull"));
+      }
+      if (split === "Upper / Lower") {
+        return Array.from({ length: count }, (_, index) => (index % 2 === 0 ? "Upper" : "Lower"));
+      }
+      if (split === "Push / Pull / Legs") {
+        const cycle = ["Push", "Pull", "Legs"];
+        return Array.from({ length: count }, (_, index) => cycle[index % cycle.length]);
+      }
+      if (split === "Body part split") {
+        const fallback = ["Chest", "Back", "Legs", "Shoulders", "Arms", "Posterior Chain", "Core"];
+        const source = targetMuscles.length ? targetMuscles : fallback;
+        return Array.from({ length: count }, (_, index) => source[index % source.length]);
+      }
+      return genericTitles;
+    }
+
+    function healthTemplateFocusLabel(title) {
+      const normalizedTitle = String(title || "").toLowerCase();
+      if (normalizedTitle.includes("push")) return "Chest, shoulders, triceps";
+      if (normalizedTitle.includes("pull")) return "Back, biceps, posterior chain";
+      if (normalizedTitle.includes("leg")) return "Quads, hamstrings, glutes";
+      if (normalizedTitle.includes("upper")) return "Upper-body compound and accessory work";
+      if (normalizedTitle.includes("lower")) return "Lower-body compound and accessory work";
+      if (normalizedTitle.includes("full body")) return "Balanced full-body session";
+      return "Primary progression session";
+    }
+
+    function generateHealthSessionTemplates(block, profile) {
+      const sessionsPerWeek = Math.max(0, Math.min(Number(block?.sessions_per_week) || 0, 7));
+      if (!sessionsPerWeek) return [];
+      const titles = healthTemplateSequenceForSplit(block?.split || "", sessionsPerWeek, profile);
+      const dayKeys = healthSuggestedTrainingDays(profile, sessionsPerWeek);
+      return titles.map((title, index) => ({
+        id: uid(),
+        order: index + 1,
+        title,
+        day_key: dayKeys[index] || "",
+        focus: healthTemplateFocusLabel(title)
+      }));
+    }
+
+    function healthBlockWeekContext(block) {
+      const weeks = Number(block?.weeks) || 0;
+      if (!block?.start_date || !weeks) {
+        return { label: "Start date not set", currentWeek: null, isDeload: false, completed: false, startsSoon: false };
+      }
+      const start = parseLocalDateKey(block.start_date);
+      const today = parseLocalDateKey(todayISO());
+      const diffDays = Math.floor((today.getTime() - start.getTime()) / 86400000);
+      if (diffDays < 0) {
+        return {
+          label: `Starts ${fmtEntryDate(block.start_date)}`,
+          currentWeek: null,
+          isDeload: false,
+          completed: false,
+          startsSoon: true
+        };
+      }
+      const currentWeek = Math.floor(diffDays / 7) + 1;
+      if (currentWeek > weeks) {
+        return {
+          label: `Completed ${weeks}-week block`,
+          currentWeek: weeks,
+          isDeload: false,
+          completed: true,
+          startsSoon: false
+        };
+      }
+      return {
+        label: `Week ${currentWeek} of ${weeks}`,
+        currentWeek,
+        isDeload: Number(block?.deload_week) === currentWeek,
+        completed: false,
+        startsSoon: false
+      };
+    }
+
+    function healthActualSessionsThisWeek() {
+      const weekDates = getWeekDates(0);
+      return getHealthPractices().reduce((sum, practice) => sum + practiceDoneSummaryForDates(practice, weekDates).sessions, 0);
+    }
+
+    function healthTrainingBlockSnapshot() {
+      const health = ensureHealthStateShape();
+      const profile = health.profile;
+      const block = health.training_block;
+      const templates = health.session_templates || [];
+      const hasBlock = healthTrainingBlockHasData(block);
+      const weekContext = healthBlockWeekContext(block);
+      const actualSessions = healthActualSessionsThisWeek();
+      const plannedSessions = Math.max(0, Math.min(Number(block?.sessions_per_week) || 0, 7));
+      const remainingSessions = plannedSessions ? Math.max(plannedSessions - actualSessions, 0) : 0;
+      const nextTemplate = templates.length ? templates[Math.min(actualSessions, templates.length - 1)] : null;
+      const adherence = plannedSessions ? Math.min(100, Math.round((actualSessions / plannedSessions) * 100)) : 0;
+      return {
+        profile,
+        block,
+        templates,
+        hasBlock,
+        weekContext,
+        actualSessions,
+        plannedSessions,
+        remainingSessions,
+        nextTemplate,
+        adherence
+      };
+    }
+
+    function renderHealthTrainingBlockMarkup(snapshot, options = {}) {
+      const { block, templates, weekContext, plannedSessions, nextTemplate, profile } = snapshot;
+      const includeTemplates = options.includeTemplates !== false;
+      const sessionMinutes = Number(profile?.ideal_session_minutes) || null;
+      const blockedDays = healthDayLabels(profile?.blocked_days || []);
+      const templateMarkup = templates.length
+        ? `
+          <div class="health-profile-section">
+            <div class="health-profile-section-label">Generated Session Templates</div>
+            <div class="health-template-list">
+              ${templates.map(template => `
+                <div class="health-template-row">
+                  <div class="health-template-order">${template.order}</div>
+                  <div class="health-template-main">
+                    <div class="health-template-title">${escapeHtml(template.title)}</div>
+                    <div class="health-template-meta">
+                      <span>${escapeHtml(template.focus || "Planned training session")}</span>
+                      ${sessionMinutes ? `<span>${sessionMinutes} min target</span>` : ""}
+                    </div>
+                  </div>
+                  <div class="health-template-day">${escapeHtml(healthDayLabel(template.day_key))}</div>
+                </div>
+              `).join("")}
+            </div>
+          </div>
+        `
+        : '<div class="health-empty-state">No session templates yet. Set sessions per week to generate the first scaffold.</div>';
+      return `
+        <div class="health-block-grid">
+          <div class="health-block-stat"><div class="health-block-stat-label">Block</div><div class="health-block-stat-value">${escapeHtml(block.title || "Untitled block")}</div></div>
+          <div class="health-block-stat"><div class="health-block-stat-label">Split</div><div class="health-block-stat-value">${escapeHtml(block.split || "Not set")}</div></div>
+          <div class="health-block-stat"><div class="health-block-stat-label">Timing</div><div class="health-block-stat-value">${escapeHtml(weekContext.label)}</div></div>
+          <div class="health-block-stat"><div class="health-block-stat-label">Sessions / Week</div><div class="health-block-stat-value">${plannedSessions || "—"}</div></div>
+        </div>
+        <div class="health-block-grid">
+          <div class="health-block-stat"><div class="health-block-stat-label">Start Date</div><div class="health-block-stat-value">${block.start_date ? escapeHtml(fmtEntryDate(block.start_date)) : "Not set"}</div></div>
+          <div class="health-block-stat"><div class="health-block-stat-label">Block Length</div><div class="health-block-stat-value">${block.weeks ? `${block.weeks} weeks` : "Not set"}</div></div>
+          <div class="health-block-stat"><div class="health-block-stat-label">Deload</div><div class="health-block-stat-value">${block.deload_week ? `Week ${block.deload_week}` : "None set"}</div></div>
+          <div class="health-block-stat"><div class="health-block-stat-label">Next Session</div><div class="health-block-stat-value">${nextTemplate ? escapeHtml(nextTemplate.title) : "Generate block first"}</div></div>
+        </div>
+        ${blockedDays.length || block.focus_note ? `
+          <div class="health-block-note">
+            ${block.focus_note ? `${escapeHtml(block.focus_note)}.` : "No block focus note set."}
+            ${blockedDays.length ? ` Blocked / difficult days: ${escapeHtml(blockedDays.join(", "))}.` : ""}
+          </div>
+        ` : ""}
+        ${includeTemplates ? templateMarkup : ""}
+      `;
+    }
+
+    function renderHealthTrainingBlock() {
+      const overviewEl = document.getElementById("healthTrainingBlockOverview");
+      const exerciseEl = document.getElementById("healthTrainingBlockExercise");
+      const comparisonEl = document.getElementById("healthTrainingComparison");
+      const openButtons = document.querySelectorAll("[data-health-block-open]");
+      const snapshot = healthTrainingBlockSnapshot();
+      openButtons.forEach(button => {
+        button.textContent = snapshot.hasBlock ? "Edit Block" : "Set Up Block";
+      });
+      if (!snapshot.hasBlock) {
+        if (overviewEl) overviewEl.innerHTML = '<div class="health-empty-state">No training block yet. Set one up to turn Health from exercise logging into planned progression.</div>';
+        if (exerciseEl) exerciseEl.innerHTML = '<div class="health-empty-state">No training block yet. Set one up so Exercise can show a planned structure instead of only historical logs.</div>';
+        if (comparisonEl) {
+          comparisonEl.innerHTML = `
+            <div class="health-compare-card"><strong>—</strong><span>Planned Sessions</span></div>
+            <div class="health-compare-card"><strong>${snapshot.actualSessions}</strong><span>Actual Sessions</span></div>
+            <div class="health-compare-card"><strong>—</strong><span>Remaining</span></div>
+            <div class="health-compare-card"><strong>Set up block</strong><span>Next Session</span></div>
+          `;
+        }
+        return;
+      }
+      if (overviewEl) overviewEl.innerHTML = renderHealthTrainingBlockMarkup(snapshot, { includeTemplates: false });
+      if (exerciseEl) exerciseEl.innerHTML = renderHealthTrainingBlockMarkup(snapshot, { includeTemplates: true });
+      if (comparisonEl) {
+        comparisonEl.innerHTML = `
+          <div class="health-compare-card"><strong>${snapshot.plannedSessions || "—"}</strong><span>Planned Sessions</span></div>
+          <div class="health-compare-card"><strong>${snapshot.actualSessions}</strong><span>Actual Sessions</span></div>
+          <div class="health-compare-card"><strong>${snapshot.remainingSessions}</strong><span>Remaining</span></div>
+          <div class="health-compare-card"><strong>${snapshot.nextTemplate ? escapeHtml(snapshot.nextTemplate.title) : "—"}</strong><span>${snapshot.plannedSessions ? `${snapshot.adherence}% adherence` : "Next Session"}</span></div>
+        `;
+      }
     }
 
     function healthFlagCount(flagMap) {
@@ -12613,6 +12981,125 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       renderHealth();
     }
 
+    function showHealthTrainingBlockModal() {
+      const health = ensureHealthStateShape();
+      const profile = health.profile;
+      const block = health.training_block;
+      const defaultSessions = block.sessions_per_week || profile.training_days_per_week || 3;
+      let overlay = document.getElementById("healthTrainingBlockModalOverlay");
+      if (!overlay) {
+        overlay = document.createElement("div");
+        overlay.id = "healthTrainingBlockModalOverlay";
+        overlay.className = "modal-backdrop";
+        overlay.hidden = true;
+        document.body.appendChild(overlay);
+        overlay.addEventListener("click", event => {
+          if (event.target === overlay) closeHealthTrainingBlockModal();
+        });
+      }
+      overlay.innerHTML = `
+        <div class="modal-panel health-modal" role="dialog" aria-modal="true" aria-labelledby="healthTrainingBlockModalTitle">
+          <div class="modal-head">
+            <div>
+              <h3 id="healthTrainingBlockModalTitle">Training Block</h3>
+              <div class="tiny">Set the current block basics once. PPP Flow will scaffold session templates and compare them against your real exercise logging.</div>
+            </div>
+            <button id="healthTrainingBlockCloseBtn" class="ghost" type="button">Close</button>
+          </div>
+          <form id="healthTrainingBlockForm" class="health-profile-form">
+            <div class="health-profile-form-section">
+              <h4 style="margin:0">Block Basics</h4>
+              <div class="health-profile-form-grid">
+                <label class="tiny">
+                  <span>Block title</span>
+                  <input id="healthTrainingBlockTitleInput" value="${escapeHtml(block.title || "")}" placeholder="e.g. Autumn Strength Block" />
+                </label>
+                <label class="tiny">
+                  <span>Start date</span>
+                  <input id="healthTrainingBlockStartInput" type="date" value="${escapeHtml(block.start_date || "")}" />
+                </label>
+                <label class="tiny">
+                  <span>Block length (weeks)</span>
+                  <input id="healthTrainingBlockWeeksInput" type="number" min="1" max="24" value="${block.weeks ?? 6}" />
+                </label>
+                <label class="tiny">
+                  <span>Sessions per week</span>
+                  <input id="healthTrainingBlockSessionsInput" type="number" min="1" max="7" value="${defaultSessions}" />
+                </label>
+                <label class="tiny">
+                  <span>Split</span>
+                  <select id="healthTrainingBlockSplitInput">
+                    <option value="">Choose a split</option>
+                    ${HEALTH_SPLIT_OPTIONS.map(option => `<option value="${escapeHtml(option)}" ${block.split === option ? "selected" : ""}>${escapeHtml(option)}</option>`).join("")}
+                  </select>
+                </label>
+                <label class="tiny">
+                  <span>Deload week</span>
+                  <input id="healthTrainingBlockDeloadInput" type="number" min="1" max="24" value="${block.deload_week ?? ""}" placeholder="Optional" />
+                </label>
+              </div>
+              <label class="tiny">
+                <span>Block focus</span>
+                <textarea id="healthTrainingBlockFocusInput" placeholder="What is this block trying to improve? Strength, hypertrophy, movement quality, consistency...">${escapeHtml(block.focus_note || "")}</textarea>
+              </label>
+            </div>
+            <div class="health-profile-form-section">
+              <h4 style="margin:0">Profile Context Used For Generation</h4>
+              <div class="health-block-grid">
+                <div class="health-block-stat"><div class="health-block-stat-label">Target Sessions</div><div class="health-block-stat-value">${profile.training_days_per_week ?? "—"}</div></div>
+                <div class="health-block-stat"><div class="health-block-stat-label">Session Length</div><div class="health-block-stat-value">${profile.ideal_session_minutes ? `${profile.ideal_session_minutes} min` : "—"}</div></div>
+                <div class="health-block-stat"><div class="health-block-stat-label">Blocked Days</div><div class="health-block-stat-value">${healthDayLabels(profile.blocked_days).join(", ") || "None"}</div></div>
+                <div class="health-block-stat"><div class="health-block-stat-label">Target Muscles</div><div class="health-block-stat-value">${profile.target_muscle_groups.length || 0}</div></div>
+              </div>
+              <div class="health-block-note">This scaffold uses your Health Profile to suggest training days and session structure. Exercise assignment comes next; this step only defines the block shell.</div>
+            </div>
+            <div class="controls" style="justify-content:flex-end">
+              <button id="healthTrainingBlockCancelBtn" class="ghost" type="button">Cancel</button>
+              <button id="healthTrainingBlockSaveBtn" class="primary" type="submit">Save Block</button>
+            </div>
+          </form>
+        </div>
+      `;
+      overlay.hidden = false;
+      const close = () => closeHealthTrainingBlockModal();
+      overlay.querySelector("#healthTrainingBlockCloseBtn")?.addEventListener("click", close);
+      overlay.querySelector("#healthTrainingBlockCancelBtn")?.addEventListener("click", close);
+      overlay.querySelector("#healthTrainingBlockForm")?.addEventListener("submit", event => {
+        event.preventDefault();
+        saveHealthTrainingBlockFromForm(event.currentTarget);
+      });
+    }
+
+    function closeHealthTrainingBlockModal() {
+      const overlay = document.getElementById("healthTrainingBlockModalOverlay");
+      if (overlay) overlay.hidden = true;
+    }
+    window.closeHealthTrainingBlockModal = closeHealthTrainingBlockModal;
+
+    function saveHealthTrainingBlockFromForm(form) {
+      const health = ensureHealthStateShape();
+      const existing = health.training_block;
+      const nowIso = new Date().toISOString();
+      const sessionsPerWeek = parseHealthIntInput(form, "#healthTrainingBlockSessionsInput");
+      health.training_block = normalizeHealthTrainingBlock({
+        ...existing,
+        id: existing.id || uid(),
+        title: String(form.querySelector("#healthTrainingBlockTitleInput")?.value || "").trim(),
+        start_date: String(form.querySelector("#healthTrainingBlockStartInput")?.value || "").trim(),
+        weeks: parseHealthIntInput(form, "#healthTrainingBlockWeeksInput") || 6,
+        sessions_per_week: sessionsPerWeek,
+        split: String(form.querySelector("#healthTrainingBlockSplitInput")?.value || "").trim(),
+        deload_week: parseHealthIntInput(form, "#healthTrainingBlockDeloadInput"),
+        focus_note: String(form.querySelector("#healthTrainingBlockFocusInput")?.value || "").trim(),
+        created_at: existing.created_at || nowIso,
+        updated_at: nowIso
+      });
+      health.session_templates = generateHealthSessionTemplates(health.training_block, health.profile);
+      saveState("health_training_block_save");
+      closeHealthTrainingBlockModal();
+      renderHealth();
+    }
+
     function isHealthPractice(practice) {
       return inferPracticeCoachKey(practice) === "gym";
     }
@@ -12774,6 +13261,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       const keyLiftsEl = document.getElementById("healthKeyLiftList");
       if (!summaryEl || !practicesEl || !recentEl || !progressEl || !keyLiftsEl) return;
       renderHealthProfileSummary();
+      renderHealthTrainingBlock();
 
       const practices = getHealthPractices();
       const weekDates = getWeekDates(0);
@@ -12880,6 +13368,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       const listEl = document.getElementById("healthExerciseList");
       const summaryEl = document.getElementById("healthExerciseSummary");
       if (!listEl || !summaryEl) return;
+      renderHealthTrainingBlock();
       const practices = getHealthPractices();
       if (!practices.length) {
         summaryEl.innerHTML = `
@@ -16896,6 +17385,11 @@ Data caveat`;
         showHealthProfileModal();
         return;
       }
+      const blockBtn = e.target.closest("[data-health-block-open]");
+      if (blockBtn) {
+        showHealthTrainingBlockModal();
+        return;
+      }
       const navBtn = e.target.closest("[data-health-nav]");
       if (!navBtn) return;
       const target = String(navBtn.dataset.healthNav || "");
@@ -17229,6 +17723,13 @@ Data caveat`;
         e.preventDefault();
         e.stopPropagation();
         closeHealthProfileModal();
+        return;
+      }
+      const healthTrainingBlockModal = document.getElementById("healthTrainingBlockModalOverlay");
+      if (healthTrainingBlockModal && !healthTrainingBlockModal.hidden && e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        closeHealthTrainingBlockModal();
         return;
       }
       if ((e.metaKey || e.ctrlKey) && e.shiftKey && !e.altKey && String(e.key || "").toLowerCase() === "o") {
