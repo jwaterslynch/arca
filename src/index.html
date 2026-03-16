@@ -1885,6 +1885,28 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
 }
 .health-card-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px}
 .health-card-note{font-size:.72rem;color:var(--text2);margin-top:10px}
+.health-section-grid{display:grid;grid-template-columns:1.2fr .9fr;gap:12px}
+.health-progress-list{display:flex;flex-direction:column;gap:10px}
+.health-progress-row{
+  display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:center;
+  padding:12px 14px;background:var(--bg);border-radius:var(--radius-sm);
+}
+.health-progress-main{min-width:0;display:grid;gap:5px}
+.health-progress-title{font-size:.82rem;font-weight:700}
+.health-progress-meta{font-size:.72rem;color:var(--text2);display:flex;gap:8px;flex-wrap:wrap}
+.health-progress-value{font-size:.8rem;font-weight:700;color:var(--accent);text-align:right;white-space:nowrap}
+.health-progress-sparkline{display:flex;align-items:center;gap:8px}
+.health-insight-list{display:flex;flex-direction:column;gap:8px}
+.health-insight-item{
+  padding:12px 14px;background:var(--bg);border-radius:var(--radius-sm);font-size:.79rem;
+}
+.health-insight-item strong{display:block;margin-bottom:4px}
+.health-mini-stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:10px}
+.health-mini-stat{
+  padding:10px 12px;background:var(--bg);border-radius:var(--radius-sm);display:grid;gap:2px;
+}
+.health-mini-stat-label{font-size:.68rem;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.02em}
+.health-mini-stat-value{font-size:.95rem;font-weight:800;color:var(--text)}
 
 /* ═══════════ WEALTH TAB ═══════════ */
 .wealth-layout{padding:20px 24px;max-width:900px;margin:0 auto;overflow-y:auto;max-height:calc(100vh - 56px)}
@@ -2108,6 +2130,8 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
 .wealth-coach-send[disabled]{opacity:.6;cursor:default}
 @media (max-width: 1100px){
   .health-summary-grid{grid-template-columns:repeat(2,1fr)}
+  .health-mini-stat-grid{grid-template-columns:repeat(2,1fr)}
+  .health-section-grid{grid-template-columns:1fr}
   .wealth-summary-grid{grid-template-columns:repeat(2,1fr)}
   .wealth-holding-row,.wealth-holding-head{grid-template-columns:minmax(0,1.2fr) 88px 90px 108px 108px 108px 120px auto}
   .wealth-cashflow-head{grid-template-columns:1fr}
@@ -2117,6 +2141,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
 @media (max-width: 860px){
   .health-tabs-row{align-items:stretch;flex-direction:column}
   .health-summary-grid{grid-template-columns:1fr}
+  .health-mini-stat-grid{grid-template-columns:1fr}
   .health-activity-row{grid-template-columns:1fr}
   .health-activity-practice{text-align:left}
   .wealth-tabs-row{align-items:stretch;flex-direction:column}
@@ -2628,6 +2653,21 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
             <div class="health-empty-state">No recent health activity yet.</div>
           </div>
         </div>
+
+        <div class="health-section-grid">
+          <div class="review-card">
+            <h4 style="margin-bottom:12px">Progress Signals</h4>
+            <div id="healthProgressSignals" class="health-progress-list">
+              <div class="health-empty-state">Log exercise sessions to see progression signals.</div>
+            </div>
+          </div>
+          <div class="review-card">
+            <h4 style="margin-bottom:12px">Key Lift Progress</h4>
+            <div id="healthKeyLiftList" class="health-insight-list">
+              <div class="health-empty-state">Structured exercise logs will surface lift progress here.</div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div class="health-panel" id="health-panel-exercise">
@@ -2640,6 +2680,16 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
             </div>
           </div>
           <div class="health-card-note">H1 keeps exercise coaching in Review. This tab surfaces the data and history cleanly first.</div>
+        </div>
+
+        <div class="review-card">
+          <h4 style="margin-bottom:12px">Exercise Progression</h4>
+          <div id="healthExerciseSummary" class="health-mini-stat-grid">
+            <div class="health-mini-stat"><div class="health-mini-stat-label">30D Sessions</div><div class="health-mini-stat-value">0</div></div>
+            <div class="health-mini-stat"><div class="health-mini-stat-label">30D Minutes</div><div class="health-mini-stat-value">0m</div></div>
+            <div class="health-mini-stat"><div class="health-mini-stat-label">Avg Energy</div><div class="health-mini-stat-value">—</div></div>
+            <div class="health-mini-stat"><div class="health-mini-stat-label">Top Lift</div><div class="health-mini-stat-value">—</div></div>
+          </div>
         </div>
 
         <div id="healthExerciseList" class="health-list">
@@ -12032,6 +12082,76 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       return { sessions, minutes, lastDate };
     }
 
+    function chunkArray(values, size) {
+      const out = [];
+      for (let i = 0; i < values.length; i += size) out.push(values.slice(i, i + size));
+      return out;
+    }
+
+    function healthWeeklyBuckets(practice, weeks = 6, anchorDateKey = todayISO()) {
+      const rangeDays = weeks * 7;
+      const dateKeys = getRecentDateKeys(rangeDays, anchorDateKey);
+      return chunkArray(dateKeys, 7).map(chunk => ({
+        start: chunk[0],
+        end: chunk[chunk.length - 1],
+        sessions: chunk.reduce((sum, dateKey) => sum + (practiceLogEntry(practice.id, dateKey)?.done ? 1 : 0), 0),
+        minutes: chunk.reduce((sum, dateKey) => sum + (Number(practiceLogEntry(practice.id, dateKey)?.minutes) || 0), 0)
+      }));
+    }
+
+    function healthEnergySeries(practice, limit = 8) {
+      return practiceEntriesInDates(practice.id, getRecentDateKeys(45))
+        .map(entry => Number(entry?.metrics?.energy))
+        .filter(value => Number.isFinite(value) && value > 0)
+        .slice(0, limit)
+        .reverse();
+    }
+
+    function healthTopLiftEntries(practice, limit = 4) {
+      const grouped = new Map();
+      practiceEntriesInDates(practice.id, getRecentDateKeys(45)).forEach(entry => {
+        const exercise = String(entry?.metrics?.exercise || "").trim();
+        const weight = Number(entry?.metrics?.weight_kg);
+        if (!exercise || !Number.isFinite(weight) || weight <= 0) return;
+        const current = grouped.get(exercise);
+        if (!current || weight > current.weight_kg || (weight === current.weight_kg && entry.date > current.date)) {
+          grouped.set(exercise, {
+            exercise,
+            weight_kg: weight,
+            reps: Number(entry?.metrics?.reps) || null,
+            date: entry.date
+          });
+        }
+      });
+      return Array.from(grouped.values())
+        .sort((a, b) => b.weight_kg - a.weight_kg || b.date.localeCompare(a.date))
+        .slice(0, limit);
+    }
+
+    function healthPracticeProgress(practice) {
+      const recent30Days = getRecentDateKeys(30);
+      const previous30Days = getRecentDateKeys(60).slice(0, 30);
+      const recentEvents = practiceEntriesInDates(practice.id, recent30Days);
+      const current = practiceDoneSummaryForDates(practice, recent30Days);
+      const previous = practiceDoneSummaryForDates(practice, previous30Days);
+      const weeklyBuckets = healthWeeklyBuckets(practice, 6);
+      const energySeries = healthEnergySeries(practice);
+      const topLifts = healthTopLiftEntries(practice);
+      const metrics = summarizePracticeMetrics(practice, recentEvents);
+      return {
+        currentSessions: current.sessions,
+        currentMinutes: current.minutes,
+        previousSessions: previous.sessions,
+        previousMinutes: previous.minutes,
+        weeklyBuckets,
+        sessionSeries: weeklyBuckets.map(bucket => bucket.sessions),
+        minuteSeries: weeklyBuckets.map(bucket => bucket.minutes),
+        energySeries,
+        topLifts,
+        metrics
+      };
+    }
+
     function recentHealthActivity(limit = 6) {
       const dateKeys = Object.keys(state.life_practices?.daily_log || {});
       return getHealthPractices()
@@ -12075,7 +12195,9 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       const summaryEl = document.getElementById("healthOverviewSummary");
       const practicesEl = document.getElementById("healthPracticeSummaryList");
       const recentEl = document.getElementById("healthRecentActivityList");
-      if (!summaryEl || !practicesEl || !recentEl) return;
+      const progressEl = document.getElementById("healthProgressSignals");
+      const keyLiftsEl = document.getElementById("healthKeyLiftList");
+      if (!summaryEl || !practicesEl || !recentEl || !progressEl || !keyLiftsEl) return;
 
       const practices = getHealthPractices();
       const weekDates = getWeekDates(0);
@@ -12132,22 +12254,85 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
           </div>
         `).join("");
       }
+
+      const progressRows = practices.map(practice => {
+        const progress = healthPracticeProgress(practice);
+        const currentMinutes = progress.currentMinutes;
+        const minuteDelta = currentMinutes - progress.previousMinutes;
+        const energyAvg = progress.energySeries.length
+          ? Math.round((progress.energySeries.reduce((sum, value) => sum + value, 0) / progress.energySeries.length) * 10) / 10
+          : null;
+        const sparkline = progress.minuteSeries.some(Boolean) ? renderSparkline(progress.minuteSeries, 116, 24) : "";
+        return `
+          <div class="health-progress-row">
+            <div class="health-progress-main">
+              <div class="health-progress-title">${escapeHtml(practice.title)}</div>
+              <div class="health-progress-meta">
+                <span>${progress.currentSessions} sessions / 30d</span>
+                <span>${currentMinutes}m</span>
+                <span>${minuteDelta === 0 ? "flat vs prior 30d" : `${minuteDelta > 0 ? "+" : ""}${minuteDelta}m vs prior 30d`}</span>
+                ${energyAvg ? `<span>energy ${energyAvg}/10</span>` : ""}
+              </div>
+            </div>
+            <div class="health-progress-value">
+              <span class="health-progress-sparkline">${sparkline || "—"}</span>
+            </div>
+          </div>
+        `;
+      });
+      progressEl.innerHTML = progressRows.length
+        ? progressRows.join("")
+        : '<div class="health-empty-state">Log exercise sessions to see progression signals.</div>';
+
+      const liftRows = practices.flatMap(practice =>
+        healthTopLiftEntries(practice, 3).map(lift => ({
+          practiceTitle: practice.title,
+          ...lift
+        }))
+      ).sort((a, b) => b.weight_kg - a.weight_kg || b.date.localeCompare(a.date)).slice(0, 6);
+      keyLiftsEl.innerHTML = liftRows.length
+        ? liftRows.map(lift => `
+          <div class="health-insight-item">
+            <strong>${escapeHtml(lift.exercise)} · ${lift.weight_kg}kg${lift.reps ? ` × ${lift.reps}` : ""}</strong>
+            <div>${escapeHtml(lift.practiceTitle)} · logged ${escapeHtml(fmtEntryDate(lift.date))}</div>
+          </div>
+        `).join("")
+        : '<div class="health-empty-state">Structured strength logs will surface key lifts here.</div>';
     }
 
     function renderHealthExercise() {
       const listEl = document.getElementById("healthExerciseList");
-      if (!listEl) return;
+      const summaryEl = document.getElementById("healthExerciseSummary");
+      if (!listEl || !summaryEl) return;
       const practices = getHealthPractices();
       if (!practices.length) {
+        summaryEl.innerHTML = `
+          <div class="health-mini-stat"><div class="health-mini-stat-label">30D Sessions</div><div class="health-mini-stat-value">0</div></div>
+          <div class="health-mini-stat"><div class="health-mini-stat-label">30D Minutes</div><div class="health-mini-stat-value">0m</div></div>
+          <div class="health-mini-stat"><div class="health-mini-stat-label">Avg Energy</div><div class="health-mini-stat-value">—</div></div>
+          <div class="health-mini-stat"><div class="health-mini-stat-label">Top Lift</div><div class="health-mini-stat-value">—</div></div>
+        `;
         listEl.innerHTML = '<div class="health-empty-state">No exercise practices found yet. Use Execute to add or log one first.</div>';
         return;
       }
 
       const recent30Days = getRecentDateKeys(30);
+      const allRecentEntries = practices.flatMap(practice => practiceEntriesInDates(practice.id, recent30Days));
+      const aggregateMetrics = summarizePracticeMetrics({ coach_key: "gym" }, allRecentEntries);
+      const topLift = practices.flatMap(practice => healthTopLiftEntries(practice, 1))
+        .sort((a, b) => b.weight_kg - a.weight_kg || b.date.localeCompare(a.date))[0];
+      summaryEl.innerHTML = `
+        <div class="health-mini-stat"><div class="health-mini-stat-label">30D Sessions</div><div class="health-mini-stat-value">${aggregateMetrics.session_count || 0}</div></div>
+        <div class="health-mini-stat"><div class="health-mini-stat-label">30D Minutes</div><div class="health-mini-stat-value">${aggregateMetrics.total_minutes || 0}m</div></div>
+        <div class="health-mini-stat"><div class="health-mini-stat-label">Avg Energy</div><div class="health-mini-stat-value">${aggregateMetrics.avg_energy ? `${aggregateMetrics.avg_energy}/10` : "—"}</div></div>
+        <div class="health-mini-stat"><div class="health-mini-stat-label">Top Lift</div><div class="health-mini-stat-value">${topLift ? `${topLift.exercise} ${topLift.weight_kg}kg` : "—"}</div></div>
+      `;
+
       listEl.innerHTML = practices.map(practice => {
         const recentEvents = practiceEntriesInDates(practice.id, recent30Days);
         const daySummary = practiceDoneSummaryForDates(practice, recent30Days);
         const metrics = summarizePracticeMetrics(practice, recentEvents);
+        const progress = healthPracticeProgress(practice);
         const chips = [
           `${daySummary.sessions} sessions / 30d`,
           `${daySummary.minutes}m total`
@@ -12157,6 +12342,10 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         if (Number.isFinite(metrics?.total_reps) && metrics.total_reps > 0) chips.push(`${metrics.total_reps} reps`);
         if (Number.isFinite(metrics?.avg_energy) && metrics.avg_energy > 0) chips.push(`energy ${metrics.avg_energy}/10`);
         const recentItems = recentEvents.slice(0, 5);
+        const volumeSparkline = progress.minuteSeries.some(Boolean) ? renderSparkline(progress.minuteSeries, 132, 26) : "";
+        const topLiftSummary = progress.topLifts.slice(0, 2)
+          .map(lift => `${lift.exercise} ${lift.weight_kg}kg`)
+          .join(" · ");
         return `
           <div class="review-card">
             <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">
@@ -12171,6 +12360,10 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
             </div>
             <div class="health-metric-chips">
               ${chips.map(label => `<span class="health-metric-chip">${escapeHtml(label)}</span>`).join("")}
+            </div>
+            <div class="health-card-note">
+              Weekly volume ${volumeSparkline || "—"}
+              ${topLiftSummary ? ` · Top lifts: ${escapeHtml(topLiftSummary)}` : ""}
             </div>
             <div class="health-list" style="margin-top:12px">
               ${recentItems.length
