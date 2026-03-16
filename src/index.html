@@ -2692,6 +2692,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         <div class="health-subtabs" id="healthSubtabs">
           <div class="health-subtab active" data-health-tab="overview">Overview</div>
           <div class="health-subtab" data-health-tab="exercise">Exercise</div>
+          <div class="health-subtab" data-health-tab="nutrition">Nutrition</div>
         </div>
         <button id="healthAiProviderPill" class="ai-provider-pill tiny ai-switch-trigger" data-open-ai-switch="health" type="button" title="Switch AI"></button>
       </div>
@@ -2822,6 +2823,62 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
 
         <div id="healthExerciseList" class="health-list">
           <div class="health-empty-state">No exercise practices found yet.</div>
+        </div>
+      </div>
+
+      <div class="health-panel" id="health-panel-nutrition">
+        <div class="review-card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:12px;flex-wrap:wrap">
+            <div>
+              <h4 style="margin-bottom:0">Nutrition</h4>
+              <div class="health-card-note" style="margin-top:4px">Targets, daily intake, and bodyweight trend. This is the first ongoing compliance layer from the coaching log workbook.</div>
+            </div>
+            <div class="health-card-actions" style="margin-top:0">
+              <button class="ghost" type="button" data-health-nutrition-target-open>Set Targets</button>
+              <button class="ghost" type="button" data-health-nutrition-log-open>Log Day</button>
+            </div>
+          </div>
+          <div id="healthNutritionSummary" class="health-mini-stat-grid">
+            <div class="health-mini-stat"><div class="health-mini-stat-label">Daily Target</div><div class="health-mini-stat-value">—</div></div>
+            <div class="health-mini-stat"><div class="health-mini-stat-label">7D Avg Kcal</div><div class="health-mini-stat-value">—</div></div>
+            <div class="health-mini-stat"><div class="health-mini-stat-label">7D Avg Protein</div><div class="health-mini-stat-value">—</div></div>
+            <div class="health-mini-stat"><div class="health-mini-stat-label">Avg Weight</div><div class="health-mini-stat-value">—</div></div>
+          </div>
+        </div>
+
+        <div class="review-card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:12px;flex-wrap:wrap">
+            <h4 style="margin-bottom:0">Active Targets</h4>
+            <div class="health-card-note" style="margin-top:0">Current daily and refeed targets.</div>
+          </div>
+          <div id="healthNutritionTargetsList" class="health-list">
+            <div class="health-empty-state">No nutrition targets yet.</div>
+          </div>
+        </div>
+
+        <div class="health-section-grid">
+          <div class="review-card">
+            <h4 style="margin-bottom:12px">Bodyweight Trend</h4>
+            <div id="healthNutritionWeightTrend" class="health-list">
+              <div class="health-empty-state">No bodyweight entries yet.</div>
+            </div>
+          </div>
+          <div class="review-card">
+            <h4 style="margin-bottom:12px">Target vs Actual</h4>
+            <div id="healthNutritionCompliance" class="health-list">
+              <div class="health-empty-state">Log a few days to compare against targets.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="review-card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:12px;flex-wrap:wrap">
+            <h4 style="margin-bottom:0">Recent Nutrition Logs</h4>
+            <div class="health-card-note" style="margin-top:0">Daily macros, weight, steps, training, and cardio.</div>
+          </div>
+          <div id="healthNutritionLogsList" class="health-list">
+            <div class="health-empty-state">No nutrition logs yet.</div>
+          </div>
         </div>
       </div>
     </div>
@@ -3880,7 +3937,9 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
             created_at: null,
             updated_at: null
           },
-          session_templates: []
+          session_templates: [],
+          nutrition_targets: [],
+          nutrition_logs: []
         },
         life_practices: { practices: defaultLifePractices(), daily_log: {} },
         onboarding: { completed_at: null, skipped_at: null },
@@ -4110,6 +4169,53 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       };
     }
 
+    function normalizeHealthNutritionTarget(record) {
+      const target = record && typeof record === "object" ? record : {};
+      const protein = Number(target.protein_g);
+      const carbs = Number(target.carbs_g);
+      const fats = Number(target.fats_g);
+      const providedKcal = Number(target.kcal);
+      const computedKcal = (Number.isFinite(protein) ? protein : 0) * 4
+        + (Number.isFinite(carbs) ? carbs : 0) * 4
+        + (Number.isFinite(fats) ? fats : 0) * 9;
+      return {
+        id: target.id || uid(),
+        start_date: /^\d{4}-\d{2}-\d{2}$/.test(String(target.start_date || "").trim()) ? String(target.start_date).trim() : todayISO(),
+        end_date: /^\d{4}-\d{2}-\d{2}$/.test(String(target.end_date || "").trim()) ? String(target.end_date).trim() : "",
+        protein_g: Number.isFinite(protein) ? protein : 0,
+        carbs_g: Number.isFinite(carbs) ? carbs : 0,
+        fats_g: Number.isFinite(fats) ? fats : 0,
+        kcal: Number.isFinite(providedKcal) && providedKcal > 0 ? providedKcal : computedKcal,
+        kind: target.kind === "refeed" ? "refeed" : "daily",
+        source: ["ai", "coach", "manual"].includes(target.source) ? target.source : "manual",
+        created_at: target.created_at || new Date().toISOString(),
+        updated_at: target.updated_at || null
+      };
+    }
+
+    function normalizeHealthNutritionLog(record) {
+      const log = record && typeof record === "object" ? record : {};
+      const protein = Number(log.protein_g);
+      const carbs = Number(log.carbs_g);
+      const fats = Number(log.fats_g);
+      const kcal = Number(log.kcal);
+      return {
+        id: log.id || uid(),
+        date: /^\d{4}-\d{2}-\d{2}$/.test(String(log.date || "").trim()) ? String(log.date).trim() : todayISO(),
+        protein_g: Number.isFinite(protein) ? protein : 0,
+        carbs_g: Number.isFinite(carbs) ? carbs : 0,
+        fats_g: Number.isFinite(fats) ? fats : 0,
+        kcal: Number.isFinite(kcal) && kcal > 0 ? kcal : ((Number.isFinite(protein) ? protein : 0) * 4 + (Number.isFinite(carbs) ? carbs : 0) * 4 + (Number.isFinite(fats) ? fats : 0) * 9),
+        weight_kg: Number.isFinite(Number(log.weight_kg)) ? Number(log.weight_kg) : null,
+        steps: Number.isFinite(Number(log.steps)) ? Number(log.steps) : null,
+        training_minutes: Number.isFinite(Number(log.training_minutes)) ? Number(log.training_minutes) : null,
+        cardio_kcal: Number.isFinite(Number(log.cardio_kcal)) ? Number(log.cardio_kcal) : null,
+        cardio_type: String(log.cardio_type || "").trim(),
+        note: String(log.note || "").trim(),
+        updated_at: log.updated_at || new Date().toISOString()
+      };
+    }
+
     function normalizePipelineStage(value) {
       if (value === "pipeline") return "next_up";
       if (value === "execute") return "today";
@@ -4186,6 +4292,12 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         training_block: normalizeHealthTrainingBlock(incoming.health?.training_block || base.health.training_block),
         session_templates: Array.isArray(incoming.health?.session_templates)
           ? incoming.health.session_templates.map(normalizeHealthSessionTemplate)
+          : [],
+        nutrition_targets: Array.isArray(incoming.health?.nutrition_targets)
+          ? incoming.health.nutrition_targets.map(normalizeHealthNutritionTarget)
+          : [],
+        nutrition_logs: Array.isArray(incoming.health?.nutrition_logs)
+          ? incoming.health.nutrition_logs.map(normalizeHealthNutritionLog)
           : []
       };
       normalized.life_practices = {
@@ -12331,7 +12443,8 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
 
     // ═══════════ HEALTH MODULE ═══════════
     function normalizeHealthTab(value) {
-      return String(value || "").trim().toLowerCase() === "exercise" ? "exercise" : "overview";
+      const normalized = String(value || "").trim().toLowerCase();
+      return ["overview", "exercise", "nutrition"].includes(normalized) ? normalized : "overview";
     }
 
     const HEALTH_DAY_OPTIONS = [
@@ -12437,7 +12550,9 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         state.health = {
           profile: normalizeHealthProfile(null),
           training_block: normalizeHealthTrainingBlock(null),
-          session_templates: []
+          session_templates: [],
+          nutrition_targets: [],
+          nutrition_logs: []
         };
       } else if (!state.health.profile || typeof state.health.profile !== "object") {
         state.health.profile = normalizeHealthProfile(null);
@@ -12451,6 +12566,12 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       }
       state.health.session_templates = Array.isArray(state.health.session_templates)
         ? state.health.session_templates.map(normalizeHealthSessionTemplate)
+        : [];
+      state.health.nutrition_targets = Array.isArray(state.health.nutrition_targets)
+        ? state.health.nutrition_targets.map(normalizeHealthNutritionTarget)
+        : [];
+      state.health.nutrition_logs = Array.isArray(state.health.nutrition_logs)
+        ? state.health.nutrition_logs.map(normalizeHealthNutritionLog)
         : [];
       return state.health;
     }
@@ -13100,6 +13221,290 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       renderHealth();
     }
 
+    function parseHealthFloatInput(form, selector) {
+      const raw = String(form.querySelector(selector)?.value || "").trim();
+      if (!raw) return null;
+      const parsed = Number.parseFloat(raw);
+      return Number.isFinite(parsed) ? parsed : null;
+    }
+
+    function getHealthNutritionTargets() {
+      return ensureHealthStateShape().nutrition_targets
+        .slice()
+        .sort((a, b) => (b.start_date || "").localeCompare(a.start_date || "") || (b.created_at || "").localeCompare(a.created_at || ""));
+    }
+
+    function getHealthNutritionLogs() {
+      return ensureHealthStateShape().nutrition_logs
+        .slice()
+        .sort((a, b) => (b.date || "").localeCompare(a.date || "") || (b.updated_at || "").localeCompare(a.updated_at || ""));
+    }
+
+    function getActiveHealthNutritionTarget(dateKey = todayISO(), kind = "daily") {
+      return getHealthNutritionTargets().find(target => {
+        if (target.kind !== kind) return false;
+        if (target.start_date && target.start_date > dateKey) return false;
+        if (target.end_date && target.end_date < dateKey) return false;
+        return true;
+      }) || null;
+    }
+
+    function healthRecentNutritionLogs(days = 7, anchorDate = todayISO()) {
+      const recent = new Set(getRecentDateKeys(days, anchorDate));
+      return getHealthNutritionLogs().filter(log => recent.has(log.date));
+    }
+
+    function averageOf(values) {
+      const valid = values.filter(value => Number.isFinite(value));
+      if (!valid.length) return null;
+      return valid.reduce((sum, value) => sum + value, 0) / valid.length;
+    }
+
+    function showHealthNutritionTargetModal(targetId = "") {
+      const target = targetId
+        ? getHealthNutritionTargets().find(item => item.id === targetId) || null
+        : null;
+      let overlay = document.getElementById("healthNutritionTargetModalOverlay");
+      if (!overlay) {
+        overlay = document.createElement("div");
+        overlay.id = "healthNutritionTargetModalOverlay";
+        overlay.className = "modal-backdrop";
+        overlay.hidden = true;
+        document.body.appendChild(overlay);
+        overlay.addEventListener("click", event => {
+          if (event.target === overlay) closeHealthNutritionTargetModal();
+        });
+      }
+      overlay.innerHTML = `
+        <div class="modal-panel health-modal" role="dialog" aria-modal="true" aria-labelledby="healthNutritionTargetModalTitle">
+          <div class="modal-head">
+            <div>
+              <h3 id="healthNutritionTargetModalTitle">${target ? "Edit Nutrition Target" : "Nutrition Target"}</h3>
+              <div class="tiny">Set macro targets once, then compare daily logs against them. Calories are derived from protein, carbs, and fats.</div>
+            </div>
+            <button id="healthNutritionTargetCloseBtn" class="ghost" type="button">Close</button>
+          </div>
+          <form id="healthNutritionTargetForm" class="health-profile-form" data-target-id="${escapeHtml(target?.id || "")}">
+            <div class="health-profile-form-section">
+              <h4 style="margin:0">Target</h4>
+              <div class="health-profile-form-grid">
+                <label class="tiny">
+                  <span>Start date</span>
+                  <input id="healthNutritionTargetStartInput" type="date" value="${escapeHtml(target?.start_date || todayISO())}" />
+                </label>
+                <label class="tiny">
+                  <span>End date</span>
+                  <input id="healthNutritionTargetEndInput" type="date" value="${escapeHtml(target?.end_date || "")}" />
+                </label>
+                <label class="tiny">
+                  <span>Kind</span>
+                  <select id="healthNutritionTargetKindInput">
+                    <option value="daily" ${target?.kind !== "refeed" ? "selected" : ""}>Daily</option>
+                    <option value="refeed" ${target?.kind === "refeed" ? "selected" : ""}>Refeed</option>
+                  </select>
+                </label>
+              </div>
+              <div class="health-profile-form-grid">
+                <label class="tiny">
+                  <span>Protein (g)</span>
+                  <input id="healthNutritionTargetProteinInput" type="number" min="0" step="1" value="${target?.protein_g ?? ""}" />
+                </label>
+                <label class="tiny">
+                  <span>Carbs (g)</span>
+                  <input id="healthNutritionTargetCarbsInput" type="number" min="0" step="1" value="${target?.carbs_g ?? ""}" />
+                </label>
+                <label class="tiny">
+                  <span>Fats (g)</span>
+                  <input id="healthNutritionTargetFatsInput" type="number" min="0" step="1" value="${target?.fats_g ?? ""}" />
+                </label>
+              </div>
+            </div>
+            <div class="controls" style="justify-content:flex-end">
+              <button id="healthNutritionTargetCancelBtn" class="ghost" type="button">Cancel</button>
+              <button id="healthNutritionTargetSaveBtn" class="primary" type="submit">Save Target</button>
+            </div>
+          </form>
+        </div>
+      `;
+      overlay.hidden = false;
+      const close = () => closeHealthNutritionTargetModal();
+      overlay.querySelector("#healthNutritionTargetCloseBtn")?.addEventListener("click", close);
+      overlay.querySelector("#healthNutritionTargetCancelBtn")?.addEventListener("click", close);
+      overlay.querySelector("#healthNutritionTargetForm")?.addEventListener("submit", event => {
+        event.preventDefault();
+        saveHealthNutritionTargetFromForm(event.currentTarget);
+      });
+    }
+
+    function closeHealthNutritionTargetModal() {
+      const overlay = document.getElementById("healthNutritionTargetModalOverlay");
+      if (overlay) overlay.hidden = true;
+    }
+    window.closeHealthNutritionTargetModal = closeHealthNutritionTargetModal;
+
+    function saveHealthNutritionTargetFromForm(form) {
+      const health = ensureHealthStateShape();
+      const targetId = String(form.getAttribute("data-target-id") || "").trim();
+      const protein = parseHealthFloatInput(form, "#healthNutritionTargetProteinInput") || 0;
+      const carbs = parseHealthFloatInput(form, "#healthNutritionTargetCarbsInput") || 0;
+      const fats = parseHealthFloatInput(form, "#healthNutritionTargetFatsInput") || 0;
+      const nowIso = new Date().toISOString();
+      const record = normalizeHealthNutritionTarget({
+        id: targetId || uid(),
+        start_date: String(form.querySelector("#healthNutritionTargetStartInput")?.value || todayISO()).trim(),
+        end_date: String(form.querySelector("#healthNutritionTargetEndInput")?.value || "").trim(),
+        kind: String(form.querySelector("#healthNutritionTargetKindInput")?.value || "daily").trim(),
+        protein_g: protein,
+        carbs_g: carbs,
+        fats_g: fats,
+        source: "manual",
+        created_at: targetId
+          ? (health.nutrition_targets.find(item => item.id === targetId)?.created_at || nowIso)
+          : nowIso,
+        updated_at: nowIso
+      });
+      const nextTargets = health.nutrition_targets.filter(item => item.id !== record.id);
+      nextTargets.push(record);
+      health.nutrition_targets = nextTargets.map(normalizeHealthNutritionTarget);
+      saveState("health_nutrition_target_save");
+      closeHealthNutritionTargetModal();
+      renderHealth();
+    }
+
+    function deleteHealthNutritionTarget(targetId) {
+      const health = ensureHealthStateShape();
+      health.nutrition_targets = health.nutrition_targets.filter(item => item.id !== targetId);
+      saveState("health_nutrition_target_delete");
+      renderHealth();
+    }
+
+    function showHealthNutritionLogModal(dateKey = todayISO()) {
+      const existing = getHealthNutritionLogs().find(item => item.date === dateKey) || null;
+      let overlay = document.getElementById("healthNutritionLogModalOverlay");
+      if (!overlay) {
+        overlay = document.createElement("div");
+        overlay.id = "healthNutritionLogModalOverlay";
+        overlay.className = "modal-backdrop";
+        overlay.hidden = true;
+        document.body.appendChild(overlay);
+        overlay.addEventListener("click", event => {
+          if (event.target === overlay) closeHealthNutritionLogModal();
+        });
+      }
+      overlay.innerHTML = `
+        <div class="modal-panel health-modal" role="dialog" aria-modal="true" aria-labelledby="healthNutritionLogModalTitle">
+          <div class="modal-head">
+            <div>
+              <h3 id="healthNutritionLogModalTitle">${existing ? "Edit Nutrition Log" : "Nutrition Log"}</h3>
+              <div class="tiny">Log daily macros, weight, steps, training minutes, and cardio. Calories are derived automatically.</div>
+            </div>
+            <button id="healthNutritionLogCloseBtn" class="ghost" type="button">Close</button>
+          </div>
+          <form id="healthNutritionLogForm" class="health-profile-form" data-log-date="${escapeHtml(existing?.date || dateKey)}">
+            <div class="health-profile-form-section">
+              <h4 style="margin:0">Daily Log</h4>
+              <div class="health-profile-form-grid">
+                <label class="tiny">
+                  <span>Date</span>
+                  <input id="healthNutritionLogDateInput" type="date" value="${escapeHtml(existing?.date || dateKey)}" />
+                </label>
+                <label class="tiny">
+                  <span>Weight (kg)</span>
+                  <input id="healthNutritionLogWeightInput" type="number" min="0" step="0.1" value="${existing?.weight_kg ?? ""}" />
+                </label>
+                <label class="tiny">
+                  <span>Protein (g)</span>
+                  <input id="healthNutritionLogProteinInput" type="number" min="0" step="1" value="${existing?.protein_g ?? ""}" />
+                </label>
+                <label class="tiny">
+                  <span>Carbs (g)</span>
+                  <input id="healthNutritionLogCarbsInput" type="number" min="0" step="1" value="${existing?.carbs_g ?? ""}" />
+                </label>
+                <label class="tiny">
+                  <span>Fats (g)</span>
+                  <input id="healthNutritionLogFatsInput" type="number" min="0" step="1" value="${existing?.fats_g ?? ""}" />
+                </label>
+                <label class="tiny">
+                  <span>Steps</span>
+                  <input id="healthNutritionLogStepsInput" type="number" min="0" step="100" value="${existing?.steps ?? ""}" />
+                </label>
+                <label class="tiny">
+                  <span>Training (minutes)</span>
+                  <input id="healthNutritionLogTrainingMinutesInput" type="number" min="0" step="5" value="${existing?.training_minutes ?? ""}" />
+                </label>
+                <label class="tiny">
+                  <span>Cardio (kcal)</span>
+                  <input id="healthNutritionLogCardioKcalInput" type="number" min="0" step="10" value="${existing?.cardio_kcal ?? ""}" />
+                </label>
+                <label class="tiny">
+                  <span>Cardio type</span>
+                  <input id="healthNutritionLogCardioTypeInput" value="${escapeHtml(existing?.cardio_type || "")}" placeholder="Walk, cycle, run..." />
+                </label>
+              </div>
+              <label class="tiny">
+                <span>Notes</span>
+                <textarea id="healthNutritionLogNoteInput" placeholder="Anything notable about this day...">${escapeHtml(existing?.note || "")}</textarea>
+              </label>
+            </div>
+            <div class="controls" style="justify-content:flex-end">
+              <button id="healthNutritionLogCancelBtn" class="ghost" type="button">Cancel</button>
+              <button id="healthNutritionLogSaveBtn" class="primary" type="submit">Save Log</button>
+            </div>
+          </form>
+        </div>
+      `;
+      overlay.hidden = false;
+      const close = () => closeHealthNutritionLogModal();
+      overlay.querySelector("#healthNutritionLogCloseBtn")?.addEventListener("click", close);
+      overlay.querySelector("#healthNutritionLogCancelBtn")?.addEventListener("click", close);
+      overlay.querySelector("#healthNutritionLogForm")?.addEventListener("submit", event => {
+        event.preventDefault();
+        saveHealthNutritionLogFromForm(event.currentTarget);
+      });
+    }
+
+    function closeHealthNutritionLogModal() {
+      const overlay = document.getElementById("healthNutritionLogModalOverlay");
+      if (overlay) overlay.hidden = true;
+    }
+    window.closeHealthNutritionLogModal = closeHealthNutritionLogModal;
+
+    function saveHealthNutritionLogFromForm(form) {
+      const health = ensureHealthStateShape();
+      const existingDate = String(form.getAttribute("data-log-date") || "").trim();
+      const date = String(form.querySelector("#healthNutritionLogDateInput")?.value || todayISO()).trim();
+      const protein = parseHealthFloatInput(form, "#healthNutritionLogProteinInput") || 0;
+      const carbs = parseHealthFloatInput(form, "#healthNutritionLogCarbsInput") || 0;
+      const fats = parseHealthFloatInput(form, "#healthNutritionLogFatsInput") || 0;
+      const record = normalizeHealthNutritionLog({
+        id: health.nutrition_logs.find(item => item.date === existingDate)?.id || uid(),
+        date,
+        protein_g: protein,
+        carbs_g: carbs,
+        fats_g: fats,
+        weight_kg: parseHealthFloatInput(form, "#healthNutritionLogWeightInput"),
+        steps: parseHealthFloatInput(form, "#healthNutritionLogStepsInput"),
+        training_minutes: parseHealthFloatInput(form, "#healthNutritionLogTrainingMinutesInput"),
+        cardio_kcal: parseHealthFloatInput(form, "#healthNutritionLogCardioKcalInput"),
+        cardio_type: String(form.querySelector("#healthNutritionLogCardioTypeInput")?.value || "").trim(),
+        note: String(form.querySelector("#healthNutritionLogNoteInput")?.value || "").trim(),
+        updated_at: new Date().toISOString()
+      });
+      const nextLogs = health.nutrition_logs.filter(item => item.date !== existingDate && item.date !== record.date);
+      nextLogs.push(record);
+      health.nutrition_logs = nextLogs.map(normalizeHealthNutritionLog);
+      saveState("health_nutrition_log_save");
+      closeHealthNutritionLogModal();
+      renderHealth();
+    }
+
+    function deleteHealthNutritionLog(dateKey) {
+      const health = ensureHealthStateShape();
+      health.nutrition_logs = health.nutrition_logs.filter(item => item.date !== dateKey);
+      saveState("health_nutrition_log_delete");
+      renderHealth();
+    }
+
     function isHealthPractice(practice) {
       return inferPracticeCoachKey(practice) === "gym";
     }
@@ -13455,6 +13860,117 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       }).join("");
     }
 
+    function renderHealthNutrition() {
+      const summaryEl = document.getElementById("healthNutritionSummary");
+      const targetsEl = document.getElementById("healthNutritionTargetsList");
+      const trendEl = document.getElementById("healthNutritionWeightTrend");
+      const complianceEl = document.getElementById("healthNutritionCompliance");
+      const logsEl = document.getElementById("healthNutritionLogsList");
+      if (!summaryEl || !targetsEl || !trendEl || !complianceEl || !logsEl) return;
+
+      const targets = getHealthNutritionTargets();
+      const logs = getHealthNutritionLogs();
+      const activeTarget = getActiveHealthNutritionTarget();
+      const recent7 = healthRecentNutritionLogs(7).slice().reverse();
+      const avgKcal = averageOf(recent7.map(log => log.kcal));
+      const avgProtein = averageOf(recent7.map(log => log.protein_g));
+      const avgWeight = averageOf(recent7.map(log => log.weight_kg));
+
+      summaryEl.innerHTML = `
+        <div class="health-mini-stat"><div class="health-mini-stat-label">Daily Target</div><div class="health-mini-stat-value">${activeTarget ? `${Math.round(activeTarget.kcal)} kcal` : "—"}</div></div>
+        <div class="health-mini-stat"><div class="health-mini-stat-label">7D Avg Kcal</div><div class="health-mini-stat-value">${Number.isFinite(avgKcal) ? `${Math.round(avgKcal)} kcal` : "—"}</div></div>
+        <div class="health-mini-stat"><div class="health-mini-stat-label">7D Avg Protein</div><div class="health-mini-stat-value">${Number.isFinite(avgProtein) ? `${Math.round(avgProtein)}g` : "—"}</div></div>
+        <div class="health-mini-stat"><div class="health-mini-stat-label">Avg Weight</div><div class="health-mini-stat-value">${Number.isFinite(avgWeight) ? `${avgWeight.toFixed(1)}kg` : "—"}</div></div>
+      `;
+
+      targetsEl.innerHTML = targets.length
+        ? targets.map(target => `
+          <div class="health-row">
+            <div class="health-row-main">
+              <div class="health-row-title">${target.kind === "refeed" ? "Refeed Target" : "Daily Target"}</div>
+              <div class="health-row-meta">
+                ${escapeHtml(fmtEntryDate(target.start_date))}
+                ${target.end_date ? ` → ${escapeHtml(fmtEntryDate(target.end_date))}` : " onward"}
+                · P ${Math.round(target.protein_g)} / C ${Math.round(target.carbs_g)} / F ${Math.round(target.fats_g)}
+              </div>
+            </div>
+            <div class="health-card-actions" style="margin-top:0">
+              <span class="health-row-value">${Math.round(target.kcal)} kcal</span>
+              <button class="ghost" type="button" data-health-nutrition-target-edit="${escapeHtml(target.id)}">Edit</button>
+              <button class="ghost" type="button" data-health-nutrition-target-delete="${escapeHtml(target.id)}">Delete</button>
+            </div>
+          </div>
+        `).join("")
+        : '<div class="health-empty-state">No nutrition targets yet.</div>';
+
+      const weightSeries = logs
+        .slice()
+        .reverse()
+        .map(log => Number(log.weight_kg))
+        .filter(value => Number.isFinite(value));
+      const latestWeightLog = logs.find(log => Number.isFinite(log.weight_kg)) || null;
+      trendEl.innerHTML = weightSeries.length
+        ? `
+          <div class="health-block-note">
+            <strong style="display:block;color:var(--text);margin-bottom:8px">${latestWeightLog ? `${latestWeightLog.weight_kg.toFixed(1)}kg latest` : "Bodyweight trend"}</strong>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+              <span>${renderSparkline(weightSeries, 180, 28)}</span>
+              <span class="tiny">${weightSeries.length} logged weights · ${Number.isFinite(avgWeight) ? `${avgWeight.toFixed(1)}kg avg` : "No average yet"}</span>
+            </div>
+          </div>
+        `
+        : '<div class="health-empty-state">No bodyweight entries yet.</div>';
+
+      if (activeTarget && recent7.length) {
+        const avgCarbs = averageOf(recent7.map(log => log.carbs_g));
+        const avgFats = averageOf(recent7.map(log => log.fats_g));
+        const rows = [
+          { label: "Protein", actual: avgProtein, target: activeTarget.protein_g, suffix: "g" },
+          { label: "Carbs", actual: avgCarbs, target: activeTarget.carbs_g, suffix: "g" },
+          { label: "Fats", actual: avgFats, target: activeTarget.fats_g, suffix: "g" },
+          { label: "Calories", actual: avgKcal, target: activeTarget.kcal, suffix: " kcal" }
+        ];
+        complianceEl.innerHTML = rows.map(row => {
+          const delta = Number.isFinite(row.actual) ? Math.round(row.actual - row.target) : null;
+          return `
+            <div class="health-row">
+              <div class="health-row-main">
+                <div class="health-row-title">${row.label}</div>
+                <div class="health-row-meta">7-day average vs current target</div>
+              </div>
+              <div class="health-row-value">${Number.isFinite(row.actual) ? `${Math.round(row.actual)}${row.suffix}` : "—"}${delta == null ? "" : ` · ${delta > 0 ? "+" : ""}${delta}${row.suffix}`}</div>
+            </div>
+          `;
+        }).join("");
+      } else {
+        complianceEl.innerHTML = '<div class="health-empty-state">Set a target and log a few days to compare target vs actual.</div>';
+      }
+
+      logsEl.innerHTML = logs.length
+        ? logs.slice(0, 12).map(log => `
+          <div class="health-row">
+            <div class="health-row-main">
+              <div class="health-row-title">${escapeHtml(fmtEntryDate(log.date))}</div>
+              <div class="health-row-meta">
+                P ${Math.round(log.protein_g)} · C ${Math.round(log.carbs_g)} · F ${Math.round(log.fats_g)}
+                ${Number.isFinite(log.weight_kg) ? ` · ${log.weight_kg.toFixed(1)}kg` : ""}
+                ${Number.isFinite(log.steps) ? ` · ${Math.round(log.steps)} steps` : ""}
+                ${Number.isFinite(log.training_minutes) ? ` · ${Math.round(log.training_minutes)} training min` : ""}
+                ${Number.isFinite(log.cardio_kcal) ? ` · ${Math.round(log.cardio_kcal)} cardio kcal` : ""}
+                ${log.cardio_type ? ` · ${escapeHtml(log.cardio_type)}` : ""}
+              </div>
+              ${log.note ? `<div class="health-card-note" style="margin-top:6px">${escapeHtml(log.note)}</div>` : ""}
+            </div>
+            <div class="health-card-actions" style="margin-top:0">
+              <span class="health-row-value">${Math.round(log.kcal)} kcal</span>
+              <button class="ghost" type="button" data-health-nutrition-log-edit="${escapeHtml(log.date)}">Edit</button>
+              <button class="ghost" type="button" data-health-nutrition-log-delete="${escapeHtml(log.date)}">Delete</button>
+            </div>
+          </div>
+        `).join("")
+        : '<div class="health-empty-state">No nutrition logs yet.</div>';
+    }
+
     function renderHealth() {
       activeHealthTab = normalizeHealthTab(activeHealthTab);
       document.querySelectorAll(".health-subtab").forEach(tab => {
@@ -13465,6 +13981,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       });
       renderHealthOverview();
       renderHealthExercise();
+      renderHealthNutrition();
     }
 
     // ═══════════ WEALTH MODULE ═══════════
@@ -17390,6 +17907,38 @@ Data caveat`;
         showHealthTrainingBlockModal();
         return;
       }
+      const nutritionTargetOpenBtn = e.target.closest("[data-health-nutrition-target-open]");
+      if (nutritionTargetOpenBtn) {
+        showHealthNutritionTargetModal();
+        return;
+      }
+      const nutritionLogOpenBtn = e.target.closest("[data-health-nutrition-log-open]");
+      if (nutritionLogOpenBtn) {
+        showHealthNutritionLogModal();
+        return;
+      }
+      const nutritionTargetEditBtn = e.target.closest("[data-health-nutrition-target-edit]");
+      if (nutritionTargetEditBtn) {
+        showHealthNutritionTargetModal(String(nutritionTargetEditBtn.getAttribute("data-health-nutrition-target-edit") || ""));
+        return;
+      }
+      const nutritionTargetDeleteBtn = e.target.closest("[data-health-nutrition-target-delete]");
+      if (nutritionTargetDeleteBtn) {
+        const targetId = String(nutritionTargetDeleteBtn.getAttribute("data-health-nutrition-target-delete") || "").trim();
+        if (targetId && confirm("Delete this nutrition target?")) deleteHealthNutritionTarget(targetId);
+        return;
+      }
+      const nutritionLogEditBtn = e.target.closest("[data-health-nutrition-log-edit]");
+      if (nutritionLogEditBtn) {
+        showHealthNutritionLogModal(String(nutritionLogEditBtn.getAttribute("data-health-nutrition-log-edit") || ""));
+        return;
+      }
+      const nutritionLogDeleteBtn = e.target.closest("[data-health-nutrition-log-delete]");
+      if (nutritionLogDeleteBtn) {
+        const dateKey = String(nutritionLogDeleteBtn.getAttribute("data-health-nutrition-log-delete") || "").trim();
+        if (dateKey && confirm("Delete this nutrition log?")) deleteHealthNutritionLog(dateKey);
+        return;
+      }
       const navBtn = e.target.closest("[data-health-nav]");
       if (!navBtn) return;
       const target = String(navBtn.dataset.healthNav || "");
@@ -17730,6 +18279,20 @@ Data caveat`;
         e.preventDefault();
         e.stopPropagation();
         closeHealthTrainingBlockModal();
+        return;
+      }
+      const healthNutritionTargetModal = document.getElementById("healthNutritionTargetModalOverlay");
+      if (healthNutritionTargetModal && !healthNutritionTargetModal.hidden && e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        closeHealthNutritionTargetModal();
+        return;
+      }
+      const healthNutritionLogModal = document.getElementById("healthNutritionLogModalOverlay");
+      if (healthNutritionLogModal && !healthNutritionLogModal.hidden && e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        closeHealthNutritionLogModal();
         return;
       }
       if ((e.metaKey || e.ctrlKey) && e.shiftKey && !e.altKey && String(e.key || "").toLowerCase() === "o") {
