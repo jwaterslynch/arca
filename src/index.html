@@ -1907,6 +1907,36 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
 }
 .health-mini-stat-label{font-size:.68rem;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.02em}
 .health-mini-stat-value{font-size:.95rem;font-weight:800;color:var(--text)}
+.health-profile-summary{display:grid;gap:12px}
+.health-profile-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.health-profile-stat{
+  padding:12px 14px;background:var(--bg);border-radius:var(--radius-sm);display:grid;gap:4px;
+}
+.health-profile-stat-label{font-size:.68rem;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.02em}
+.health-profile-stat-value{font-size:.88rem;font-weight:700;color:var(--text)}
+.health-profile-section{display:grid;gap:8px}
+.health-profile-section-label{font-size:.72rem;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.05em}
+.health-chip-list{display:flex;flex-wrap:wrap;gap:6px}
+.health-chip{
+  display:inline-flex;align-items:center;padding:5px 9px;border-radius:999px;background:var(--accent-light);color:var(--accent);
+  font-size:.67rem;font-weight:700;
+}
+.health-chip.muted{background:var(--bg);color:var(--text2)}
+.health-note-box{
+  padding:12px 14px;background:var(--bg);border-radius:var(--radius-sm);font-size:.78rem;line-height:1.5;color:var(--text2);
+}
+.health-modal{max-width:860px}
+.health-profile-form{display:grid;gap:16px}
+.health-profile-form-section{display:grid;gap:10px;padding:14px;border:1px solid var(--line);border-radius:14px;background:#fbfdfc}
+.health-profile-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.health-profile-checkbox-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.health-profile-checkbox{
+  display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:#fff;
+  font-size:.78rem;color:var(--text);line-height:1.35;
+}
+.health-profile-checkbox input{margin:0}
+.health-profile-form .tiny{display:grid;gap:6px}
+.health-profile-form textarea{min-height:96px}
 
 /* ═══════════ WEALTH TAB ═══════════ */
 .wealth-layout{padding:20px 24px;max-width:900px;margin:0 auto;overflow-y:auto;max-height:calc(100vh - 56px)}
@@ -2131,6 +2161,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
 @media (max-width: 1100px){
   .health-summary-grid{grid-template-columns:repeat(2,1fr)}
   .health-mini-stat-grid{grid-template-columns:repeat(2,1fr)}
+  .health-profile-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
   .health-section-grid{grid-template-columns:1fr}
   .wealth-summary-grid{grid-template-columns:repeat(2,1fr)}
   .wealth-holding-row,.wealth-holding-head{grid-template-columns:minmax(0,1.2fr) 88px 90px 108px 108px 108px 120px auto}
@@ -2142,6 +2173,9 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
   .health-tabs-row{align-items:stretch;flex-direction:column}
   .health-summary-grid{grid-template-columns:1fr}
   .health-mini-stat-grid{grid-template-columns:1fr}
+  .health-profile-grid{grid-template-columns:1fr}
+  .health-profile-form-grid,
+  .health-profile-checkbox-grid{grid-template-columns:1fr}
   .health-activity-row{grid-template-columns:1fr}
   .health-activity-practice{text-align:left}
   .wealth-tabs-row{align-items:stretch;flex-direction:column}
@@ -2625,6 +2659,19 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       <div class="health-panel active" id="health-panel-overview">
         <div class="review-card">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:12px;flex-wrap:wrap">
+            <div>
+              <h4 style="margin-bottom:0">Health Profile</h4>
+              <div class="health-card-note" style="margin-top:4px">Training availability, injuries, capabilities, equipment, and preferences.</div>
+            </div>
+            <button class="ghost" type="button" data-health-profile-open style="font-size:.75rem">Set Up Profile</button>
+          </div>
+          <div id="healthProfileSummary" class="health-profile-summary">
+            <div class="health-empty-state">No health profile yet. Set it up once so Health can generate better training blocks and coaching.</div>
+          </div>
+        </div>
+
+        <div class="review-card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:12px;flex-wrap:wrap">
             <h4 style="margin-bottom:0">Health Overview</h4>
             <div class="health-card-actions" style="margin-top:0">
               <button class="ghost" type="button" data-health-nav="execute">Open Execute Logging</button>
@@ -2679,7 +2726,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
               <button class="ghost" type="button" data-health-nav="review">Open in Review</button>
             </div>
           </div>
-          <div class="health-card-note">H1 keeps exercise coaching in Review. This tab surfaces the data and history cleanly first.</div>
+          <div class="health-card-note">Exercise coaching lives here now. Training blocks, nutrition, and measurements come next.</div>
         </div>
 
         <div class="review-card">
@@ -3667,6 +3714,80 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           last_server_version: 0,
           last_synced_at: null
         },
+        health: {
+          profile: {
+            id: null,
+            created_at: null,
+            updated_at: null,
+            training_days_per_week: null,
+            max_sessions_per_week: null,
+            blocked_days: [],
+            ideal_session_minutes: null,
+            injuries_note: "",
+            extra_note: "",
+            target_muscle_groups: [],
+            preferred_splits: [],
+            preferred_styles: [],
+            load_preference: "",
+            knowledge_flags: {
+              supersets: false,
+              giant_sets: false,
+              dropsets: false,
+              eccentric_reps: false,
+              bands_chains: false,
+              occlusion: false
+            },
+            capability_flags: {
+              bench_press: false,
+              shoulder_press: false,
+              hip_thrust: false,
+              back_squat: false,
+              deadlift: false,
+              leg_press: false,
+              chin_up: false,
+              dips: false
+            },
+            equipment_flags: {
+              squat_rack: false,
+              deadlift_area: false,
+              ham_curl_lying: false,
+              ham_curl_seated: false,
+              ham_curl_standing: false,
+              glute_ham_raise: false,
+              leg_press: false,
+              hack_squat: false,
+              pendulum_machine: false,
+              leg_extensions: false,
+              back_extension: false,
+              sissy_squat: false,
+              seated_calf: false,
+              standing_calf: false,
+              incline_bench: false,
+              decline_bench: false,
+              pec_dec: false,
+              chest_press_machine: false,
+              shoulder_press_machine: false,
+              shoulder_raise_machine: false,
+              smith_machine: false,
+              lat_pulldown: false,
+              cable_row: false,
+              machine_row: false,
+              t_bar_row: false,
+              pullover_machine: false,
+              pulldown_machine: false,
+              cable_stack: false,
+              trap_bar: false,
+              safety_bar: false,
+              assisted_pull_up: false,
+              dip_machine: false,
+              bicep_machine: false,
+              trx: false,
+              kettlebells: false,
+              weighted_sled: false,
+              functional_space: false
+            }
+          }
+        },
         life_practices: { practices: defaultLifePractices(), daily_log: {} },
         onboarding: { completed_at: null, skipped_at: null },
         tasks: [],
@@ -3821,6 +3942,49 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       return "None";
     }
 
+    function normalizeStringArray(values) {
+      return Array.isArray(values)
+        ? values.map(value => String(value || "").trim()).filter(Boolean)
+        : [];
+    }
+
+    function normalizeHealthBooleanFlags(rawFlags, allowedKeys) {
+      const out = {};
+      allowedKeys.forEach(key => {
+        out[key] = !!rawFlags?.[key];
+      });
+      return out;
+    }
+
+    function normalizeHealthProfile(rawProfile) {
+      const base = emptyState().health.profile;
+      const profile = rawProfile && typeof rawProfile === "object" ? rawProfile : {};
+      return {
+        id: profile.id || null,
+        created_at: profile.created_at || null,
+        updated_at: profile.updated_at || null,
+        training_days_per_week: Number.isFinite(Number(profile.training_days_per_week))
+          ? Number(profile.training_days_per_week)
+          : null,
+        max_sessions_per_week: Number.isFinite(Number(profile.max_sessions_per_week))
+          ? Number(profile.max_sessions_per_week)
+          : null,
+        blocked_days: normalizeStringArray(profile.blocked_days),
+        ideal_session_minutes: Number.isFinite(Number(profile.ideal_session_minutes))
+          ? Number(profile.ideal_session_minutes)
+          : null,
+        injuries_note: String(profile.injuries_note || "").trim(),
+        extra_note: String(profile.extra_note || "").trim(),
+        target_muscle_groups: normalizeStringArray(profile.target_muscle_groups),
+        preferred_splits: normalizeStringArray(profile.preferred_splits),
+        preferred_styles: normalizeStringArray(profile.preferred_styles),
+        load_preference: String(profile.load_preference || "").trim(),
+        knowledge_flags: normalizeHealthBooleanFlags(profile.knowledge_flags, Object.keys(base.knowledge_flags || {})),
+        capability_flags: normalizeHealthBooleanFlags(profile.capability_flags, Object.keys(base.capability_flags || {})),
+        equipment_flags: normalizeHealthBooleanFlags(profile.equipment_flags, Object.keys(base.equipment_flags || {}))
+      };
+    }
+
     function normalizePipelineStage(value) {
       if (value === "pipeline") return "next_up";
       if (value === "execute") return "today";
@@ -3891,6 +4055,9 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       normalized.sync = {
         ...base.sync,
         ...(incoming.sync || {})
+      };
+      normalized.health = {
+        profile: normalizeHealthProfile(incoming.health?.profile || base.health.profile)
       };
       normalized.life_practices = {
         practices: normalizeLifePractices(Array.isArray(incoming.life_practices?.practices) ? incoming.life_practices.practices : base.life_practices.practices),
@@ -12038,6 +12205,414 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       return String(value || "").trim().toLowerCase() === "exercise" ? "exercise" : "overview";
     }
 
+    const HEALTH_DAY_OPTIONS = [
+      { key: "monday", label: "Mon" },
+      { key: "tuesday", label: "Tue" },
+      { key: "wednesday", label: "Wed" },
+      { key: "thursday", label: "Thu" },
+      { key: "friday", label: "Fri" },
+      { key: "saturday", label: "Sat" },
+      { key: "sunday", label: "Sun" }
+    ];
+
+    const HEALTH_MUSCLE_GROUP_OPTIONS = [
+      "Quads", "Hamstrings", "Glutes", "Calves", "Abs",
+      "Chest", "Back", "Biceps", "Triceps", "Shoulders"
+    ];
+
+    const HEALTH_SPLIT_OPTIONS = [
+      "Full body",
+      "Push / Pull",
+      "Upper / Lower",
+      "Push / Pull / Legs",
+      "Body part split",
+      "Don't mind"
+    ];
+
+    const HEALTH_STYLE_OPTIONS = [
+      "Bodybuilding",
+      "Powerlifting",
+      "Crossfit",
+      "Circuits"
+    ];
+
+    const HEALTH_LOAD_PREFERENCE_OPTIONS = [
+      { key: "heavy_low_volume", label: "Heavier loads, lower volume" },
+      { key: "light_high_volume", label: "Lighter loads, higher volume" },
+      { key: "mixed", label: "Mixture" },
+      { key: "dont_mind", label: "Don't mind" }
+    ];
+
+    const HEALTH_KNOWLEDGE_OPTIONS = [
+      { key: "supersets", label: "Supersets" },
+      { key: "giant_sets", label: "Giant sets" },
+      { key: "dropsets", label: "Dropsets" },
+      { key: "eccentric_reps", label: "Eccentric reps" },
+      { key: "bands_chains", label: "Bands and chains" },
+      { key: "occlusion", label: "Occlusion / blood flow restriction" }
+    ];
+
+    const HEALTH_CAPABILITY_OPTIONS = [
+      { key: "bench_press", label: "Bench press" },
+      { key: "shoulder_press", label: "Shoulder press" },
+      { key: "hip_thrust", label: "Hip thrust" },
+      { key: "back_squat", label: "Back squat" },
+      { key: "deadlift", label: "Deadlift" },
+      { key: "leg_press", label: "Leg press" },
+      { key: "chin_up", label: "Chin up" },
+      { key: "dips", label: "Dips" }
+    ];
+
+    const HEALTH_EQUIPMENT_OPTIONS = [
+      { key: "squat_rack", label: "Squat rack" },
+      { key: "deadlift_area", label: "Deadlift area" },
+      { key: "ham_curl_lying", label: "Lying ham curl" },
+      { key: "ham_curl_seated", label: "Seated ham curl" },
+      { key: "ham_curl_standing", label: "Standing ham curl" },
+      { key: "glute_ham_raise", label: "Glute ham raise" },
+      { key: "leg_press", label: "Leg press" },
+      { key: "hack_squat", label: "Hack squat" },
+      { key: "pendulum_machine", label: "Pendulum machine" },
+      { key: "leg_extensions", label: "Leg extensions" },
+      { key: "back_extension", label: "Back extension" },
+      { key: "sissy_squat", label: "Sissy squat" },
+      { key: "seated_calf", label: "Seated calf machine" },
+      { key: "standing_calf", label: "Standing calf machine" },
+      { key: "incline_bench", label: "Incline bench press" },
+      { key: "decline_bench", label: "Decline bench press" },
+      { key: "pec_dec", label: "Pec dec" },
+      { key: "chest_press_machine", label: "Chest press machine" },
+      { key: "shoulder_press_machine", label: "Shoulder press machine" },
+      { key: "shoulder_raise_machine", label: "Shoulder raise machine" },
+      { key: "smith_machine", label: "Smith machine" },
+      { key: "lat_pulldown", label: "Lat pulldown" },
+      { key: "cable_row", label: "Cable row" },
+      { key: "machine_row", label: "Machine row" },
+      { key: "t_bar_row", label: "T-bar row" },
+      { key: "pullover_machine", label: "Pullover machine" },
+      { key: "pulldown_machine", label: "Pulldown machine" },
+      { key: "cable_stack", label: "Cable stack" },
+      { key: "trap_bar", label: "Trap bar" },
+      { key: "safety_bar", label: "Safety bar" },
+      { key: "assisted_pull_up", label: "Assisted pull up" },
+      { key: "dip_machine", label: "Dip machine" },
+      { key: "bicep_machine", label: "Bicep machine" },
+      { key: "trx", label: "TRX or similar" },
+      { key: "kettlebells", label: "Kettlebells" },
+      { key: "weighted_sled", label: "Weighted sled" },
+      { key: "functional_space", label: "Functional space" }
+    ];
+
+    function ensureHealthStateShape() {
+      if (!state.health || typeof state.health !== "object") {
+        state.health = { profile: normalizeHealthProfile(null) };
+      } else if (!state.health.profile || typeof state.health.profile !== "object") {
+        state.health.profile = normalizeHealthProfile(null);
+      } else {
+        state.health.profile = normalizeHealthProfile(state.health.profile);
+      }
+      return state.health;
+    }
+
+    function healthFlagCount(flagMap) {
+      return Object.values(flagMap || {}).filter(Boolean).length;
+    }
+
+    function healthProfileHasData(profile) {
+      return !!(
+        Number.isFinite(profile?.training_days_per_week) ||
+        Number.isFinite(profile?.max_sessions_per_week) ||
+        Number.isFinite(profile?.ideal_session_minutes) ||
+        profile?.blocked_days?.length ||
+        profile?.injuries_note ||
+        profile?.extra_note ||
+        profile?.target_muscle_groups?.length ||
+        profile?.preferred_splits?.length ||
+        profile?.preferred_styles?.length ||
+        profile?.load_preference ||
+        healthFlagCount(profile?.knowledge_flags) ||
+        healthFlagCount(profile?.capability_flags) ||
+        healthFlagCount(profile?.equipment_flags)
+      );
+    }
+
+    function healthLoadPreferenceLabel(value) {
+      return HEALTH_LOAD_PREFERENCE_OPTIONS.find(option => option.key === value)?.label || "Not set";
+    }
+
+    function healthFlagLabels(flagMap, options) {
+      return options.filter(option => !!flagMap?.[option.key]).map(option => option.label);
+    }
+
+    function healthDayLabels(dayKeys) {
+      const labelByKey = Object.fromEntries(HEALTH_DAY_OPTIONS.map(option => [option.key, option.label]));
+      return (dayKeys || []).map(key => labelByKey[key]).filter(Boolean);
+    }
+
+    function renderHealthChipList(values, emptyLabel = "Not set") {
+      if (!values?.length) return `<span class="health-chip muted">${escapeHtml(emptyLabel)}</span>`;
+      return values.map(value => `<span class="health-chip">${escapeHtml(value)}</span>`).join("");
+    }
+
+    function renderHealthProfileSummary() {
+      const summaryEl = document.getElementById("healthProfileSummary");
+      const openBtn = document.querySelector("[data-health-profile-open]");
+      if (!summaryEl || !openBtn) return;
+      const profile = ensureHealthStateShape().profile;
+      const hasData = healthProfileHasData(profile);
+      openBtn.textContent = hasData ? "Edit Profile" : "Set Up Profile";
+      if (!hasData) {
+        summaryEl.innerHTML = '<div class="health-empty-state">No health profile yet. Set it up once so Health can generate better training blocks and coaching.</div>';
+        return;
+      }
+
+      const blockedDays = healthDayLabels(profile.blocked_days);
+      const capabilityLabels = healthFlagLabels(profile.capability_flags, HEALTH_CAPABILITY_OPTIONS);
+      const equipmentLabels = healthFlagLabels(profile.equipment_flags, HEALTH_EQUIPMENT_OPTIONS);
+      const knowledgeLabels = healthFlagLabels(profile.knowledge_flags, HEALTH_KNOWLEDGE_OPTIONS);
+      summaryEl.innerHTML = `
+        <div class="health-profile-grid">
+          <div class="health-profile-stat"><div class="health-profile-stat-label">Target Sessions</div><div class="health-profile-stat-value">${profile.training_days_per_week ?? "—"} / week</div></div>
+          <div class="health-profile-stat"><div class="health-profile-stat-label">Max Sessions</div><div class="health-profile-stat-value">${profile.max_sessions_per_week ?? "—"} / week</div></div>
+          <div class="health-profile-stat"><div class="health-profile-stat-label">Session Length</div><div class="health-profile-stat-value">${profile.ideal_session_minutes ? `${profile.ideal_session_minutes} min` : "Not set"}</div></div>
+          <div class="health-profile-stat"><div class="health-profile-stat-label">Blocked Days</div><div class="health-profile-stat-value">${blockedDays.length ? blockedDays.join(", ") : "None"}</div></div>
+        </div>
+        <div class="health-profile-section">
+          <div class="health-profile-section-label">Target Muscle Groups</div>
+          <div class="health-chip-list">${renderHealthChipList(profile.target_muscle_groups)}</div>
+        </div>
+        <div class="health-profile-section">
+          <div class="health-profile-section-label">Preferred Split / Style</div>
+          <div class="health-chip-list">${renderHealthChipList([
+            ...profile.preferred_splits,
+            ...profile.preferred_styles,
+            profile.load_preference ? healthLoadPreferenceLabel(profile.load_preference) : ""
+          ].filter(Boolean))}</div>
+        </div>
+        <div class="health-profile-grid">
+          <div class="health-profile-stat"><div class="health-profile-stat-label">Capabilities</div><div class="health-profile-stat-value">${capabilityLabels.length}</div></div>
+          <div class="health-profile-stat"><div class="health-profile-stat-label">Equipment</div><div class="health-profile-stat-value">${equipmentLabels.length}</div></div>
+          <div class="health-profile-stat"><div class="health-profile-stat-label">Advanced Methods</div><div class="health-profile-stat-value">${knowledgeLabels.length}</div></div>
+          <div class="health-profile-stat"><div class="health-profile-stat-label">Updated</div><div class="health-profile-stat-value">${profile.updated_at ? fmtEntryDate(localDateKey(new Date(profile.updated_at))) : "—"}</div></div>
+        </div>
+        <div class="health-profile-section">
+          <div class="health-profile-section-label">Injuries / Constraints</div>
+          <div class="health-note-box">${escapeHtml(profile.injuries_note || "No injury or constraint notes saved.")}</div>
+        </div>
+        <div class="health-profile-section">
+          <div class="health-profile-section-label">Equipment Highlights</div>
+          <div class="health-chip-list">${renderHealthChipList(equipmentLabels.slice(0, 10), "No equipment profile yet")}</div>
+        </div>
+        ${profile.extra_note ? `
+          <div class="health-profile-section">
+            <div class="health-profile-section-label">Extra Notes</div>
+            <div class="health-note-box">${escapeHtml(profile.extra_note)}</div>
+          </div>
+        ` : ""}
+      `;
+    }
+
+    function renderHealthCheckboxGroup(name, options, selectedValues) {
+      const selectedSet = new Set(selectedValues || []);
+      return options.map(option => `
+        <label class="health-profile-checkbox">
+          <input type="checkbox" name="${escapeHtml(name)}" value="${escapeHtml(option)}" ${selectedSet.has(option) ? "checked" : ""} />
+          <span>${escapeHtml(option)}</span>
+        </label>
+      `).join("");
+    }
+
+    function renderHealthFlagCheckboxGroup(prefix, options, flagMap) {
+      return options.map(option => `
+        <label class="health-profile-checkbox">
+          <input type="checkbox" id="${escapeHtml(prefix)}_${escapeHtml(option.key)}" ${flagMap?.[option.key] ? "checked" : ""} />
+          <span>${escapeHtml(option.label)}</span>
+        </label>
+      `).join("");
+    }
+
+    function showHealthProfileModal() {
+      const profile = ensureHealthStateShape().profile;
+      let overlay = document.getElementById("healthProfileModalOverlay");
+      if (!overlay) {
+        overlay = document.createElement("div");
+        overlay.id = "healthProfileModalOverlay";
+        overlay.className = "modal-backdrop";
+        overlay.hidden = true;
+        document.body.appendChild(overlay);
+        overlay.addEventListener("click", e => {
+          if (e.target === overlay) closeHealthProfileModal();
+        });
+      }
+      overlay.innerHTML = `
+        <div class="modal-panel health-modal" role="dialog" aria-modal="true" aria-labelledby="healthProfileModalTitle">
+          <div class="modal-head">
+            <div>
+              <h3 id="healthProfileModalTitle">Health Profile Intake</h3>
+              <div class="tiny">Capture availability, injuries, capabilities, and equipment once. Health can use it later for training blocks and coaching.</div>
+            </div>
+            <button id="healthProfileCloseBtn" class="ghost" type="button">Close</button>
+          </div>
+          <form id="healthProfileForm" class="health-profile-form">
+            <div class="health-profile-form-section">
+              <h4 style="margin:0">Availability</h4>
+              <div class="health-profile-form-grid">
+                <label class="tiny">
+                  <span>Training days per week</span>
+                  <input id="healthProfileDaysInput" type="number" min="0" max="7" value="${profile.training_days_per_week ?? ""}" />
+                </label>
+                <label class="tiny">
+                  <span>Maximum sessions per week</span>
+                  <input id="healthProfileMaxSessionsInput" type="number" min="0" max="14" value="${profile.max_sessions_per_week ?? ""}" />
+                </label>
+                <label class="tiny">
+                  <span>Ideal session length (minutes)</span>
+                  <input id="healthProfileMinutesInput" type="number" min="0" max="300" step="5" value="${profile.ideal_session_minutes ?? ""}" />
+                </label>
+              </div>
+              <div class="health-profile-section">
+                <div class="health-profile-section-label">Blocked or difficult days</div>
+                <div class="health-profile-checkbox-grid">
+                  ${HEALTH_DAY_OPTIONS.map(option => `
+                    <label class="health-profile-checkbox">
+                      <input type="checkbox" name="healthProfileBlockedDays" value="${option.key}" ${profile.blocked_days.includes(option.key) ? "checked" : ""} />
+                      <span>${option.label}</span>
+                    </label>
+                  `).join("")}
+                </div>
+              </div>
+            </div>
+
+            <div class="health-profile-form-section">
+              <h4 style="margin:0">Goals and Preferences</h4>
+              <div class="health-profile-section">
+                <div class="health-profile-section-label">Muscle groups you want to develop</div>
+                <div class="health-profile-checkbox-grid">
+                  ${renderHealthCheckboxGroup("healthProfileTargetMuscles", HEALTH_MUSCLE_GROUP_OPTIONS, profile.target_muscle_groups)}
+                </div>
+              </div>
+              <div class="health-profile-section">
+                <div class="health-profile-section-label">Preferred split</div>
+                <div class="health-profile-checkbox-grid">
+                  ${renderHealthCheckboxGroup("healthProfilePreferredSplits", HEALTH_SPLIT_OPTIONS, profile.preferred_splits)}
+                </div>
+              </div>
+              <div class="health-profile-section">
+                <div class="health-profile-section-label">Training styles you enjoy</div>
+                <div class="health-profile-checkbox-grid">
+                  ${renderHealthCheckboxGroup("healthProfilePreferredStyles", HEALTH_STYLE_OPTIONS, profile.preferred_styles)}
+                </div>
+              </div>
+              <label class="tiny">
+                <span>Load preference</span>
+                <select id="healthProfileLoadPreferenceInput">
+                  <option value="">Not set</option>
+                  ${HEALTH_LOAD_PREFERENCE_OPTIONS.map(option => `<option value="${option.key}" ${profile.load_preference === option.key ? "selected" : ""}>${escapeHtml(option.label)}</option>`).join("")}
+                </select>
+              </label>
+            </div>
+
+            <div class="health-profile-form-section">
+              <h4 style="margin:0">Constraints and Experience</h4>
+              <label class="tiny">
+                <span>Injuries or constraints</span>
+                <textarea id="healthProfileInjuriesInput" placeholder="Any injuries, movement limitations, or constraints that should shape training...">${escapeHtml(profile.injuries_note)}</textarea>
+              </label>
+              <div class="health-profile-section">
+                <div class="health-profile-section-label">Advanced methods you understand</div>
+                <div class="health-profile-checkbox-grid">
+                  ${renderHealthFlagCheckboxGroup("healthProfileKnowledge", HEALTH_KNOWLEDGE_OPTIONS, profile.knowledge_flags)}
+                </div>
+              </div>
+              <div class="health-profile-section">
+                <div class="health-profile-section-label">Movements you can perform</div>
+                <div class="health-profile-checkbox-grid">
+                  ${renderHealthFlagCheckboxGroup("healthProfileCapability", HEALTH_CAPABILITY_OPTIONS, profile.capability_flags)}
+                </div>
+              </div>
+            </div>
+
+            <div class="health-profile-form-section">
+              <h4 style="margin:0">Gym Equipment</h4>
+              <div class="health-profile-checkbox-grid">
+                ${renderHealthFlagCheckboxGroup("healthProfileEquipment", HEALTH_EQUIPMENT_OPTIONS, profile.equipment_flags)}
+              </div>
+              <label class="tiny">
+                <span>Anything else the coach should know?</span>
+                <textarea id="healthProfileExtraNoteInput" placeholder="Anything else about your gym, preferences, or context...">${escapeHtml(profile.extra_note)}</textarea>
+              </label>
+            </div>
+
+            <div class="controls" style="justify-content:flex-end">
+              <button id="healthProfileCancelBtn" class="ghost" type="button">Cancel</button>
+              <button id="healthProfileSaveBtn" class="primary" type="submit">Save Profile</button>
+            </div>
+          </form>
+        </div>
+      `;
+      overlay.hidden = false;
+      const close = () => closeHealthProfileModal();
+      overlay.querySelector("#healthProfileCloseBtn")?.addEventListener("click", close);
+      overlay.querySelector("#healthProfileCancelBtn")?.addEventListener("click", close);
+      overlay.querySelector("#healthProfileForm")?.addEventListener("submit", event => {
+        event.preventDefault();
+        saveHealthProfileFromForm(event.currentTarget);
+      });
+    }
+
+    function closeHealthProfileModal() {
+      const overlay = document.getElementById("healthProfileModalOverlay");
+      if (overlay) overlay.hidden = true;
+    }
+    window.closeHealthProfileModal = closeHealthProfileModal;
+
+    function collectHealthFlagValues(form, prefix, options) {
+      const out = {};
+      options.forEach(option => {
+        out[option.key] = !!form.querySelector(`#${prefix}_${option.key}`)?.checked;
+      });
+      return out;
+    }
+
+    function collectHealthArrayValues(form, name) {
+      return Array.from(form.querySelectorAll(`input[name="${name}"]:checked`)).map(input => String(input.value || "").trim()).filter(Boolean);
+    }
+
+    function parseHealthIntInput(form, selector) {
+      const raw = String(form.querySelector(selector)?.value || "").trim();
+      if (!raw) return null;
+      const parsed = Number.parseInt(raw, 10);
+      return Number.isFinite(parsed) ? parsed : null;
+    }
+
+    function saveHealthProfileFromForm(form) {
+      const health = ensureHealthStateShape();
+      const existing = health.profile;
+      const nowIso = new Date().toISOString();
+      health.profile = normalizeHealthProfile({
+        ...existing,
+        id: existing.id || uid(),
+        created_at: existing.created_at || nowIso,
+        updated_at: nowIso,
+        training_days_per_week: parseHealthIntInput(form, "#healthProfileDaysInput"),
+        max_sessions_per_week: parseHealthIntInput(form, "#healthProfileMaxSessionsInput"),
+        ideal_session_minutes: parseHealthIntInput(form, "#healthProfileMinutesInput"),
+        blocked_days: collectHealthArrayValues(form, "healthProfileBlockedDays"),
+        injuries_note: form.querySelector("#healthProfileInjuriesInput")?.value || "",
+        extra_note: form.querySelector("#healthProfileExtraNoteInput")?.value || "",
+        target_muscle_groups: collectHealthArrayValues(form, "healthProfileTargetMuscles"),
+        preferred_splits: collectHealthArrayValues(form, "healthProfilePreferredSplits"),
+        preferred_styles: collectHealthArrayValues(form, "healthProfilePreferredStyles"),
+        load_preference: String(form.querySelector("#healthProfileLoadPreferenceInput")?.value || "").trim(),
+        knowledge_flags: collectHealthFlagValues(form, "healthProfileKnowledge", HEALTH_KNOWLEDGE_OPTIONS),
+        capability_flags: collectHealthFlagValues(form, "healthProfileCapability", HEALTH_CAPABILITY_OPTIONS),
+        equipment_flags: collectHealthFlagValues(form, "healthProfileEquipment", HEALTH_EQUIPMENT_OPTIONS)
+      });
+      saveState("health_profile_save");
+      closeHealthProfileModal();
+      renderHealth();
+    }
+
     function isHealthPractice(practice) {
       return inferPracticeCoachKey(practice) === "gym";
     }
@@ -12198,6 +12773,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       const progressEl = document.getElementById("healthProgressSignals");
       const keyLiftsEl = document.getElementById("healthKeyLiftList");
       if (!summaryEl || !practicesEl || !recentEl || !progressEl || !keyLiftsEl) return;
+      renderHealthProfileSummary();
 
       const practices = getHealthPractices();
       const weekDates = getWeekDates(0);
@@ -16315,6 +16891,11 @@ Data caveat`;
       });
     });
     document.getElementById("tab-health")?.addEventListener("click", e => {
+      const profileBtn = e.target.closest("[data-health-profile-open]");
+      if (profileBtn) {
+        showHealthProfileModal();
+        return;
+      }
       const navBtn = e.target.closest("[data-health-nav]");
       if (!navBtn) return;
       const target = String(navBtn.dataset.healthNav || "");
@@ -16641,6 +17222,13 @@ Data caveat`;
         e.preventDefault();
         e.stopPropagation();
         closeLocalAiWizard();
+        return;
+      }
+      const healthProfileModal = document.getElementById("healthProfileModalOverlay");
+      if (healthProfileModal && !healthProfileModal.hidden && e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        closeHealthProfileModal();
         return;
       }
       if ((e.metaKey || e.ctrlKey) && e.shiftKey && !e.altKey && String(e.key || "").toLowerCase() === "o") {
