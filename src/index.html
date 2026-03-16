@@ -2695,6 +2695,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           <div class="health-subtab" data-health-tab="exercise">Exercise</div>
           <div class="health-subtab" data-health-tab="nutrition">Nutrition</div>
           <div class="health-subtab" data-health-tab="measurements">Measurements</div>
+          <div class="health-subtab" data-health-tab="vitals">Vitals</div>
         </div>
         <button id="healthAiProviderPill" class="ai-provider-pill tiny ai-switch-trigger" data-open-ai-switch="health" type="button" title="Switch AI"></button>
       </div>
@@ -2727,7 +2728,23 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
             <div class="stat-box"><div class="stat-val">0 / 7</div><div class="stat-label">Consistency</div></div>
             <div class="stat-box"><div class="stat-val">—</div><div class="stat-label">Last Session</div></div>
           </div>
-          <div class="health-card-note">Health now combines your existing exercise practice logs with intake, nutrition, and measurement layers. Sleep and vitals can build on this next.</div>
+          <div class="health-card-note">Health now combines your existing exercise practice logs with intake, nutrition, measurements, and vitals. Sleep can build on this next.</div>
+        </div>
+
+        <div class="review-card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:12px;flex-wrap:wrap">
+            <div>
+              <h4 style="margin-bottom:0">Vitals Snapshot</h4>
+              <div class="health-card-note" style="margin-top:4px">Low-frequency health signals like weight, resting heart rate, and optional blood pressure.</div>
+            </div>
+            <button class="ghost" type="button" data-health-vitals-open style="font-size:.75rem">Log Vitals</button>
+          </div>
+          <div id="healthVitalsOverviewSummary" class="health-mini-stat-grid">
+            <div class="health-mini-stat"><div class="health-mini-stat-label">Latest Log</div><div class="health-mini-stat-value">—</div></div>
+            <div class="health-mini-stat"><div class="health-mini-stat-label">Weight</div><div class="health-mini-stat-value">—</div></div>
+            <div class="health-mini-stat"><div class="health-mini-stat-label">Resting HR</div><div class="health-mini-stat-value">—</div></div>
+            <div class="health-mini-stat"><div class="health-mini-stat-label">Blood Pressure</div><div class="health-mini-stat-value">—</div></div>
+          </div>
         </div>
 
         <div class="review-card">
@@ -2965,6 +2982,46 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           <h4 style="margin-bottom:12px">Measurement History</h4>
           <div id="healthMeasurementsHistory" class="health-list">
             <div class="health-empty-state">No body measurements yet.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="health-panel" id="health-panel-vitals">
+        <div class="review-card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:12px;flex-wrap:wrap">
+            <div>
+              <h4 style="margin-bottom:0">Vitals</h4>
+              <div class="health-card-note" style="margin-top:4px">Simple check-ins for weight, resting heart rate, and optional blood pressure.</div>
+            </div>
+            <button class="ghost" type="button" data-health-vitals-open>Log Vitals</button>
+          </div>
+          <div id="healthVitalsSummary" class="health-mini-stat-grid">
+            <div class="health-mini-stat"><div class="health-mini-stat-label">Latest Log</div><div class="health-mini-stat-value">—</div></div>
+            <div class="health-mini-stat"><div class="health-mini-stat-label">Weight</div><div class="health-mini-stat-value">—</div></div>
+            <div class="health-mini-stat"><div class="health-mini-stat-label">Resting HR</div><div class="health-mini-stat-value">—</div></div>
+            <div class="health-mini-stat"><div class="health-mini-stat-label">Blood Pressure</div><div class="health-mini-stat-value">—</div></div>
+          </div>
+        </div>
+
+        <div class="health-section-grid">
+          <div class="review-card">
+            <h4 style="margin-bottom:12px">Vitals Signals</h4>
+            <div id="healthVitalsSignals" class="health-list">
+              <div class="health-empty-state">Add at least two vitals logs to see deltas.</div>
+            </div>
+          </div>
+          <div class="review-card">
+            <h4 style="margin-bottom:12px">Recent Notes</h4>
+            <div id="healthVitalsNotes" class="health-list">
+              <div class="health-empty-state">No vitals notes yet.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="review-card">
+          <h4 style="margin-bottom:12px">Vitals History</h4>
+          <div id="healthVitalsHistory" class="health-list">
+            <div class="health-empty-state">No vitals logs yet.</div>
           </div>
         </div>
       </div>
@@ -4036,6 +4093,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           nutrition_targets: [],
           nutrition_logs: [],
           body_measurements: [],
+          vitals_logs: [],
           progress_checkins: []
         },
         life_practices: { practices: defaultLifePractices(), daily_log: {} },
@@ -4396,6 +4454,24 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       };
     }
 
+    function normalizeHealthVitalsRecord(record) {
+      const vitals = record && typeof record === "object" ? record : {};
+      const parseValue = key => {
+        const value = Number(vitals[key]);
+        return Number.isFinite(value) ? value : null;
+      };
+      return {
+        id: vitals.id || uid(),
+        date: /^\d{4}-\d{2}-\d{2}$/.test(String(vitals.date || "").trim()) ? String(vitals.date).trim() : todayISO(),
+        weight_kg: parseValue("weight_kg"),
+        resting_hr_bpm: parseValue("resting_hr_bpm"),
+        systolic_bp: parseValue("systolic_bp"),
+        diastolic_bp: parseValue("diastolic_bp"),
+        note: String(vitals.note || "").trim(),
+        updated_at: vitals.updated_at || new Date().toISOString()
+      };
+    }
+
     function normalizePipelineStage(value) {
       if (value === "pipeline") return "next_up";
       if (value === "execute") return "today";
@@ -4482,6 +4558,9 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           : [],
         body_measurements: Array.isArray(incoming.health?.body_measurements)
           ? incoming.health.body_measurements.map(normalizeHealthMeasurementRecord)
+          : [],
+        vitals_logs: Array.isArray(incoming.health?.vitals_logs)
+          ? incoming.health.vitals_logs.map(normalizeHealthVitalsRecord)
           : [],
         progress_checkins: Array.isArray(incoming.health?.progress_checkins)
           ? incoming.health.progress_checkins.map(normalizeHealthProgressCheckinRecord)
@@ -12635,7 +12714,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
     // ═══════════ HEALTH MODULE ═══════════
     function normalizeHealthTab(value) {
       const normalized = String(value || "").trim().toLowerCase();
-      return ["overview", "assessment", "exercise", "nutrition", "measurements"].includes(normalized) ? normalized : "overview";
+      return ["overview", "assessment", "exercise", "nutrition", "measurements", "vitals"].includes(normalized) ? normalized : "overview";
     }
 
     const HEALTH_DAY_OPTIONS = [
@@ -12746,6 +12825,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
           nutrition_targets: [],
           nutrition_logs: [],
           body_measurements: [],
+          vitals_logs: [],
           progress_checkins: []
         };
       } else if (!state.health.profile || typeof state.health.profile !== "object") {
@@ -12774,6 +12854,9 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         : [];
       state.health.body_measurements = Array.isArray(state.health.body_measurements)
         ? state.health.body_measurements.map(normalizeHealthMeasurementRecord)
+        : [];
+      state.health.vitals_logs = Array.isArray(state.health.vitals_logs)
+        ? state.health.vitals_logs.map(normalizeHealthVitalsRecord)
         : [];
       state.health.progress_checkins = Array.isArray(state.health.progress_checkins)
         ? state.health.progress_checkins.map(normalizeHealthProgressCheckinRecord)
@@ -14053,6 +14136,128 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       renderHealth();
     }
 
+    function getHealthVitalsLogs() {
+      return ensureHealthStateShape().vitals_logs
+        .slice()
+        .sort((a, b) => (b.date || "").localeCompare(a.date || "") || (b.updated_at || "").localeCompare(a.updated_at || ""));
+    }
+
+    function getHealthVitalsByDate(dateKey) {
+      return getHealthVitalsLogs().find(item => item.date === dateKey) || null;
+    }
+
+    function healthVitalsDelta(current, previous, key) {
+      const a = Number(current?.[key]);
+      const b = Number(previous?.[key]);
+      if (!Number.isFinite(a) || !Number.isFinite(b)) return null;
+      return a - b;
+    }
+
+    function formatHealthBloodPressure(record) {
+      const systolic = Number(record?.systolic_bp);
+      const diastolic = Number(record?.diastolic_bp);
+      if (!Number.isFinite(systolic) || !Number.isFinite(diastolic)) return "—";
+      return `${Math.round(systolic)} / ${Math.round(diastolic)}`;
+    }
+
+    function latestHealthWeightValue() {
+      const latestVitals = getHealthVitalsLogs().find(item => Number.isFinite(item.weight_kg));
+      if (latestVitals) return latestVitals.weight_kg;
+      const latestNutritionWeight = getHealthNutritionLogs().find(item => Number.isFinite(item.weight_kg));
+      return latestNutritionWeight?.weight_kg ?? null;
+    }
+
+    function showHealthVitalsModal(dateKey = todayISO()) {
+      const existing = getHealthVitalsByDate(dateKey);
+      const latestNutritionWeight = getHealthNutritionLogs().find(item => Number.isFinite(item.weight_kg));
+      let overlay = document.getElementById("healthVitalsModalOverlay");
+      if (!overlay) {
+        overlay = document.createElement("div");
+        overlay.id = "healthVitalsModalOverlay";
+        overlay.className = "modal-backdrop";
+        overlay.hidden = true;
+        document.body.appendChild(overlay);
+        overlay.addEventListener("click", event => {
+          if (event.target === overlay) closeHealthVitalsModal();
+        });
+      }
+      overlay.innerHTML = `
+        <div class="modal-panel health-modal" role="dialog" aria-modal="true" aria-labelledby="healthVitalsModalTitle">
+          <div class="modal-head">
+            <div>
+              <h3 id="healthVitalsModalTitle">${existing ? "Edit Vitals Log" : "Vitals Log"}</h3>
+              <div class="tiny">Use vitals for simple check-ins like weight, resting heart rate, and optional blood pressure.</div>
+            </div>
+            <button id="healthVitalsCloseBtn" class="ghost" type="button">Close</button>
+          </div>
+          <form id="healthVitalsForm" class="health-profile-form" data-vitals-date="${escapeHtml(existing?.date || dateKey)}">
+            <div class="health-profile-form-section">
+              <h4 style="margin:0">Vitals</h4>
+              <div class="health-profile-form-grid">
+                <label class="tiny"><span>Date</span><input id="healthVitalsDateInput" type="date" value="${escapeHtml(existing?.date || dateKey)}" /></label>
+                <label class="tiny"><span>Weight (kg)</span><input id="healthVitalsWeightInput" type="number" min="0" step="0.1" value="${existing?.weight_kg ?? latestNutritionWeight?.weight_kg ?? ""}" /></label>
+                <label class="tiny"><span>Resting HR (bpm)</span><input id="healthVitalsRestingHrInput" type="number" min="0" step="1" value="${existing?.resting_hr_bpm ?? ""}" /></label>
+                <label class="tiny"><span>Systolic BP</span><input id="healthVitalsSystolicInput" type="number" min="0" step="1" value="${existing?.systolic_bp ?? ""}" /></label>
+                <label class="tiny"><span>Diastolic BP</span><input id="healthVitalsDiastolicInput" type="number" min="0" step="1" value="${existing?.diastolic_bp ?? ""}" /></label>
+              </div>
+              <label class="tiny">
+                <span>Note</span>
+                <textarea id="healthVitalsNoteInput" placeholder="Anything notable about this check-in...">${escapeHtml(existing?.note || "")}</textarea>
+              </label>
+            </div>
+            <div class="controls" style="justify-content:flex-end">
+              <button id="healthVitalsCancelBtn" class="ghost" type="button">Cancel</button>
+              <button id="healthVitalsSaveBtn" class="primary" type="submit">Save Vitals</button>
+            </div>
+          </form>
+        </div>
+      `;
+      overlay.hidden = false;
+      const close = () => closeHealthVitalsModal();
+      overlay.querySelector("#healthVitalsCloseBtn")?.addEventListener("click", close);
+      overlay.querySelector("#healthVitalsCancelBtn")?.addEventListener("click", close);
+      overlay.querySelector("#healthVitalsForm")?.addEventListener("submit", event => {
+        event.preventDefault();
+        saveHealthVitalsFromForm(event.currentTarget);
+      });
+    }
+
+    function closeHealthVitalsModal() {
+      const overlay = document.getElementById("healthVitalsModalOverlay");
+      if (overlay) overlay.hidden = true;
+    }
+    window.closeHealthVitalsModal = closeHealthVitalsModal;
+
+    function saveHealthVitalsFromForm(form) {
+      const health = ensureHealthStateShape();
+      const existingDate = String(form.getAttribute("data-vitals-date") || "").trim();
+      const date = String(form.querySelector("#healthVitalsDateInput")?.value || todayISO()).trim();
+      const record = normalizeHealthVitalsRecord({
+        id: getHealthVitalsByDate(existingDate)?.id || uid(),
+        date,
+        weight_kg: parseHealthFloatInput(form, "#healthVitalsWeightInput"),
+        resting_hr_bpm: parseHealthFloatInput(form, "#healthVitalsRestingHrInput"),
+        systolic_bp: parseHealthFloatInput(form, "#healthVitalsSystolicInput"),
+        diastolic_bp: parseHealthFloatInput(form, "#healthVitalsDiastolicInput"),
+        note: String(form.querySelector("#healthVitalsNoteInput")?.value || "").trim(),
+        updated_at: new Date().toISOString()
+      });
+      health.vitals_logs = health.vitals_logs
+        .filter(item => item.date !== existingDate && item.date !== date)
+        .concat(record)
+        .map(normalizeHealthVitalsRecord);
+      saveState("health_vitals_save");
+      closeHealthVitalsModal();
+      renderHealth();
+    }
+
+    function deleteHealthVitals(dateKey) {
+      const health = ensureHealthStateShape();
+      health.vitals_logs = health.vitals_logs.filter(item => item.date !== dateKey);
+      saveState("health_vitals_delete");
+      renderHealth();
+    }
+
     function isHealthPractice(practice) {
       return inferPracticeCoachKey(practice) === "gym";
     }
@@ -14521,6 +14726,86 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         : '<div class="health-empty-state">No nutrition logs yet.</div>';
     }
 
+    function renderHealthVitalsSummaryInto(el) {
+      if (!el) return;
+      const vitals = getHealthVitalsLogs();
+      const latest = vitals[0] || null;
+      const latestWeight = latest?.weight_kg ?? latestHealthWeightValue();
+      el.innerHTML = `
+        <div class="health-mini-stat"><div class="health-mini-stat-label">Latest Log</div><div class="health-mini-stat-value">${latest ? escapeHtml(fmtEntryDate(latest.date)) : "—"}</div></div>
+        <div class="health-mini-stat"><div class="health-mini-stat-label">Weight</div><div class="health-mini-stat-value">${Number.isFinite(latestWeight) ? `${Number(latestWeight).toFixed(1)}kg` : "—"}</div></div>
+        <div class="health-mini-stat"><div class="health-mini-stat-label">Resting HR</div><div class="health-mini-stat-value">${Number.isFinite(latest?.resting_hr_bpm) ? `${Math.round(latest.resting_hr_bpm)} bpm` : "—"}</div></div>
+        <div class="health-mini-stat"><div class="health-mini-stat-label">Blood Pressure</div><div class="health-mini-stat-value">${formatHealthBloodPressure(latest)}</div></div>
+      `;
+    }
+
+    function renderHealthVitals() {
+      const overviewSummaryEl = document.getElementById("healthVitalsOverviewSummary");
+      const summaryEl = document.getElementById("healthVitalsSummary");
+      const signalsEl = document.getElementById("healthVitalsSignals");
+      const notesEl = document.getElementById("healthVitalsNotes");
+      const historyEl = document.getElementById("healthVitalsHistory");
+      renderHealthVitalsSummaryInto(overviewSummaryEl);
+      if (!summaryEl || !signalsEl || !notesEl || !historyEl) return;
+
+      const vitals = getHealthVitalsLogs();
+      const latest = vitals[0] || null;
+      const previous = vitals[1] || null;
+      renderHealthVitalsSummaryInto(summaryEl);
+
+      if (latest && previous) {
+        const rows = [
+          { label: "Weight", delta: healthVitalsDelta(latest, previous, "weight_kg"), suffix: " kg" },
+          { label: "Resting HR", delta: healthVitalsDelta(latest, previous, "resting_hr_bpm"), suffix: " bpm" },
+          { label: "Systolic BP", delta: healthVitalsDelta(latest, previous, "systolic_bp"), suffix: "" },
+          { label: "Diastolic BP", delta: healthVitalsDelta(latest, previous, "diastolic_bp"), suffix: "" }
+        ];
+        signalsEl.innerHTML = rows.map(row => `
+          <div class="health-row">
+            <div class="health-row-main">
+              <div class="health-row-title">${row.label}</div>
+              <div class="health-row-meta">Change since ${escapeHtml(fmtEntryDate(previous.date))}</div>
+            </div>
+            <div class="health-row-value">${row.delta == null ? "—" : `${row.delta > 0 ? "+" : ""}${row.delta.toFixed(row.label === "Weight" ? 1 : 0)}${row.suffix}`}</div>
+          </div>
+        `).join("");
+      } else {
+        signalsEl.innerHTML = '<div class="health-empty-state">Add at least two vitals logs to see deltas.</div>';
+      }
+
+      const recentNotes = vitals.filter(item => item.note).slice(0, 6);
+      notesEl.innerHTML = recentNotes.length
+        ? recentNotes.map(item => `
+          <div class="health-row">
+            <div class="health-row-main">
+              <div class="health-row-title">${escapeHtml(fmtEntryDate(item.date))}</div>
+              <div class="health-card-note" style="margin-top:6px">${escapeHtml(item.note)}</div>
+            </div>
+          </div>
+        `).join("")
+        : '<div class="health-empty-state">No vitals notes yet.</div>';
+
+      historyEl.innerHTML = vitals.length
+        ? vitals.map(item => `
+          <div class="health-row">
+            <div class="health-row-main">
+              <div class="health-row-title">${escapeHtml(fmtEntryDate(item.date))}</div>
+              <div class="health-row-meta">
+                ${Number.isFinite(item.weight_kg) ? `Weight ${item.weight_kg.toFixed(1)}kg` : "No weight logged"}
+                ${Number.isFinite(item.resting_hr_bpm) ? ` · RHR ${Math.round(item.resting_hr_bpm)} bpm` : ""}
+                ${(Number.isFinite(item.systolic_bp) && Number.isFinite(item.diastolic_bp)) ? ` · BP ${Math.round(item.systolic_bp)}/${Math.round(item.diastolic_bp)}` : ""}
+              </div>
+              ${item.note ? `<div class="health-card-note" style="margin-top:6px">${escapeHtml(item.note)}</div>` : ""}
+            </div>
+            <div class="health-card-actions" style="margin-top:0">
+              <button class="ghost" type="button" data-health-vitals-edit="${escapeHtml(item.date)}">Edit</button>
+              <button class="ghost" type="button" data-health-vitals-delete="${escapeHtml(item.date)}">Delete</button>
+            </div>
+          </div>
+        `).join("")
+        : '<div class="health-empty-state">No vitals logs yet.</div>';
+    }
+
     function renderHealthMeasurements() {
       const summaryEl = document.getElementById("healthMeasurementsSummary");
       const signalsEl = document.getElementById("healthMeasurementSignals");
@@ -14621,6 +14906,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       renderHealthExercise();
       renderHealthNutrition();
       renderHealthMeasurements();
+      renderHealthVitals();
     }
 
     // ═══════════ WEALTH MODULE ═══════════
@@ -19061,6 +19347,22 @@ Data caveat`;
         if (dateKey && confirm("Delete this measurement check-in?")) deleteHealthMeasurement(dateKey);
         return;
       }
+      const vitalsOpenBtn = e.target.closest("[data-health-vitals-open]");
+      if (vitalsOpenBtn) {
+        showHealthVitalsModal();
+        return;
+      }
+      const vitalsEditBtn = e.target.closest("[data-health-vitals-edit]");
+      if (vitalsEditBtn) {
+        showHealthVitalsModal(String(vitalsEditBtn.getAttribute("data-health-vitals-edit") || ""));
+        return;
+      }
+      const vitalsDeleteBtn = e.target.closest("[data-health-vitals-delete]");
+      if (vitalsDeleteBtn) {
+        const dateKey = String(vitalsDeleteBtn.getAttribute("data-health-vitals-delete") || "").trim();
+        if (dateKey && confirm("Delete this vitals log?")) deleteHealthVitals(dateKey);
+        return;
+      }
       const navBtn = e.target.closest("[data-health-nav]");
       if (!navBtn) return;
       const target = String(navBtn.dataset.healthNav || "");
@@ -19475,6 +19777,13 @@ Data caveat`;
         e.preventDefault();
         e.stopPropagation();
         closeHealthMeasurementModal();
+        return;
+      }
+      const healthVitalsModal = document.getElementById("healthVitalsModalOverlay");
+      if (healthVitalsModal && !healthVitalsModal.hidden && e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        closeHealthVitalsModal();
         return;
       }
       if ((e.metaKey || e.ctrlKey) && e.shiftKey && !e.altKey && String(e.key || "").toLowerCase() === "o") {
