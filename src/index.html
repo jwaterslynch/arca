@@ -3041,6 +3041,8 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
             <div class="stat-box"><div class="stat-val" id="portfolioMarketValue">$0</div><div class="stat-label">Market Value</div></div>
             <div class="stat-box"><div class="stat-val" id="portfolioCostBasis">$0</div><div class="stat-label">Cost Basis</div></div>
             <div class="stat-box"><div class="stat-val" id="portfolioGainLoss">$0</div><div class="stat-label" id="portfolioGainLossLabel">Unrealized Gain/Loss</div></div>
+            <div class="stat-box"><div class="stat-val" id="portfolioDividendIncomeTtm">$0</div><div class="stat-label">Dividend Income (12M)</div></div>
+            <div class="stat-box"><div class="stat-val" id="portfolioDividendIncomeTotal">$0</div><div class="stat-label">Dividend Income (Total)</div></div>
             <div class="stat-box"><div class="stat-val" id="portfolioStaleCount">0</div><div class="stat-label">Quotes Needing Refresh</div></div>
           </div>
         </div>
@@ -4000,16 +4002,17 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           accounts: [],
           transactions: [],
           currency: "AUD",
-          display_percentages: false,
-          cashflow_scope_filter: "household",
-          cashflow_account_filter: "",
-          holdings_sort: { key: "marketValueMinor", dir: "desc" },
-          holdings: [],
-          trades: [],
-          price_quotes: {},
-          fx_quotes: {},
-          properties: [],
-          property_estimates: {},
+        display_percentages: false,
+        cashflow_scope_filter: "household",
+        cashflow_account_filter: "",
+        holdings_sort: { key: "marketValueMinor", dir: "desc" },
+        holdings: [],
+        trades: [],
+        dividends: [],
+        price_quotes: {},
+        fx_quotes: {},
+        properties: [],
+        property_estimates: {},
           import_templates: [],
           category_rules: [],
           last_import_review: null,
@@ -4100,6 +4103,19 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         notes: String(trade?.notes || "").trim(),
         created_at: trade?.created_at || new Date().toISOString(),
         source: ["manual", "csv_import", "opening_balance"].includes(trade?.source) ? trade.source : "manual"
+      };
+    }
+
+    function normalizeWealthDividendRecord(dividend) {
+      return {
+        id: dividend?.id || uid(),
+        holding_id: String(dividend?.holding_id || "").trim() || null,
+        pay_date: String(dividend?.pay_date || dividend?.date || todayISO()).trim() || todayISO(),
+        amount_minor: Math.abs(normalizeMinorAmount(dividend?.amount_minor, dividend?.amount)),
+        status: dividend?.status === "pending" ? "pending" : "confirmed",
+        notes: String(dividend?.notes || "").trim(),
+        created_at: dividend?.created_at || new Date().toISOString(),
+        source: ["manual", "csv_import"].includes(dividend?.source) ? dividend.source : "manual"
       };
     }
 
@@ -4499,6 +4515,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           trade_history_seeded: !!h.trade_history_seeded
         })) : [],
         trades: Array.isArray(iw.trades) ? iw.trades.map(normalizeWealthTradeRecord).filter(trade => trade.holding_id) : [],
+        dividends: Array.isArray(iw.dividends) ? iw.dividends.map(normalizeWealthDividendRecord).filter(dividend => dividend.holding_id) : [],
         price_quotes: iw.price_quotes && typeof iw.price_quotes === "object" ? Object.fromEntries(
           Object.entries(iw.price_quotes).map(([key, q]) => [key, {
             provider_symbol: String(q?.provider_symbol || "").trim(),
@@ -15148,6 +15165,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
           holdings_sort: { key: "marketValueMinor", dir: "desc" },
           holdings: [],
           trades: [],
+          dividends: [],
           price_quotes: {},
           fx_quotes: {},
           properties: [],
@@ -15162,6 +15180,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       if (!Array.isArray(state.wealth.transactions)) state.wealth.transactions = [];
       if (!Array.isArray(state.wealth.holdings)) state.wealth.holdings = [];
       if (!Array.isArray(state.wealth.trades)) state.wealth.trades = [];
+      if (!Array.isArray(state.wealth.dividends)) state.wealth.dividends = [];
       if (!Array.isArray(state.wealth.import_templates)) state.wealth.import_templates = [];
       if (!Array.isArray(state.wealth.category_rules)) state.wealth.category_rules = [];
       if (!state.wealth.price_quotes || typeof state.wealth.price_quotes !== "object") state.wealth.price_quotes = {};
@@ -16224,6 +16243,34 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         .sort((a, b) => (a.trade_date || "").localeCompare(b.trade_date || "") || (a.created_at || "").localeCompare(b.created_at || ""));
     }
 
+    function getDividendsForHolding(holdingId, { includePending = false } = {}) {
+      const dividends = (state.wealth?.dividends || []).filter(dividend => dividend.holding_id === holdingId);
+      return dividends
+        .filter(dividend => includePending || dividend.status === "confirmed")
+        .sort((a, b) => (a.pay_date || "").localeCompare(b.pay_date || "") || (a.created_at || "").localeCompare(b.created_at || ""));
+    }
+
+    function summarizeHoldingDividends(holdingId) {
+      const dividends = getDividendsForHolding(holdingId);
+      const trailingCutoff = new Date();
+      trailingCutoff.setMonth(trailingCutoff.getMonth() - 12);
+      const trailingCutoffKey = trailingCutoff.toISOString().slice(0, 10);
+      let totalMinor = 0;
+      let trailing12Minor = 0;
+      dividends.forEach(dividend => {
+        const amountMinor = Number(dividend.amount_minor || 0);
+        totalMinor += amountMinor;
+        if ((dividend.pay_date || "") >= trailingCutoffKey) trailing12Minor += amountMinor;
+      });
+      return {
+        count: dividends.length,
+        totalMinor,
+        trailing12Minor,
+        lastDate: dividends.length ? dividends[dividends.length - 1].pay_date : null,
+        dividends
+      };
+    }
+
     function computeHoldingPosition(holdingId) {
       const trades = getTradesForHolding(holdingId);
       let unitsHeld = 0;
@@ -16262,6 +16309,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
 
     function buildHoldingView(holding) {
       const position = computeHoldingPosition(holding.id);
+      const dividendSummary = summarizeHoldingDividends(holding.id);
       const quote = getHoldingQuote(holding);
       const marketValueMinor = getHoldingMarketValueMinor(holding, position.units);
       const costBasisMinor = position.costBasisMinor || 0;
@@ -16276,6 +16324,11 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         gainLossMinor,
         tradeCount: position.tradeCount,
         trades: position.trades,
+        dividendCount: dividendSummary.count,
+        dividendIncomeMinor: dividendSummary.totalMinor,
+        trailing12DividendMinor: dividendSummary.trailing12Minor,
+        lastDividendDate: dividendSummary.lastDate,
+        dividends: dividendSummary.dividends,
         returnPct: quote ? simpleReturnPct(costBasisMinor, marketValueMinor) : null
       };
     }
@@ -16319,8 +16372,12 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       const totalCostBasisMinor = holdingViews.reduce((sum, h) => sum + h.costBasisMinor, 0);
       const allocationByType = {};
       let missingOrStaleCount = 0;
+      let totalDividendIncomeMinor = 0;
+      let trailing12DividendIncomeMinor = 0;
       holdingViews.forEach(h => {
         if (!h.quote || h.quote.stale) missingOrStaleCount += 1;
+        totalDividendIncomeMinor += Number(h.dividendIncomeMinor || 0);
+        trailing12DividendIncomeMinor += Number(h.trailing12DividendMinor || 0);
         if (!h.marketValueMinor) return;
         allocationByType[h.asset_type] = (allocationByType[h.asset_type] || 0) + h.marketValueMinor;
       });
@@ -16336,6 +16393,8 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         totalMarketValueMinor,
         totalCostBasisMinor,
         unrealizedGainLossMinor: totalMarketValueMinor - totalCostBasisMinor,
+        totalDividendIncomeMinor,
+        trailing12DividendIncomeMinor,
         allocationByType,
         missingOrStaleCount,
         concentration
@@ -16365,6 +16424,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       state.wealth.transactions = state.wealth.transactions.filter(t => t.account_id !== accountId);
       state.wealth.holdings = (state.wealth.holdings || []).filter(h => h.account_id !== accountId);
       state.wealth.trades = (state.wealth.trades || []).filter(trade => !removedHoldingIds.includes(trade.holding_id));
+      state.wealth.dividends = (state.wealth.dividends || []).filter(dividend => !removedHoldingIds.includes(dividend.holding_id));
       if (state.wealth.price_quotes) {
         removedHoldingIds.forEach(id => { delete state.wealth.price_quotes[wealthManualQuoteKey(id)]; });
       }
@@ -16401,6 +16461,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
           holdings_sort: { key: "marketValueMinor", dir: "desc" },
           holdings: [],
           trades: [],
+          dividends: [],
           price_quotes: {},
           fx_quotes: {},
           properties: [],
@@ -16409,6 +16470,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       }
       if (!Array.isArray(state.wealth.holdings)) state.wealth.holdings = [];
       if (!Array.isArray(state.wealth.trades)) state.wealth.trades = [];
+      if (!Array.isArray(state.wealth.dividends)) state.wealth.dividends = [];
       const holding = {
         id: uid(),
         account_id: payload.account_id || null,
@@ -16459,6 +16521,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       if (!state.wealth) return;
       state.wealth.holdings = (state.wealth.holdings || []).filter(h => h.id !== holdingId);
       state.wealth.trades = (state.wealth.trades || []).filter(trade => trade.holding_id !== holdingId);
+      state.wealth.dividends = (state.wealth.dividends || []).filter(dividend => dividend.holding_id !== holdingId);
       if (state.wealth.price_quotes) delete state.wealth.price_quotes[wealthManualQuoteKey(holdingId)];
       saveState("wealth_delete_holding");
       renderWealth();
@@ -16697,6 +16760,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
             <span class="wealth-holding-type">${escapeHtml(WEALTH_ASSET_TYPES[h.asset_type] || h.asset_type)}</span>
             <span>· ${escapeHtml(h.account?.name || "No account")}</span>
             <span>· ${h.tradeCount || 0} trade${h.tradeCount === 1 ? "" : "s"}</span>
+            <span>· ${h.dividendCount || 0} dividend${h.dividendCount === 1 ? "" : "s"}</span>
           </div>
         </div>
         <div class="wealth-holding-num">${(h.units || 0).toLocaleString(undefined, { maximumFractionDigits: 8 })}</div>
@@ -16710,6 +16774,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         </div>
         <div class="wealth-row-actions">
           <button class="wealth-inline-btn" type="button" data-open-holding-trades="${escapeHtml(h.id)}">Trades</button>
+          <button class="wealth-inline-btn" type="button" data-open-holding-dividends="${escapeHtml(h.id)}">Income</button>
           <button class="wealth-inline-btn" type="button" data-set-holding-price="${escapeHtml(h.id)}">${h.quote ? "Update Price" : "Set Price"}</button>
           <button class="wealth-inline-btn" type="button" data-delete-holding="${escapeHtml(h.id)}">Delete</button>
         </div>
@@ -16726,6 +16791,8 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       const costEl = document.getElementById("portfolioCostBasis");
       const gainEl = document.getElementById("portfolioGainLoss");
       const gainLabelEl = document.getElementById("portfolioGainLossLabel");
+      const dividendTtmEl = document.getElementById("portfolioDividendIncomeTtm");
+      const dividendTotalEl = document.getElementById("portfolioDividendIncomeTotal");
       const staleEl = document.getElementById("portfolioStaleCount");
       if (marketEl) marketEl.textContent = formatCurrency(snapshot.totalMarketValueMinor);
       if (costEl) costEl.textContent = formatCurrency(snapshot.totalCostBasisMinor);
@@ -16736,6 +16803,8 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         gainEl.style.color = snapshot.unrealizedGainLossMinor >= 0 ? "var(--accent)" : "var(--danger)";
       }
       if (gainLabelEl) gainLabelEl.textContent = displayPercentages ? "Simple Return" : "Unrealized Gain/Loss";
+      if (dividendTtmEl) dividendTtmEl.textContent = formatCurrency(snapshot.trailing12DividendIncomeMinor || 0);
+      if (dividendTotalEl) dividendTotalEl.textContent = formatCurrency(snapshot.totalDividendIncomeMinor || 0);
       if (staleEl) staleEl.textContent = String(snapshot.missingOrStaleCount);
       document.querySelectorAll("#portfolioDisplayMode [data-portfolio-display]").forEach(btn => {
         btn.classList.toggle("active", btn.getAttribute("data-portfolio-display") === (displayPercentages ? "percent" : "amount"));
@@ -17048,6 +17117,8 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
           market_value_minor: portfolio.totalMarketValueMinor,
           cost_basis_minor: portfolio.totalCostBasisMinor,
           unrealized_gain_loss_minor: portfolio.unrealizedGainLossMinor,
+          dividend_income_minor: portfolio.totalDividendIncomeMinor,
+          trailing12_dividend_income_minor: portfolio.trailing12DividendIncomeMinor,
           missing_or_stale_quotes: portfolio.missingOrStaleCount,
           holdings: portfolio.holdingViews
             .slice(0, 20)
@@ -17057,6 +17128,8 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
               asset_type: h.asset_type,
               market_value_minor: h.marketValueMinor,
               cost_basis_minor: h.costBasisMinor,
+              dividend_income_minor: h.dividendIncomeMinor,
+              trailing12_dividend_income_minor: h.trailing12DividendMinor,
               return_pct: h.returnPct,
               quote_source: h.quote?.provider || null,
               quote_freshness: quoteFreshnessLabel(h.quote)
@@ -17486,6 +17559,139 @@ Data caveat`;
       state.wealth.trades = (state.wealth.trades || []).filter(trade => trade.id !== tradeId);
       saveState("wealth_delete_trade");
       renderWealth();
+    }
+
+    function deleteWealthDividend(dividendId) {
+      if (!state.wealth) return;
+      state.wealth.dividends = (state.wealth.dividends || []).filter(dividend => dividend.id !== dividendId);
+      saveState("wealth_delete_dividend");
+      renderWealth();
+    }
+
+    function showWealthHoldingDividendsModal(holdingId) {
+      const holding = getWealthHolding(holdingId);
+      if (!holding) return;
+      const dividends = getDividendsForHolding(holdingId, { includePending: true }).slice().reverse();
+      const summary = summarizeHoldingDividends(holdingId);
+      const bodyHtml = `<div class="wealth-form-grid">
+        <div class="wealth-form-row">
+          <div>
+            <label>Holding</label>
+            <div style="font-weight:700">${escapeHtml(holding.display_symbol)} · ${escapeHtml(holding.name)}</div>
+            <div class="tiny" style="margin-top:4px;color:var(--text2)">${escapeHtml(holding.account_id ? (getWealthAccount(holding.account_id)?.name || "No account") : "No account")}</div>
+          </div>
+          <div>
+            <label>Dividend Income</label>
+            <div style="font-weight:700">${formatCurrency(summary.totalMinor)}</div>
+            <div class="tiny" style="margin-top:4px;color:var(--text2)">Trailing 12 months ${formatCurrency(summary.trailing12Minor)}</div>
+          </div>
+        </div>
+        <div class="controls" style="justify-content:space-between;align-items:center">
+          <div class="tiny" style="color:var(--text2)">Track cash dividends manually now. Import and franking details can layer on later.</div>
+          <button class="primary" id="wealthAddDividendBtn" type="button">Add Dividend</button>
+        </div>
+        <div class="wealth-list" style="display:flex;flex-direction:column;gap:8px">
+          ${dividends.length ? dividends.map(dividend => `
+            <div class="wealth-row" style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--bg)">
+              <div style="min-width:0">
+                <div style="font-weight:700">Dividend · ${escapeHtml(fmtEntryDate(dividend.pay_date))}</div>
+                <div class="tiny" style="color:var(--text2);margin-top:4px">
+                  ${formatCurrency(dividend.amount_minor)}
+                  · ${escapeHtml(dividend.status)}
+                </div>
+                ${dividend.notes ? `<div class="tiny" style="margin-top:6px;color:var(--text2)">${escapeHtml(dividend.notes)}</div>` : ""}
+              </div>
+              <div class="health-card-actions" style="margin-top:0;flex-shrink:0">
+                <button class="ghost" type="button" data-edit-holding-dividend="${escapeHtml(dividend.id)}" data-holding-id="${escapeHtml(holding.id)}">Edit</button>
+                <button class="ghost" type="button" data-delete-holding-dividend="${escapeHtml(dividend.id)}" data-holding-id="${escapeHtml(holding.id)}">Delete</button>
+              </div>
+            </div>
+          `).join("") : '<div class="wealth-empty-state" style="text-align:left">No dividends yet. Add one when this holding pays income.</div>'}
+        </div>
+      </div>`;
+      showWealthModal("Holding Income", bodyHtml);
+      requestAnimationFrame(() => {
+        document.getElementById("wealthAddDividendBtn")?.addEventListener("click", () => showWealthDividendModal(holdingId));
+        document.querySelectorAll("[data-edit-holding-dividend]").forEach(btn => {
+          btn.addEventListener("click", () => {
+            const dividendId = String(btn.getAttribute("data-edit-holding-dividend") || "").trim();
+            if (dividendId) showWealthDividendModal(holdingId, dividendId);
+          });
+        });
+        document.querySelectorAll("[data-delete-holding-dividend]").forEach(btn => {
+          btn.addEventListener("click", () => {
+            const dividendId = String(btn.getAttribute("data-delete-holding-dividend") || "").trim();
+            if (!dividendId || !confirm("Delete this dividend?")) return;
+            deleteWealthDividend(dividendId);
+            showWealthHoldingDividendsModal(holdingId);
+          });
+        });
+      });
+    }
+
+    function showWealthDividendModal(holdingId, dividendId = "") {
+      const holding = getWealthHolding(holdingId);
+      if (!holding) return;
+      const existing = dividendId ? (state.wealth?.dividends || []).find(dividend => dividend.id === dividendId && dividend.holding_id === holdingId) || null : null;
+      const bodyHtml = `<div class="wealth-form-grid">
+        <div>
+          <label>Holding</label>
+          <div style="font-weight:700">${escapeHtml(holding.display_symbol)} · ${escapeHtml(holding.name)}</div>
+        </div>
+        <div class="wealth-form-row">
+          <div>
+            <label>Pay Date</label>
+            <input id="wealthDividendDateInput" type="date" value="${escapeHtml(existing?.pay_date || todayISO())}" />
+          </div>
+          <div>
+            <label>Amount (${escapeHtml(state.wealth?.currency || "AUD")})</label>
+            <input id="wealthDividendAmountInput" type="number" step="0.01" value="${existing ? escapeHtml(((existing.amount_minor || 0) / 100).toFixed(2)) : ""}" placeholder="0.00" />
+          </div>
+        </div>
+        <div class="wealth-form-row">
+          <div>
+            <label>Status</label>
+            <select id="wealthDividendStatusInput">
+              <option value="confirmed" ${existing?.status !== "pending" ? "selected" : ""}>Confirmed</option>
+              <option value="pending" ${existing?.status === "pending" ? "selected" : ""}>Pending</option>
+            </select>
+          </div>
+          <div></div>
+        </div>
+        <div>
+          <label>Notes</label>
+          <textarea id="wealthDividendNotesInput" rows="3" placeholder="Optional note...">${escapeHtml(existing?.notes || "")}</textarea>
+        </div>
+        <div class="controls" style="justify-content:space-between">
+          <button class="ghost" id="wealthDividendBackBtn" type="button">Back</button>
+          <button class="primary" id="wealthDividendSubmitBtn" type="button">${existing ? "Save Dividend" : "Add Dividend"}</button>
+        </div>
+      </div>`;
+      showWealthModal(existing ? "Edit Dividend" : "Add Dividend", bodyHtml);
+      requestAnimationFrame(() => {
+        document.getElementById("wealthDividendAmountInput")?.focus();
+        document.getElementById("wealthDividendBackBtn")?.addEventListener("click", () => showWealthHoldingDividendsModal(holdingId));
+        document.getElementById("wealthDividendSubmitBtn")?.addEventListener("click", () => {
+          const wealth = ensureWealthStateShape();
+          const amountMinor = Math.abs(moneyToMinor(document.getElementById("wealthDividendAmountInput")?.value || "0"));
+          if (amountMinor <= 0) return;
+          const record = normalizeWealthDividendRecord({
+            id: existing?.id || uid(),
+            holding_id: holdingId,
+            pay_date: document.getElementById("wealthDividendDateInput")?.value || todayISO(),
+            amount_minor: amountMinor,
+            status: document.getElementById("wealthDividendStatusInput")?.value || "confirmed",
+            notes: (document.getElementById("wealthDividendNotesInput")?.value || "").trim(),
+            created_at: existing?.created_at || new Date().toISOString(),
+            source: existing?.source || "manual"
+          });
+          wealth.dividends = (wealth.dividends || []).filter(dividend => dividend.id !== record.id);
+          wealth.dividends.push(record);
+          saveState(existing ? "wealth_edit_dividend" : "wealth_add_dividend");
+          renderWealth();
+          showWealthHoldingDividendsModal(holdingId);
+        });
+      });
     }
 
     function showWealthHoldingTradesModal(holdingId) {
@@ -18818,11 +19024,24 @@ Data caveat`;
         if (id) showWealthHoldingTradesModal(id);
         return;
       }
+      const openDividendsBtn = e.target.closest("[data-open-holding-dividends]");
+      if (openDividendsBtn) {
+        const id = String(openDividendsBtn.getAttribute("data-open-holding-dividends") || "").trim();
+        if (id) showWealthHoldingDividendsModal(id);
+        return;
+      }
       const editTradeBtn = e.target.closest("[data-edit-holding-trade]");
       if (editTradeBtn) {
         const holdingId = String(editTradeBtn.getAttribute("data-holding-id") || "").trim();
         const tradeId = String(editTradeBtn.getAttribute("data-edit-holding-trade") || "").trim();
         if (holdingId && tradeId) showWealthTradeModal(holdingId, tradeId);
+        return;
+      }
+      const editDividendBtn = e.target.closest("[data-edit-holding-dividend]");
+      if (editDividendBtn) {
+        const holdingId = String(editDividendBtn.getAttribute("data-holding-id") || "").trim();
+        const dividendId = String(editDividendBtn.getAttribute("data-edit-holding-dividend") || "").trim();
+        if (holdingId && dividendId) showWealthDividendModal(holdingId, dividendId);
         return;
       }
       const deleteTradeBtn = e.target.closest("[data-delete-holding-trade]");
@@ -18832,6 +19051,16 @@ Data caveat`;
         if (tradeId && confirm("Delete this trade?")) {
           deleteWealthTrade(tradeId);
           if (holdingId) showWealthHoldingTradesModal(holdingId);
+        }
+        return;
+      }
+      const deleteDividendBtn = e.target.closest("[data-delete-holding-dividend]");
+      if (deleteDividendBtn) {
+        const holdingId = String(deleteDividendBtn.getAttribute("data-holding-id") || "").trim();
+        const dividendId = String(deleteDividendBtn.getAttribute("data-delete-holding-dividend") || "").trim();
+        if (dividendId && confirm("Delete this dividend?")) {
+          deleteWealthDividend(dividendId);
+          if (holdingId) showWealthHoldingDividendsModal(holdingId);
         }
         return;
       }
