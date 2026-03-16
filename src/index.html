@@ -16886,6 +16886,22 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       };
     }
 
+    function holdingDividendYieldPct(holdingView) {
+      const marketValueMinor = Number(holdingView?.marketValueMinor || 0);
+      if (marketValueMinor <= 0) return null;
+      return (Number(holdingView?.trailing12DividendMinor || 0) / marketValueMinor) * 100;
+    }
+
+    function latestHoldingTrade(holdingId, { includePending = true } = {}) {
+      const trades = getTradesForHolding(holdingId, { includePending });
+      return trades.length ? trades[trades.length - 1] : null;
+    }
+
+    function latestHoldingDividend(holdingId, { includePending = true } = {}) {
+      const dividends = getDividendsForHolding(holdingId, { includePending });
+      return dividends.length ? dividends[dividends.length - 1] : null;
+    }
+
     function getHoldingSortValue(holding, key) {
       switch (key) {
         case "display_symbol": return String(holding.display_symbol || "").toUpperCase();
@@ -17326,8 +17342,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
           <span class="wealth-source-text">${escapeHtml(quoteFreshnessLabel(h.quote))}</span>
         </div>
         <div class="wealth-row-actions">
-          <button class="wealth-inline-btn" type="button" data-open-holding-trades="${escapeHtml(h.id)}">Trades</button>
-          <button class="wealth-inline-btn" type="button" data-open-holding-dividends="${escapeHtml(h.id)}">Income</button>
+          <button class="wealth-inline-btn" type="button" data-open-holding-detail="${escapeHtml(h.id)}">Details</button>
           <button class="wealth-inline-btn" type="button" data-set-holding-price="${escapeHtml(h.id)}">${h.quote ? "Update Price" : "Set Price"}</button>
           <button class="wealth-inline-btn" type="button" data-delete-holding="${escapeHtml(h.id)}">Delete</button>
         </div>
@@ -18119,6 +18134,125 @@ Data caveat`;
       state.wealth.dividends = (state.wealth.dividends || []).filter(dividend => dividend.id !== dividendId);
       saveState("wealth_delete_dividend");
       renderWealth();
+    }
+
+    function showWealthHoldingDetailModal(holdingId) {
+      const holding = getWealthHolding(holdingId);
+      if (!holding) return;
+      const h = buildHoldingView(holding);
+      const accountName = h.account?.name || "No account";
+      const latestTrade = latestHoldingTrade(holdingId);
+      const latestDividend = latestHoldingDividend(holdingId);
+      const recentTrades = getTradesForHolding(holdingId, { includePending: true }).slice().reverse().slice(0, 3);
+      const recentDividends = getDividendsForHolding(holdingId, { includePending: true }).slice().reverse().slice(0, 3);
+      const trailingYieldPct = holdingDividendYieldPct(h);
+      const sourceClass = !h.quote ? "missing" : h.quote.stale ? "stale" : "";
+      const gainLossKnown = h.gainLossMinor != null;
+      const gainLossPositive = Number(h.gainLossMinor || 0) >= 0;
+      const gainLossLabel = gainLossKnown
+        ? `${gainLossPositive ? "+" : "-"}${formatCurrency(Math.abs(h.gainLossMinor || 0))} · ${formatPct(h.returnPct)}`
+        : "Needs price";
+      const nextStep = !h.quote
+        ? "Set a price to calculate market value and return."
+        : h.quote.stale
+          ? "Refresh or update the quote before relying on the current value."
+          : !recentTrades.length
+            ? "Add trades to establish the position and cost basis."
+            : !recentDividends.length
+              ? "Add dividends when this holding starts producing income."
+              : "Review the trade and dividend ledger together to validate this holding.";
+      const bodyHtml = `<div class="wealth-form-grid">
+        <div class="wealth-form-row">
+          <div>
+            <label>Holding</label>
+            <div style="font-weight:700">${escapeHtml(h.display_symbol)} · ${escapeHtml(h.name)}</div>
+            <div class="tiny" style="margin-top:4px;color:var(--text2)">${escapeHtml(WEALTH_ASSET_TYPES[h.asset_type] || h.asset_type)} · ${escapeHtml(accountName)}</div>
+          </div>
+          <div>
+            <label>Quote</label>
+            <div style="font-weight:700">${h.quote ? formatCurrency(h.quote.price_minor_aud || 0) : "No quote"}</div>
+            <div class="wealth-holding-source" style="margin-top:6px">
+              <span class="wealth-source-badge ${sourceClass}">${h.quote ? (WEALTH_PROVIDER_LABELS[h.quote.provider] || h.quote.provider) : "Missing"}</span>
+              <span class="wealth-source-text">${escapeHtml(quoteFreshnessLabel(h.quote))}</span>
+            </div>
+          </div>
+        </div>
+        <div class="wealth-form-row">
+          <div>
+            <label>Position</label>
+            <div style="font-weight:700">${Number(h.units || 0).toLocaleString(undefined, { maximumFractionDigits: 8 })} units</div>
+            <div class="tiny" style="margin-top:4px;color:var(--text2)">${h.tradeCount || 0} trade${h.tradeCount === 1 ? "" : "s"} on record</div>
+          </div>
+          <div>
+            <label>Dividend Flow</label>
+            <div style="font-weight:700">${formatCurrency(h.dividendIncomeMinor || 0)}</div>
+            <div class="tiny" style="margin-top:4px;color:var(--text2)">Trailing 12M ${formatCurrency(h.trailing12DividendMinor || 0)}${trailingYieldPct == null ? "" : ` · Yield ${formatPct(trailingYieldPct)}`}</div>
+          </div>
+        </div>
+        <div class="wealth-form-row">
+          <div>
+            <label>Market Value</label>
+            <div style="font-weight:700">${h.quote ? formatCurrency(h.marketValueMinor || 0) : "Needs price"}</div>
+            <div class="tiny" style="margin-top:4px;color:var(--text2)">Cost basis ${formatCurrency(h.costBasisMinor || 0)}</div>
+          </div>
+          <div>
+            <label>Return</label>
+            <div style="font-weight:700;color:${gainLossKnown ? (gainLossPositive ? "var(--accent)" : "var(--danger)") : "var(--text2)"}">${gainLossLabel}</div>
+            <div class="tiny" style="margin-top:4px;color:var(--text2)">${nextStep}</div>
+          </div>
+        </div>
+        <div class="wealth-form-row">
+          <div>
+            <label>Latest Trade</label>
+            <div style="font-weight:700">${latestTrade ? escapeHtml(fmtEntryDate(latestTrade.trade_date)) : "No trades yet"}</div>
+            <div class="tiny" style="margin-top:4px;color:var(--text2)">${latestTrade ? `${escapeHtml(latestTrade.trade_type)} · ${latestTrade.units.toLocaleString(undefined, { maximumFractionDigits: 8 })} units · ${formatCurrency(latestTrade.total_minor || 0)}` : "Use Trades to establish position history."}</div>
+          </div>
+          <div>
+            <label>Latest Dividend</label>
+            <div style="font-weight:700">${latestDividend ? escapeHtml(fmtEntryDate(latestDividend.pay_date)) : "No dividends yet"}</div>
+            <div class="tiny" style="margin-top:4px;color:var(--text2)">${latestDividend ? `${formatCurrency(latestDividend.amount_minor || 0)} · ${escapeHtml(latestDividend.status)}` : "Use Income to log distributions or dividends."}</div>
+          </div>
+        </div>
+        <div class="controls" style="justify-content:space-between;align-items:center">
+          <div class="tiny" style="color:var(--text2)">This is the summary view for the holding. Use the ledger views only when you need detail.</div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <button class="ghost" id="wealthHoldingDetailPriceBtn" type="button">${h.quote ? "Update Price" : "Set Price"}</button>
+            <button class="ghost" id="wealthHoldingDetailTradesBtn" type="button">Trades</button>
+            <button class="primary" id="wealthHoldingDetailIncomeBtn" type="button">Income</button>
+          </div>
+        </div>
+        <div class="wealth-form-row">
+          <div>
+            <label>Recent Trades</label>
+            <div class="wealth-list" style="display:flex;flex-direction:column;gap:8px">
+              ${recentTrades.length ? recentTrades.map(trade => {
+                const typeLabel = trade.trade_type === "opening_balance"
+                  ? "Opening balance"
+                  : trade.trade_type.charAt(0).toUpperCase() + trade.trade_type.slice(1);
+                return `<div class="wealth-row" style="padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--bg)">
+                  <div style="font-weight:700">${escapeHtml(typeLabel)} · ${escapeHtml(fmtEntryDate(trade.trade_date))}</div>
+                  <div class="tiny" style="margin-top:4px;color:var(--text2)">${trade.units.toLocaleString(undefined, { maximumFractionDigits: 8 })} units · ${formatCurrency(trade.price_minor || 0)} / unit · ${formatCurrency(trade.total_minor || 0)}</div>
+                </div>`;
+              }).join("") : '<div class="wealth-empty-state" style="text-align:left">No trades yet.</div>'}
+            </div>
+          </div>
+          <div>
+            <label>Recent Income</label>
+            <div class="wealth-list" style="display:flex;flex-direction:column;gap:8px">
+              ${recentDividends.length ? recentDividends.map(dividend => `<div class="wealth-row" style="padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--bg)">
+                <div style="font-weight:700">Dividend · ${escapeHtml(fmtEntryDate(dividend.pay_date))}</div>
+                <div class="tiny" style="margin-top:4px;color:var(--text2)">${formatCurrency(dividend.amount_minor || 0)} · ${escapeHtml(dividend.status)}</div>
+              </div>`).join("") : '<div class="wealth-empty-state" style="text-align:left">No dividends yet.</div>'}
+            </div>
+          </div>
+        </div>
+      </div>`;
+      showWealthModal("Holding Detail", bodyHtml);
+      requestAnimationFrame(() => {
+        document.getElementById("wealthHoldingDetailPriceBtn")?.addEventListener("click", () => showSetHoldingPriceModal(holdingId));
+        document.getElementById("wealthHoldingDetailTradesBtn")?.addEventListener("click", () => showWealthHoldingTradesModal(holdingId));
+        document.getElementById("wealthHoldingDetailIncomeBtn")?.addEventListener("click", () => showWealthHoldingDividendsModal(holdingId));
+      });
     }
 
     function showWealthHoldingDividendsModal(holdingId) {
@@ -19602,6 +19736,12 @@ Data caveat`;
       if (delHolding) {
         const id = delHolding.dataset.deleteHolding;
         if (id && confirm("Delete this holding?")) deleteWealthHolding(id);
+        return;
+      }
+      const openDetailBtn = e.target.closest("[data-open-holding-detail]");
+      if (openDetailBtn) {
+        const id = String(openDetailBtn.getAttribute("data-open-holding-detail") || "").trim();
+        if (id) showWealthHoldingDetailModal(id);
         return;
       }
       const openTradesBtn = e.target.closest("[data-open-holding-trades]");
