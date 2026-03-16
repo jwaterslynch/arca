@@ -1952,12 +1952,42 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
 .wealth-category-btn.active .wealth-category-bar{filter:brightness(.92)}
 .wealth-category-bar{height:6px;border-radius:3px;background:var(--accent);margin-top:4px}
 .wealth-category-filter{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border-radius:var(--radius-sm);background:var(--accent-light);font-size:.78rem;color:var(--text2);margin-bottom:10px}
+.wealth-filter-pills{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.wealth-filter-pill{
+  display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;
+  background:#fff;border:1px solid #c9e4db;color:var(--text2);font-size:.72rem;font-weight:600;
+}
+.wealth-cashflow-head{
+  display:grid;
+  grid-template-columns:minmax(180px,1fr) minmax(320px,auto);
+  gap:14px;
+  align-items:start;
+  margin-bottom:12px;
+}
+.wealth-cashflow-heading{display:grid;gap:6px}
+.wealth-cashflow-heading h4{margin:0}
+.wealth-cashflow-controls{display:grid;gap:8px;justify-items:end}
+.wealth-cashflow-control-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
 .wealth-range-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .wealth-range-meta{font-size:.75rem;color:var(--text2)}
 .wealth-range-controls input[type="month"]{
   padding:7px 10px;border:1px solid var(--line);border-radius:10px;background:var(--surface);
   font:.74rem var(--font);color:var(--text)
 }
+.wealth-range-controls select{
+  padding:7px 10px;border:1px solid var(--line);border-radius:10px;background:var(--surface);
+  font:.74rem var(--font);color:var(--text);min-width:140px;
+}
+.wealth-merchant-list{display:flex;flex-direction:column;gap:8px}
+.wealth-merchant-row{
+  display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;
+  padding:10px 14px;background:var(--bg);border-radius:var(--radius-sm);font-size:.8rem;
+}
+.wealth-merchant-main{min-width:0;display:grid;gap:4px}
+.wealth-merchant-name{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.wealth-merchant-meta{font-size:.7rem;color:var(--text2);display:flex;gap:8px;flex-wrap:wrap}
+.wealth-merchant-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.wealth-merchant-total{font-weight:700;font-variant-numeric:tabular-nums}
 .wealth-allocation-list{display:flex;flex-direction:column;gap:10px}
 .wealth-allocation-item{display:grid;grid-template-columns:140px 1fr 72px;gap:12px;align-items:center;font-size:.82rem}
 .wealth-allocation-label{font-weight:600}
@@ -1991,6 +2021,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
 .wealth-source-text{font-size:.68rem;color:var(--text2)}
 .wealth-row-actions{display:flex;gap:6px;justify-content:flex-end}
 .wealth-inline-btn{font-size:.68rem;padding:5px 8px;border-radius:8px;border:1px solid var(--line);background:var(--surface);cursor:pointer;color:var(--text2)}
+.wealth-inline-btn.active{border-color:#9acdbf;background:var(--accent-light);color:var(--accent);font-weight:700}
 .wealth-inline-btn.warn{color:var(--danger);border-color:rgba(220,38,38,.22)}
 .wealth-inline-btn:hover{border-color:var(--accent);color:var(--accent)}
 .wealth-rule-meta{font-size:.72rem;color:var(--text2);display:flex;gap:8px;flex-wrap:wrap}
@@ -2047,20 +2078,41 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
 .wealth-coach-notice-copy{font-size:.76rem;line-height:1.5;color:var(--text2)}
 .wealth-coach-notice-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .wealth-coach-empty{font-size:.78rem;color:var(--text2);line-height:1.5}
-.wealth-coach-foot{padding:14px 18px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:10px}
-.wealth-coach-actions{display:flex;align-items:center;justify-content:space-between;gap:10px}
-.wealth-coach-input-row{display:flex;align-items:flex-end;gap:10px}
+.wealth-coach-foot{padding:12px 18px 16px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:8px;background:var(--surface)}
+.wealth-coach-actions{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:22px}
+.wealth-coach-actions[hidden]{display:none}
+.wealth-coach-input-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:10px}
 .wealth-coach-input-row textarea{
-  flex:1;min-height:42px;max-height:180px;resize:none;border:1px solid var(--line);
-  border-radius:14px;padding:11px 13px;font:inherit;background:var(--surface);color:var(--text)
+  flex:1;
+  min-height:44px;
+  height:44px;
+  max-height:180px;
+  resize:none;
+  overflow-y:hidden;
+  border:1px solid var(--line);
+  border-radius:16px;
+  padding:11px 14px;
+  margin:0;
+  font:500 .88rem var(--font);
+  line-height:1.25;
+  background:var(--surface);
+  color:var(--text);
+  box-sizing:border-box;
+  display:block;
+  align-self:end;
+  vertical-align:top;
 }
 .wealth-coach-input-row textarea:focus{outline:none;border-color:var(--accent)}
-.wealth-coach-send{height:42px;padding:0 16px;border:0;border-radius:12px;background:var(--accent);color:#fff;font-weight:700;cursor:pointer}
+.wealth-coach-input-row textarea::placeholder{font-size:.82rem;line-height:1.15}
+.wealth-coach-send{height:44px;padding:0 16px;border:0;border-radius:14px;background:var(--accent);color:#fff;font-weight:700;cursor:pointer}
 .wealth-coach-send[disabled]{opacity:.6;cursor:default}
 @media (max-width: 1100px){
   .health-summary-grid{grid-template-columns:repeat(2,1fr)}
   .wealth-summary-grid{grid-template-columns:repeat(2,1fr)}
   .wealth-holding-row,.wealth-holding-head{grid-template-columns:minmax(0,1.2fr) 88px 90px 108px 108px 108px 120px auto}
+  .wealth-cashflow-head{grid-template-columns:1fr}
+  .wealth-cashflow-controls{justify-items:start}
+  .wealth-cashflow-control-row{justify-content:flex-start}
 }
 @media (max-width: 860px){
   .health-tabs-row{align-items:stretch;flex-direction:column}
@@ -2745,26 +2797,35 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       <!-- Cash Flow Subtab -->
       <div class="wealth-panel" id="wealth-panel-cashflow">
         <div class="review-card">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-            <h4 style="margin-bottom:0" id="cashflowMonthHeading">March 2026</h4>
-            <div class="wealth-range-controls">
-              <div class="wealth-segmented" id="cashflowRangeMode" aria-label="Cash flow range">
-                <button type="button" data-cashflow-range="month" class="active">Month</button>
-                <button type="button" data-cashflow-range="quarter">Quarter</button>
-                <button type="button" data-cashflow-range="6month">6M</button>
-                <button type="button" data-cashflow-range="year">Year</button>
+          <div class="wealth-cashflow-head">
+            <div class="wealth-cashflow-heading">
+              <h4 id="cashflowMonthHeading">March 2026</h4>
+              <div class="wealth-range-meta" id="cashflowRangeMeta"></div>
+            </div>
+            <div class="wealth-cashflow-controls">
+              <div class="wealth-cashflow-control-row">
+                <div class="wealth-segmented" id="cashflowRangeMode" aria-label="Cash flow range">
+                  <button type="button" data-cashflow-range="month" class="active">Month</button>
+                  <button type="button" data-cashflow-range="quarter">Quarter</button>
+                  <button type="button" data-cashflow-range="6month">6M</button>
+                  <button type="button" data-cashflow-range="year">Year</button>
+                </div>
+                <div class="wealth-segmented" id="cashflowScopeMode" aria-label="Cash flow scope">
+                  <button type="button" data-cashflow-scope="household" class="active">Household</button>
+                  <button type="button" data-cashflow-scope="all">All</button>
+                  <button type="button" data-cashflow-scope="wealth">Wealth</button>
+                </div>
               </div>
-              <div class="wealth-segmented" id="cashflowScopeMode" aria-label="Cash flow scope">
-                <button type="button" data-cashflow-scope="household" class="active">Household</button>
-                <button type="button" data-cashflow-scope="all">All</button>
-                <button type="button" data-cashflow-scope="wealth">Wealth</button>
+              <div class="wealth-cashflow-control-row">
+                <select id="wealthAccountFilter" aria-label="Filter by account">
+                  <option value="">All accounts</option>
+                </select>
+                <input id="wealthMonthPicker" type="month" />
+                <button id="wealthPrevMonthBtn" class="ghost" type="button" style="font-size:.75rem;padding:4px 8px;">← Prev</button>
+                <button id="wealthNextMonthBtn" class="ghost" type="button" style="font-size:.75rem;padding:4px 8px;">Next →</button>
               </div>
-              <input id="wealthMonthPicker" type="month" />
-              <button id="wealthPrevMonthBtn" class="ghost" type="button" style="font-size:.75rem;padding:4px 8px;">← Prev</button>
-              <button id="wealthNextMonthBtn" class="ghost" type="button" style="font-size:.75rem;padding:4px 8px;">Next →</button>
             </div>
           </div>
-          <div class="wealth-range-meta" id="cashflowRangeMeta"></div>
           <div class="wealth-net-worth" id="cashflowSummary">
             <div class="stat-box"><div class="stat-val" style="color:var(--accent)" id="cashflowIncome">$0</div><div class="stat-label">Income</div></div>
             <div class="stat-box"><div class="stat-val" style="color:var(--danger)" id="cashflowExpenses">$0</div><div class="stat-label">Expenses</div></div>
@@ -2777,6 +2838,13 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           <h4 style="margin-bottom:12px">By Category</h4>
           <div id="cashflowCategories" class="wealth-category-list">
             <div class="wealth-empty-state">Add transactions to see category breakdown.</div>
+          </div>
+        </div>
+
+        <div class="review-card">
+          <h4 style="margin-bottom:12px">Merchant Breakdown</h4>
+          <div id="cashflowMerchants" class="wealth-merchant-list">
+            <div class="wealth-empty-state">Select a category or account to inspect merchants.</div>
           </div>
         </div>
 
@@ -2809,7 +2877,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           <button class="ghost" id="wealthCoachClearBtn" type="button" style="font-size:.75rem">Clear</button>
         </div>
         <div class="wealth-coach-input-row">
-          <textarea id="wealthCoachInput" rows="1" placeholder="Ask about spending patterns, categories, imports, or what is included in Other..."></textarea>
+          <textarea id="wealthCoachInput" rows="1" placeholder="Ask Wealth Coach..."></textarea>
           <button id="wealthCoachSendBtn" class="wealth-coach-send" type="button">Ask</button>
         </div>
       </div>
@@ -3565,6 +3633,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           currency: "AUD",
           display_percentages: false,
           cashflow_scope_filter: "household",
+          cashflow_account_filter: "",
           holdings_sort: { key: "marketValueMinor", dir: "desc" },
           holdings: [],
           price_quotes: {},
@@ -3848,6 +3917,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         currency: iw.currency || "AUD",
         display_percentages: !!iw.display_percentages,
         cashflow_scope_filter: normalizeWealthCashflowScopeFilter(iw.cashflow_scope_filter),
+        cashflow_account_filter: String(iw.cashflow_account_filter || "").trim(),
         holdings_sort: { key: wealthSortKey, dir: wealthSortDir },
         holdings: Array.isArray(iw.holdings) ? iw.holdings.map(h => ({
           id: h.id || uid(),
@@ -12145,7 +12215,9 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
     let wealthCashflowAnchorMonth = todayISO().slice(0, 7);
     let wealthCashflowRange = "month";
     let wealthCashflowScopeFilter = normalizeWealthCashflowScopeFilter(state.wealth?.cashflow_scope_filter);
+    let wealthCashflowAccountFilter = String(state.wealth?.cashflow_account_filter || "").trim();
     let wealthCashflowCategoryFilter = "";
+    let wealthCashflowMerchantFilter = "";
     let wealthQuoteRefreshInFlight = false;
     let wealthLastQuoteRefreshAttemptAt = 0;
     let wealthQuoteStatusText = "";
@@ -12942,6 +13014,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
           currency: "AUD",
           display_percentages: false,
           cashflow_scope_filter: "household",
+          cashflow_account_filter: "",
           holdings_sort: { key: "marketValueMinor", dir: "desc" },
           holdings: [],
           price_quotes: {},
@@ -12962,6 +13035,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       if (!state.wealth.price_quotes || typeof state.wealth.price_quotes !== "object") state.wealth.price_quotes = {};
       if (!state.wealth.fx_quotes || typeof state.wealth.fx_quotes !== "object") state.wealth.fx_quotes = {};
       state.wealth.cashflow_scope_filter = normalizeWealthCashflowScopeFilter(state.wealth.cashflow_scope_filter);
+      if (typeof state.wealth.cashflow_account_filter !== "string") state.wealth.cashflow_account_filter = "";
       if (typeof state.wealth.import_folder_label !== "string") state.wealth.import_folder_label = "";
       return state.wealth;
     }
@@ -13912,6 +13986,64 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       return (state.wealth?.transactions || []).filter(t => t.date >= start && t.date <= end && wealthTxnMatchesCashflowScope(t, scopeFilter));
     }
 
+    function normalizeWealthMerchantLabel(value) {
+      return String(value || "")
+        .replace(/\s+/g, " ")
+        .trim();
+    }
+
+    function wealthTxnMerchantLabel(txn) {
+      return normalizeWealthMerchantLabel(txn?.description || txn?.category || "Unknown");
+    }
+
+    function wealthTxnMerchantKey(txn) {
+      return wealthTxnMerchantLabel(txn).toUpperCase();
+    }
+
+    function filterWealthCashflowTransactions(txns, options = {}) {
+      const accountId = String(options.accountId || "").trim();
+      const category = String(options.category || "").trim();
+      const merchantKey = String(options.merchantKey || "").trim().toUpperCase();
+      return (txns || []).filter(txn => {
+        if (accountId && txn.account_id !== accountId) return false;
+        if (category && txn.category !== category) return false;
+        if (merchantKey && wealthTxnMerchantKey(txn) !== merchantKey) return false;
+        return true;
+      });
+    }
+
+    function summarizeWealthMerchants(txns) {
+      const map = new Map();
+      for (const txn of (txns || [])) {
+        const key = wealthTxnMerchantKey(txn);
+        if (!key) continue;
+        const current = map.get(key) || {
+          key,
+          label: wealthTxnMerchantLabel(txn),
+          total_minor: 0,
+          count: 0,
+          categories: new Set(),
+          account_ids: new Set()
+        };
+        current.total_minor += txn.amount_minor || 0;
+        current.count += 1;
+        if (txn.category) current.categories.add(txn.category);
+        if (txn.account_id) current.account_ids.add(txn.account_id);
+        if (txn.date >= (current.latest_date || "")) {
+          current.latest_date = txn.date;
+          current.label = wealthTxnMerchantLabel(txn);
+        }
+        map.set(key, current);
+      }
+      return Array.from(map.values())
+        .sort((a, b) => b.total_minor - a.total_minor || b.count - a.count || a.label.localeCompare(b.label))
+        .map(item => ({
+          ...item,
+          categories: Array.from(item.categories),
+          account_ids: Array.from(item.account_ids)
+        }));
+    }
+
     function wealthTxnsForMonth(offset) {
       const { start, end } = getMonthRange(offset);
       return (state.wealth?.transactions || []).filter(t => t.date >= start && t.date <= end);
@@ -14440,6 +14572,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       if (heading) heading.textContent = rangeInfo.label;
       const monthPicker = document.getElementById("wealthMonthPicker");
       if (monthPicker) monthPicker.value = rangeInfo.anchorMonth;
+      const accountFilterSelect = document.getElementById("wealthAccountFilter");
       document.querySelectorAll("#cashflowRangeMode [data-cashflow-range]").forEach(btn => {
         btn.classList.toggle("active", btn.getAttribute("data-cashflow-range") === wealthCashflowRange);
       });
@@ -14448,6 +14581,18 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       });
       const allRangeTxns = wealthTxnsForCashflowRange("all");
       const txns = wealthTxnsForCashflowRange();
+      const visibleAccounts = (state.wealth?.accounts || []).filter(a => !a.archived);
+      if (wealthCashflowAccountFilter && !visibleAccounts.some(a => a.id === wealthCashflowAccountFilter)) {
+        wealthCashflowAccountFilter = "";
+      }
+      if (accountFilterSelect) {
+        accountFilterSelect.innerHTML = `<option value="">All accounts</option>${visibleAccounts.map(account => `
+          <option value="${escapeHtml(account.id)}" ${account.id === wealthCashflowAccountFilter ? "selected" : ""}>${escapeHtml(account.name)}</option>
+        `).join("")}`;
+      }
+      const accountFilteredTxns = filterWealthCashflowTransactions(txns, { accountId: wealthCashflowAccountFilter });
+      const categoryFilteredTxns = filterWealthCashflowTransactions(accountFilteredTxns, { category: wealthCashflowCategoryFilter });
+      const merchantFilteredTxns = filterWealthCashflowTransactions(categoryFilteredTxns, { merchantKey: wealthCashflowMerchantFilter });
       const hiddenWealthFlowCount = allRangeTxns.filter(t => normalizeWealthCashflowScope(t.cashflow_scope) === "wealth").length;
       const hiddenHouseholdFlowCount = allRangeTxns.filter(t => normalizeWealthCashflowScope(t.cashflow_scope) === "household").length;
       const rangeMeta = document.getElementById("cashflowRangeMeta");
@@ -14462,12 +14607,15 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
             : hiddenWealthFlowCount
               ? `Viewing household cash flow only. ${hiddenWealthFlowCount} wealth-account flow${hiddenWealthFlowCount === 1 ? "" : "s"} excluded.`
               : "Viewing household cash flow only.";
-        rangeMeta.textContent = `${rangeText} ${scopeText}`;
+        const accountText = wealthCashflowAccountFilter
+          ? ` Account filter: ${visibleAccounts.find(a => a.id === wealthCashflowAccountFilter)?.name || "selected account"}.`
+          : "";
+        rangeMeta.textContent = `${rangeText} ${scopeText}${accountText}`;
       }
 
       let income = 0, expenses = 0;
       const catTotals = {};
-      for (const t of txns) {
+      for (const t of accountFilteredTxns) {
         if (t.type === "income") {
           income += t.amount_minor || 0;
         } else {
@@ -14508,23 +14656,65 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         }
       }
 
-      // Monthly txn list
+      const merchantEl = document.getElementById("cashflowMerchants");
+      if (merchantEl) {
+        const merchantSource = categoryFilteredTxns;
+        const merchants = summarizeWealthMerchants(merchantSource).slice(0, 12);
+        if (!merchantSource.length) {
+          merchantEl.innerHTML = `<div class="wealth-empty-state">No merchant activity for ${wealthCashflowCategoryFilter ? escapeHtml(wealthCashflowCategoryFilter) : "the current filters"}.</div>`;
+        } else if (!merchants.length) {
+          merchantEl.innerHTML = '<div class="wealth-empty-state">No merchant breakdown available for the current filters.</div>';
+        } else {
+          merchantEl.innerHTML = merchants.map(merchant => {
+            const active = wealthCashflowMerchantFilter === merchant.key;
+            const accountNames = merchant.account_ids
+              .map(id => getWealthAccount(id)?.name)
+              .filter(Boolean)
+              .slice(0, 2);
+            const accountMeta = accountNames.length ? ` · ${escapeHtml(accountNames.join(", "))}` : "";
+            const categoryMeta = !wealthCashflowCategoryFilter && merchant.categories.length
+              ? ` · ${escapeHtml(merchant.categories.slice(0, 2).join(", "))}`
+              : "";
+            return `<div class="wealth-merchant-row">
+              <div class="wealth-merchant-main">
+                <div class="wealth-merchant-name">${escapeHtml(merchant.label)}</div>
+                <div class="wealth-merchant-meta">
+                  <span>${merchant.count} txn${merchant.count === 1 ? "" : "s"}</span>
+                  <span>${formatCurrency(merchant.total_minor)}</span>
+                  <span>${escapeHtml(formatDateLabel(merchant.latest_date || rangeInfo.end))}${accountMeta}${categoryMeta}</span>
+                </div>
+              </div>
+              <div class="wealth-merchant-actions">
+                <button class="wealth-inline-btn ${active ? "active" : ""}" type="button" data-cashflow-merchant="${escapeHtml(merchant.key)}">${active ? "Showing" : "Filter"}</button>
+                <button class="wealth-inline-btn" type="button" data-cashflow-merchant-rule="${escapeHtml(merchant.key)}">Rule</button>
+              </div>
+            </div>`;
+          }).join("");
+        }
+      }
+
+      // Transaction filters + list
       const filterWrap = document.getElementById("cashflowCategoryFilter");
       if (filterWrap) {
-        const selected = wealthCashflowCategoryFilter;
-        filterWrap.hidden = !selected;
-        filterWrap.innerHTML = selected
-          ? `<div class="wealth-category-filter"><span>Filtering transactions to <strong>${escapeHtml(selected)}</strong>.</span><button class="ghost" type="button" id="cashflowClearCategoryBtn" style="font-size:.72rem">Clear Filter</button></div>`
+        const accountName = visibleAccounts.find(a => a.id === wealthCashflowAccountFilter)?.name || "";
+        const hasFilters = !!wealthCashflowCategoryFilter || !!wealthCashflowMerchantFilter || !!wealthCashflowAccountFilter;
+        filterWrap.hidden = !hasFilters;
+        filterWrap.innerHTML = hasFilters
+          ? `<div class="wealth-category-filter">
+              <div class="wealth-filter-pills">
+                ${wealthCashflowAccountFilter ? `<span class="wealth-filter-pill">Account: <strong>${escapeHtml(accountName)}</strong></span>` : ""}
+                ${wealthCashflowCategoryFilter ? `<span class="wealth-filter-pill">Category: <strong>${escapeHtml(wealthCashflowCategoryFilter)}</strong></span>` : ""}
+                ${wealthCashflowMerchantFilter ? `<span class="wealth-filter-pill">Merchant: <strong>${escapeHtml(merchantFilteredTxns[0] ? wealthTxnMerchantLabel(merchantFilteredTxns[0]) : wealthCashflowMerchantFilter)}</strong></span>` : ""}
+              </div>
+              <button class="ghost" type="button" id="cashflowClearCategoryBtn" style="font-size:.72rem">Clear Filters</button>
+            </div>`
           : "";
       }
       const txnList = document.getElementById("cashflowTxnList");
       if (txnList) {
-        const filtered = wealthCashflowCategoryFilter
-          ? txns.filter(t => t.category === wealthCashflowCategoryFilter)
-          : txns;
-        const sorted = [...filtered].sort((a, b) => b.date.localeCompare(a.date) || b.created_at.localeCompare(a.created_at));
+        const sorted = [...merchantFilteredTxns].sort((a, b) => b.date.localeCompare(a.date) || b.created_at.localeCompare(a.created_at));
         if (!sorted.length) {
-          txnList.innerHTML = `<div class="wealth-empty-state">No transactions for ${wealthCashflowCategoryFilter ? escapeHtml(wealthCashflowCategoryFilter) + " in this range" : "this range"}.</div>`;
+          txnList.innerHTML = `<div class="wealth-empty-state">No transactions for the current Wealth Cash Flow filters.</div>`;
         } else {
           txnList.innerHTML = sorted.map(t => renderTxnRow(t)).join("");
         }
@@ -14546,17 +14736,26 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       const rangeInfo = getWealthCashflowRange();
       const txns = wealthTxnsForCashflowRange();
       const allRangeTxns = wealthTxnsForCashflowRange("all");
-      const filteredTxns = wealthCashflowCategoryFilter
-        ? txns.filter(t => t.category === wealthCashflowCategoryFilter)
-        : txns;
+      const accountFilteredTxns = filterWealthCashflowTransactions(txns, { accountId: wealthCashflowAccountFilter });
+      const categoryFilteredTxns = filterWealthCashflowTransactions(accountFilteredTxns, { category: wealthCashflowCategoryFilter });
+      const filteredTxns = filterWealthCashflowTransactions(categoryFilteredTxns, { merchantKey: wealthCashflowMerchantFilter });
       let incomeMinor = 0;
       let expenseMinor = 0;
       filteredTxns.forEach(t => {
         if (t.type === "income") incomeMinor += t.amount_minor || 0;
         else expenseMinor += t.amount_minor || 0;
       });
-      const categorySummary = wealthCategorySummaryForTxns(txns);
-      const otherTransactions = txns
+      const categorySummary = wealthCategorySummaryForTxns(accountFilteredTxns);
+      const merchantSummary = summarizeWealthMerchants(categoryFilteredTxns)
+        .slice(0, 20)
+        .map(item => ({
+          merchant: item.label,
+          merchant_key: item.key,
+          total_minor: item.total_minor,
+          count: item.count,
+          categories: item.categories
+        }));
+      const otherTransactions = accountFilteredTxns
         .filter(t => t.category === "Other")
         .sort((a, b) => b.date.localeCompare(a.date) || b.created_at.localeCompare(a.created_at))
         .slice(0, 20)
@@ -14584,9 +14783,11 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
           months: rangeInfo.months,
           anchor_month: rangeInfo.anchorMonth,
           scope_filter: wealthCashflowScopeFilter,
+          account_filter: wealthCashflowAccountFilter || null,
           start_date: rangeInfo.start,
           end_date: rangeInfo.end,
           selected_category: wealthCashflowCategoryFilter || null,
+          selected_merchant: wealthCashflowMerchantFilter || null,
           income_minor: incomeMinor,
           expense_minor: expenseMinor,
           net_minor: incomeMinor - expenseMinor,
@@ -14597,6 +14798,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
             ? allRangeTxns.filter(t => normalizeWealthCashflowScope(t.cashflow_scope) === "household").length
             : 0,
           category_summary: categorySummary,
+          merchant_summary: merchantSummary,
           visible_transactions: filteredTxns
             .sort((a, b) => b.date.localeCompare(a.date) || b.created_at.localeCompare(a.created_at))
             .slice(0, 40)
@@ -14717,6 +14919,8 @@ Data caveat`;
       const meta = document.getElementById("wealthCoachMeta");
       const messagesEl = document.getElementById("wealthCoachMessages");
       const statusEl = document.getElementById("wealthCoachStatus");
+      const actionsEl = document.querySelector(".wealth-coach-actions");
+      const clearBtn = document.getElementById("wealthCoachClearBtn");
       const sendBtn = document.getElementById("wealthCoachSendBtn");
       const activeProvider = wealthCoachActiveProvider();
       const needsConsent = wealthCoachNeedsCloudConsent(activeProvider);
@@ -14750,7 +14954,10 @@ Data caveat`;
         ].filter(Boolean);
         meta.innerHTML = pills.map(text => `<span>${escapeHtml(text)}</span>`).join("");
       }
-      if (statusEl) statusEl.textContent = wealthCoachBusy ? "Thinking..." : (needsConsent ? "Cloud consent required" : "");
+      const statusText = wealthCoachBusy ? "Thinking..." : (needsConsent ? "Cloud consent required" : "");
+      if (statusEl) statusEl.textContent = statusText;
+      if (clearBtn) clearBtn.hidden = !wealthCoachMessages.length;
+      if (actionsEl) actionsEl.hidden = !statusText && !wealthCoachMessages.length;
       if (sendBtn) sendBtn.disabled = wealthCoachBusy || needsConsent;
       if (!messagesEl) return;
       if (!wealthCoachMessages.length) {
@@ -16012,6 +16219,14 @@ Data caveat`;
       renderWealthCashflow();
       renderWealthCoach();
     });
+    document.getElementById("wealthAccountFilter")?.addEventListener("change", e => {
+      wealthCashflowAccountFilter = String(e.target?.value || "").trim();
+      wealthCashflowMerchantFilter = "";
+      ensureWealthStateShape().cashflow_account_filter = wealthCashflowAccountFilter;
+      saveState("wealth_set_cashflow_account_filter");
+      renderWealthCashflow();
+      renderWealthCoach();
+    });
     document.getElementById("wealthImportCsvInput")?.addEventListener("change", async e => {
       const input = e.target;
       const file = input?.files?.[0];
@@ -16048,7 +16263,7 @@ Data caveat`;
       const rangeBtn = e.target.closest("[data-cashflow-range]");
       if (rangeBtn) {
         wealthCashflowRange = String(rangeBtn.getAttribute("data-cashflow-range") || "month");
-        wealthCashflowCategoryFilter = "";
+        wealthCashflowMerchantFilter = "";
         renderWealthCashflow();
         renderWealthCoach();
         return;
@@ -16056,9 +16271,9 @@ Data caveat`;
       const scopeBtn = e.target.closest("[data-cashflow-scope]");
       if (scopeBtn) {
         wealthCashflowScopeFilter = normalizeWealthCashflowScopeFilter(scopeBtn.getAttribute("data-cashflow-scope") || "household");
-        wealthCashflowCategoryFilter = "";
         ensureWealthStateShape().cashflow_scope_filter = wealthCashflowScopeFilter;
         saveState("wealth_set_cashflow_scope_filter");
+        wealthCashflowMerchantFilter = "";
         renderWealthCashflow();
         renderWealthCoach();
         return;
@@ -16067,8 +16282,40 @@ Data caveat`;
       if (categoryBtn) {
         const category = String(categoryBtn.getAttribute("data-cashflow-category") || "").trim();
         wealthCashflowCategoryFilter = wealthCashflowCategoryFilter === category ? "" : category;
+        wealthCashflowMerchantFilter = "";
         renderWealthCashflow();
         renderWealthCoach();
+        return;
+      }
+      const merchantBtn = e.target.closest("[data-cashflow-merchant]");
+      if (merchantBtn) {
+        const merchantKey = String(merchantBtn.getAttribute("data-cashflow-merchant") || "").trim();
+        wealthCashflowMerchantFilter = wealthCashflowMerchantFilter === merchantKey ? "" : merchantKey;
+        renderWealthCashflow();
+        renderWealthCoach();
+        return;
+      }
+      const merchantRuleBtn = e.target.closest("[data-cashflow-merchant-rule]");
+      if (merchantRuleBtn) {
+        const merchantKey = String(merchantRuleBtn.getAttribute("data-cashflow-merchant-rule") || "").trim();
+        const matchingTxns = filterWealthCashflowTransactions(
+          filterWealthCashflowTransactions(wealthTxnsForCashflowRange(), { accountId: wealthCashflowAccountFilter }),
+          { merchantKey }
+        );
+        if (!matchingTxns.length) return;
+        const categoryCounts = {};
+        matchingTxns.forEach(txn => {
+          categoryCounts[txn.category] = (categoryCounts[txn.category] || 0) + 1;
+        });
+        const suggestedCategory = wealthCashflowCategoryFilter
+          || Object.entries(categoryCounts).sort((a, b) => b[1] - a[1])[0]?.[0]
+          || "Other";
+        showWealthCategoryRuleModal({
+          pattern: wealthTxnMerchantLabel(matchingTxns[0]),
+          category: suggestedCategory,
+          tx_type: matchingTxns[0]?.type || "expense",
+          scope: "all"
+        });
         return;
       }
       const jumpMonthBtn = e.target.closest("[data-import-jump-month]");
@@ -16083,6 +16330,10 @@ Data caveat`;
       const clearCategoryBtn = e.target.closest("#cashflowClearCategoryBtn");
       if (clearCategoryBtn) {
         wealthCashflowCategoryFilter = "";
+        wealthCashflowAccountFilter = "";
+        wealthCashflowMerchantFilter = "";
+        ensureWealthStateShape().cashflow_account_filter = "";
+        saveState("wealth_clear_cashflow_filters");
         renderWealthCashflow();
         renderWealthCoach();
         return;
