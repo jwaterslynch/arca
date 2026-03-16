@@ -2691,6 +2691,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       <div class="health-tabs-row">
         <div class="health-subtabs" id="healthSubtabs">
           <div class="health-subtab active" data-health-tab="overview">Overview</div>
+          <div class="health-subtab" data-health-tab="assessment">Assessment</div>
           <div class="health-subtab" data-health-tab="exercise">Exercise</div>
           <div class="health-subtab" data-health-tab="nutrition">Nutrition</div>
           <div class="health-subtab" data-health-tab="measurements">Measurements</div>
@@ -2726,7 +2727,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
             <div class="stat-box"><div class="stat-val">0 / 7</div><div class="stat-label">Consistency</div></div>
             <div class="stat-box"><div class="stat-val">—</div><div class="stat-label">Last Session</div></div>
           </div>
-          <div class="health-card-note">H1 uses your existing exercise practice logs. Sleep, nutrition, and vitals come later.</div>
+          <div class="health-card-note">Health now combines your existing exercise practice logs with intake, nutrition, and measurement layers. Sleep and vitals can build on this next.</div>
         </div>
 
         <div class="review-card">
@@ -2775,6 +2776,49 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         </div>
       </div>
 
+      <div class="health-panel" id="health-panel-assessment">
+        <div class="review-card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:12px;flex-wrap:wrap">
+            <div>
+              <h4 style="margin-bottom:0">Assessment Week</h4>
+              <div class="health-card-note" style="margin-top:4px">A 7-day baseline capture for macros, bodyweight, steps, training load, cardio, and a simple food diary.</div>
+            </div>
+            <div class="health-card-actions" style="margin-top:0">
+              <button class="ghost" type="button" data-health-assessment-open>Set Up Assessment</button>
+              <button class="ghost" type="button" data-health-assessment-log-open>Log Assessment Day</button>
+            </div>
+          </div>
+          <div id="healthAssessmentSummary" class="health-mini-stat-grid">
+            <div class="health-mini-stat"><div class="health-mini-stat-label">Window</div><div class="health-mini-stat-value">—</div></div>
+            <div class="health-mini-stat"><div class="health-mini-stat-label">Days Logged</div><div class="health-mini-stat-value">0 / 7</div></div>
+            <div class="health-mini-stat"><div class="health-mini-stat-label">Avg Kcal</div><div class="health-mini-stat-value">—</div></div>
+            <div class="health-mini-stat"><div class="health-mini-stat-label">Avg Weight</div><div class="health-mini-stat-value">—</div></div>
+          </div>
+        </div>
+
+        <div class="health-section-grid">
+          <div class="review-card">
+            <h4 style="margin-bottom:12px">Assessment Signals</h4>
+            <div id="healthAssessmentSignals" class="health-list">
+              <div class="health-empty-state">Set up an assessment week to see baseline averages.</div>
+            </div>
+          </div>
+          <div class="review-card">
+            <h4 style="margin-bottom:12px">Food Diary Snapshots</h4>
+            <div id="healthAssessmentDiary" class="health-list">
+              <div class="health-empty-state">Assessment-day meal notes will appear here.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="review-card">
+          <h4 style="margin-bottom:12px">7-Day Checklist</h4>
+          <div id="healthAssessmentDays" class="health-list">
+            <div class="health-empty-state">No assessment week set up yet.</div>
+          </div>
+        </div>
+      </div>
+
       <div class="health-panel" id="health-panel-exercise">
         <div class="review-card">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:12px;flex-wrap:wrap">
@@ -2784,7 +2828,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
               <button class="ghost" type="button" data-health-nav="review">Open in Review</button>
             </div>
           </div>
-          <div class="health-card-note">Exercise coaching and the first training-block scaffold live here now. Nutrition and measurements come next.</div>
+          <div class="health-card-note">Exercise coaching and the training-block scaffold live here now. Nutrition, measurements, and assessment-week intake now complement it.</div>
         </div>
 
         <div class="review-card">
@@ -3982,6 +4026,12 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
             created_at: null,
             updated_at: null
           },
+          assessment_week: {
+            start_date: "",
+            note: "",
+            created_at: null,
+            updated_at: null
+          },
           session_templates: [],
           nutrition_targets: [],
           nutrition_logs: [],
@@ -4244,6 +4294,17 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       };
     }
 
+    function normalizeHealthAssessmentWeek(rawAssessment) {
+      const base = emptyState().health.assessment_week;
+      const assessment = rawAssessment && typeof rawAssessment === "object" ? rawAssessment : {};
+      return {
+        start_date: /^\d{4}-\d{2}-\d{2}$/.test(String(assessment.start_date || "").trim()) ? String(assessment.start_date).trim() : base.start_date,
+        note: String(assessment.note || "").trim(),
+        created_at: assessment.created_at || null,
+        updated_at: assessment.updated_at || null
+      };
+    }
+
     function normalizeHealthSessionTemplate(record) {
       const template = record && typeof record === "object" ? record : {};
       return {
@@ -4297,6 +4358,8 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         training_minutes: Number.isFinite(Number(log.training_minutes)) ? Number(log.training_minutes) : null,
         cardio_kcal: Number.isFinite(Number(log.cardio_kcal)) ? Number(log.cardio_kcal) : null,
         cardio_type: String(log.cardio_type || "").trim(),
+        food_diary: String(log.food_diary || "").trim(),
+        meal_source_note: String(log.meal_source_note || "").trim(),
         note: String(log.note || "").trim(),
         updated_at: log.updated_at || new Date().toISOString()
       };
@@ -4407,6 +4470,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       normalized.health = {
         profile: normalizeHealthProfile(incoming.health?.profile || base.health.profile),
         training_block: normalizeHealthTrainingBlock(incoming.health?.training_block || base.health.training_block),
+        assessment_week: normalizeHealthAssessmentWeek(incoming.health?.assessment_week || base.health.assessment_week),
         session_templates: Array.isArray(incoming.health?.session_templates)
           ? incoming.health.session_templates.map(normalizeHealthSessionTemplate)
           : [],
@@ -12571,7 +12635,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
     // ═══════════ HEALTH MODULE ═══════════
     function normalizeHealthTab(value) {
       const normalized = String(value || "").trim().toLowerCase();
-      return ["overview", "exercise", "nutrition", "measurements"].includes(normalized) ? normalized : "overview";
+      return ["overview", "assessment", "exercise", "nutrition", "measurements"].includes(normalized) ? normalized : "overview";
     }
 
     const HEALTH_DAY_OPTIONS = [
@@ -12677,6 +12741,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         state.health = {
           profile: normalizeHealthProfile(null),
           training_block: normalizeHealthTrainingBlock(null),
+          assessment_week: normalizeHealthAssessmentWeek(null),
           session_templates: [],
           nutrition_targets: [],
           nutrition_logs: [],
@@ -12692,6 +12757,11 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         state.health.training_block = normalizeHealthTrainingBlock(null);
       } else {
         state.health.training_block = normalizeHealthTrainingBlock(state.health.training_block);
+      }
+      if (!state.health.assessment_week || typeof state.health.assessment_week !== "object") {
+        state.health.assessment_week = normalizeHealthAssessmentWeek(null);
+      } else {
+        state.health.assessment_week = normalizeHealthAssessmentWeek(state.health.assessment_week);
       }
       state.health.session_templates = Array.isArray(state.health.session_templates)
         ? state.health.session_templates.map(normalizeHealthSessionTemplate)
@@ -13389,10 +13459,125 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       return getHealthNutritionLogs().filter(log => recent.has(log.date));
     }
 
+    function getHealthAssessmentWeek() {
+      return normalizeHealthAssessmentWeek(ensureHealthStateShape().assessment_week);
+    }
+
+    function getHealthAssessmentRange() {
+      const assessment = getHealthAssessmentWeek();
+      if (!assessment.start_date) return null;
+      const start = parseLocalDateKey(assessment.start_date);
+      const days = [];
+      for (let i = 0; i < 7; i += 1) {
+        const date = new Date(start);
+        date.setDate(start.getDate() + i);
+        days.push(localDateKey(date));
+      }
+      return {
+        start_date: days[0],
+        end_date: days[days.length - 1],
+        date_keys: days,
+        note: assessment.note
+      };
+    }
+
+    function getHealthAssessmentLogs() {
+      const range = getHealthAssessmentRange();
+      if (!range) return [];
+      const keys = new Set(range.date_keys);
+      return getHealthNutritionLogs().filter(log => keys.has(log.date));
+    }
+
     function averageOf(values) {
       const valid = values.filter(value => Number.isFinite(value));
       if (!valid.length) return null;
       return valid.reduce((sum, value) => sum + value, 0) / valid.length;
+    }
+
+    function renderHealthAssessment() {
+      const summaryEl = document.getElementById("healthAssessmentSummary");
+      const signalsEl = document.getElementById("healthAssessmentSignals");
+      const diaryEl = document.getElementById("healthAssessmentDiary");
+      const daysEl = document.getElementById("healthAssessmentDays");
+      if (!summaryEl || !signalsEl || !diaryEl || !daysEl) return;
+
+      const range = getHealthAssessmentRange();
+      if (!range) {
+        summaryEl.innerHTML = `
+          <div class="health-mini-stat"><div class="health-mini-stat-label">Window</div><div class="health-mini-stat-value">—</div></div>
+          <div class="health-mini-stat"><div class="health-mini-stat-label">Days Logged</div><div class="health-mini-stat-value">0 / 7</div></div>
+          <div class="health-mini-stat"><div class="health-mini-stat-label">Avg Kcal</div><div class="health-mini-stat-value">—</div></div>
+          <div class="health-mini-stat"><div class="health-mini-stat-label">Avg Weight</div><div class="health-mini-stat-value">—</div></div>
+        `;
+        signalsEl.innerHTML = '<div class="health-empty-state">Set up an assessment week to see baseline averages.</div>';
+        diaryEl.innerHTML = '<div class="health-empty-state">Assessment-day meal notes will appear here.</div>';
+        daysEl.innerHTML = '<div class="health-empty-state">No assessment week set up yet.</div>';
+        return;
+      }
+
+      const logsByDate = new Map(getHealthAssessmentLogs().map(log => [log.date, log]));
+      const logs = range.date_keys.map(dateKey => logsByDate.get(dateKey)).filter(Boolean);
+      const avgKcal = averageOf(logs.map(log => log.kcal));
+      const avgWeight = averageOf(logs.map(log => log.weight_kg));
+      const avgSteps = averageOf(logs.map(log => log.steps));
+      const avgProtein = averageOf(logs.map(log => log.protein_g));
+      const avgTraining = averageOf(logs.map(log => log.training_minutes));
+
+      summaryEl.innerHTML = `
+        <div class="health-mini-stat"><div class="health-mini-stat-label">Window</div><div class="health-mini-stat-value">${escapeHtml(fmtEntryDate(range.start_date))} → ${escapeHtml(fmtEntryDate(range.end_date))}</div></div>
+        <div class="health-mini-stat"><div class="health-mini-stat-label">Days Logged</div><div class="health-mini-stat-value">${logs.length} / 7</div></div>
+        <div class="health-mini-stat"><div class="health-mini-stat-label">Avg Kcal</div><div class="health-mini-stat-value">${Number.isFinite(avgKcal) ? `${Math.round(avgKcal)} kcal` : "—"}</div></div>
+        <div class="health-mini-stat"><div class="health-mini-stat-label">Avg Weight</div><div class="health-mini-stat-value">${Number.isFinite(avgWeight) ? `${avgWeight.toFixed(1)}kg` : "—"}</div></div>
+      `;
+
+      const signalRows = [
+        { label: "Average Protein", value: Number.isFinite(avgProtein) ? `${Math.round(avgProtein)}g` : "—", meta: "Assessment-week daily average" },
+        { label: "Average Steps", value: Number.isFinite(avgSteps) ? `${Math.round(avgSteps).toLocaleString()} steps` : "—", meta: "Assessment-week daily average" },
+        { label: "Average Training", value: Number.isFinite(avgTraining) ? `${Math.round(avgTraining)} min` : "—", meta: "Assessment-week daily average" },
+        { label: "Coverage", value: `${logs.length} / 7 days`, meta: range.note || "Baseline capture progress" }
+      ];
+      signalsEl.innerHTML = signalRows.map(row => `
+        <div class="health-row">
+          <div class="health-row-main">
+            <div class="health-row-title">${row.label}</div>
+            <div class="health-row-meta">${escapeHtml(row.meta)}</div>
+          </div>
+          <div class="health-row-value">${escapeHtml(row.value)}</div>
+        </div>
+      `).join("");
+
+      const diaryLogs = logs.filter(log => log.food_diary || log.meal_source_note);
+      diaryEl.innerHTML = diaryLogs.length
+        ? diaryLogs.slice().reverse().map(log => `
+          <div class="health-row">
+            <div class="health-row-main">
+              <div class="health-row-title">${escapeHtml(fmtEntryDate(log.date))}</div>
+              <div class="health-row-meta">${log.meal_source_note ? escapeHtml(log.meal_source_note) : "Meal source note not logged"}</div>
+              ${log.food_diary ? `<div class="health-card-note" style="margin-top:6px">${escapeHtml(log.food_diary)}</div>` : ""}
+            </div>
+          </div>
+        `).join("")
+        : '<div class="health-empty-state">No food-diary notes logged for this assessment week yet.</div>';
+
+      daysEl.innerHTML = range.date_keys.map(dateKey => {
+        const log = logsByDate.get(dateKey);
+        return `
+          <div class="health-row">
+            <div class="health-row-main">
+              <div class="health-row-title">${escapeHtml(fmtEntryDate(dateKey))}</div>
+              <div class="health-row-meta">
+                ${log ? `P ${Math.round(log.protein_g)} · C ${Math.round(log.carbs_g)} · F ${Math.round(log.fats_g)} · ${Math.round(log.kcal)} kcal` : "Not logged yet"}
+                ${log && Number.isFinite(log.weight_kg) ? ` · ${log.weight_kg.toFixed(1)}kg` : ""}
+                ${log && Number.isFinite(log.steps) ? ` · ${Math.round(log.steps).toLocaleString()} steps` : ""}
+              </div>
+            </div>
+            <div class="health-card-actions" style="margin-top:0">
+              <span class="health-row-value">${log ? "Logged" : "Pending"}</span>
+              <button class="ghost" type="button" data-health-assessment-log-date="${escapeHtml(dateKey)}">${log ? "Edit Day" : "Log Day"}</button>
+            </div>
+          </div>
+        `;
+      }).join("");
     }
 
     function showHealthNutritionTargetModal(targetId = "") {
@@ -13580,6 +13765,14 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
                 <span>Notes</span>
                 <textarea id="healthNutritionLogNoteInput" placeholder="Anything notable about this day...">${escapeHtml(existing?.note || "")}</textarea>
               </label>
+              <label class="tiny">
+                <span>Food diary</span>
+                <textarea id="healthNutritionLogFoodDiaryInput" placeholder="Meals, snacks, and anything useful to remember...">${escapeHtml(existing?.food_diary || "")}</textarea>
+              </label>
+              <label class="tiny">
+                <span>Meal sources</span>
+                <textarea id="healthNutritionLogMealSourcesInput" placeholder="Home, takeaway, restaurant, meal prep...">${escapeHtml(existing?.meal_source_note || "")}</textarea>
+              </label>
             </div>
             <div class="controls" style="justify-content:flex-end">
               <button id="healthNutritionLogCancelBtn" class="ghost" type="button">Cancel</button>
@@ -13622,6 +13815,8 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         training_minutes: parseHealthFloatInput(form, "#healthNutritionLogTrainingMinutesInput"),
         cardio_kcal: parseHealthFloatInput(form, "#healthNutritionLogCardioKcalInput"),
         cardio_type: String(form.querySelector("#healthNutritionLogCardioTypeInput")?.value || "").trim(),
+        food_diary: String(form.querySelector("#healthNutritionLogFoodDiaryInput")?.value || "").trim(),
+        meal_source_note: String(form.querySelector("#healthNutritionLogMealSourcesInput")?.value || "").trim(),
         note: String(form.querySelector("#healthNutritionLogNoteInput")?.value || "").trim(),
         updated_at: new Date().toISOString()
       });
@@ -13639,6 +13834,75 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       saveState("health_nutrition_log_delete");
       renderHealth();
     }
+
+    function showHealthAssessmentModal() {
+      const assessment = getHealthAssessmentWeek();
+      let overlay = document.getElementById("healthAssessmentModalOverlay");
+      if (!overlay) {
+        overlay = document.createElement("div");
+        overlay.id = "healthAssessmentModalOverlay";
+        overlay.className = "modal-backdrop";
+        overlay.hidden = true;
+        document.body.appendChild(overlay);
+        overlay.addEventListener("click", event => {
+          if (event.target === overlay) closeHealthAssessmentModal();
+        });
+      }
+      overlay.innerHTML = `
+        <div class="modal-panel health-modal" role="dialog" aria-modal="true" aria-labelledby="healthAssessmentModalTitle">
+          <div class="modal-head">
+            <div>
+              <h3 id="healthAssessmentModalTitle">Assessment Week</h3>
+              <div class="tiny">Pick the start date for a 7-day baseline window. Use the nutrition log to fill each day with macros, weight, steps, cardio, and food diary notes.</div>
+            </div>
+            <button id="healthAssessmentCloseBtn" class="ghost" type="button">Close</button>
+          </div>
+          <form id="healthAssessmentForm" class="health-profile-form">
+            <div class="health-profile-form-section">
+              <h4 style="margin:0">Baseline Window</h4>
+              <div class="health-profile-form-grid">
+                <label class="tiny">
+                  <span>Start date</span>
+                  <input id="healthAssessmentStartInput" type="date" value="${escapeHtml(assessment.start_date || todayISO())}" />
+                </label>
+              </div>
+              <label class="tiny">
+                <span>Context note</span>
+                <textarea id="healthAssessmentNoteInput" placeholder="Any context for this assessment week...">${escapeHtml(assessment.note || "")}</textarea>
+              </label>
+            </div>
+            <div class="controls" style="justify-content:flex-end">
+              <button id="healthAssessmentCancelBtn" class="ghost" type="button">Cancel</button>
+              <button id="healthAssessmentSaveBtn" class="primary" type="submit">Save Assessment Week</button>
+            </div>
+          </form>
+        </div>
+      `;
+      overlay.hidden = false;
+      const close = () => closeHealthAssessmentModal();
+      overlay.querySelector("#healthAssessmentCloseBtn")?.addEventListener("click", close);
+      overlay.querySelector("#healthAssessmentCancelBtn")?.addEventListener("click", close);
+      overlay.querySelector("#healthAssessmentForm")?.addEventListener("submit", event => {
+        event.preventDefault();
+        const health = ensureHealthStateShape();
+        const nowIso = new Date().toISOString();
+        health.assessment_week = normalizeHealthAssessmentWeek({
+          start_date: String(overlay.querySelector("#healthAssessmentStartInput")?.value || todayISO()).trim(),
+          note: String(overlay.querySelector("#healthAssessmentNoteInput")?.value || "").trim(),
+          created_at: health.assessment_week?.created_at || nowIso,
+          updated_at: nowIso
+        });
+        saveState("health_assessment_week_save");
+        closeHealthAssessmentModal();
+        renderHealth();
+      });
+    }
+
+    function closeHealthAssessmentModal() {
+      const overlay = document.getElementById("healthAssessmentModalOverlay");
+      if (overlay) overlay.hidden = true;
+    }
+    window.closeHealthAssessmentModal = closeHealthAssessmentModal;
 
     function getHealthMeasurements() {
       return ensureHealthStateShape().body_measurements
@@ -14243,6 +14507,8 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
                 ${Number.isFinite(log.cardio_kcal) ? ` · ${Math.round(log.cardio_kcal)} cardio kcal` : ""}
                 ${log.cardio_type ? ` · ${escapeHtml(log.cardio_type)}` : ""}
               </div>
+              ${log.food_diary ? `<div class="health-card-note" style="margin-top:6px"><strong>Food diary:</strong> ${escapeHtml(log.food_diary)}</div>` : ""}
+              ${log.meal_source_note ? `<div class="health-card-note" style="margin-top:6px"><strong>Meal sources:</strong> ${escapeHtml(log.meal_source_note)}</div>` : ""}
               ${log.note ? `<div class="health-card-note" style="margin-top:6px">${escapeHtml(log.note)}</div>` : ""}
             </div>
             <div class="health-card-actions" style="margin-top:0">
@@ -14351,6 +14617,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         panel.classList.toggle("active", panel.id === `health-panel-${activeHealthTab}`);
       });
       renderHealthOverview();
+      renderHealthAssessment();
       renderHealthExercise();
       renderHealthNutrition();
       renderHealthMeasurements();
@@ -18719,6 +18986,23 @@ Data caveat`;
       });
     });
     document.getElementById("tab-health")?.addEventListener("click", e => {
+      const assessmentOpenBtn = e.target.closest("[data-health-assessment-open]");
+      if (assessmentOpenBtn) {
+        showHealthAssessmentModal();
+        return;
+      }
+      const assessmentLogOpenBtn = e.target.closest("[data-health-assessment-log-open]");
+      if (assessmentLogOpenBtn) {
+        const range = getHealthAssessmentRange();
+        showHealthNutritionLogModal(range?.start_date || todayISO());
+        return;
+      }
+      const assessmentLogDateBtn = e.target.closest("[data-health-assessment-log-date]");
+      if (assessmentLogDateBtn) {
+        const dateKey = String(assessmentLogDateBtn.getAttribute("data-health-assessment-log-date") || "").trim();
+        showHealthNutritionLogModal(dateKey || todayISO());
+        return;
+      }
       const profileBtn = e.target.closest("[data-health-profile-open]");
       if (profileBtn) {
         showHealthProfileModal();
@@ -19170,6 +19454,13 @@ Data caveat`;
         e.preventDefault();
         e.stopPropagation();
         closeHealthNutritionTargetModal();
+        return;
+      }
+      const healthAssessmentModal = document.getElementById("healthAssessmentModalOverlay");
+      if (healthAssessmentModal && !healthAssessmentModal.hidden && e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        closeHealthAssessmentModal();
         return;
       }
       const healthNutritionLogModal = document.getElementById("healthNutritionLogModalOverlay");
