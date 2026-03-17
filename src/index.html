@@ -4752,10 +4752,27 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         endpoint_hint: String(adapter.endpoint_hint || "").trim(),
         note: String(adapter.note || "").trim(),
         last_checked_at: adapter.last_checked_at || "",
+        last_sync_status: ["success", "warning", "error"].includes(adapter.last_sync_status) ? adapter.last_sync_status : "",
+        last_sync_note: String(adapter.last_sync_note || "").trim(),
         last_signal_date: /^\d{4}-\d{2}-\d{2}$/.test(String(adapter.last_signal_date || "").trim()) ? String(adapter.last_signal_date).trim() : "",
         last_signal_value_minor: normalizeMinorAmount(adapter.last_signal_value_minor, adapter.last_signal_value),
+        sync_history: Array.isArray(adapter.sync_history) ? adapter.sync_history.map(normalizeWealthPropertyFeedRunRecord).slice(0, 12) : [],
         created_at: adapter.created_at || new Date().toISOString(),
         updated_at: adapter.updated_at || new Date().toISOString()
+      };
+    }
+
+    function normalizeWealthPropertyFeedRunRecord(record) {
+      const run = record && typeof record === "object" ? record : {};
+      return {
+        id: run.id || uid(),
+        checked_at: run.checked_at || new Date().toISOString(),
+        status: ["success", "warning", "error"].includes(run.status) ? run.status : "success",
+        note: String(run.note || "").trim(),
+        signal_date: /^\d{4}-\d{2}-\d{2}$/.test(String(run.signal_date || "").trim()) ? String(run.signal_date).trim() : "",
+        signal_value_minor: normalizeMinorAmount(run.signal_value_minor, run.signal_value),
+        imported_signal_id: String(run.imported_signal_id || "").trim(),
+        created_at: run.created_at || new Date().toISOString()
       };
     }
 
@@ -18956,6 +18973,12 @@ Data caveat`;
         status: payload.status,
         endpoint_hint: payload.endpoint_hint,
         note: payload.note,
+        last_checked_at: existing?.last_checked_at || "",
+        last_sync_status: existing?.last_sync_status || "",
+        last_sync_note: existing?.last_sync_note || "",
+        last_signal_date: existing?.last_signal_date || "",
+        last_signal_value_minor: existing?.last_signal_value_minor || 0,
+        sync_history: existing?.sync_history || [],
         updated_at: new Date().toISOString(),
         created_at: existing?.created_at || new Date().toISOString()
       });
@@ -18990,6 +19013,50 @@ Data caveat`;
       rebuildWealthPropertyEstimates();
       saveState("wealth_delete_property_feed_adapter");
       renderWealth();
+    }
+
+    function logWealthPropertyFeedAdapterRun(propertyId, adapterId, payload) {
+      const wealth = ensureWealthStateShape();
+      const property = getWealthPropertyById(propertyId);
+      const adapter = property ? getWealthPropertyFeedAdapterById(property, adapterId) : null;
+      if (!adapter) return null;
+      const run = normalizeWealthPropertyFeedRunRecord({
+        id: uid(),
+        checked_at: payload.checked_at || new Date().toISOString(),
+        status: payload.status,
+        note: payload.note,
+        signal_date: payload.signal_date,
+        signal_value: payload.signal_value,
+        signal_value_minor: payload.signal_value_minor,
+        imported_signal_id: payload.imported_signal_id || "",
+        created_at: new Date().toISOString()
+      });
+      wealth.properties = (wealth.properties || []).map(item => {
+        if (item.id !== propertyId) return item;
+        const nextAdapters = (item.feed_adapters || []).map(entry => {
+          if (entry.id !== adapterId) return entry;
+          return normalizeWealthPropertyFeedAdapterRecord({
+            ...entry,
+            status: entry.status === "planned" ? "active" : entry.status,
+            last_checked_at: run.checked_at,
+            last_sync_status: run.status,
+            last_sync_note: run.note,
+            last_signal_date: run.signal_date || entry.last_signal_date || "",
+            last_signal_value_minor: run.signal_value_minor || entry.last_signal_value_minor || 0,
+            sync_history: [run, ...(entry.sync_history || [])].slice(0, 12),
+            updated_at: new Date().toISOString()
+          });
+        });
+        return normalizeWealthPropertyRecord({
+          ...item,
+          feed_adapters: nextAdapters,
+          updated_at: new Date().toISOString()
+        });
+      });
+      rebuildWealthPropertyEstimates();
+      saveState("wealth_run_property_feed_adapter");
+      renderWealth();
+      return run;
     }
 
     function addWealthAccount(name, type, openingBalance) {
@@ -19450,6 +19517,104 @@ Data caveat`;
       });
     }
 
+    function showWealthPropertyFeedCheckModal(propertyId, adapterId) {
+      const property = getWealthPropertyById(propertyId);
+      const adapter = property ? getWealthPropertyFeedAdapterById(property, adapterId) : null;
+      if (!property || !adapter) return;
+      const preset = WEALTH_PROPERTY_FEED_PROVIDERS[adapter.provider_key] || WEALTH_PROPERTY_FEED_PROVIDERS.manual_watch;
+      const signalPreset = getWealthPropertySignalPreset(adapter.source);
+      const html = `<div class="wealth-form-grid">
+        <div class="wealth-form-row">
+          <div>
+            <label>Property</label>
+            <div style="font-weight:700">${escapeHtml(property.label)}</div>
+          </div>
+          <div>
+            <label>Adapter</label>
+            <div style="font-weight:700">${escapeHtml(adapter.label)}</div>
+            <div class="tiny" style="margin-top:4px;color:var(--text2)">${escapeHtml(preset.label)} · ${escapeHtml(adapter.cadence)}</div>
+          </div>
+        </div>
+        <div class="wealth-form-row">
+          <div>
+            <label>Check Status</label>
+            <select id="wealthPropertyFeedRunStatusInput">
+              ${[
+                ["success", "Success"],
+                ["warning", "Warning"],
+                ["error", "Error"]
+              ].map(([value, label]) => `<option value="${value}" ${(!adapter.last_sync_status ? "success" : adapter.last_sync_status) === value ? "selected" : ""}>${escapeHtml(label)}</option>`).join("")}
+            </select>
+          </div>
+          <div>
+            <label>Checked On</label>
+            <input id="wealthPropertyFeedRunCheckedDateInput" type="date" value="${escapeHtml(todayISO())}" />
+          </div>
+        </div>
+        <div>
+          <label>Check Note</label>
+          <textarea id="wealthPropertyFeedRunNoteInput" rows="3" placeholder="Optional note about what you found...">${escapeHtml(adapter.last_sync_note || "")}</textarea>
+        </div>
+        <div class="wealth-form-row">
+          <div>
+            <label>Signal Date</label>
+            <input id="wealthPropertyFeedRunSignalDateInput" type="date" value="${escapeHtml(todayISO())}" />
+          </div>
+          <div>
+            <label>Signal Value</label>
+            <input id="wealthPropertyFeedRunSignalValueInput" type="number" step="0.01" placeholder="Leave blank to log a check only" value="" />
+          </div>
+        </div>
+        <div>
+          <label>Signal Label</label>
+          <input id="wealthPropertyFeedRunSignalLabelInput" placeholder="e.g. ${escapeHtml(signalPreset.default_label || adapter.label)}" value="${escapeHtml(adapter.label)}" />
+        </div>
+        <div class="tiny" style="color:var(--text2)">
+          ${escapeHtml(preset.helper || "Record a feed check and optionally import a fresh signal from it.")}
+          ${adapter.endpoint_hint ? ` Source reference: ${escapeHtml(adapter.endpoint_hint)}` : ""}
+        </div>
+        <div class="controls" style="justify-content:space-between">
+          <button class="ghost" id="wealthPropertyFeedRunBackBtn" type="button">Back</button>
+          <button class="primary" id="wealthPropertyFeedRunSubmitBtn" type="button">Save Check</button>
+        </div>
+      </div>`;
+      showWealthModal("Check Feed Adapter", html);
+      requestAnimationFrame(() => {
+        document.getElementById("wealthPropertyFeedRunSignalValueInput")?.focus();
+        document.getElementById("wealthPropertyFeedRunBackBtn")?.addEventListener("click", () => showWealthPropertyDetailModal(propertyId));
+        document.getElementById("wealthPropertyFeedRunSubmitBtn")?.addEventListener("click", () => {
+          const checkedDate = String(document.getElementById("wealthPropertyFeedRunCheckedDateInput")?.value || todayISO()).trim();
+          const signalDate = String(document.getElementById("wealthPropertyFeedRunSignalDateInput")?.value || checkedDate).trim();
+          const signalValue = String(document.getElementById("wealthPropertyFeedRunSignalValueInput")?.value || "").trim();
+          const note = String(document.getElementById("wealthPropertyFeedRunNoteInput")?.value || "").trim();
+          const status = document.getElementById("wealthPropertyFeedRunStatusInput")?.value || "success";
+          let importedSignalId = "";
+          if (signalValue) {
+            const created = saveWealthPropertySignal(propertyId, {
+              source: adapter.source,
+              adapter_id: adapter.id,
+              confidence: signalPreset.default_confidence || "medium",
+              label: document.getElementById("wealthPropertyFeedRunSignalLabelInput")?.value || adapter.label,
+              signal_date: signalDate,
+              estimated_value: signalValue,
+              note,
+              url: adapter.endpoint_hint || ""
+            }, "");
+            importedSignalId = created?.id || "";
+          }
+          logWealthPropertyFeedAdapterRun(propertyId, adapter.id, {
+            checked_at: `${checkedDate}T12:00:00.000Z`,
+            status,
+            note,
+            signal_date: signalValue ? signalDate : "",
+            signal_value: signalValue,
+            imported_signal_id: importedSignalId
+          });
+          showWealthPropertyDetailModal(propertyId);
+        });
+      });
+    }
+
     function showWealthPropertySignalImportModal(propertyId, initialSource = "bank") {
       const property = getWealthPropertyById(propertyId);
       if (!property) return;
@@ -19542,6 +19707,14 @@ Data caveat`;
         (b.updated_at || "").localeCompare(a.updated_at || "") ||
         (a.label || "").localeCompare(b.label || "")
       );
+      const adapterHistory = feedAdapters
+        .flatMap(adapter => (adapter.sync_history || []).map(run => ({
+          ...run,
+          adapter_label: adapter.label,
+          provider_label: (WEALTH_PROPERTY_FEED_PROVIDERS[adapter.provider_key] || WEALTH_PROPERTY_FEED_PROVIDERS.manual_watch).label
+        })))
+        .sort((a, b) => (b.checked_at || "").localeCompare(a.checked_at || ""))
+        .slice(0, 8);
       const evidenceTimeline = getWealthPropertyEvidenceTimeline(property);
       const sourceMix = Object.entries(
         externalSignals.reduce((acc, signal) => {
@@ -19675,19 +19848,42 @@ Data caveat`;
                     <span>${escapeHtml(WEALTH_PROPERTY_SIGNAL_SOURCES[adapter.source] || adapter.source)}</span>
                     <span>${escapeHtml(adapter.cadence)}</span>
                     <span>${escapeHtml(adapter.status)}</span>
+                    ${adapter.last_sync_status ? `<span>${escapeHtml(adapter.last_sync_status.toUpperCase())}</span>` : ""}
                     ${adapter.last_signal_date ? `<span>Last signal ${escapeHtml(formatDateLabel(adapter.last_signal_date))}</span>` : `<span>No signal yet</span>`}
                     ${adapter.last_signal_value_minor ? `<span>${formatCurrency(adapter.last_signal_value_minor)}</span>` : ""}
                   </div>
+                  ${adapter.last_sync_note ? `<div class="tiny" style="margin-top:4px;color:var(--text2)">${escapeHtml(adapter.last_sync_note)}</div>` : ""}
                   ${adapter.endpoint_hint ? `<div class="tiny" style="margin-top:4px;color:var(--text2)">${escapeHtml(adapter.endpoint_hint)}</div>` : ""}
                   ${adapter.note ? `<div class="tiny" style="margin-top:4px;color:var(--text2)">${escapeHtml(adapter.note)}</div>` : ""}
                 </div>
                 <div style="display:flex;align-items:center;gap:8px">
+                  <button class="wealth-inline-btn" type="button" data-run-property-adapter="${escapeHtml(adapter.id)}">Check</button>
                   <button class="wealth-inline-btn" type="button" data-log-property-adapter-signal="${escapeHtml(adapter.id)}">Log Signal</button>
                   <button class="wealth-inline-btn" type="button" data-edit-property-adapter="${escapeHtml(adapter.id)}">Edit</button>
                   <button class="wealth-inline-btn warn" type="button" data-delete-property-adapter="${escapeHtml(adapter.id)}">Delete</button>
                 </div>
               </div>
             `).join("") : '<div class="wealth-empty-state" style="text-align:left">No feed adapters yet. Add one to scaffold recurring bank, portal, agent, or registry signals.</div>'}
+          </div>
+        </div>
+        <div>
+          <label>Adapter Check History</label>
+          <div class="wealth-list" style="display:flex;flex-direction:column;gap:8px;margin-top:8px">
+            ${adapterHistory.length ? adapterHistory.map(run => `
+              <div class="wealth-account-row">
+                <div>
+                  <div class="wealth-account-name">${escapeHtml(run.adapter_label)}</div>
+                  <div class="wealth-rule-meta">
+                    <span>${escapeHtml(run.provider_label)}</span>
+                    <span>${escapeHtml(String(run.status || "success").toUpperCase())}</span>
+                    <span>${escapeHtml(formatDateLabel(String(run.checked_at || "").slice(0, 10) || todayISO()))}</span>
+                    ${run.signal_date ? `<span>Signal ${escapeHtml(formatDateLabel(run.signal_date))}</span>` : ""}
+                    ${run.signal_value_minor ? `<span>${formatCurrency(run.signal_value_minor)}</span>` : ""}
+                  </div>
+                  ${run.note ? `<div class="tiny" style="margin-top:4px;color:var(--text2)">${escapeHtml(run.note)}</div>` : ""}
+                </div>
+              </div>
+            `).join("") : '<div class="wealth-empty-state" style="text-align:left">No adapter checks recorded yet.</div>'}
           </div>
         </div>
         <div>
@@ -19763,6 +19959,12 @@ Data caveat`;
         document.getElementById("wealthPropertyPresetAgentBtn")?.addEventListener("click", () => showWealthPropertySignalModal(propertyId, "", "agent"));
         document.getElementById("wealthPropertyImportSignalsBtn")?.addEventListener("click", () => showWealthPropertySignalImportModal(propertyId, "bank"));
         document.getElementById("wealthPropertyAddComparableBtn")?.addEventListener("click", () => showWealthComparableModal(propertyId));
+        document.querySelectorAll("[data-run-property-adapter]").forEach(btn => {
+          btn.addEventListener("click", () => {
+            const adapterId = String(btn.getAttribute("data-run-property-adapter") || "").trim();
+            if (adapterId) showWealthPropertyFeedCheckModal(propertyId, adapterId);
+          });
+        });
         document.querySelectorAll("[data-edit-property-adapter]").forEach(btn => {
           btn.addEventListener("click", () => {
             const adapterId = String(btn.getAttribute("data-edit-property-adapter") || "").trim();
@@ -20700,6 +20902,8 @@ Data caveat`;
             source: adapter.source,
             cadence: adapter.cadence,
             status: adapter.status,
+            last_sync_status: adapter.last_sync_status || null,
+            last_sync_note: adapter.last_sync_note || null,
             last_signal_date: adapter.last_signal_date || null,
             last_signal_value_minor: adapter.last_signal_value_minor || 0
           })),
