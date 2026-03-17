@@ -2810,6 +2810,22 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         <div class="review-card">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:12px;flex-wrap:wrap">
             <div>
+              <h4 style="margin-bottom:0">Body Composition Signals</h4>
+              <div class="health-card-note" style="margin-top:4px">Connect recent weight, measurements, sleep, and vitals into one body-composition readout.</div>
+            </div>
+            <div class="health-card-actions" style="margin-top:0">
+              <button class="ghost" type="button" data-health-open-tab="nutrition" style="font-size:.75rem">Open Nutrition</button>
+              <button class="ghost" type="button" data-health-open-tab="measurements" style="font-size:.75rem">Open Measurements</button>
+            </div>
+          </div>
+          <div id="healthBodyCompositionSignals" class="health-list">
+            <div class="health-empty-state">Log weight, measurements, or vitals to surface body-composition signals.</div>
+          </div>
+        </div>
+
+        <div class="review-card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:12px;flex-wrap:wrap">
+            <div>
               <h4 style="margin-bottom:0">Current Training Block</h4>
               <div class="health-card-note" style="margin-top:4px">Set the current block once so Health can scaffold planned sessions against your actual logging.</div>
             </div>
@@ -3168,6 +3184,12 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
             <h4 style="margin-bottom:12px">Measurement Signals</h4>
             <div id="healthMeasurementSignals" class="health-list">
               <div class="health-empty-state">Add at least two measurements to see deltas.</div>
+            </div>
+          </div>
+          <div class="review-card">
+            <h4 style="margin-bottom:12px">Cross-Signal Context</h4>
+            <div id="healthMeasurementContext" class="health-list">
+              <div class="health-empty-state">Weight, sleep, and vitals context will appear once those logs exist.</div>
             </div>
           </div>
           <div class="review-card">
@@ -15698,6 +15720,96 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       return latestNutritionWeight?.weight_kg ?? null;
     }
 
+    function healthDaysBetween(dateA, dateB) {
+      if (!dateA || !dateB) return null;
+      const a = new Date(`${dateA}T00:00:00`);
+      const b = new Date(`${dateB}T00:00:00`);
+      if (Number.isNaN(a.getTime()) || Number.isNaN(b.getTime())) return null;
+      return Math.round((a.getTime() - b.getTime()) / 86400000);
+    }
+
+    function getCombinedHealthWeightPoints() {
+      const points = [
+        ...getHealthNutritionLogs()
+          .filter(item => Number.isFinite(item.weight_kg))
+          .map(item => ({
+            date: item.date,
+            weight_kg: item.weight_kg,
+            source: "Nutrition"
+          })),
+        ...getHealthVitalsLogs()
+          .filter(item => Number.isFinite(item.weight_kg))
+          .map(item => ({
+            date: item.date,
+            weight_kg: item.weight_kg,
+            source: "Vitals"
+          }))
+      ];
+      return points.sort((a, b) => (b.date || "").localeCompare(a.date || "") || a.source.localeCompare(b.source));
+    }
+
+    function buildHealthBodyCompositionSnapshot(anchorDate = todayISO()) {
+      const nutrition = buildHealthNutritionSnapshot(anchorDate);
+      const recovery = buildHealthSleepRecoverySnapshot();
+      const measurements = getHealthMeasurements();
+      const vitals = getHealthVitalsLogs();
+      const latestMeasurement = measurements[0] || null;
+      const previousMeasurement = measurements[1] || null;
+      const latestRatio = latestMeasurement ? healthWaistToHipRatio(latestMeasurement) : null;
+      const previousRatio = previousMeasurement ? healthWaistToHipRatio(previousMeasurement) : null;
+      const weightPoints = getCombinedHealthWeightPoints();
+      const latestWeightPoint = weightPoints[0] || null;
+      const previousWeightPoint = weightPoints[1] || null;
+      const latestVitals = vitals[0] || null;
+      const previousVitals = vitals[1] || null;
+      const latestMeasurementWeight = latestMeasurement
+        ? weightPoints.find(point => point.date <= latestMeasurement.date) || null
+        : null;
+      const previousMeasurementWeight = previousMeasurement
+        ? weightPoints.find(point => point.date <= previousMeasurement.date) || null
+        : null;
+      const measurementWeightDelta = (latestMeasurementWeight && previousMeasurementWeight)
+        ? latestMeasurementWeight.weight_kg - previousMeasurementWeight.weight_kg
+        : null;
+      const daysSinceMeasurement = latestMeasurement ? healthDaysBetween(anchorDate, latestMeasurement.date) : null;
+      const nextMeasurementDueInDays = Number.isFinite(daysSinceMeasurement) ? Math.max(0, 14 - daysSinceMeasurement) : null;
+
+      return {
+        anchorDate,
+        nutrition,
+        recovery,
+        latestMeasurement,
+        previousMeasurement,
+        latestRatio,
+        previousRatio,
+        latestWeightPoint,
+        previousWeightPoint,
+        latestVitals,
+        previousVitals,
+        weightDeltaFromPreviousPoint: (latestWeightPoint && previousWeightPoint)
+          ? latestWeightPoint.weight_kg - previousWeightPoint.weight_kg
+          : null,
+        weightVsAssessmentBaseline: nutrition.baselineDeltas?.weight_kg ?? null,
+        waistDelta: latestMeasurement && previousMeasurement
+          ? healthMeasurementDelta(latestMeasurement, previousMeasurement, "waist_cm")
+          : null,
+        hipsDelta: latestMeasurement && previousMeasurement
+          ? healthMeasurementDelta(latestMeasurement, previousMeasurement, "hips_cm")
+          : null,
+        ratioDelta: (Number.isFinite(latestRatio) && Number.isFinite(previousRatio))
+          ? latestRatio - previousRatio
+          : null,
+        measurementCadenceDays: (latestMeasurement && previousMeasurement)
+          ? Math.abs(healthDaysBetween(latestMeasurement.date, previousMeasurement.date))
+          : null,
+        daysSinceMeasurement,
+        nextMeasurementDueInDays,
+        measurementWeightDelta,
+        latestMeasurementWeight,
+        previousMeasurementWeight
+      };
+    }
+
     function showHealthVitalsModal(dateKey = todayISO()) {
       const existing = getHealthVitalsByDate(dateKey);
       const latestNutritionWeight = getHealthNutritionLogs().find(item => Number.isFinite(item.weight_kg));
@@ -15948,9 +16060,11 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       const recentEl = document.getElementById("healthRecentActivityList");
       const progressEl = document.getElementById("healthProgressSignals");
       const keyLiftsEl = document.getElementById("healthKeyLiftList");
-      if (!summaryEl || !practicesEl || !recentEl || !progressEl || !keyLiftsEl) return;
+      const bodyCompEl = document.getElementById("healthBodyCompositionSignals");
+      if (!summaryEl || !practicesEl || !recentEl || !progressEl || !keyLiftsEl || !bodyCompEl) return;
       renderHealthProfileSummary();
       renderHealthTrainingBlock();
+      const bodyComp = buildHealthBodyCompositionSnapshot();
 
       const practices = getHealthPractices();
       const weekDates = getWeekDates(0);
@@ -16051,6 +16165,75 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
           </div>
         `).join("")
         : '<div class="health-empty-state">Structured strength logs will surface key lifts here.</div>';
+
+      const bodyCompRows = [];
+      if (bodyComp.latestWeightPoint) {
+        bodyCompRows.push({
+          label: "Current weight",
+          meta: `${bodyComp.latestWeightPoint.source} log on ${fmtEntryDate(bodyComp.latestWeightPoint.date)}`,
+          value: `${bodyComp.latestWeightPoint.weight_kg.toFixed(1)}kg${Number.isFinite(bodyComp.weightDeltaFromPreviousPoint) ? ` · ${bodyComp.weightDeltaFromPreviousPoint > 0 ? "+" : ""}${bodyComp.weightDeltaFromPreviousPoint.toFixed(1)}kg vs prior` : ""}`
+        });
+      }
+      bodyCompRows.push({
+        label: "Weight vs assessment",
+        meta: bodyComp.nutrition.assessmentRange
+          ? `Baseline ${fmtEntryDate(bodyComp.nutrition.assessmentRange.start_date)} → ${fmtEntryDate(bodyComp.nutrition.assessmentRange.end_date)}`
+          : "Set up an assessment week to compare current weight against baseline",
+        value: Number.isFinite(bodyComp.weightVsAssessmentBaseline)
+          ? `${bodyComp.weightVsAssessmentBaseline > 0 ? "+" : ""}${bodyComp.weightVsAssessmentBaseline.toFixed(1)}kg`
+          : "—"
+      });
+      if (bodyComp.latestMeasurement) {
+        bodyCompRows.push({
+          label: "Latest waist",
+          meta: `Measurement on ${fmtEntryDate(bodyComp.latestMeasurement.date)}`,
+          value: Number.isFinite(bodyComp.latestMeasurement.waist_cm)
+            ? `${bodyComp.latestMeasurement.waist_cm.toFixed(1)}cm${Number.isFinite(bodyComp.waistDelta) ? ` · ${bodyComp.waistDelta > 0 ? "+" : ""}${bodyComp.waistDelta.toFixed(1)}cm vs prior` : ""}`
+            : "—"
+        });
+        bodyCompRows.push({
+          label: "Waist-to-hip ratio",
+          meta: Number.isFinite(bodyComp.measurementCadenceDays)
+            ? `Measured ${bodyComp.measurementCadenceDays}d after the previous check-in`
+            : "Add a second measurement to surface ratio drift",
+          value: Number.isFinite(bodyComp.latestRatio)
+            ? `${bodyComp.latestRatio.toFixed(2)}${Number.isFinite(bodyComp.ratioDelta) ? ` · ${bodyComp.ratioDelta > 0 ? "+" : ""}${bodyComp.ratioDelta.toFixed(2)} vs prior` : ""}`
+            : "—"
+        });
+      } else {
+        bodyCompRows.push({
+          label: "Measurements",
+          meta: "No body measurements logged yet",
+          value: "—"
+        });
+      }
+      bodyCompRows.push({
+        label: "Recovery context",
+        meta: bodyComp.recovery.latest
+          ? `Latest sleep log ${fmtEntryDate(bodyComp.recovery.latest.date)}`
+          : "Log sleep and vitals to tie recovery into body-composition signals",
+        value: bodyComp.recovery.latest
+          ? `${bodyComp.recovery.readiness.label}${Number.isFinite(bodyComp.recovery.avgSleep) ? ` · ${bodyComp.recovery.avgSleep.toFixed(1)}h avg` : ""}${Number.isFinite(bodyComp.recovery.restingHrDelta) ? ` · RHR ${bodyComp.recovery.restingHrDelta > 0 ? "+" : ""}${Math.round(bodyComp.recovery.restingHrDelta)} bpm` : ""}`
+          : "—"
+      });
+      bodyCompRows.push({
+        label: "Next measurement",
+        meta: bodyComp.latestMeasurement
+          ? `Last check-in ${fmtEntryDate(bodyComp.latestMeasurement.date)}`
+          : "Use biweekly measurements for body-composition drift",
+        value: bodyComp.latestMeasurement
+          ? (bodyComp.nextMeasurementDueInDays === 0 ? "Due now" : `Due in ${bodyComp.nextMeasurementDueInDays}d`)
+          : "Not scheduled"
+      });
+      bodyCompEl.innerHTML = bodyCompRows.map(row => `
+        <div class="health-row">
+          <div class="health-row-main">
+            <div class="health-row-title">${escapeHtml(row.label)}</div>
+            <div class="health-row-meta">${escapeHtml(row.meta)}</div>
+          </div>
+          <div class="health-row-value">${escapeHtml(String(row.value))}</div>
+        </div>
+      `).join("");
     }
 
     function renderHealthExercise() {
@@ -16157,6 +16340,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       if (!summaryEl || !targetsEl || !trendEl || !complianceEl || !signalsEl || !assessmentEl || !sourcePatternsEl || !refeedEl || !logsEl) return;
 
       const snapshot = buildHealthNutritionSnapshot();
+      const bodyComp = buildHealthBodyCompositionSnapshot(snapshot.anchorDate);
       const targets = getHealthNutritionTargets();
       const logs = snapshot.logs;
       const activeTarget = snapshot.activeTarget;
@@ -16254,6 +16438,24 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
           meta: "Latest weight vs earliest logged weight in the recent 14-day window",
           value: Number.isFinite(snapshot.weightTrend14)
             ? `${snapshot.weightTrend14 > 0 ? "+" : ""}${snapshot.weightTrend14.toFixed(1)}kg`
+            : "—"
+        },
+        {
+          label: "Waist trend",
+          meta: bodyComp.latestMeasurement
+            ? `Latest measurement ${fmtEntryDate(bodyComp.latestMeasurement.date)}`
+            : "Add measurements to compare nutrition changes against waist drift",
+          value: Number.isFinite(bodyComp.waistDelta)
+            ? `${bodyComp.waistDelta > 0 ? "+" : ""}${bodyComp.waistDelta.toFixed(1)}cm`
+            : "—"
+        },
+        {
+          label: "Waist-to-hip ratio",
+          meta: bodyComp.latestMeasurement
+            ? "Latest measurement signal"
+            : "No measurement check-in yet",
+          value: Number.isFinite(bodyComp.latestRatio)
+            ? `${bodyComp.latestRatio.toFixed(2)}${Number.isFinite(bodyComp.ratioDelta) ? ` · ${bodyComp.ratioDelta > 0 ? "+" : ""}${bodyComp.ratioDelta.toFixed(2)}` : ""}`
             : "—"
         },
         {
@@ -16434,6 +16636,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
 
     function buildHealthNutritionCoachSnapshot() {
       const snapshot = buildHealthNutritionSnapshot();
+      const bodyComp = buildHealthBodyCompositionSnapshot(snapshot.anchorDate);
       return {
         current_surface: "Health > Nutrition",
         active_target: snapshot.activeTarget ? {
@@ -16514,6 +16717,28 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
           avg_steps: snapshot.assessmentAvgSteps,
           current_vs_baseline: snapshot.baselineDeltas
         } : null,
+        body_composition_context: {
+          latest_weight_point: bodyComp.latestWeightPoint ? {
+            date: bodyComp.latestWeightPoint.date,
+            weight_kg: bodyComp.latestWeightPoint.weight_kg,
+            source: bodyComp.latestWeightPoint.source
+          } : null,
+          weight_vs_assessment_baseline_kg: bodyComp.weightVsAssessmentBaseline,
+          latest_measurement: bodyComp.latestMeasurement ? {
+            date: bodyComp.latestMeasurement.date,
+            waist_cm: bodyComp.latestMeasurement.waist_cm,
+            hips_cm: bodyComp.latestMeasurement.hips_cm,
+            waist_to_hip_ratio: bodyComp.latestRatio
+          } : null,
+          waist_delta_cm: bodyComp.waistDelta,
+          waist_to_hip_delta: bodyComp.ratioDelta,
+          latest_recovery: bodyComp.recovery.latest ? {
+            date: bodyComp.recovery.latest.date,
+            recovery_state: bodyComp.recovery.readiness.label,
+            avg_sleep_hours_7d: bodyComp.recovery.avgSleep,
+            resting_hr_delta_bpm: bodyComp.recovery.restingHrDelta
+          } : null
+        },
         recent_logs: snapshot.logs.slice(0, 10).map(log => ({
           date: log.date,
           protein_g: log.protein_g,
@@ -17086,9 +17311,10 @@ Data caveat`;
     function renderHealthMeasurements() {
       const summaryEl = document.getElementById("healthMeasurementsSummary");
       const signalsEl = document.getElementById("healthMeasurementSignals");
+      const contextEl = document.getElementById("healthMeasurementContext");
       const checkinsEl = document.getElementById("healthMeasurementCheckins");
       const historyEl = document.getElementById("healthMeasurementsHistory");
-      if (!summaryEl || !signalsEl || !checkinsEl || !historyEl) return;
+      if (!summaryEl || !signalsEl || !contextEl || !checkinsEl || !historyEl) return;
 
       const measurements = getHealthMeasurements();
       const checkins = getHealthProgressCheckins();
@@ -17097,6 +17323,7 @@ Data caveat`;
       const latestCheckin = latest ? getHealthProgressCheckinByDate(latest.date) : null;
       const ratio = latest ? healthWaistToHipRatio(latest) : null;
       const photosCount = checkins.filter(item => item.photos_taken).length;
+      const bodyComp = buildHealthBodyCompositionSnapshot();
 
       summaryEl.innerHTML = `
         <div class="health-mini-stat"><div class="health-mini-stat-label">Latest Check-in</div><div class="health-mini-stat-value">${latest ? escapeHtml(fmtEntryDate(latest.date)) : "—"}</div></div>
@@ -17124,6 +17351,63 @@ Data caveat`;
       } else {
         signalsEl.innerHTML = '<div class="health-empty-state">Add at least two measurements to see deltas.</div>';
       }
+
+      const contextRows = [
+        {
+          label: "Latest weight",
+          meta: bodyComp.latestWeightPoint
+            ? `${bodyComp.latestWeightPoint.source} log on ${fmtEntryDate(bodyComp.latestWeightPoint.date)}`
+            : "No recent weight logged",
+          value: bodyComp.latestWeightPoint
+            ? `${bodyComp.latestWeightPoint.weight_kg.toFixed(1)}kg${Number.isFinite(bodyComp.measurementWeightDelta) ? ` · ${bodyComp.measurementWeightDelta > 0 ? "+" : ""}${bodyComp.measurementWeightDelta.toFixed(1)}kg since previous measurement window` : ""}`
+            : "—"
+        },
+        {
+          label: "Weight vs assessment",
+          meta: bodyComp.nutrition.assessmentRange
+            ? `Baseline ${fmtEntryDate(bodyComp.nutrition.assessmentRange.start_date)} → ${fmtEntryDate(bodyComp.nutrition.assessmentRange.end_date)}`
+            : "Assessment baseline not set",
+          value: Number.isFinite(bodyComp.weightVsAssessmentBaseline)
+            ? `${bodyComp.weightVsAssessmentBaseline > 0 ? "+" : ""}${bodyComp.weightVsAssessmentBaseline.toFixed(1)}kg`
+            : "—"
+        },
+        {
+          label: "Recovery state",
+          meta: bodyComp.recovery.latest
+            ? `Latest sleep log ${fmtEntryDate(bodyComp.recovery.latest.date)}`
+            : "Log sleep to add recovery context",
+          value: bodyComp.recovery.latest
+            ? `${bodyComp.recovery.readiness.label}${Number.isFinite(bodyComp.recovery.avgSleep) ? ` · ${bodyComp.recovery.avgSleep.toFixed(1)}h avg` : ""}`
+            : "—"
+        },
+        {
+          label: "Resting HR context",
+          meta: bodyComp.latestVitals
+            ? `Latest vitals ${fmtEntryDate(bodyComp.latestVitals.date)}`
+            : "No vitals log yet",
+          value: Number.isFinite(bodyComp.latestVitals?.resting_hr_bpm)
+            ? `${Math.round(bodyComp.latestVitals.resting_hr_bpm)} bpm${Number.isFinite(bodyComp.recovery.restingHrDelta) ? ` · ${bodyComp.recovery.restingHrDelta > 0 ? "+" : ""}${Math.round(bodyComp.recovery.restingHrDelta)} bpm` : ""}`
+            : "—"
+        },
+        {
+          label: "Measurement cadence",
+          meta: latest
+            ? `Last check-in ${fmtEntryDate(latest.date)}`
+            : "Use a roughly biweekly cadence for comparison quality",
+          value: latest
+            ? (bodyComp.nextMeasurementDueInDays === 0 ? "Due now" : `Due in ${bodyComp.nextMeasurementDueInDays}d`)
+            : "Not started"
+        }
+      ];
+      contextEl.innerHTML = contextRows.map(row => `
+        <div class="health-row">
+          <div class="health-row-main">
+            <div class="health-row-title">${escapeHtml(row.label)}</div>
+            <div class="health-row-meta">${escapeHtml(row.meta)}</div>
+          </div>
+          <div class="health-row-value">${escapeHtml(String(row.value))}</div>
+        </div>
+      `).join("");
 
       const recentCheckins = measurements.slice(0, 6).map(measurement => {
         const checkin = getHealthProgressCheckinByDate(measurement.date);
