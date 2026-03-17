@@ -3284,6 +3284,30 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           </div>
         </div>
 
+        <div class="review-card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:12px;flex-wrap:wrap">
+            <div>
+              <h4 style="margin-bottom:0">Performance</h4>
+              <div class="wealth-range-meta" id="portfolioPerformanceMeta">Using the last 6 monthly snapshots.</div>
+            </div>
+            <div class="wealth-segmented" id="portfolioPerformanceRange" aria-label="Portfolio performance range">
+              <button type="button" data-portfolio-performance-range="3m">3M</button>
+              <button type="button" data-portfolio-performance-range="6m" class="active">6M</button>
+              <button type="button" data-portfolio-performance-range="12m">12M</button>
+              <button type="button" data-portfolio-performance-range="all">All</button>
+            </div>
+          </div>
+          <div id="portfolioPerformanceSummary" class="health-mini-stat-grid" style="margin-bottom:12px">
+            <div class="health-mini-stat"><div class="health-mini-stat-label">Current Return</div><div class="health-mini-stat-value">—</div></div>
+            <div class="health-mini-stat"><div class="health-mini-stat-label">Market Change</div><div class="health-mini-stat-value">—</div></div>
+            <div class="health-mini-stat"><div class="health-mini-stat-label">Dividends Added</div><div class="health-mini-stat-value">—</div></div>
+            <div class="health-mini-stat"><div class="health-mini-stat-label">Strongest Month</div><div class="health-mini-stat-value">—</div></div>
+          </div>
+          <div id="portfolioPerformanceBreakdown" class="wealth-list">
+            <div class="wealth-empty-state">Portfolio performance detail will appear as snapshot history accumulates.</div>
+          </div>
+        </div>
+
       <div class="review-card">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:12px;flex-wrap:wrap">
           <div>
@@ -4284,9 +4308,10 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           transactions: [],
           currency: "AUD",
           display_percentages: false,
-        cashflow_scope_filter: "household",
-        cashflow_account_filter: "",
-        holdings_sort: { key: "marketValueMinor", dir: "desc" },
+          cashflow_scope_filter: "household",
+          cashflow_account_filter: "",
+          portfolio_performance_range: "6m",
+          holdings_sort: { key: "marketValueMinor", dir: "desc" },
           holdings: [],
           trades: [],
           dividends: [],
@@ -4324,6 +4349,10 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
 
     function normalizeWealthCashflowScopeFilter(value) {
       return ["household", "wealth", "all"].includes(value) ? value : "household";
+    }
+
+    function normalizeWealthPerformanceRange(value) {
+      return ["3m", "6m", "12m", "all"].includes(value) ? value : "6m";
     }
 
     function wealthAccountDefaultCashflowScope(accountType) {
@@ -4922,6 +4951,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         display_percentages: !!iw.display_percentages,
         cashflow_scope_filter: normalizeWealthCashflowScopeFilter(iw.cashflow_scope_filter),
         cashflow_account_filter: String(iw.cashflow_account_filter || "").trim(),
+        portfolio_performance_range: normalizeWealthPerformanceRange(iw.portfolio_performance_range),
         holdings_sort: { key: wealthSortKey, dir: wealthSortDir },
         holdings: Array.isArray(iw.holdings) ? iw.holdings.map(h => ({
           id: h.id || uid(),
@@ -15913,6 +15943,7 @@ Data caveat`;
     let wealthCashflowRange = "month";
     let wealthCashflowScopeFilter = normalizeWealthCashflowScopeFilter(state.wealth?.cashflow_scope_filter);
     let wealthCashflowAccountFilter = String(state.wealth?.cashflow_account_filter || "").trim();
+    let wealthPortfolioPerformanceRange = normalizeWealthPerformanceRange(state.wealth?.portfolio_performance_range);
     let wealthCashflowCategoryFilter = "";
     let wealthCashflowMerchantFilter = "";
     let wealthQuoteRefreshInFlight = false;
@@ -16764,6 +16795,7 @@ Data caveat`;
           display_percentages: false,
           cashflow_scope_filter: "household",
           cashflow_account_filter: "",
+          portfolio_performance_range: "6m",
           holdings_sort: { key: "marketValueMinor", dir: "desc" },
           holdings: [],
           trades: [],
@@ -16797,6 +16829,7 @@ Data caveat`;
       );
       state.wealth.cashflow_scope_filter = normalizeWealthCashflowScopeFilter(state.wealth.cashflow_scope_filter);
       if (typeof state.wealth.cashflow_account_filter !== "string") state.wealth.cashflow_account_filter = "";
+      state.wealth.portfolio_performance_range = normalizeWealthPerformanceRange(state.wealth.portfolio_performance_range);
       if (typeof state.wealth.import_folder_label !== "string") state.wealth.import_folder_label = "";
       migrateWealthHoldingsToTrades(state.wealth);
       return state.wealth;
@@ -17895,6 +17928,62 @@ Data caveat`;
 
     function currentPortfolioSnapshotMonthKey(dateKey = todayISO()) {
       return String(dateKey || todayISO()).slice(0, 7);
+    }
+
+    function wealthPortfolioMonthLabel(monthKey) {
+      const safe = clampWealthMonthKey(monthKey);
+      const [year, month] = safe.split("-").map(Number);
+      return new Date(year, month - 1, 1).toLocaleDateString("en-AU", { month: "short", year: "numeric" });
+    }
+
+    function getWealthPortfolioPerformanceRangeConfig() {
+      const range = normalizeWealthPerformanceRange(wealthPortfolioPerformanceRange);
+      const months = range === "3m" ? 3 : range === "6m" ? 6 : range === "12m" ? 12 : null;
+      const label = range === "3m" ? "last 3 months" : range === "6m" ? "last 6 months" : range === "12m" ? "last 12 months" : "all tracked months";
+      return { range, months, label };
+    }
+
+    function getWealthPortfolioPerformanceSummary(portfolio = getPortfolioSnapshot()) {
+      const config = getWealthPortfolioPerformanceRangeConfig();
+      const allSnapshots = getWealthPortfolioSnapshots();
+      const snapshots = config.months ? allSnapshots.slice(-config.months) : allSnapshots.slice();
+      const latest = snapshots[snapshots.length - 1] || null;
+      const baseline = snapshots.length > 1 ? snapshots[0] : null;
+      const monthlyChanges = [];
+      for (let index = 1; index < snapshots.length; index += 1) {
+        const previous = snapshots[index - 1];
+        const current = snapshots[index];
+        monthlyChanges.push({
+          month_key: current.month_key,
+          month_label: wealthPortfolioMonthLabel(current.month_key),
+          market_change_minor: Number(current.market_value_minor || 0) - Number(previous.market_value_minor || 0),
+          unrealized_change_minor: Number(current.unrealized_gain_loss_minor || 0) - Number(previous.unrealized_gain_loss_minor || 0),
+          dividend_added_minor: Number(current.total_dividend_income_minor || 0) - Number(previous.total_dividend_income_minor || 0),
+          holding_change: Number(current.holding_count || 0) - Number(previous.holding_count || 0)
+        });
+      }
+      const bestMonth = monthlyChanges.length
+        ? monthlyChanges.reduce((best, current) => current.market_change_minor > best.market_change_minor ? current : best, monthlyChanges[0])
+        : null;
+      const worstMonth = monthlyChanges.length
+        ? monthlyChanges.reduce((worst, current) => current.market_change_minor < worst.market_change_minor ? current : worst, monthlyChanges[0])
+        : null;
+      const recentMonth = monthlyChanges.length ? monthlyChanges[monthlyChanges.length - 1] : null;
+      return {
+        range: config.range,
+        range_label: config.label,
+        snapshot_count: snapshots.length,
+        current_return_pct: simpleReturnPct(portfolio.totalCostBasisMinor, portfolio.totalMarketValueMinor),
+        market_change_minor: baseline && latest ? Number(latest.market_value_minor || 0) - Number(baseline.market_value_minor || 0) : 0,
+        unrealized_change_minor: baseline && latest ? Number(latest.unrealized_gain_loss_minor || 0) - Number(baseline.unrealized_gain_loss_minor || 0) : 0,
+        dividends_added_minor: baseline && latest ? Number(latest.total_dividend_income_minor || 0) - Number(baseline.total_dividend_income_minor || 0) : Number(latest?.total_dividend_income_minor || 0),
+        holding_change: baseline && latest ? Number(latest.holding_count || 0) - Number(baseline.holding_count || 0) : 0,
+        latest_month_key: latest?.month_key || null,
+        latest_month_label: latest?.month_key ? wealthPortfolioMonthLabel(latest.month_key) : null,
+        best_month: bestMonth,
+        worst_month: worstMonth,
+        recent_month: recentMonth
+      };
     }
 
     function maybeCaptureWealthPortfolioSnapshot(portfolio, dateKey = todayISO()) {
@@ -19882,6 +19971,56 @@ Data caveat`;
       `;
     }
 
+    function renderWealthPortfolioPerformance(portfolio) {
+      const summaryEl = document.getElementById("portfolioPerformanceSummary");
+      const metaEl = document.getElementById("portfolioPerformanceMeta");
+      const breakdownEl = document.getElementById("portfolioPerformanceBreakdown");
+      const performance = getWealthPortfolioPerformanceSummary(portfolio);
+      document.querySelectorAll("#portfolioPerformanceRange [data-portfolio-performance-range]").forEach(btn => {
+        btn.classList.toggle("active", btn.getAttribute("data-portfolio-performance-range") === performance.range);
+      });
+      if (metaEl) {
+        metaEl.textContent = performance.snapshot_count
+          ? `Using ${performance.range_label}. ${performance.snapshot_count} monthly snapshot${performance.snapshot_count === 1 ? "" : "s"} available.`
+          : "Performance view will populate as monthly snapshots accumulate.";
+      }
+      if (!summaryEl || !breakdownEl) return;
+      if (!performance.snapshot_count) {
+        summaryEl.innerHTML = `
+          <div class="health-mini-stat"><div class="health-mini-stat-label">Current Return</div><div class="health-mini-stat-value">${formatPct(performance.current_return_pct)}</div></div>
+          <div class="health-mini-stat"><div class="health-mini-stat-label">Market Change</div><div class="health-mini-stat-value">—</div></div>
+          <div class="health-mini-stat"><div class="health-mini-stat-label">Dividends Added</div><div class="health-mini-stat-value">—</div></div>
+          <div class="health-mini-stat"><div class="health-mini-stat-label">Strongest Month</div><div class="health-mini-stat-value">—</div></div>
+        `;
+        breakdownEl.innerHTML = '<div class="wealth-empty-state">Portfolio performance detail will appear as snapshot history accumulates.</div>';
+        return;
+      }
+      summaryEl.innerHTML = `
+        <div class="health-mini-stat"><div class="health-mini-stat-label">Current Return</div><div class="health-mini-stat-value">${formatPct(performance.current_return_pct)}</div></div>
+        <div class="health-mini-stat"><div class="health-mini-stat-label">Market Change</div><div class="health-mini-stat-value">${performance.market_change_minor >= 0 ? "+" : "-"}${formatCurrency(Math.abs(performance.market_change_minor || 0))}</div></div>
+        <div class="health-mini-stat"><div class="health-mini-stat-label">Dividends Added</div><div class="health-mini-stat-value">${formatCurrency(performance.dividends_added_minor || 0)}</div></div>
+        <div class="health-mini-stat"><div class="health-mini-stat-label">Strongest Month</div><div class="health-mini-stat-value">${performance.best_month ? `${performance.best_month.market_change_minor >= 0 ? "+" : "-"}${formatCurrency(Math.abs(performance.best_month.market_change_minor || 0))}` : "—"}</div></div>
+      `;
+      breakdownEl.innerHTML = `
+        <div class="wealth-concentration-item">
+          <strong>Tracking Window</strong>
+          <div>${escapeHtml(performance.range_label)} · Latest snapshot ${escapeHtml(performance.latest_month_label || "current month")} · ${performance.snapshot_count} point${performance.snapshot_count === 1 ? "" : "s"} tracked</div>
+        </div>
+        <div class="wealth-concentration-item">
+          <strong>Most Recent Monthly Change</strong>
+          <div>${performance.recent_month ? `${escapeHtml(performance.recent_month.month_label)} · ${performance.recent_month.market_change_minor >= 0 ? "+" : "-"}${formatCurrency(Math.abs(performance.recent_month.market_change_minor || 0))} market value` : "No month-over-month change yet."}</div>
+        </div>
+        <div class="wealth-concentration-item">
+          <strong>Weakest Month</strong>
+          <div>${performance.worst_month ? `${escapeHtml(performance.worst_month.month_label)} · ${performance.worst_month.market_change_minor >= 0 ? "+" : "-"}${formatCurrency(Math.abs(performance.worst_month.market_change_minor || 0))}` : "Need at least two monthly snapshots."}</div>
+        </div>
+        <div class="wealth-concentration-item">
+          <strong>Position Change Across Window</strong>
+          <div>${performance.holding_change === 0 ? "No net holding-count change." : `${performance.holding_change > 0 ? "+" : ""}${performance.holding_change} holding${Math.abs(performance.holding_change) === 1 ? "" : "s"} vs start of window`} · Unrealized change ${performance.unrealized_change_minor >= 0 ? "+" : "-"}${formatCurrency(Math.abs(performance.unrealized_change_minor || 0))}</div>
+        </div>
+      `;
+    }
+
     function renderWealthPortfolio() {
       const snapshot = getPortfolioSnapshot();
       maybeCaptureWealthPortfolioSnapshot(snapshot);
@@ -19909,6 +20048,7 @@ Data caveat`;
       if (dividendTotalEl) dividendTotalEl.textContent = formatCurrency(snapshot.totalDividendIncomeMinor || 0);
       if (staleEl) staleEl.textContent = String(snapshot.missingOrStaleCount);
       renderWealthPortfolioSnapshotTrend();
+      renderWealthPortfolioPerformance(snapshot);
       renderWealthPropertyOverview();
       document.querySelectorAll("#portfolioDisplayMode [data-portfolio-display]").forEach(btn => {
         btn.classList.toggle("active", btn.getAttribute("data-portfolio-display") === (displayPercentages ? "percent" : "amount"));
@@ -20275,6 +20415,37 @@ Data caveat`;
           unrealized_gain_loss_minor: portfolio.unrealizedGainLossMinor,
           dividend_income_minor: portfolio.totalDividendIncomeMinor,
           trailing12_dividend_income_minor: portfolio.trailing12DividendIncomeMinor,
+          performance: (() => {
+            const summary = getWealthPortfolioPerformanceSummary(portfolio);
+            return {
+              range: summary.range,
+              range_label: summary.range_label,
+              snapshot_count: summary.snapshot_count,
+              current_return_pct: summary.current_return_pct,
+              market_change_minor: summary.market_change_minor,
+              unrealized_change_minor: summary.unrealized_change_minor,
+              dividends_added_minor: summary.dividends_added_minor,
+              holding_change: summary.holding_change,
+              best_month: summary.best_month ? {
+                month_key: summary.best_month.month_key,
+                month_label: summary.best_month.month_label,
+                market_change_minor: summary.best_month.market_change_minor,
+                dividend_added_minor: summary.best_month.dividend_added_minor
+              } : null,
+              worst_month: summary.worst_month ? {
+                month_key: summary.worst_month.month_key,
+                month_label: summary.worst_month.month_label,
+                market_change_minor: summary.worst_month.market_change_minor,
+                dividend_added_minor: summary.worst_month.dividend_added_minor
+              } : null,
+              recent_month: summary.recent_month ? {
+                month_key: summary.recent_month.month_key,
+                month_label: summary.recent_month.month_label,
+                market_change_minor: summary.recent_month.market_change_minor,
+                dividend_added_minor: summary.recent_month.dividend_added_minor
+              } : null
+            };
+          })(),
           missing_or_stale_quotes: portfolio.missingOrStaleCount,
           snapshots: getWealthPortfolioSnapshots().slice(-6).map(snapshot => ({
             month_key: snapshot.month_key,
@@ -20415,8 +20586,9 @@ Data caveat`;
       }
       if (meta) {
         const rangeInfo = getWealthCashflowRange();
+        const performanceRange = getWealthPortfolioPerformanceRangeConfig();
         const pills = [
-          `Range: ${rangeInfo.label}`,
+          activeWealthTab === "portfolio" ? `Performance: ${performanceRange.label}` : `Range: ${rangeInfo.label}`,
           wealthCashflowCategoryFilter ? `Filter: ${wealthCashflowCategoryFilter}` : null,
           activeWealthTab === "cashflow" ? "Source: Cash Flow" : `Source: ${activeWealthTab}`
         ].filter(Boolean);
@@ -22275,6 +22447,16 @@ Data caveat`;
         state.wealth.display_percentages = mode === "percent";
         saveState("wealth_toggle_display_percentages");
         renderWealthPortfolio();
+        return;
+      }
+      const performanceRangeBtn = e.target.closest("[data-portfolio-performance-range]");
+      if (performanceRangeBtn) {
+        const range = normalizeWealthPerformanceRange(performanceRangeBtn.getAttribute("data-portfolio-performance-range") || "6m");
+        wealthPortfolioPerformanceRange = range;
+        ensureWealthStateShape().portfolio_performance_range = range;
+        saveState("wealth_set_portfolio_performance_range");
+        renderWealthPortfolio();
+        renderWealthCoach();
         return;
       }
       const rangeBtn = e.target.closest("[data-cashflow-range]");
