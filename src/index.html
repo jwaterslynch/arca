@@ -1945,7 +1945,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
 .health-block-stat-value{font-size:.9rem;font-weight:800;color:var(--text)}
 .health-template-list{display:flex;flex-direction:column;gap:8px}
 .health-template-row{
-  display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;
+  display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;gap:12px;align-items:center;
   padding:12px 14px;background:var(--bg);border-radius:var(--radius-sm);
 }
 .health-template-order{
@@ -1959,6 +1959,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
   font-size:.68rem;font-weight:700;color:var(--accent);background:#fff;border:1px solid var(--line);
   border-radius:999px;padding:5px 9px;white-space:nowrap;
 }
+.health-template-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
 .health-schedule-list{display:flex;flex-direction:column;gap:8px}
 .health-schedule-row{
   display:grid;grid-template-columns:88px minmax(0,1fr) auto auto;gap:12px;align-items:center;
@@ -1968,6 +1969,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
 .health-schedule-main{min-width:0;display:grid;gap:4px}
 .health-schedule-title{font-size:.8rem;font-weight:700;color:var(--text)}
 .health-schedule-meta{font-size:.72rem;color:var(--text2);display:flex;gap:8px;flex-wrap:wrap}
+.health-schedule-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
 .health-status-badge{
   display:inline-flex;align-items:center;padding:4px 8px;border-radius:999px;
   font-size:.67rem;font-weight:700;background:var(--surface);color:var(--text2);white-space:nowrap;
@@ -2243,6 +2245,9 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
   .health-activity-practice{text-align:left}
   .health-template-row{grid-template-columns:auto minmax(0,1fr)}
   .health-template-day{grid-column:2}
+  .health-template-actions{grid-column:1 / -1;justify-content:flex-start}
+  .health-schedule-row{grid-template-columns:1fr}
+  .health-schedule-actions{justify-content:flex-start}
   .wealth-tabs-row{align-items:stretch;flex-direction:column}
   .wealth-toolbar-controls{width:100%;justify-content:flex-start}
   .wealth-summary-grid,.wealth-net-worth{grid-template-columns:1fr}
@@ -4581,12 +4586,16 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
 
     function normalizeHealthSessionTemplate(record) {
       const template = record && typeof record === "object" ? record : {};
+      const plannedMinutes = Number(template.planned_minutes);
       return {
         id: template.id || uid(),
         order: Number.isFinite(Number(template.order)) ? Number(template.order) : 1,
         title: String(template.title || "").trim() || "Training Session",
         day_key: String(template.day_key || "").trim().toLowerCase(),
-        focus: String(template.focus || "").trim()
+        focus: String(template.focus || "").trim(),
+        practice_id: String(template.practice_id || "").trim(),
+        planned_minutes: Number.isFinite(plannedMinutes) && plannedMinutes > 0 ? plannedMinutes : null,
+        execution_note: String(template.execution_note || "").trim()
       };
     }
 
@@ -10026,6 +10035,30 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       return true;
     }
 
+    function appendPracticeEntryForDate(practiceId, rawEntry, dateKey, options = {}) {
+      const practice = getPracticeDefinition(practiceId);
+      if (!practice) return false;
+      const targetDate = /^\d{4}-\d{2}-\d{2}$/.test(String(dateKey || "").trim()) ? String(dateKey).trim() : todayISO();
+      if (!state.life_practices) state.life_practices = { practices: [], daily_log: {} };
+      if (!state.life_practices.daily_log || typeof state.life_practices.daily_log !== "object") state.life_practices.daily_log = {};
+      if (!state.life_practices.daily_log[targetDate] || typeof state.life_practices.daily_log[targetDate] !== "object") {
+        state.life_practices.daily_log[targetDate] = {};
+      }
+      const current = normalizePracticeDayRecord(practice, state.life_practices.daily_log[targetDate][practiceId], targetDate);
+      const nextEntry = normalizePracticeEntryItem(rawEntry, targetDate);
+      const nextEntries = current.entries.concat([nextEntry]);
+      state.life_practices.daily_log[targetDate][practiceId] = {
+        ...current,
+        done: rawEntry?.done === false ? false : true,
+        minutes: nextEntry.minutes != null ? nextEntry.minutes : current.minutes,
+        notes: nextEntry.text || current.notes || "",
+        entries: nextEntries
+      };
+      if (options.save !== false) saveState(options.reason || "life_practice_log");
+      if (options.render !== false) renderLifePractices();
+      return true;
+    }
+
     function renderLifePractices() {
       initTodayState();
       const today = todayISO();
@@ -13291,18 +13324,47 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       return "Primary progression session";
     }
 
-    function generateHealthSessionTemplates(block, profile) {
+    function healthDefaultPracticeId() {
+      const practices = getHealthPractices();
+      return practices.length === 1 ? practices[0].id : "";
+    }
+
+    function healthTemplatePracticeTitle(template) {
+      if (!template?.practice_id) return "";
+      return getPracticeDefinition(template.practice_id)?.title || "";
+    }
+
+    function healthTemplatePlannedMinutes(template, profile) {
+      const plannedMinutes = Number(template?.planned_minutes);
+      if (Number.isFinite(plannedMinutes) && plannedMinutes > 0) return plannedMinutes;
+      const profileMinutes = Number(profile?.ideal_session_minutes);
+      return Number.isFinite(profileMinutes) && profileMinutes > 0 ? profileMinutes : null;
+    }
+
+    function generateHealthSessionTemplates(block, profile, existingTemplates = []) {
       const sessionsPerWeek = Math.max(0, Math.min(Number(block?.sessions_per_week) || 0, 7));
       if (!sessionsPerWeek) return [];
       const titles = healthTemplateSequenceForSplit(block?.split || "", sessionsPerWeek, profile);
       const dayKeys = healthSuggestedTrainingDays(profile, sessionsPerWeek);
-      return titles.map((title, index) => ({
-        id: uid(),
-        order: index + 1,
-        title,
-        day_key: dayKeys[index] || "",
-        focus: healthTemplateFocusLabel(title)
-      }));
+      const existingByOrder = Array.isArray(existingTemplates)
+        ? existingTemplates
+            .map(normalizeHealthSessionTemplate)
+            .sort((a, b) => a.order - b.order)
+        : [];
+      const defaultPracticeId = healthDefaultPracticeId();
+      return titles.map((title, index) => {
+        const existing = existingByOrder[index] || null;
+        return {
+          id: existing?.id || uid(),
+          order: index + 1,
+          title,
+          day_key: dayKeys[index] || "",
+          focus: healthTemplateFocusLabel(title),
+          practice_id: existing?.practice_id || defaultPracticeId,
+          planned_minutes: healthTemplatePlannedMinutes(existing, profile),
+          execution_note: existing?.execution_note || ""
+        };
+      });
     }
 
     function healthBlockWeekContext(block) {
@@ -13382,14 +13444,20 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       const todayKey = todayISO();
       return snapshot.templates.map((template, index) => {
         const dateKey = dateByDay[template.day_key] || weekDates[index] || "";
+        const practice = template.practice_id ? getPracticeDefinition(template.practice_id) : null;
+        const practiceTitle = practice?.title || "";
+        const practiceLog = practice && dateKey ? practiceLogEntry(practice.id, dateKey) : null;
+        const loggedMinutes = Number(practiceLog?.minutes);
+        const plannedMinutes = healthTemplatePlannedMinutes(template, snapshot.profile);
+        const isDone = template.practice_id ? !!practiceLog?.done : doneDates.has(dateKey);
         let status = "upcoming";
         if (!dateKey) {
           status = "unscheduled";
         } else if (snapshot.weekContext?.completed) {
-          status = doneDates.has(dateKey) ? "done" : "completed_block";
+          status = isDone ? "done" : "completed_block";
         } else if (snapshot.weekContext?.startsSoon && block.start_date && dateKey < block.start_date) {
           status = "starts_later";
-        } else if (doneDates.has(dateKey)) {
+        } else if (isDone) {
           status = "done";
         } else if (dateKey === todayKey) {
           status = "today";
@@ -13410,7 +13478,10 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
           date_key: dateKey,
           date_label: dateKey ? fmtEntryDate(dateKey) : "No date",
           status,
-          status_label: statusLabel
+          status_label: statusLabel,
+          practice_title: practiceTitle,
+          planned_minutes: plannedMinutes,
+          logged_minutes: Number.isFinite(loggedMinutes) && loggedMinutes >= 0 ? loggedMinutes : null
         };
       });
     }
@@ -13419,7 +13490,12 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       const health = ensureHealthStateShape();
       const profile = health.profile;
       const block = health.training_block;
-      const templates = health.session_templates || [];
+      const defaultPracticeId = healthDefaultPracticeId();
+      const templates = (health.session_templates || []).map(template => ({
+        ...template,
+        practice_id: template.practice_id || defaultPracticeId,
+        planned_minutes: healthTemplatePlannedMinutes(template, profile)
+      }));
       const hasBlock = healthTrainingBlockHasData(block);
       const weekContext = healthBlockWeekContext(block);
       const actualSessions = healthActualSessionsThisWeek();
@@ -13453,7 +13529,6 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
     function renderHealthTrainingBlockMarkup(snapshot, options = {}) {
       const { block, templates, weekContext, plannedSessions, nextTemplate, profile } = snapshot;
       const includeTemplates = options.includeTemplates !== false;
-      const sessionMinutes = Number(profile?.ideal_session_minutes) || null;
       const blockedDays = healthDayLabels(profile?.blocked_days || []);
       const templateMarkup = templates.length
         ? `
@@ -13467,10 +13542,15 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
                     <div class="health-template-title">${escapeHtml(template.title)}</div>
                     <div class="health-template-meta">
                       <span>${escapeHtml(template.focus || "Planned training session")}</span>
-                      ${sessionMinutes ? `<span>${sessionMinutes} min target</span>` : ""}
+                      <span>${escapeHtml(healthTemplatePracticeTitle(template) || "No linked practice")}</span>
+                      ${template.planned_minutes ? `<span>${template.planned_minutes} min target</span>` : ""}
+                      ${template.execution_note ? `<span>${escapeHtml(template.execution_note)}</span>` : ""}
                     </div>
                   </div>
                   <div class="health-template-day">${escapeHtml(healthDayLabel(template.day_key))}</div>
+                  <div class="health-template-actions">
+                    <button class="ghost" type="button" data-health-template-edit="${escapeHtml(template.id)}">Edit</button>
+                  </div>
                 </div>
               `).join("")}
             </div>
@@ -13544,10 +13624,16 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
                   <div class="health-schedule-meta">
                     <span>${escapeHtml(item.focus || "Planned training session")}</span>
                     <span>${escapeHtml(healthDayLabel(item.day_key))}</span>
+                    <span>${escapeHtml(item.practice_title || "No linked practice")}</span>
+                    ${item.planned_minutes ? `<span>${item.planned_minutes} min target</span>` : ""}
+                    ${item.logged_minutes ? `<span>${item.logged_minutes} min logged</span>` : ""}
                   </div>
                 </div>
                 <span class="health-status-badge ${escapeHtml(item.status)}">${escapeHtml(item.status_label)}</span>
-                <button class="ghost" type="button" data-health-nav="execute">Log</button>
+                <div class="health-schedule-actions">
+                  <button class="ghost" type="button" data-health-template-edit="${escapeHtml(item.id)}">Edit</button>
+                  <button class="ghost" type="button" data-health-session-complete="${escapeHtml(item.id)}" data-health-session-date="${escapeHtml(item.date_key)}">${item.practice_id ? "Complete" : "Assign"}</button>
+                </div>
               </div>
             `).join("")
           : '<div class="health-empty-state">No sessions scheduled for this week.</div>';
@@ -13923,7 +14009,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
                 <div class="health-block-stat"><div class="health-block-stat-label">Blocked Days</div><div class="health-block-stat-value">${healthDayLabels(profile.blocked_days).join(", ") || "None"}</div></div>
                 <div class="health-block-stat"><div class="health-block-stat-label">Target Muscles</div><div class="health-block-stat-value">${profile.target_muscle_groups.length || 0}</div></div>
               </div>
-              <div class="health-block-note">This scaffold uses your Health Profile to suggest training days and session structure. Exercise assignment comes next; this step only defines the block shell.</div>
+              <div class="health-block-note">This scaffold uses your Health Profile to suggest training days and session structure. After saving, you can refine each session with a linked practice, planned minutes, and execution notes.</div>
             </div>
             <div class="controls" style="justify-content:flex-end">
               <button id="healthTrainingBlockCancelBtn" class="ghost" type="button">Cancel</button>
@@ -13966,11 +14052,234 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         created_at: existing.created_at || nowIso,
         updated_at: nowIso
       });
-      health.session_templates = generateHealthSessionTemplates(health.training_block, health.profile);
+      health.session_templates = generateHealthSessionTemplates(health.training_block, health.profile, health.session_templates);
       saveState("health_training_block_save");
       closeHealthTrainingBlockModal();
       renderHealth();
     }
+
+    function getHealthSessionTemplateById(templateId) {
+      return ensureHealthStateShape().session_templates.find(template => template.id === templateId) || null;
+    }
+
+    function healthPracticeOptionsMarkup(selectedPracticeId) {
+      const practices = getHealthPractices();
+      return `
+        <option value="">Choose practice</option>
+        ${practices.map(practice => `<option value="${escapeHtml(practice.id)}" ${practice.id === selectedPracticeId ? "selected" : ""}>${escapeHtml(practice.title)}</option>`).join("")}
+      `;
+    }
+
+    function saveHealthSessionTemplatePatch(templateId, patch, reason = "health_session_template_save") {
+      const health = ensureHealthStateShape();
+      const nextTemplates = health.session_templates.map(template =>
+        template.id === templateId ? normalizeHealthSessionTemplate({ ...template, ...patch }) : template
+      );
+      health.session_templates = nextTemplates.sort((a, b) => a.order - b.order);
+      saveState(reason);
+      renderHealth();
+    }
+
+    function showHealthSessionTemplateModal(templateId) {
+      const template = getHealthSessionTemplateById(templateId);
+      if (!template) return;
+      const profile = ensureHealthStateShape().profile;
+      let overlay = document.getElementById("healthSessionTemplateModalOverlay");
+      if (!overlay) {
+        overlay = document.createElement("div");
+        overlay.id = "healthSessionTemplateModalOverlay";
+        overlay.className = "modal-backdrop";
+        overlay.hidden = true;
+        document.body.appendChild(overlay);
+        overlay.addEventListener("click", event => {
+          if (event.target === overlay) closeHealthSessionTemplateModal();
+        });
+      }
+      overlay.innerHTML = `
+        <div class="modal-panel health-modal" role="dialog" aria-modal="true" aria-labelledby="healthSessionTemplateModalTitle">
+          <div class="modal-head">
+            <div>
+              <h3 id="healthSessionTemplateModalTitle">Edit Session Template</h3>
+              <div class="tiny">Link this planned session to a real exercise practice so Health can compare plan against completion.</div>
+            </div>
+            <button id="healthSessionTemplateCloseBtn" class="ghost" type="button">Close</button>
+          </div>
+          <form id="healthSessionTemplateForm" class="health-profile-form">
+            <div class="health-profile-form-section">
+              <div class="health-profile-form-grid">
+                <label class="tiny">
+                  <span>Session title</span>
+                  <input id="healthSessionTemplateTitleInput" value="${escapeHtml(template.title)}" />
+                </label>
+                <label class="tiny">
+                  <span>Scheduled day</span>
+                  <select id="healthSessionTemplateDayInput">
+                    <option value="">Choose a day</option>
+                    ${HEALTH_DAY_OPTIONS.map(option => `<option value="${option.key}" ${template.day_key === option.key ? "selected" : ""}>${escapeHtml(option.label)}</option>`).join("")}
+                  </select>
+                </label>
+                <label class="tiny">
+                  <span>Linked practice</span>
+                  <select id="healthSessionTemplatePracticeInput">
+                    ${healthPracticeOptionsMarkup(template.practice_id)}
+                  </select>
+                </label>
+                <label class="tiny">
+                  <span>Planned minutes</span>
+                  <input id="healthSessionTemplateMinutesInput" type="number" min="0" max="300" step="5" value="${template.planned_minutes ?? healthTemplatePlannedMinutes(template, profile) ?? ""}" />
+                </label>
+              </div>
+              <label class="tiny">
+                <span>Focus</span>
+                <input id="healthSessionTemplateFocusInput" value="${escapeHtml(template.focus || "")}" />
+              </label>
+              <label class="tiny">
+                <span>Execution note</span>
+                <textarea id="healthSessionTemplateNoteInput" placeholder="Optional execution note or reminder...">${escapeHtml(template.execution_note || "")}</textarea>
+              </label>
+            </div>
+            <div class="controls" style="justify-content:flex-end">
+              <button id="healthSessionTemplateCancelBtn" class="ghost" type="button">Cancel</button>
+              <button id="healthSessionTemplateSaveBtn" class="primary" type="submit">Save Template</button>
+            </div>
+          </form>
+        </div>
+      `;
+      overlay.hidden = false;
+      const close = () => closeHealthSessionTemplateModal();
+      overlay.querySelector("#healthSessionTemplateCloseBtn")?.addEventListener("click", close);
+      overlay.querySelector("#healthSessionTemplateCancelBtn")?.addEventListener("click", close);
+      overlay.querySelector("#healthSessionTemplateForm")?.addEventListener("submit", event => {
+        event.preventDefault();
+        const form = event.currentTarget;
+        saveHealthSessionTemplatePatch(template.id, {
+          title: String(form.querySelector("#healthSessionTemplateTitleInput")?.value || "").trim(),
+          day_key: String(form.querySelector("#healthSessionTemplateDayInput")?.value || "").trim(),
+          practice_id: String(form.querySelector("#healthSessionTemplatePracticeInput")?.value || "").trim(),
+          planned_minutes: parseHealthIntInput(form, "#healthSessionTemplateMinutesInput"),
+          focus: String(form.querySelector("#healthSessionTemplateFocusInput")?.value || "").trim(),
+          execution_note: String(form.querySelector("#healthSessionTemplateNoteInput")?.value || "").trim()
+        });
+        closeHealthSessionTemplateModal();
+      });
+    }
+
+    function closeHealthSessionTemplateModal() {
+      const overlay = document.getElementById("healthSessionTemplateModalOverlay");
+      if (overlay) overlay.hidden = true;
+    }
+    window.closeHealthSessionTemplateModal = closeHealthSessionTemplateModal;
+
+    function buildHealthSessionCompletionEntry(template, dateKey, minutes, note) {
+      const isoAt = dateKey === todayISO() ? new Date().toISOString() : `${dateKey}T12:00:00`;
+      const textParts = [template.title];
+      if (note) textParts.push(note);
+      return {
+        id: uid(),
+        at: isoAt,
+        text: textParts.join(" · "),
+        minutes,
+        metrics: {
+          session_template_id: template.id,
+          session_title: template.title,
+          session_focus: template.focus || "",
+          planned_minutes: template.planned_minutes || null
+        },
+        tags: ["health_training_block"],
+        attachments: []
+      };
+    }
+
+    function showHealthSessionCompletionModal(templateId, dateKey) {
+      const template = getHealthSessionTemplateById(templateId);
+      if (!template) return;
+      const normalizedDateKey = /^\d{4}-\d{2}-\d{2}$/.test(String(dateKey || "").trim()) ? String(dateKey).trim() : todayISO();
+      const defaultMinutes = template.planned_minutes || healthTemplatePlannedMinutes(template, ensureHealthStateShape().profile) || "";
+      let overlay = document.getElementById("healthSessionCompletionModalOverlay");
+      if (!overlay) {
+        overlay = document.createElement("div");
+        overlay.id = "healthSessionCompletionModalOverlay";
+        overlay.className = "modal-backdrop";
+        overlay.hidden = true;
+        document.body.appendChild(overlay);
+        overlay.addEventListener("click", event => {
+          if (event.target === overlay) closeHealthSessionCompletionModal();
+        });
+      }
+      overlay.innerHTML = `
+        <div class="modal-panel health-modal" role="dialog" aria-modal="true" aria-labelledby="healthSessionCompletionModalTitle">
+          <div class="modal-head">
+            <div>
+              <h3 id="healthSessionCompletionModalTitle">Complete Planned Session</h3>
+              <div class="tiny">${escapeHtml(template.title)} · ${escapeHtml(fmtEntryDate(normalizedDateKey))}</div>
+            </div>
+            <button id="healthSessionCompletionCloseBtn" class="ghost" type="button">Close</button>
+          </div>
+          <form id="healthSessionCompletionForm" class="health-profile-form">
+            <div class="health-profile-form-section">
+              <div class="health-profile-form-grid">
+                <label class="tiny">
+                  <span>Practice</span>
+                  <select id="healthSessionCompletionPracticeInput">
+                    ${healthPracticeOptionsMarkup(template.practice_id || healthDefaultPracticeId())}
+                  </select>
+                </label>
+                <label class="tiny">
+                  <span>Minutes</span>
+                  <input id="healthSessionCompletionMinutesInput" type="number" min="0" max="300" step="5" value="${defaultMinutes}" />
+                </label>
+                <label class="tiny">
+                  <span>Date</span>
+                  <input id="healthSessionCompletionDateInput" type="date" value="${escapeHtml(normalizedDateKey)}" />
+                </label>
+              </div>
+              <label class="tiny">
+                <span>Completion note</span>
+                <textarea id="healthSessionCompletionNoteInput" placeholder="Optional note about how the session went...">${escapeHtml(template.execution_note || "")}</textarea>
+              </label>
+            </div>
+            <div class="controls" style="justify-content:flex-end">
+              <button id="healthSessionCompletionCancelBtn" class="ghost" type="button">Cancel</button>
+              <button id="healthSessionCompletionSaveBtn" class="primary" type="submit">Log Session</button>
+            </div>
+          </form>
+        </div>
+      `;
+      overlay.hidden = false;
+      const close = () => closeHealthSessionCompletionModal();
+      overlay.querySelector("#healthSessionCompletionCloseBtn")?.addEventListener("click", close);
+      overlay.querySelector("#healthSessionCompletionCancelBtn")?.addEventListener("click", close);
+      overlay.querySelector("#healthSessionCompletionForm")?.addEventListener("submit", event => {
+        event.preventDefault();
+        const form = event.currentTarget;
+        const practiceId = String(form.querySelector("#healthSessionCompletionPracticeInput")?.value || "").trim();
+        const completionDate = String(form.querySelector("#healthSessionCompletionDateInput")?.value || "").trim() || normalizedDateKey;
+        const minutes = parseHealthIntInput(form, "#healthSessionCompletionMinutesInput") || null;
+        const note = String(form.querySelector("#healthSessionCompletionNoteInput")?.value || "").trim();
+        if (!practiceId) {
+          alert("Choose a linked exercise practice before completing this session.");
+          return;
+        }
+        appendPracticeEntryForDate(
+          practiceId,
+          buildHealthSessionCompletionEntry({ ...template, practice_id: practiceId, planned_minutes: minutes, execution_note: note }, completionDate, minutes, note),
+          completionDate,
+          { reason: "health_training_session_log", render: false }
+        );
+        saveHealthSessionTemplatePatch(template.id, {
+          practice_id: practiceId,
+          planned_minutes: minutes,
+          execution_note: note
+        }, "health_session_template_complete");
+        closeHealthSessionCompletionModal();
+      });
+    }
+
+    function closeHealthSessionCompletionModal() {
+      const overlay = document.getElementById("healthSessionCompletionModalOverlay");
+      if (overlay) overlay.hidden = true;
+    }
+    window.closeHealthSessionCompletionModal = closeHealthSessionCompletionModal;
 
     function parseHealthFloatInput(form, selector) {
       const raw = String(form.querySelector(selector)?.value || "").trim();
@@ -22728,6 +23037,18 @@ Data caveat`;
         showHealthTrainingBlockModal();
         return;
       }
+      const templateEditBtn = e.target.closest("[data-health-template-edit]");
+      if (templateEditBtn) {
+        showHealthSessionTemplateModal(String(templateEditBtn.getAttribute("data-health-template-edit") || ""));
+        return;
+      }
+      const sessionCompleteBtn = e.target.closest("[data-health-session-complete]");
+      if (sessionCompleteBtn) {
+        const templateId = String(sessionCompleteBtn.getAttribute("data-health-session-complete") || "").trim();
+        const dateKey = String(sessionCompleteBtn.getAttribute("data-health-session-date") || "").trim();
+        if (templateId) showHealthSessionCompletionModal(templateId, dateKey || todayISO());
+        return;
+      }
       const nutritionTargetOpenBtn = e.target.closest("[data-health-nutrition-target-open]");
       if (nutritionTargetOpenBtn) {
         showHealthNutritionTargetModal();
@@ -23250,6 +23571,20 @@ Data caveat`;
         e.preventDefault();
         e.stopPropagation();
         closeHealthTrainingBlockModal();
+        return;
+      }
+      const healthSessionTemplateModal = document.getElementById("healthSessionTemplateModalOverlay");
+      if (healthSessionTemplateModal && !healthSessionTemplateModal.hidden && e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        closeHealthSessionTemplateModal();
+        return;
+      }
+      const healthSessionCompletionModal = document.getElementById("healthSessionCompletionModalOverlay");
+      if (healthSessionCompletionModal && !healthSessionCompletionModal.hidden && e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        closeHealthSessionCompletionModal();
         return;
       }
       const healthNutritionTargetModal = document.getElementById("healthNutritionTargetModalOverlay");
