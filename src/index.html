@@ -2701,6 +2701,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           <div class="health-subtab" data-health-tab="assessment">Assessment</div>
           <div class="health-subtab" data-health-tab="exercise">Exercise</div>
           <div class="health-subtab" data-health-tab="nutrition">Nutrition</div>
+          <div class="health-subtab" data-health-tab="sleep">Sleep</div>
           <div class="health-subtab" data-health-tab="measurements">Measurements</div>
           <div class="health-subtab" data-health-tab="vitals">Vitals</div>
         </div>
@@ -2751,6 +2752,22 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
             <div class="health-mini-stat"><div class="health-mini-stat-label">Weight</div><div class="health-mini-stat-value">—</div></div>
             <div class="health-mini-stat"><div class="health-mini-stat-label">Resting HR</div><div class="health-mini-stat-value">—</div></div>
             <div class="health-mini-stat"><div class="health-mini-stat-label">Blood Pressure</div><div class="health-mini-stat-value">—</div></div>
+          </div>
+        </div>
+
+        <div class="review-card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:12px;flex-wrap:wrap">
+            <div>
+              <h4 style="margin-bottom:0">Sleep Snapshot</h4>
+              <div class="health-card-note" style="margin-top:4px">Manual recovery check-ins for sleep hours, quality, and basic timing.</div>
+            </div>
+            <button class="ghost" type="button" data-health-sleep-open style="font-size:.75rem">Log Sleep</button>
+          </div>
+          <div id="healthSleepOverviewSummary" class="health-mini-stat-grid">
+            <div class="health-mini-stat"><div class="health-mini-stat-label">Latest Log</div><div class="health-mini-stat-value">—</div></div>
+            <div class="health-mini-stat"><div class="health-mini-stat-label">7D Avg Sleep</div><div class="health-mini-stat-value">—</div></div>
+            <div class="health-mini-stat"><div class="health-mini-stat-label">7D Avg Quality</div><div class="health-mini-stat-value">—</div></div>
+            <div class="health-mini-stat"><div class="health-mini-stat-label">Short Nights</div><div class="health-mini-stat-value">—</div></div>
           </div>
         </div>
 
@@ -2947,6 +2964,46 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           </div>
           <div id="healthNutritionLogsList" class="health-list">
             <div class="health-empty-state">No nutrition logs yet.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="health-panel" id="health-panel-sleep">
+        <div class="review-card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:12px;flex-wrap:wrap">
+            <div>
+              <h4 style="margin-bottom:0">Sleep & Recovery</h4>
+              <div class="health-card-note" style="margin-top:4px">A simple recovery layer for sleep duration, sleep quality, and timing consistency.</div>
+            </div>
+            <button class="ghost" type="button" data-health-sleep-open>Log Sleep</button>
+          </div>
+          <div id="healthSleepSummary" class="health-mini-stat-grid">
+            <div class="health-mini-stat"><div class="health-mini-stat-label">Latest Log</div><div class="health-mini-stat-value">—</div></div>
+            <div class="health-mini-stat"><div class="health-mini-stat-label">7D Avg Sleep</div><div class="health-mini-stat-value">—</div></div>
+            <div class="health-mini-stat"><div class="health-mini-stat-label">7D Avg Quality</div><div class="health-mini-stat-value">—</div></div>
+            <div class="health-mini-stat"><div class="health-mini-stat-label">Short Nights</div><div class="health-mini-stat-value">—</div></div>
+          </div>
+        </div>
+
+        <div class="health-section-grid">
+          <div class="review-card">
+            <h4 style="margin-bottom:12px">Recovery Signals</h4>
+            <div id="healthSleepSignals" class="health-list">
+              <div class="health-empty-state">Log at least a few nights to see recovery signals.</div>
+            </div>
+          </div>
+          <div class="review-card">
+            <h4 style="margin-bottom:12px">Recent Sleep Notes</h4>
+            <div id="healthSleepNotes" class="health-list">
+              <div class="health-empty-state">No sleep notes yet.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="review-card">
+          <h4 style="margin-bottom:12px">Sleep History</h4>
+          <div id="healthSleepHistory" class="health-list">
+            <div class="health-empty-state">No sleep logs yet.</div>
           </div>
         </div>
       </div>
@@ -3159,6 +3216,19 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           <h4 style="margin-bottom:12px">Snapshot Trend</h4>
           <div id="portfolioSnapshotTrend" class="wealth-snapshot-list">
             <div class="wealth-empty-state">Portfolio snapshots will build as monthly history accumulates.</div>
+          </div>
+        </div>
+
+        <div class="review-card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:12px;flex-wrap:wrap">
+            <div>
+              <h4 style="margin-bottom:0">Properties</h4>
+              <div class="health-card-note" style="margin-top:4px">Manual property records and baseline valuation estimates for household net worth.</div>
+            </div>
+            <button class="ghost" id="wealthAddPropertyBtn" type="button" style="font-size:.75rem">+ Add Property</button>
+          </div>
+          <div id="portfolioPropertiesList" class="wealth-accounts-list">
+            <div class="wealth-empty-state">No properties yet. Add one to include it in net worth.</div>
           </div>
         </div>
 
@@ -4106,6 +4176,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           session_templates: [],
           nutrition_targets: [],
           nutrition_logs: [],
+          sleep_logs: [],
           body_measurements: [],
           vitals_logs: [],
           progress_checkins: []
@@ -4471,6 +4542,27 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       };
     }
 
+    function normalizeHealthSleepRecord(record) {
+      const sleep = record && typeof record === "object" ? record : {};
+      const parseValue = key => {
+        const value = Number(sleep[key]);
+        return Number.isFinite(value) ? value : null;
+      };
+      return {
+        id: sleep.id || uid(),
+        date: /^\d{4}-\d{2}-\d{2}$/.test(String(sleep.date || "").trim()) ? String(sleep.date).trim() : todayISO(),
+        sleep_hours: parseValue("sleep_hours"),
+        quality_1_5: (() => {
+          const value = parseValue("quality_1_5");
+          return Number.isFinite(value) && value >= 1 && value <= 5 ? value : null;
+        })(),
+        bedtime: /^\d{2}:\d{2}$/.test(String(sleep.bedtime || "").trim()) ? String(sleep.bedtime).trim() : "",
+        wake_time: /^\d{2}:\d{2}$/.test(String(sleep.wake_time || "").trim()) ? String(sleep.wake_time).trim() : "",
+        note: String(sleep.note || "").trim(),
+        updated_at: sleep.updated_at || new Date().toISOString()
+      };
+    }
+
     function normalizeHealthProgressCheckinRecord(record) {
       const checkin = record && typeof record === "object" ? record : {};
       return {
@@ -4497,6 +4589,58 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         diastolic_bp: parseValue("diastolic_bp"),
         note: String(vitals.note || "").trim(),
         updated_at: vitals.updated_at || new Date().toISOString()
+      };
+    }
+
+    function normalizeWealthComparableRecord(record) {
+      const comparable = record && typeof record === "object" ? record : {};
+      return {
+        id: comparable.id || uid(),
+        label: String(comparable.label || "").trim(),
+        sale_date: /^\d{4}-\d{2}-\d{2}$/.test(String(comparable.sale_date || "").trim()) ? String(comparable.sale_date).trim() : "",
+        sale_price_minor: normalizeMinorAmount(comparable.sale_price_minor, comparable.sale_price),
+        distance_km: Number.isFinite(Number(comparable.distance_km)) ? Number(comparable.distance_km) : null,
+        note: String(comparable.note || "").trim()
+      };
+    }
+
+    function normalizeWealthPropertyRecord(record) {
+      const property = record && typeof record === "object" ? record : {};
+      return {
+        id: property.id || uid(),
+        label: String(property.label || "").trim() || "Untitled Property",
+        address: String(property.address || "").trim(),
+        property_type: ["house", "apartment", "townhouse", "land", "other"].includes(property.property_type)
+          ? property.property_type
+          : "house",
+        bedrooms: Number.isFinite(Number(property.bedrooms)) ? Number(property.bedrooms) : null,
+        land_sqm: Number.isFinite(Number(property.land_sqm)) ? Number(property.land_sqm) : null,
+        purchase_price_minor: normalizeMinorAmount(property.purchase_price_minor, property.purchase_price),
+        purchase_date: /^\d{4}-\d{2}-\d{2}$/.test(String(property.purchase_date || "").trim()) ? String(property.purchase_date).trim() : "",
+        region_code: String(property.region_code || "").trim(),
+        manual_estimate_minor: (() => {
+          if (property.manual_estimate_minor == null && property.manual_estimate == null) return null;
+          const minor = normalizeMinorAmount(property.manual_estimate_minor, property.manual_estimate);
+          return Number.isFinite(minor) && minor > 0 ? minor : null;
+        })(),
+        comparables: Array.isArray(property.comparables) ? property.comparables.map(normalizeWealthComparableRecord) : [],
+        created_at: property.created_at || new Date().toISOString(),
+        updated_at: property.updated_at || new Date().toISOString()
+      };
+    }
+
+    function normalizeWealthPropertyEstimateRecord(record) {
+      const estimate = record && typeof record === "object" ? record : {};
+      return {
+        property_id: String(estimate.property_id || "").trim() || null,
+        estimated_value_minor: normalizeMinorAmount(estimate.estimated_value_minor, estimate.estimated_value),
+        low_minor: normalizeMinorAmount(estimate.low_minor, estimate.low),
+        high_minor: normalizeMinorAmount(estimate.high_minor, estimate.high),
+        confidence: ["low", "medium", "high"].includes(estimate.confidence) ? estimate.confidence : "low",
+        freshness_label: String(estimate.freshness_label || "").trim(),
+        method: ["manual_estimate", "manual_baseline"].includes(estimate.method) ? estimate.method : "manual_baseline",
+        breakdown: estimate.breakdown && typeof estimate.breakdown === "object" ? { ...estimate.breakdown } : null,
+        estimated_at: estimate.estimated_at || new Date().toISOString()
       };
     }
 
@@ -4583,6 +4727,9 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           : [],
         nutrition_logs: Array.isArray(incoming.health?.nutrition_logs)
           ? incoming.health.nutrition_logs.map(normalizeHealthNutritionLog)
+          : [],
+        sleep_logs: Array.isArray(incoming.health?.sleep_logs)
+          ? incoming.health.sleep_logs.map(normalizeHealthSleepRecord)
           : [],
         body_measurements: Array.isArray(incoming.health?.body_measurements)
           ? incoming.health.body_measurements.map(normalizeHealthMeasurementRecord)
@@ -4703,8 +4850,14 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           }])
         ) : {},
         fx_quotes: iw.fx_quotes && typeof iw.fx_quotes === "object" ? iw.fx_quotes : {},
-        properties: Array.isArray(iw.properties) ? iw.properties : [],
-        property_estimates: iw.property_estimates && typeof iw.property_estimates === "object" ? iw.property_estimates : {},
+        properties: Array.isArray(iw.properties) ? iw.properties.map(normalizeWealthPropertyRecord) : [],
+        property_estimates: iw.property_estimates && typeof iw.property_estimates === "object"
+          ? Object.fromEntries(
+              Object.entries(iw.property_estimates)
+                .map(([key, value]) => [key, normalizeWealthPropertyEstimateRecord({ ...(value || {}), property_id: value?.property_id || key })])
+                .filter(([, value]) => value.property_id)
+            )
+          : {},
         import_templates: Array.isArray(iw.import_templates)
           ? iw.import_templates.map(normalizeWealthImportTemplateRecord)
           : [],
@@ -12745,7 +12898,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
     // ═══════════ HEALTH MODULE ═══════════
     function normalizeHealthTab(value) {
       const normalized = String(value || "").trim().toLowerCase();
-      return ["overview", "assessment", "exercise", "nutrition", "measurements", "vitals"].includes(normalized) ? normalized : "overview";
+      return ["overview", "assessment", "exercise", "nutrition", "sleep", "measurements", "vitals"].includes(normalized) ? normalized : "overview";
     }
 
     const HEALTH_DAY_OPTIONS = [
@@ -12855,6 +13008,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
           session_templates: [],
           nutrition_targets: [],
           nutrition_logs: [],
+          sleep_logs: [],
           body_measurements: [],
           vitals_logs: [],
           progress_checkins: []
@@ -12882,6 +13036,9 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         : [];
       state.health.nutrition_logs = Array.isArray(state.health.nutrition_logs)
         ? state.health.nutrition_logs.map(normalizeHealthNutritionLog)
+        : [];
+      state.health.sleep_logs = Array.isArray(state.health.sleep_logs)
+        ? state.health.sleep_logs.map(normalizeHealthSleepRecord)
         : [];
       state.health.body_measurements = Array.isArray(state.health.body_measurements)
         ? state.health.body_measurements.map(normalizeHealthMeasurementRecord)
@@ -13559,6 +13716,16 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         .sort((a, b) => (b.date || "").localeCompare(a.date || "") || (b.updated_at || "").localeCompare(a.updated_at || ""));
     }
 
+    function getHealthSleepLogs() {
+      return ensureHealthStateShape().sleep_logs
+        .slice()
+        .sort((a, b) => (b.date || "").localeCompare(a.date || "") || (b.updated_at || "").localeCompare(a.updated_at || ""));
+    }
+
+    function getHealthSleepByDate(dateKey) {
+      return getHealthSleepLogs().find(item => item.date === dateKey) || null;
+    }
+
     function getActiveHealthNutritionTarget(dateKey = todayISO(), kind = "daily") {
       return getHealthNutritionTargets().find(target => {
         if (target.kind !== kind) return false;
@@ -13946,6 +14113,102 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       const health = ensureHealthStateShape();
       health.nutrition_logs = health.nutrition_logs.filter(item => item.date !== dateKey);
       saveState("health_nutrition_log_delete");
+      renderHealth();
+    }
+
+    function showHealthSleepModal(dateKey = todayISO()) {
+      const existing = getHealthSleepByDate(dateKey);
+      let overlay = document.getElementById("healthSleepModalOverlay");
+      if (!overlay) {
+        overlay = document.createElement("div");
+        overlay.id = "healthSleepModalOverlay";
+        overlay.className = "modal-backdrop";
+        overlay.hidden = true;
+        document.body.appendChild(overlay);
+        overlay.addEventListener("click", event => {
+          if (event.target === overlay) closeHealthSleepModal();
+        });
+      }
+      overlay.innerHTML = `
+        <div class="modal-panel health-modal" role="dialog" aria-modal="true" aria-labelledby="healthSleepModalTitle">
+          <div class="modal-head">
+            <div>
+              <h3 id="healthSleepModalTitle">${existing ? "Edit Sleep Log" : "Sleep Log"}</h3>
+              <div class="tiny">A lightweight sleep and recovery check-in. Keep it simple so it is easy to maintain.</div>
+            </div>
+            <button id="healthSleepCloseBtn" class="ghost" type="button">Close</button>
+          </div>
+          <form id="healthSleepForm" class="health-profile-form" data-sleep-date="${escapeHtml(existing?.date || dateKey)}">
+            <div class="health-profile-form-section">
+              <h4 style="margin:0">Sleep</h4>
+              <div class="health-profile-form-grid">
+                <label class="tiny"><span>Date</span><input id="healthSleepDateInput" type="date" value="${escapeHtml(existing?.date || dateKey)}" /></label>
+                <label class="tiny"><span>Sleep (hours)</span><input id="healthSleepHoursInput" type="number" min="0" step="0.1" value="${existing?.sleep_hours ?? ""}" /></label>
+                <label class="tiny">
+                  <span>Quality (1–5)</span>
+                  <select id="healthSleepQualityInput">
+                    <option value="">—</option>
+                    ${[1, 2, 3, 4, 5].map(value => `<option value="${value}" ${existing?.quality_1_5 === value ? "selected" : ""}>${value}</option>`).join("")}
+                  </select>
+                </label>
+                <label class="tiny"><span>Bedtime</span><input id="healthSleepBedtimeInput" type="time" value="${escapeHtml(existing?.bedtime || "")}" /></label>
+                <label class="tiny"><span>Wake time</span><input id="healthSleepWakeInput" type="time" value="${escapeHtml(existing?.wake_time || "")}" /></label>
+              </div>
+              <label class="tiny">
+                <span>Note</span>
+                <textarea id="healthSleepNoteInput" placeholder="Anything notable about that night or your recovery...">${escapeHtml(existing?.note || "")}</textarea>
+              </label>
+            </div>
+            <div class="controls" style="justify-content:flex-end">
+              <button id="healthSleepCancelBtn" class="ghost" type="button">Cancel</button>
+              <button id="healthSleepSaveBtn" class="primary" type="submit">Save Sleep Log</button>
+            </div>
+          </form>
+        </div>
+      `;
+      overlay.hidden = false;
+      const close = () => closeHealthSleepModal();
+      overlay.querySelector("#healthSleepCloseBtn")?.addEventListener("click", close);
+      overlay.querySelector("#healthSleepCancelBtn")?.addEventListener("click", close);
+      overlay.querySelector("#healthSleepForm")?.addEventListener("submit", event => {
+        event.preventDefault();
+        saveHealthSleepFromForm(event.currentTarget);
+      });
+    }
+
+    function closeHealthSleepModal() {
+      const overlay = document.getElementById("healthSleepModalOverlay");
+      if (overlay) overlay.hidden = true;
+    }
+    window.closeHealthSleepModal = closeHealthSleepModal;
+
+    function saveHealthSleepFromForm(form) {
+      const health = ensureHealthStateShape();
+      const existingDate = String(form.getAttribute("data-sleep-date") || "").trim();
+      const date = String(form.querySelector("#healthSleepDateInput")?.value || todayISO()).trim();
+      const record = normalizeHealthSleepRecord({
+        id: getHealthSleepByDate(existingDate)?.id || uid(),
+        date,
+        sleep_hours: parseHealthFloatInput(form, "#healthSleepHoursInput"),
+        quality_1_5: parseHealthIntInput(form, "#healthSleepQualityInput"),
+        bedtime: String(form.querySelector("#healthSleepBedtimeInput")?.value || "").trim(),
+        wake_time: String(form.querySelector("#healthSleepWakeInput")?.value || "").trim(),
+        note: String(form.querySelector("#healthSleepNoteInput")?.value || "").trim(),
+        updated_at: new Date().toISOString()
+      });
+      health.sleep_logs = health.sleep_logs
+        .filter(item => item.date !== existingDate && item.date !== date)
+        .concat(record)
+        .map(normalizeHealthSleepRecord);
+      saveState("health_sleep_save");
+      closeHealthSleepModal();
+      renderHealth();
+    }
+
+    function deleteHealthSleep(dateKey) {
+      const health = ensureHealthStateShape();
+      health.sleep_logs = health.sleep_logs.filter(item => item.date !== dateKey);
+      saveState("health_sleep_delete");
       renderHealth();
     }
 
@@ -14757,6 +15020,131 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         : '<div class="health-empty-state">No nutrition logs yet.</div>';
     }
 
+    function renderHealthSleepSummaryInto(el) {
+      if (!el) return;
+      const logs = getHealthSleepLogs();
+      const latest = logs[0] || null;
+      const recent7 = logs.slice(0, 7);
+      const avgSleep = averageOf(recent7.map(log => log.sleep_hours));
+      const avgQuality = averageOf(recent7.map(log => log.quality_1_5));
+      const shortNights = recent7.filter(log => Number(log.sleep_hours) > 0 && Number(log.sleep_hours) < 6).length;
+      el.innerHTML = `
+        <div class="health-mini-stat"><div class="health-mini-stat-label">Latest Log</div><div class="health-mini-stat-value">${latest ? escapeHtml(fmtEntryDate(latest.date)) : "—"}</div></div>
+        <div class="health-mini-stat"><div class="health-mini-stat-label">7D Avg Sleep</div><div class="health-mini-stat-value">${Number.isFinite(avgSleep) ? `${avgSleep.toFixed(1)}h` : "—"}</div></div>
+        <div class="health-mini-stat"><div class="health-mini-stat-label">7D Avg Quality</div><div class="health-mini-stat-value">${Number.isFinite(avgQuality) ? `${avgQuality.toFixed(1)} / 5` : "—"}</div></div>
+        <div class="health-mini-stat"><div class="health-mini-stat-label">Short Nights</div><div class="health-mini-stat-value">${recent7.length ? `${shortNights} / ${recent7.length}` : "—"}</div></div>
+      `;
+    }
+
+    function renderHealthSleep() {
+      const overviewSummaryEl = document.getElementById("healthSleepOverviewSummary");
+      const summaryEl = document.getElementById("healthSleepSummary");
+      const signalsEl = document.getElementById("healthSleepSignals");
+      const notesEl = document.getElementById("healthSleepNotes");
+      const historyEl = document.getElementById("healthSleepHistory");
+      renderHealthSleepSummaryInto(overviewSummaryEl);
+      if (!summaryEl || !signalsEl || !notesEl || !historyEl) return;
+
+      const logs = getHealthSleepLogs();
+      const latest = logs[0] || null;
+      const previous = logs[1] || null;
+      const recent7 = logs.slice(0, 7);
+      const avgSleep = averageOf(recent7.map(log => log.sleep_hours));
+      const avgQuality = averageOf(recent7.map(log => log.quality_1_5));
+      const shortNights = recent7.filter(log => Number(log.sleep_hours) > 0 && Number(log.sleep_hours) < 6).length;
+      renderHealthSleepSummaryInto(summaryEl);
+
+      if (latest) {
+        const signals = [];
+        if (Number.isFinite(avgSleep)) {
+          signals.push({
+            label: "Recent sleep duration",
+            meta: `7-day average across ${recent7.length} night${recent7.length === 1 ? "" : "s"}`,
+            value: `${avgSleep.toFixed(1)}h`
+          });
+        }
+        if (Number.isFinite(avgQuality)) {
+          signals.push({
+            label: "Recent sleep quality",
+            meta: "Average subjective rating",
+            value: `${avgQuality.toFixed(1)} / 5`
+          });
+        }
+        if (shortNights > 0) {
+          signals.push({
+            label: "Short-sleep nights",
+            meta: "Nights under 6 hours in the recent window",
+            value: `${shortNights}`
+          });
+        }
+        if (latest.bedtime || latest.wake_time) {
+          signals.push({
+            label: "Latest schedule",
+            meta: `Logged ${fmtEntryDate(latest.date)}`,
+            value: [latest.bedtime ? `Bed ${latest.bedtime}` : "", latest.wake_time ? `Wake ${latest.wake_time}` : ""].filter(Boolean).join(" · ") || "—"
+          });
+        }
+        if (latest && previous && Number.isFinite(latest.sleep_hours) && Number.isFinite(previous.sleep_hours)) {
+          const delta = latest.sleep_hours - previous.sleep_hours;
+          signals.push({
+            label: "Change vs previous log",
+            meta: `Compared with ${fmtEntryDate(previous.date)}`,
+            value: `${delta > 0 ? "+" : ""}${delta.toFixed(1)}h`
+          });
+        }
+        signalsEl.innerHTML = signals.length
+          ? signals.map(signal => `
+            <div class="health-row">
+              <div class="health-row-main">
+                <div class="health-row-title">${escapeHtml(signal.label)}</div>
+                <div class="health-row-meta">${escapeHtml(signal.meta)}</div>
+              </div>
+              <div class="health-row-value">${escapeHtml(signal.value)}</div>
+            </div>
+          `).join("")
+          : '<div class="health-empty-state">Log at least a few nights to see recovery signals.</div>';
+      } else {
+        signalsEl.innerHTML = '<div class="health-empty-state">Log at least a few nights to see recovery signals.</div>';
+      }
+
+      const notedLogs = logs.filter(item => item.note).slice(0, 6);
+      notesEl.innerHTML = notedLogs.length
+        ? notedLogs.map(item => `
+          <div class="health-row">
+            <div class="health-row-main">
+              <div class="health-row-title">${escapeHtml(fmtEntryDate(item.date))}</div>
+              <div class="health-row-meta">
+                ${Number.isFinite(item.sleep_hours) ? `${item.sleep_hours.toFixed(1)}h` : "Sleep not logged"}
+                ${Number.isFinite(item.quality_1_5) ? ` · quality ${item.quality_1_5}/5` : ""}
+              </div>
+              <div class="health-card-note" style="margin-top:6px">${escapeHtml(item.note)}</div>
+            </div>
+          </div>
+        `).join("")
+        : '<div class="health-empty-state">No sleep notes yet.</div>';
+
+      historyEl.innerHTML = logs.length
+        ? logs.map(item => `
+          <div class="health-row">
+            <div class="health-row-main">
+              <div class="health-row-title">${escapeHtml(fmtEntryDate(item.date))}</div>
+              <div class="health-row-meta">
+                ${Number.isFinite(item.sleep_hours) ? `${item.sleep_hours.toFixed(1)}h` : "Sleep not logged"}
+                ${Number.isFinite(item.quality_1_5) ? ` · quality ${item.quality_1_5}/5` : ""}
+                ${item.bedtime ? ` · bed ${escapeHtml(item.bedtime)}` : ""}
+                ${item.wake_time ? ` · wake ${escapeHtml(item.wake_time)}` : ""}
+              </div>
+              ${item.note ? `<div class="health-card-note" style="margin-top:6px">${escapeHtml(item.note)}</div>` : ""}
+            </div>
+            <div class="health-card-actions" style="margin-top:0">
+              <button class="ghost" type="button" data-health-sleep-edit="${escapeHtml(item.date)}">Edit</button>
+              <button class="ghost" type="button" data-health-sleep-delete="${escapeHtml(item.date)}">Delete</button>
+            </div>
+          </div>
+        `).join("")
+        : '<div class="health-empty-state">No sleep logs yet.</div>';
+    }
+
     function renderHealthVitalsSummaryInto(el) {
       if (!el) return;
       const vitals = getHealthVitalsLogs();
@@ -14936,6 +15324,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       renderHealthAssessment();
       renderHealthExercise();
       renderHealthNutrition();
+      renderHealthSleep();
       renderHealthMeasurements();
       renderHealthVitals();
     }
@@ -14962,6 +15351,13 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
     const WEALTH_ACCOUNT_TYPES = {
       checking: "Checking", savings: "Savings", credit_card: "Credit Card",
       loan: "Loan", investment: "Investment", cash: "Cash", other: "Other"
+    };
+    const WEALTH_PROPERTY_TYPES = {
+      house: "House",
+      apartment: "Apartment",
+      townhouse: "Townhouse",
+      land: "Land",
+      other: "Other"
     };
     const WEALTH_ASSET_TYPES = {
       stock: "Stock",
@@ -15767,10 +16163,16 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       if (!Array.isArray(state.wealth.trades)) state.wealth.trades = [];
       if (!Array.isArray(state.wealth.dividends)) state.wealth.dividends = [];
       if (!Array.isArray(state.wealth.portfolio_snapshots)) state.wealth.portfolio_snapshots = [];
+      if (!Array.isArray(state.wealth.properties)) state.wealth.properties = [];
       if (!Array.isArray(state.wealth.import_templates)) state.wealth.import_templates = [];
       if (!Array.isArray(state.wealth.category_rules)) state.wealth.category_rules = [];
       if (!state.wealth.price_quotes || typeof state.wealth.price_quotes !== "object") state.wealth.price_quotes = {};
       if (!state.wealth.fx_quotes || typeof state.wealth.fx_quotes !== "object") state.wealth.fx_quotes = {};
+      if (!state.wealth.property_estimates || typeof state.wealth.property_estimates !== "object") state.wealth.property_estimates = {};
+      state.wealth.properties = state.wealth.properties.map(normalizeWealthPropertyRecord);
+      state.wealth.property_estimates = Object.fromEntries(
+        Object.entries(state.wealth.property_estimates).map(([key, value]) => [key, normalizeWealthPropertyEstimateRecord({ ...(value || {}), property_id: value?.property_id || key })])
+      );
       state.wealth.cashflow_scope_filter = normalizeWealthCashflowScopeFilter(state.wealth.cashflow_scope_filter);
       if (typeof state.wealth.cashflow_account_filter !== "string") state.wealth.cashflow_account_filter = "";
       if (typeof state.wealth.import_folder_label !== "string") state.wealth.import_folder_label = "";
@@ -16646,7 +17048,12 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         }
       }
       assets += getPortfolioSnapshot().totalMarketValueMinor;
+      assets += totalWealthPropertyValueMinor();
       return { assets, liabilities, net: assets - liabilities };
+    }
+
+    function computeNetWorth() {
+      return wealthNetWorthCalc();
     }
 
     function getMonthRange(offset) {
@@ -17053,6 +17460,124 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       };
     }
 
+    function getWealthProperties() {
+      return ensureWealthStateShape().properties
+        .slice()
+        .sort((a, b) => (b.updated_at || "").localeCompare(a.updated_at || "") || (b.purchase_date || "").localeCompare(a.purchase_date || ""));
+    }
+
+    function getWealthPropertyById(propertyId) {
+      return getWealthProperties().find(property => property.id === propertyId) || null;
+    }
+
+    function buildWealthPropertyEstimate(property) {
+      const manualEstimateMinor = Number(property?.manual_estimate_minor || 0);
+      const purchasePriceMinor = Number(property?.purchase_price_minor || 0);
+      if (manualEstimateMinor > 0) {
+        return normalizeWealthPropertyEstimateRecord({
+          property_id: property.id,
+          estimated_value_minor: manualEstimateMinor,
+          low_minor: Math.round(manualEstimateMinor * 0.95),
+          high_minor: Math.round(manualEstimateMinor * 1.05),
+          confidence: "medium",
+          freshness_label: "Manual estimate",
+          method: "manual_estimate",
+          estimated_at: property.updated_at || new Date().toISOString(),
+          breakdown: {
+            source: "manual_estimate",
+            purchase_price_minor: purchasePriceMinor || 0
+          }
+        });
+      }
+      return normalizeWealthPropertyEstimateRecord({
+        property_id: property.id,
+        estimated_value_minor: purchasePriceMinor,
+        low_minor: purchasePriceMinor,
+        high_minor: purchasePriceMinor,
+        confidence: "low",
+        freshness_label: property.purchase_date ? `Purchase ${formatDateLabel(property.purchase_date)}` : "Purchase price only",
+        method: "manual_baseline",
+        estimated_at: property.updated_at || new Date().toISOString(),
+        breakdown: {
+          source: "purchase_price",
+          purchase_price_minor: purchasePriceMinor || 0
+        }
+      });
+    }
+
+    function rebuildWealthPropertyEstimates() {
+      const wealth = ensureWealthStateShape();
+      const next = {};
+      (wealth.properties || []).forEach(property => {
+        next[property.id] = buildWealthPropertyEstimate(property);
+      });
+      wealth.property_estimates = next;
+      return next;
+    }
+
+    function getWealthPropertyViews() {
+      const wealth = ensureWealthStateShape();
+      let estimates = wealth.property_estimates && typeof wealth.property_estimates === "object"
+        ? wealth.property_estimates
+        : rebuildWealthPropertyEstimates();
+      const properties = getWealthProperties();
+      if (properties.some(property => !estimates[property.id])) {
+        estimates = rebuildWealthPropertyEstimates();
+      }
+      return properties.map(property => {
+        const estimate = normalizeWealthPropertyEstimateRecord(estimates[property.id] || buildWealthPropertyEstimate(property));
+        const estimatedValueMinor = Number(estimate.estimated_value_minor || 0);
+        const purchasePriceMinor = Number(property.purchase_price_minor || 0);
+        return {
+          ...property,
+          estimate,
+          estimated_value_minor: estimatedValueMinor,
+          delta_minor: purchasePriceMinor > 0 && estimatedValueMinor > 0 ? estimatedValueMinor - purchasePriceMinor : null,
+          comparables_count: Array.isArray(property.comparables) ? property.comparables.length : 0
+        };
+      });
+    }
+
+    function totalWealthPropertyValueMinor() {
+      return getWealthPropertyViews().reduce((sum, property) => sum + Math.max(0, Number(property.estimated_value_minor || 0)), 0);
+    }
+
+    function saveWealthProperty(payload, propertyId = "") {
+      const wealth = ensureWealthStateShape();
+      const existing = propertyId ? getWealthPropertyById(propertyId) : null;
+      const record = normalizeWealthPropertyRecord({
+        ...(existing || {}),
+        id: existing?.id || uid(),
+        label: payload.label,
+        address: payload.address,
+        property_type: payload.property_type,
+        bedrooms: payload.bedrooms,
+        land_sqm: payload.land_sqm,
+        purchase_price: payload.purchase_price,
+        purchase_date: payload.purchase_date,
+        region_code: payload.region_code,
+        manual_estimate: payload.manual_estimate,
+        updated_at: new Date().toISOString(),
+        created_at: existing?.created_at || new Date().toISOString()
+      });
+      wealth.properties = (wealth.properties || []).filter(property => property.id !== record.id);
+      wealth.properties.push(record);
+      rebuildWealthPropertyEstimates();
+      saveState(existing ? "wealth_edit_property" : "wealth_add_property");
+      renderWealth();
+      return record;
+    }
+
+    function deleteWealthProperty(propertyId) {
+      const wealth = ensureWealthStateShape();
+      wealth.properties = (wealth.properties || []).filter(property => property.id !== propertyId);
+      if (wealth.property_estimates && typeof wealth.property_estimates === "object") {
+        delete wealth.property_estimates[propertyId];
+      }
+      saveState("wealth_delete_property");
+      renderWealth();
+    }
+
     function addWealthAccount(name, type, openingBalance) {
       ensureWealthStateShape();
       const account = {
@@ -17184,6 +17709,82 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       state.wealth.transactions = state.wealth.transactions.filter(t => t.id !== txnId);
       saveState("wealth_delete_txn");
       renderWealth();
+    }
+
+    function showWealthPropertyModal(propertyId = "") {
+      const existing = propertyId ? getWealthPropertyById(propertyId) : null;
+      const html = `<div class="wealth-form-grid">
+        <div>
+          <label>Property Label</label>
+          <input id="wealthPropertyLabelInput" placeholder="e.g. Hill Street House" value="${escapeHtml(existing?.label || "")}" />
+        </div>
+        <div>
+          <label>Address</label>
+          <input id="wealthPropertyAddressInput" placeholder="Optional address" value="${escapeHtml(existing?.address || "")}" />
+        </div>
+        <div class="wealth-form-row">
+          <div>
+            <label>Property Type</label>
+            <select id="wealthPropertyTypeInput">
+              ${Object.entries(WEALTH_PROPERTY_TYPES).map(([key, label]) => `<option value="${key}" ${existing?.property_type === key ? "selected" : ""}>${label}</option>`).join("")}
+            </select>
+          </div>
+          <div>
+            <label>Bedrooms</label>
+            <input id="wealthPropertyBedroomsInput" type="number" min="0" step="1" placeholder="Optional" value="${existing?.bedrooms ?? ""}" />
+          </div>
+        </div>
+        <div class="wealth-form-row">
+          <div>
+            <label>Land Size (sqm)</label>
+            <input id="wealthPropertyLandInput" type="number" min="0" step="1" placeholder="Optional" value="${existing?.land_sqm ?? ""}" />
+          </div>
+          <div>
+            <label>Region Code</label>
+            <input id="wealthPropertyRegionInput" placeholder="Optional region/suburb code" value="${escapeHtml(existing?.region_code || "")}" />
+          </div>
+        </div>
+        <div class="wealth-form-row">
+          <div>
+            <label>Purchase Date</label>
+            <input id="wealthPropertyPurchaseDateInput" type="date" value="${escapeHtml(existing?.purchase_date || "")}" />
+          </div>
+          <div>
+            <label>Purchase Price</label>
+            <input id="wealthPropertyPurchasePriceInput" type="number" step="0.01" placeholder="0.00" value="${existing?.purchase_price_minor ? escapeHtml(((existing.purchase_price_minor || 0) / 100).toFixed(2)) : ""}" />
+          </div>
+        </div>
+        <div>
+          <label>Manual Estimate</label>
+          <input id="wealthPropertyManualEstimateInput" type="number" step="0.01" placeholder="Optional current estimate" value="${existing?.manual_estimate_minor ? escapeHtml(((existing.manual_estimate_minor || 0) / 100).toFixed(2)) : ""}" />
+          <div class="tiny" style="margin-top:6px;color:var(--text2)">If blank, PPP Flow uses purchase price as a low-confidence baseline.</div>
+        </div>
+        <div class="controls" style="justify-content:flex-end">
+          <button class="ghost" id="wealthPropertyCancelBtn" type="button">Cancel</button>
+          <button class="primary" id="wealthPropertySubmitBtn" type="button">${existing ? "Save Property" : "Add Property"}</button>
+        </div>
+      </div>`;
+      showWealthModal(existing ? "Edit Property" : "Add Property", html);
+      requestAnimationFrame(() => {
+        document.getElementById("wealthPropertyLabelInput")?.focus();
+        document.getElementById("wealthPropertyCancelBtn")?.addEventListener("click", closeWealthModal);
+        document.getElementById("wealthPropertySubmitBtn")?.addEventListener("click", () => {
+          const label = String(document.getElementById("wealthPropertyLabelInput")?.value || "").trim();
+          if (!label) return;
+          saveWealthProperty({
+            label,
+            address: document.getElementById("wealthPropertyAddressInput")?.value || "",
+            property_type: document.getElementById("wealthPropertyTypeInput")?.value || "house",
+            bedrooms: document.getElementById("wealthPropertyBedroomsInput")?.value || "",
+            land_sqm: document.getElementById("wealthPropertyLandInput")?.value || "",
+            purchase_date: document.getElementById("wealthPropertyPurchaseDateInput")?.value || "",
+            purchase_price: document.getElementById("wealthPropertyPurchasePriceInput")?.value || "",
+            manual_estimate: document.getElementById("wealthPropertyManualEstimateInput")?.value || "",
+            region_code: document.getElementById("wealthPropertyRegionInput")?.value || ""
+          }, existing?.id || "");
+          closeWealthModal();
+        });
+      });
     }
 
     // ── Wealth Rendering ──
@@ -17320,6 +17921,51 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         </div>
         <button class="wealth-inline-btn" type="button" data-import-folder-file="${escapeHtml(file.id)}">Import</button>
       </div>`).join("");
+    }
+
+    function renderWealthProperties() {
+      const el = document.getElementById("portfolioPropertiesList");
+      if (!el) return;
+      const properties = getWealthPropertyViews();
+      if (!properties.length) {
+        el.innerHTML = '<div class="wealth-empty-state">No properties yet. Add one to include it in net worth.</div>';
+        return;
+      }
+      el.innerHTML = properties.map(property => {
+        const estimateMinor = Number(property.estimated_value_minor || 0);
+        const purchaseMinor = Number(property.purchase_price_minor || 0);
+        const deltaMinor = property.delta_minor;
+        const deltaText = deltaMinor == null
+          ? "No purchase baseline"
+          : `${deltaMinor >= 0 ? "+" : "-"}${formatCurrency(Math.abs(deltaMinor))} vs purchase`;
+        const meta = [
+          WEALTH_PROPERTY_TYPES[property.property_type] || property.property_type,
+          Number.isFinite(property.bedrooms) ? `${property.bedrooms} bed` : "",
+          Number.isFinite(property.land_sqm) ? `${Math.round(property.land_sqm)} sqm` : "",
+          property.region_code ? property.region_code : "",
+          property.purchase_date ? `Bought ${formatDateLabel(property.purchase_date)}` : ""
+        ].filter(Boolean).join(" · ");
+        return `<div class="wealth-account-row">
+          <div>
+            <div class="wealth-account-name">${escapeHtml(property.label)}</div>
+            <div class="wealth-rule-meta">
+              <span>${escapeHtml(meta || "Property record")}</span>
+              ${property.address ? `<span>${escapeHtml(property.address)}</span>` : ""}
+            </div>
+            <div class="wealth-rule-meta">
+              <span>Estimate ${estimateMinor > 0 ? formatCurrency(estimateMinor) : "Not set"}</span>
+              ${purchaseMinor > 0 ? `<span>Purchase ${formatCurrency(purchaseMinor)}</span>` : ""}
+              <span>${escapeHtml(deltaText)}</span>
+              <span>${escapeHtml((property.estimate.confidence || "low").toUpperCase())} confidence</span>
+              ${property.estimate.freshness_label ? `<span>${escapeHtml(property.estimate.freshness_label)}</span>` : ""}
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <button class="wealth-inline-btn" type="button" data-edit-property="${escapeHtml(property.id)}">Edit</button>
+            <button class="wealth-inline-btn warn" type="button" data-delete-property="${escapeHtml(property.id)}">Delete</button>
+          </div>
+        </div>`;
+      }).join("");
     }
 
     function renderWealthOverview() {
@@ -17552,6 +18198,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
               .join("")
           : '<div class="wealth-empty-state">No holdings yet. Add one to start tracking portfolio value.</div>';
       }
+      renderWealthProperties();
       void maybeAutoRefreshPortfolioQuotes();
     }
 
@@ -17763,6 +18410,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         }))
         .sort((a, b) => Math.abs(b.balance_minor) - Math.abs(a.balance_minor));
       const portfolio = getPortfolioSnapshot();
+      const properties = getWealthPropertyViews();
       const review = state.wealth?.last_import_review;
       return {
         currency: state.wealth?.currency || "AUD",
@@ -17804,6 +18452,19 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         },
         balance_sheet: computeNetWorth(),
         accounts: accountSummary,
+        properties: properties.map(property => ({
+          label: property.label,
+          property_type: property.property_type,
+          address: property.address || null,
+          bedrooms: property.bedrooms,
+          land_sqm: property.land_sqm,
+          purchase_price_minor: property.purchase_price_minor,
+          estimated_value_minor: property.estimated_value_minor,
+          delta_minor: property.delta_minor,
+          confidence: property.estimate?.confidence || "low",
+          freshness_label: property.estimate?.freshness_label || "",
+          method: property.estimate?.method || "manual_baseline"
+        })),
         portfolio: {
           market_value_minor: portfolio.totalMarketValueMinor,
           cost_basis_minor: portfolio.totalCostBasisMinor,
@@ -19597,6 +20258,22 @@ Data caveat`;
         if (dateKey && confirm("Delete this nutrition log?")) deleteHealthNutritionLog(dateKey);
         return;
       }
+      const sleepOpenBtn = e.target.closest("[data-health-sleep-open]");
+      if (sleepOpenBtn) {
+        showHealthSleepModal();
+        return;
+      }
+      const sleepEditBtn = e.target.closest("[data-health-sleep-edit]");
+      if (sleepEditBtn) {
+        showHealthSleepModal(String(sleepEditBtn.getAttribute("data-health-sleep-edit") || ""));
+        return;
+      }
+      const sleepDeleteBtn = e.target.closest("[data-health-sleep-delete]");
+      if (sleepDeleteBtn) {
+        const dateKey = String(sleepDeleteBtn.getAttribute("data-health-sleep-delete") || "").trim();
+        if (dateKey && confirm("Delete this sleep log?")) deleteHealthSleep(dateKey);
+        return;
+      }
       const measurementOpenBtn = e.target.closest("[data-health-measurement-open]");
       if (measurementOpenBtn) {
         showHealthMeasurementModal();
@@ -19674,6 +20351,7 @@ Data caveat`;
       input.click();
     });
     document.getElementById("wealthAddHoldingBtn")?.addEventListener("click", () => showAddHoldingModal());
+    document.getElementById("wealthAddPropertyBtn")?.addEventListener("click", () => showWealthPropertyModal());
     document.getElementById("wealthRefreshPricesBtn")?.addEventListener("click", () => { void refreshPortfolioQuotes({ force: true }); });
     document.getElementById("wealthAddTxnBtn")?.addEventListener("click", () => showAddTxnModal());
     document.getElementById("wealthOpenCoachBtn")?.addEventListener("click", () => openWealthCoach());
@@ -19870,6 +20548,18 @@ Data caveat`;
         if (id && confirm("Delete this holding?")) deleteWealthHolding(id);
         return;
       }
+      const editPropertyBtn = e.target.closest("[data-edit-property]");
+      if (editPropertyBtn) {
+        const id = String(editPropertyBtn.getAttribute("data-edit-property") || "").trim();
+        if (id) showWealthPropertyModal(id);
+        return;
+      }
+      const deletePropertyBtn = e.target.closest("[data-delete-property]");
+      if (deletePropertyBtn) {
+        const id = String(deletePropertyBtn.getAttribute("data-delete-property") || "").trim();
+        if (id && confirm("Delete this property record?")) deleteWealthProperty(id);
+        return;
+      }
       const openDetailBtn = e.target.closest("[data-open-holding-detail]");
       if (openDetailBtn) {
         const id = String(openDetailBtn.getAttribute("data-open-holding-detail") || "").trim();
@@ -20044,6 +20734,13 @@ Data caveat`;
         closeHealthNutritionLogModal();
         return;
       }
+      const healthSleepModal = document.getElementById("healthSleepModalOverlay");
+      if (healthSleepModal && !healthSleepModal.hidden && e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        closeHealthSleepModal();
+        return;
+      }
       const healthMeasurementModal = document.getElementById("healthMeasurementModalOverlay");
       if (healthMeasurementModal && !healthMeasurementModal.hidden && e.key === "Escape") {
         e.preventDefault();
@@ -20056,6 +20753,13 @@ Data caveat`;
         e.preventDefault();
         e.stopPropagation();
         closeHealthVitalsModal();
+        return;
+      }
+      const wealthModal = document.getElementById("wealthModalOverlay");
+      if (wealthModal && !wealthModal.hidden && e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        closeWealthModal();
         return;
       }
       if ((e.metaKey || e.ctrlKey) && e.shiftKey && !e.altKey && String(e.key || "").toLowerCase() === "o") {
