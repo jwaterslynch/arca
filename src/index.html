@@ -3276,6 +3276,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
             <div class="stat-box"><div class="stat-val" id="portfolioMarketValue">$0</div><div class="stat-label">Market Value</div></div>
             <div class="stat-box"><div class="stat-val" id="portfolioCostBasis">$0</div><div class="stat-label">Cost Basis</div></div>
             <div class="stat-box"><div class="stat-val" id="portfolioGainLoss">$0</div><div class="stat-label" id="portfolioGainLossLabel">Unrealized Gain/Loss</div></div>
+            <div class="stat-box"><div class="stat-val" id="portfolioRealizedGainLoss">$0</div><div class="stat-label">Realized Gain/Loss</div></div>
             <div class="stat-box"><div class="stat-val" id="portfolioDividendIncomeTtm">$0</div><div class="stat-label">Dividend Income (12M)</div></div>
             <div class="stat-box"><div class="stat-val" id="portfolioDividendIncomeTotal">$0</div><div class="stat-label">Dividend Income (Total)</div></div>
             <div class="stat-box"><div class="stat-val" id="portfolioStaleCount">0</div><div class="stat-label">Quotes Needing Refresh</div></div>
@@ -3305,6 +3306,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           <div id="portfolioPerformanceSummary" class="health-mini-stat-grid" style="margin-bottom:12px">
             <div class="health-mini-stat"><div class="health-mini-stat-label">Current Return</div><div class="health-mini-stat-value">—</div></div>
             <div class="health-mini-stat"><div class="health-mini-stat-label">Market Change</div><div class="health-mini-stat-value">—</div></div>
+            <div class="health-mini-stat"><div class="health-mini-stat-label">Realized Change</div><div class="health-mini-stat-value">—</div></div>
             <div class="health-mini-stat"><div class="health-mini-stat-label">Dividends Added</div><div class="health-mini-stat-value">—</div></div>
             <div class="health-mini-stat"><div class="health-mini-stat-label">Strongest Month</div><div class="health-mini-stat-value">—</div></div>
           </div>
@@ -4497,6 +4499,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         market_value_minor: normalizeMinorAmount(record?.market_value_minor, record?.market_value),
         cost_basis_minor: normalizeMinorAmount(record?.cost_basis_minor, record?.cost_basis),
         unrealized_gain_loss_minor: normalizeMinorAmount(record?.unrealized_gain_loss_minor, record?.unrealized_gain_loss),
+        realized_gain_loss_minor: normalizeMinorAmount(record?.realized_gain_loss_minor, record?.realized_gain_loss),
         trailing12_dividend_income_minor: normalizeMinorAmount(record?.trailing12_dividend_income_minor, record?.trailing12_dividend_income),
         total_dividend_income_minor: normalizeMinorAmount(record?.total_dividend_income_minor, record?.total_dividend_income),
         holding_count: Number.isFinite(Number(record?.holding_count)) ? Number(record.holding_count) : 0
@@ -18339,6 +18342,7 @@ Data caveat`;
           month_label: wealthPortfolioMonthLabel(current.month_key),
           market_change_minor: Number(current.market_value_minor || 0) - Number(previous.market_value_minor || 0),
           unrealized_change_minor: Number(current.unrealized_gain_loss_minor || 0) - Number(previous.unrealized_gain_loss_minor || 0),
+          realized_change_minor: Number(current.realized_gain_loss_minor || 0) - Number(previous.realized_gain_loss_minor || 0),
           dividend_added_minor: Number(current.total_dividend_income_minor || 0) - Number(previous.total_dividend_income_minor || 0),
           holding_change: Number(current.holding_count || 0) - Number(previous.holding_count || 0)
         });
@@ -18357,6 +18361,8 @@ Data caveat`;
         current_return_pct: simpleReturnPct(portfolio.totalCostBasisMinor, portfolio.totalMarketValueMinor),
         market_change_minor: baseline && latest ? Number(latest.market_value_minor || 0) - Number(baseline.market_value_minor || 0) : 0,
         unrealized_change_minor: baseline && latest ? Number(latest.unrealized_gain_loss_minor || 0) - Number(baseline.unrealized_gain_loss_minor || 0) : 0,
+        current_realized_gain_minor: Number(portfolio.realizedGainLossMinor || 0),
+        realized_change_minor: baseline && latest ? Number(latest.realized_gain_loss_minor || 0) - Number(baseline.realized_gain_loss_minor || 0) : Number(latest?.realized_gain_loss_minor || 0),
         dividends_added_minor: baseline && latest ? Number(latest.total_dividend_income_minor || 0) - Number(baseline.total_dividend_income_minor || 0) : Number(latest?.total_dividend_income_minor || 0),
         holding_change: baseline && latest ? Number(latest.holding_count || 0) - Number(baseline.holding_count || 0) : 0,
         latest_month_key: latest?.month_key || null,
@@ -18372,13 +18378,20 @@ Data caveat`;
       const monthKey = currentPortfolioSnapshotMonthKey(dateKey);
       if (!monthKey) return false;
       const holdingCount = (portfolio?.holdingViews || []).length;
-      if (!holdingCount && !(portfolio?.totalCostBasisMinor || 0) && !(portfolio?.totalMarketValueMinor || 0) && !(portfolio?.totalDividendIncomeMinor || 0)) return false;
+      if (
+        !holdingCount &&
+        !(portfolio?.totalCostBasisMinor || 0) &&
+        !(portfolio?.totalMarketValueMinor || 0) &&
+        !(portfolio?.totalDividendIncomeMinor || 0) &&
+        !(portfolio?.realizedGainLossMinor || 0)
+      ) return false;
       const nextRecord = normalizeWealthPortfolioSnapshotRecord({
         month_key: monthKey,
         captured_at: new Date().toISOString(),
         market_value_minor: portfolio?.totalMarketValueMinor || 0,
         cost_basis_minor: portfolio?.totalCostBasisMinor || 0,
         unrealized_gain_loss_minor: portfolio?.unrealizedGainLossMinor || 0,
+        realized_gain_loss_minor: portfolio?.realizedGainLossMinor || 0,
         trailing12_dividend_income_minor: portfolio?.trailing12DividendIncomeMinor || 0,
         total_dividend_income_minor: portfolio?.totalDividendIncomeMinor || 0,
         holding_count: holdingCount
@@ -18391,6 +18404,7 @@ Data caveat`;
           existing.market_value_minor === nextRecord.market_value_minor &&
           existing.cost_basis_minor === nextRecord.cost_basis_minor &&
           existing.unrealized_gain_loss_minor === nextRecord.unrealized_gain_loss_minor &&
+          existing.realized_gain_loss_minor === nextRecord.realized_gain_loss_minor &&
           existing.trailing12_dividend_income_minor === nextRecord.trailing12_dividend_income_minor &&
           existing.total_dividend_income_minor === nextRecord.total_dividend_income_minor &&
           existing.holding_count === nextRecord.holding_count;
@@ -18410,6 +18424,10 @@ Data caveat`;
       const trades = getTradesForHolding(holdingId);
       let unitsHeld = 0;
       let costBasisMinor = 0;
+      let realizedGainMinor = 0;
+      let realizedProceedsMinor = 0;
+      let realizedCostReleasedMinor = 0;
+      let sellTradeCount = 0;
       trades.forEach(trade => {
         const units = Number(trade.units || 0);
         const totalMinor = Number(trade.total_minor || 0);
@@ -18422,7 +18440,14 @@ Data caveat`;
           if (unitsHeld <= 0 || units <= 0) return;
           const soldUnits = Math.min(unitsHeld, units);
           const avgCostPerUnit = unitsHeld > 0 ? costBasisMinor / unitsHeld : 0;
-          costBasisMinor = Math.max(0, costBasisMinor - Math.round(avgCostPerUnit * soldUnits));
+          const costReleasedMinor = Math.round(avgCostPerUnit * soldUnits);
+          const grossProceedsMinor = Math.max(0, Math.round(soldUnits * Number(trade.price_minor || 0)));
+          const netProceedsMinor = Math.max(0, grossProceedsMinor - Number(trade.fees_minor || 0));
+          realizedGainMinor += netProceedsMinor - costReleasedMinor;
+          realizedProceedsMinor += netProceedsMinor;
+          realizedCostReleasedMinor += costReleasedMinor;
+          sellTradeCount += 1;
+          costBasisMinor = Math.max(0, costBasisMinor - costReleasedMinor);
           unitsHeld = Math.max(0, unitsHeld - soldUnits);
           if (unitsHeld === 0) costBasisMinor = 0;
         }
@@ -18430,6 +18455,10 @@ Data caveat`;
       return {
         units: unitsHeld,
         costBasisMinor,
+        realizedGainMinor,
+        realizedProceedsMinor,
+        realizedCostReleasedMinor,
+        sellTradeCount,
         tradeCount: trades.length,
         trades
       };
@@ -18457,6 +18486,10 @@ Data caveat`;
         marketValueMinor,
         costBasisMinor,
         gainLossMinor,
+        realizedGainMinor: position.realizedGainMinor || 0,
+        realizedProceedsMinor: position.realizedProceedsMinor || 0,
+        realizedCostReleasedMinor: position.realizedCostReleasedMinor || 0,
+        sellTradeCount: position.sellTradeCount || 0,
         tradeCount: position.tradeCount,
         trades: position.trades,
         dividendCount: dividendSummary.count,
@@ -18521,6 +18554,7 @@ Data caveat`;
       const holdingViews = (state.wealth?.holdings || []).map(buildHoldingView);
       const totalMarketValueMinor = holdingViews.reduce((sum, h) => sum + h.marketValueMinor, 0);
       const totalCostBasisMinor = holdingViews.reduce((sum, h) => sum + h.costBasisMinor, 0);
+      const realizedGainLossMinor = holdingViews.reduce((sum, h) => sum + Number(h.realizedGainMinor || 0), 0);
       const allocationByType = {};
       let missingOrStaleCount = 0;
       let totalDividendIncomeMinor = 0;
@@ -18544,6 +18578,7 @@ Data caveat`;
         totalMarketValueMinor,
         totalCostBasisMinor,
         unrealizedGainLossMinor: totalMarketValueMinor - totalCostBasisMinor,
+        realizedGainLossMinor,
         totalDividendIncomeMinor,
         trailing12DividendIncomeMinor,
         allocationByType,
@@ -20805,6 +20840,7 @@ Data caveat`;
         summaryEl.innerHTML = `
           <div class="health-mini-stat"><div class="health-mini-stat-label">Current Return</div><div class="health-mini-stat-value">${formatPct(performance.current_return_pct)}</div></div>
           <div class="health-mini-stat"><div class="health-mini-stat-label">Market Change</div><div class="health-mini-stat-value">—</div></div>
+          <div class="health-mini-stat"><div class="health-mini-stat-label">Realized Gain</div><div class="health-mini-stat-value">${performance.current_realized_gain_minor >= 0 ? "+" : "-"}${formatCurrency(Math.abs(performance.current_realized_gain_minor || 0))}</div></div>
           <div class="health-mini-stat"><div class="health-mini-stat-label">Dividends Added</div><div class="health-mini-stat-value">—</div></div>
           <div class="health-mini-stat"><div class="health-mini-stat-label">Strongest Month</div><div class="health-mini-stat-value">—</div></div>
         `;
@@ -20814,6 +20850,7 @@ Data caveat`;
       summaryEl.innerHTML = `
         <div class="health-mini-stat"><div class="health-mini-stat-label">Current Return</div><div class="health-mini-stat-value">${formatPct(performance.current_return_pct)}</div></div>
         <div class="health-mini-stat"><div class="health-mini-stat-label">Market Change</div><div class="health-mini-stat-value">${performance.market_change_minor >= 0 ? "+" : "-"}${formatCurrency(Math.abs(performance.market_change_minor || 0))}</div></div>
+        <div class="health-mini-stat"><div class="health-mini-stat-label">Realized Change</div><div class="health-mini-stat-value">${performance.realized_change_minor >= 0 ? "+" : "-"}${formatCurrency(Math.abs(performance.realized_change_minor || 0))}</div></div>
         <div class="health-mini-stat"><div class="health-mini-stat-label">Dividends Added</div><div class="health-mini-stat-value">${formatCurrency(performance.dividends_added_minor || 0)}</div></div>
         <div class="health-mini-stat"><div class="health-mini-stat-label">Strongest Month</div><div class="health-mini-stat-value">${performance.best_month ? `${performance.best_month.market_change_minor >= 0 ? "+" : "-"}${formatCurrency(Math.abs(performance.best_month.market_change_minor || 0))}` : "—"}</div></div>
       `;
@@ -20832,7 +20869,7 @@ Data caveat`;
         </div>
         <div class="wealth-concentration-item">
           <strong>Position Change Across Window</strong>
-          <div>${performance.holding_change === 0 ? "No net holding-count change." : `${performance.holding_change > 0 ? "+" : ""}${performance.holding_change} holding${Math.abs(performance.holding_change) === 1 ? "" : "s"} vs start of window`} · Unrealized change ${performance.unrealized_change_minor >= 0 ? "+" : "-"}${formatCurrency(Math.abs(performance.unrealized_change_minor || 0))}</div>
+          <div>${performance.holding_change === 0 ? "No net holding-count change." : `${performance.holding_change > 0 ? "+" : ""}${performance.holding_change} holding${Math.abs(performance.holding_change) === 1 ? "" : "s"} vs start of window`} · Unrealized change ${performance.unrealized_change_minor >= 0 ? "+" : "-"}${formatCurrency(Math.abs(performance.unrealized_change_minor || 0))} · Realized change ${performance.realized_change_minor >= 0 ? "+" : "-"}${formatCurrency(Math.abs(performance.realized_change_minor || 0))}</div>
         </div>
       `;
     }
@@ -20848,6 +20885,7 @@ Data caveat`;
       const costEl = document.getElementById("portfolioCostBasis");
       const gainEl = document.getElementById("portfolioGainLoss");
       const gainLabelEl = document.getElementById("portfolioGainLossLabel");
+      const realizedEl = document.getElementById("portfolioRealizedGainLoss");
       const dividendTtmEl = document.getElementById("portfolioDividendIncomeTtm");
       const dividendTotalEl = document.getElementById("portfolioDividendIncomeTotal");
       const staleEl = document.getElementById("portfolioStaleCount");
@@ -20860,6 +20898,10 @@ Data caveat`;
         gainEl.style.color = snapshot.unrealizedGainLossMinor >= 0 ? "var(--accent)" : "var(--danger)";
       }
       if (gainLabelEl) gainLabelEl.textContent = displayPercentages ? "Simple Return" : "Unrealized Gain/Loss";
+      if (realizedEl) {
+        realizedEl.textContent = `${snapshot.realizedGainLossMinor >= 0 ? "+" : "-"}${formatCurrency(Math.abs(snapshot.realizedGainLossMinor || 0))}`;
+        realizedEl.style.color = snapshot.realizedGainLossMinor >= 0 ? "var(--accent)" : "var(--danger)";
+      }
       if (dividendTtmEl) dividendTtmEl.textContent = formatCurrency(snapshot.trailing12DividendIncomeMinor || 0);
       if (dividendTotalEl) dividendTotalEl.textContent = formatCurrency(snapshot.totalDividendIncomeMinor || 0);
       if (staleEl) staleEl.textContent = String(snapshot.missingOrStaleCount);
@@ -21241,6 +21283,7 @@ Data caveat`;
           market_value_minor: portfolio.totalMarketValueMinor,
           cost_basis_minor: portfolio.totalCostBasisMinor,
           unrealized_gain_loss_minor: portfolio.unrealizedGainLossMinor,
+          realized_gain_loss_minor: portfolio.realizedGainLossMinor,
           dividend_income_minor: portfolio.totalDividendIncomeMinor,
           trailing12_dividend_income_minor: portfolio.trailing12DividendIncomeMinor,
           performance: (() => {
@@ -21252,24 +21295,29 @@ Data caveat`;
               current_return_pct: summary.current_return_pct,
               market_change_minor: summary.market_change_minor,
               unrealized_change_minor: summary.unrealized_change_minor,
+              current_realized_gain_minor: summary.current_realized_gain_minor,
+              realized_change_minor: summary.realized_change_minor,
               dividends_added_minor: summary.dividends_added_minor,
               holding_change: summary.holding_change,
               best_month: summary.best_month ? {
                 month_key: summary.best_month.month_key,
                 month_label: summary.best_month.month_label,
                 market_change_minor: summary.best_month.market_change_minor,
+                realized_change_minor: summary.best_month.realized_change_minor,
                 dividend_added_minor: summary.best_month.dividend_added_minor
               } : null,
               worst_month: summary.worst_month ? {
                 month_key: summary.worst_month.month_key,
                 month_label: summary.worst_month.month_label,
                 market_change_minor: summary.worst_month.market_change_minor,
+                realized_change_minor: summary.worst_month.realized_change_minor,
                 dividend_added_minor: summary.worst_month.dividend_added_minor
               } : null,
               recent_month: summary.recent_month ? {
                 month_key: summary.recent_month.month_key,
                 month_label: summary.recent_month.month_label,
                 market_change_minor: summary.recent_month.market_change_minor,
+                realized_change_minor: summary.recent_month.realized_change_minor,
                 dividend_added_minor: summary.recent_month.dividend_added_minor
               } : null
             };
@@ -21280,6 +21328,7 @@ Data caveat`;
             market_value_minor: snapshot.market_value_minor,
             cost_basis_minor: snapshot.cost_basis_minor,
             unrealized_gain_loss_minor: snapshot.unrealized_gain_loss_minor,
+            realized_gain_loss_minor: snapshot.realized_gain_loss_minor,
             trailing12_dividend_income_minor: snapshot.trailing12_dividend_income_minor,
             total_dividend_income_minor: snapshot.total_dividend_income_minor,
             holding_count: snapshot.holding_count
@@ -21292,6 +21341,7 @@ Data caveat`;
               asset_type: h.asset_type,
               market_value_minor: h.marketValueMinor,
               cost_basis_minor: h.costBasisMinor,
+              realized_gain_loss_minor: h.realizedGainMinor,
               dividend_income_minor: h.dividendIncomeMinor,
               trailing12_dividend_income_minor: h.trailing12DividendMinor,
               return_pct: h.returnPct,
@@ -21750,6 +21800,8 @@ Data caveat`;
       const gainLossLabel = gainLossKnown
         ? `${gainLossPositive ? "+" : "-"}${formatCurrency(Math.abs(h.gainLossMinor || 0))} · ${formatPct(h.returnPct)}`
         : "Needs price";
+      const realizedPositive = Number(h.realizedGainMinor || 0) >= 0;
+      const realizedLabel = `${realizedPositive ? "+" : "-"}${formatCurrency(Math.abs(h.realizedGainMinor || 0))}`;
       const nextStep = !h.quote
         ? "Set a price to calculate market value and return."
         : h.quote.stale
@@ -21794,21 +21846,33 @@ Data caveat`;
             <div class="tiny" style="margin-top:4px;color:var(--text2)">Cost basis ${formatCurrency(h.costBasisMinor || 0)}</div>
           </div>
           <div>
-            <label>Return</label>
+            <label>Unrealized Return</label>
             <div style="font-weight:700;color:${gainLossKnown ? (gainLossPositive ? "var(--accent)" : "var(--danger)") : "var(--text2)"}">${gainLossLabel}</div>
             <div class="tiny" style="margin-top:4px;color:var(--text2)">${nextStep}</div>
           </div>
         </div>
         <div class="wealth-form-row">
           <div>
+            <label>Realized Activity</label>
+            <div style="font-weight:700;color:${realizedPositive ? "var(--accent)" : "var(--danger)"}">${realizedLabel}</div>
+            <div class="tiny" style="margin-top:4px;color:var(--text2)">${h.sellTradeCount || 0} sell trade${h.sellTradeCount === 1 ? "" : "s"} · Proceeds ${formatCurrency(h.realizedProceedsMinor || 0)} · Cost released ${formatCurrency(h.realizedCostReleasedMinor || 0)}</div>
+          </div>
+          <div>
             <label>Latest Trade</label>
             <div style="font-weight:700">${latestTrade ? escapeHtml(fmtEntryDate(latestTrade.trade_date)) : "No trades yet"}</div>
             <div class="tiny" style="margin-top:4px;color:var(--text2)">${latestTrade ? `${escapeHtml(latestTrade.trade_type)} · ${latestTrade.units.toLocaleString(undefined, { maximumFractionDigits: 8 })} units · ${formatCurrency(latestTrade.total_minor || 0)}` : "Use Trades to establish position history."}</div>
           </div>
+        </div>
+        <div class="wealth-form-row">
           <div>
             <label>Latest Dividend</label>
             <div style="font-weight:700">${latestDividend ? escapeHtml(fmtEntryDate(latestDividend.pay_date)) : "No dividends yet"}</div>
             <div class="tiny" style="margin-top:4px;color:var(--text2)">${latestDividend ? `${formatCurrency(latestDividend.amount_minor || 0)} · ${escapeHtml(latestDividend.status)}` : "Use Income to log distributions or dividends."}</div>
+          </div>
+          <div>
+            <label>Dividend Flow</label>
+            <div style="font-weight:700">${formatCurrency(h.dividendIncomeMinor || 0)}</div>
+            <div class="tiny" style="margin-top:4px;color:var(--text2)">Trailing 12M ${formatCurrency(h.trailing12DividendMinor || 0)}${trailingYieldPct == null ? "" : ` · Yield ${formatPct(trailingYieldPct)}`}</div>
           </div>
         </div>
         <div class="controls" style="justify-content:space-between;align-items:center">
