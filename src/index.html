@@ -1955,6 +1955,12 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
 .health-template-main{min-width:0;display:grid;gap:3px}
 .health-template-title{font-size:.8rem;font-weight:700;color:var(--text)}
 .health-template-meta{font-size:.72rem;color:var(--text2);display:flex;gap:8px;flex-wrap:wrap}
+.health-template-exercises{display:flex;gap:6px;flex-wrap:wrap;margin-top:2px}
+.health-template-exercise-chip{
+  display:inline-flex;align-items:center;padding:3px 8px;border-radius:999px;
+  background:#fff;border:1px solid var(--line);font-size:.68rem;color:var(--text2)
+}
+.health-template-exercise-chip.matched{background:var(--accent-light);border-color:#8fd2bf;color:var(--accent)}
 .health-template-day{
   font-size:.68rem;font-weight:700;color:var(--accent);background:#fff;border:1px solid var(--line);
   border-radius:999px;padding:5px 9px;white-space:nowrap;
@@ -4675,6 +4681,24 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       };
     }
 
+    function normalizeHealthTemplateExercise(record) {
+      const exercise = record && typeof record === "object" ? record : {};
+      const name = String(exercise.name || exercise.exercise || "").trim();
+      const sets = Number.parseInt(String(exercise.sets ?? ""), 10);
+      const reps = Number.parseInt(String(exercise.reps ?? ""), 10);
+      const weight = Number(exercise.weight_kg);
+      const note = String(exercise.note || "").trim();
+      if (!name && !Number.isFinite(sets) && !Number.isFinite(reps) && !Number.isFinite(weight) && !note) return null;
+      return {
+        id: exercise.id || uid(),
+        name,
+        sets: Number.isFinite(sets) && sets > 0 ? sets : null,
+        reps: Number.isFinite(reps) && reps > 0 ? reps : null,
+        weight_kg: Number.isFinite(weight) && weight > 0 ? Math.round(weight * 10) / 10 : null,
+        note
+      };
+    }
+
     function normalizeHealthSessionTemplate(record) {
       const template = record && typeof record === "object" ? record : {};
       const plannedMinutes = Number(template.planned_minutes);
@@ -4686,7 +4710,10 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         focus: String(template.focus || "").trim(),
         practice_id: String(template.practice_id || "").trim(),
         planned_minutes: Number.isFinite(plannedMinutes) && plannedMinutes > 0 ? plannedMinutes : null,
-        execution_note: String(template.execution_note || "").trim()
+        execution_note: String(template.execution_note || "").trim(),
+        planned_exercises: Array.isArray(template.planned_exercises)
+          ? template.planned_exercises.map(normalizeHealthTemplateExercise).filter(Boolean)
+          : []
       };
     }
 
@@ -13441,6 +13468,195 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       return Number.isFinite(profileMinutes) && profileMinutes > 0 ? profileMinutes : null;
     }
 
+    function healthNormalizeExerciseLabel(value) {
+      return String(value || "")
+        .trim()
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+    }
+
+    function healthTemplateSuggestedExercises(title, profile) {
+      const normalizedTitle = String(title || "").trim().toLowerCase();
+      const targetMuscles = new Set((profile?.target_muscle_groups || []).map(value => String(value || "").trim().toLowerCase()));
+      const build = items => items.map(item => normalizeHealthTemplateExercise(item)).filter(Boolean);
+      if (!normalizedTitle) {
+        return build([
+          { name: "Main lift", sets: 3, reps: 5 },
+          { name: "Secondary lift", sets: 3, reps: 8 },
+          { name: "Accessory", sets: 3, reps: 10 },
+          { name: "Conditioning finisher", note: "Optional 8-12 min" }
+        ]);
+      }
+      if (normalizedTitle.includes("push")) {
+        return build([
+          { name: "Bench Press", sets: 4, reps: 6 },
+          { name: "Incline Dumbbell Press", sets: 3, reps: 8 },
+          { name: "Shoulder Press", sets: 3, reps: 8 },
+          { name: "Triceps Pressdown", sets: 3, reps: 12 }
+        ]);
+      }
+      if (normalizedTitle.includes("pull")) {
+        return build([
+          { name: "Pull-Up or Lat Pulldown", sets: 4, reps: 6 },
+          { name: "Barbell or Cable Row", sets: 3, reps: 8 },
+          { name: "Romanian Deadlift", sets: 3, reps: 6 },
+          { name: "Biceps Curl", sets: 3, reps: 12 }
+        ]);
+      }
+      if (normalizedTitle.includes("leg") || normalizedTitle.includes("lower")) {
+        return build([
+          { name: "Back Squat", sets: 4, reps: 5 },
+          { name: "Romanian Deadlift", sets: 3, reps: 6 },
+          { name: "Leg Press or Split Squat", sets: 3, reps: 10 },
+          { name: "Calf Raise", sets: 3, reps: 12 }
+        ]);
+      }
+      if (normalizedTitle.includes("upper")) {
+        return build([
+          { name: "Bench Press", sets: 4, reps: 6 },
+          { name: "Row", sets: 4, reps: 8 },
+          { name: "Shoulder Press", sets: 3, reps: 8 },
+          { name: "Pull-Up or Pulldown", sets: 3, reps: 8 }
+        ]);
+      }
+      if (normalizedTitle.includes("body part") || normalizedTitle.includes("chest")) {
+        return build([
+          { name: "Bench Press", sets: 4, reps: 6 },
+          { name: "Incline Press", sets: 3, reps: 8 },
+          { name: "Flye or Pec Deck", sets: 3, reps: 12 },
+          { name: "Push-Up Burnout", note: "AMRAP finisher" }
+        ]);
+      }
+      if (normalizedTitle.includes("back")) {
+        return build([
+          { name: "Deadlift or Rack Pull", sets: 4, reps: 5 },
+          { name: "Row", sets: 4, reps: 8 },
+          { name: "Pulldown", sets: 3, reps: 10 },
+          { name: "Face Pull", sets: 3, reps: 15 }
+        ]);
+      }
+      if (normalizedTitle.includes("shoulder")) {
+        return build([
+          { name: "Overhead Press", sets: 4, reps: 6 },
+          { name: "Lateral Raise", sets: 3, reps: 12 },
+          { name: "Rear Delt Flye", sets: 3, reps: 15 },
+          { name: "Incline DB Press", sets: 3, reps: 10 }
+        ]);
+      }
+      if (normalizedTitle.includes("full body")) {
+        return build([
+          { name: "Back Squat", sets: 3, reps: 5 },
+          { name: "Bench Press", sets: 3, reps: 6 },
+          { name: "Romanian Deadlift", sets: 3, reps: 8 },
+          { name: "Row or Pull-Up", sets: 3, reps: 8 }
+        ]);
+      }
+      if (targetMuscles.has("glutes") || targetMuscles.has("hamstrings")) {
+        return build([
+          { name: "Hip Thrust", sets: 4, reps: 8 },
+          { name: "Romanian Deadlift", sets: 3, reps: 8 },
+          { name: "Leg Curl", sets: 3, reps: 12 },
+          { name: "Walking Lunge", sets: 2, reps: 12, note: "per side" }
+        ]);
+      }
+      return build([
+        { name: "Main lift", sets: 4, reps: 6 },
+        { name: "Secondary lift", sets: 3, reps: 8 },
+        { name: "Accessory 1", sets: 3, reps: 10 },
+        { name: "Accessory 2", sets: 3, reps: 12 }
+      ]);
+    }
+
+    function healthTemplateExercises(template, profile) {
+      const explicit = Array.isArray(template?.planned_exercises)
+        ? template.planned_exercises.map(normalizeHealthTemplateExercise).filter(Boolean)
+        : [];
+      return explicit.length ? explicit : healthTemplateSuggestedExercises(template?.title || "", profile);
+    }
+
+    function healthTemplateExercisesToMultiline(exercises) {
+      return (Array.isArray(exercises) ? exercises : [])
+        .map(item => {
+          if (!item) return "";
+          const parts = [];
+          if (item.name) parts.push(item.name);
+          if (item.sets && item.reps) parts.push(`${item.sets}x${item.reps}`);
+          else if (item.reps) parts.push(`${item.reps} reps`);
+          if (item.weight_kg) parts.push(`${item.weight_kg}kg`);
+          if (item.note) parts.push(item.note);
+          return parts.join(" | ");
+        })
+        .filter(Boolean)
+        .join("\n");
+    }
+
+    function parseHealthTemplateExercisesMultiline(text) {
+      return String(text || "")
+        .split(/\r?\n/)
+        .map(line => String(line || "").trim())
+        .filter(Boolean)
+        .map(line => {
+          const parts = line.split("|").map(part => part.trim()).filter(Boolean);
+          if (!parts.length) return null;
+          const name = parts.shift() || "";
+          let sets = null;
+          let reps = null;
+          let weight_kg = null;
+          const noteParts = [];
+          parts.forEach(part => {
+            const setRepMatch = part.match(/^(\d+)\s*[x×]\s*(\d+)$/i);
+            if (setRepMatch) {
+              sets = Number.parseInt(setRepMatch[1], 10);
+              reps = Number.parseInt(setRepMatch[2], 10);
+              return;
+            }
+            const repsMatch = part.match(/^(\d+)\s*reps?$/i);
+            if (repsMatch) {
+              reps = Number.parseInt(repsMatch[1], 10);
+              return;
+            }
+            const weightMatch = part.match(/^@?\s*(\d+(?:\.\d+)?)\s*kg$/i);
+            if (weightMatch) {
+              weight_kg = Number.parseFloat(weightMatch[1]);
+              return;
+            }
+            noteParts.push(part);
+          });
+          return normalizeHealthTemplateExercise({
+            name,
+            sets,
+            reps,
+            weight_kg,
+            note: noteParts.join(" · ")
+          });
+        })
+        .filter(Boolean);
+    }
+
+    function healthPerformedExercisesFromText(text, fallbackMinutes = null) {
+      return parseHealthTemplateExercisesMultiline(text).map(item => ({
+        id: uid(),
+        at: new Date().toISOString(),
+        text: [
+          item.name,
+          item.sets && item.reps ? `${item.sets}×${item.reps}` : item.reps ? `${item.reps} reps` : "",
+          item.weight_kg ? `@${item.weight_kg}kg` : "",
+          item.note || ""
+        ].filter(Boolean).join(" · "),
+        minutes: fallbackMinutes,
+        metrics: {
+          exercise: item.name,
+          sets: item.sets,
+          reps: item.reps,
+          weight_kg: item.weight_kg
+        },
+        tags: ["health_training_block", "health_template_exercise"],
+        attachments: []
+      }));
+    }
+
     function generateHealthSessionTemplates(block, profile, existingTemplates = []) {
       const sessionsPerWeek = Math.max(0, Math.min(Number(block?.sessions_per_week) || 0, 7));
       if (!sessionsPerWeek) return [];
@@ -13462,7 +13678,8 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
           focus: healthTemplateFocusLabel(title),
           practice_id: existing?.practice_id || defaultPracticeId,
           planned_minutes: healthTemplatePlannedMinutes(existing, profile),
-          execution_note: existing?.execution_note || ""
+          execution_note: existing?.execution_note || "",
+          planned_exercises: healthTemplateExercises(existing || { title }, profile)
         };
       });
     }
@@ -13533,6 +13750,48 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       return doneDates;
     }
 
+    function healthActualExerciseEntries(practiceId, dateKey) {
+      if (!practiceId || !dateKey) return [];
+      return practiceEntriesInDates(practiceId, [dateKey])
+        .filter(entry => {
+          const exercise = String(entry?.metrics?.exercise || "").trim();
+          return !!exercise;
+        })
+        .map(entry => ({
+          exercise: String(entry.metrics.exercise || "").trim(),
+          normalized_exercise: healthNormalizeExerciseLabel(entry.metrics.exercise),
+          sets: Number(entry?.metrics?.sets) || null,
+          reps: Number(entry?.metrics?.reps) || null,
+          weight_kg: Number(entry?.metrics?.weight_kg) || null,
+          minutes: Number(entry?.minutes) || null,
+          date: entry.date
+        }));
+    }
+
+    function healthTemplateExerciseComparison(template, practiceId, dateKey, profile) {
+      const plannedExercises = healthTemplateExercises(template, profile);
+      const actualExercises = healthActualExerciseEntries(practiceId, dateKey);
+      const actualNames = new Set(actualExercises.map(item => item.normalized_exercise).filter(Boolean));
+      const matchedExercises = plannedExercises.filter(item => actualNames.has(healthNormalizeExerciseLabel(item.name)));
+      const missingExercises = plannedExercises.filter(item => !actualNames.has(healthNormalizeExerciseLabel(item.name)));
+      const plannedCount = plannedExercises.length;
+      const matchedCount = matchedExercises.length;
+      const extraExercises = actualExercises.filter(item =>
+        !plannedExercises.some(planned => healthNormalizeExerciseLabel(planned.name) === item.normalized_exercise)
+      );
+      return {
+        planned_exercises: plannedExercises,
+        actual_exercises: actualExercises,
+        matched_exercises: matchedExercises,
+        missing_exercises: missingExercises,
+        extra_exercises: extraExercises,
+        planned_count: plannedCount,
+        actual_count: actualExercises.length,
+        matched_count: matchedCount,
+        match_pct: plannedCount ? Math.round((matchedCount / plannedCount) * 100) : (actualExercises.length ? 100 : 0)
+      };
+    }
+
     function healthTrainingSchedule(snapshot) {
       if (!snapshot?.hasBlock || !snapshot.templates?.length) return [];
       const block = snapshot.block || {};
@@ -13549,6 +13808,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         const practiceLog = practice && dateKey ? practiceLogEntry(practice.id, dateKey) : null;
         const loggedMinutes = Number(practiceLog?.minutes);
         const plannedMinutes = healthTemplatePlannedMinutes(template, snapshot.profile);
+        const exerciseComparison = healthTemplateExerciseComparison(template, template.practice_id, dateKey, snapshot.profile);
         const isDone = template.practice_id ? !!practiceLog?.done : doneDates.has(dateKey);
         let status = "upcoming";
         if (!dateKey) {
@@ -13581,7 +13841,8 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
           status_label: statusLabel,
           practice_title: practiceTitle,
           planned_minutes: plannedMinutes,
-          logged_minutes: Number.isFinite(loggedMinutes) && loggedMinutes >= 0 ? loggedMinutes : null
+          logged_minutes: Number.isFinite(loggedMinutes) && loggedMinutes >= 0 ? loggedMinutes : null,
+          exercise_comparison: exerciseComparison
         };
       });
     }
@@ -13618,6 +13879,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         const practiceLog = practice && dateKey ? practiceLogEntry(practice.id, dateKey) : null;
         const loggedMinutes = Number(practiceLog?.minutes);
         const plannedMinutes = healthTemplatePlannedMinutes(template, snapshot.profile);
+        const exerciseComparison = healthTemplateExerciseComparison(template, template.practice_id, dateKey, snapshot.profile);
         const isDone = template.practice_id ? !!practiceLog?.done : doneDates.has(dateKey);
         let status = "upcoming";
         if (isDone) status = "done";
@@ -13633,7 +13895,8 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
           status,
           planned_minutes: plannedMinutes,
           logged_minutes: Number.isFinite(loggedMinutes) && loggedMinutes >= 0 ? loggedMinutes : null,
-          practice_title: practice?.title || ""
+          practice_title: practice?.title || "",
+          exercise_comparison: exerciseComparison
         };
       }).filter(Boolean);
     }
@@ -13676,23 +13939,36 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       if (!snapshot?.templates?.length || !Array.isArray(weekSummaries) || !weekSummaries.length) return [];
       const byId = new Map(snapshot.templates.map(template => [template.id, {
         ...template,
-        planned_count: 0,
-        completed_count: 0,
-        missed_count: 0,
-        due_today_count: 0,
-        logged_minutes_total: 0,
-        planned_minutes_total: 0,
-        completed_planned_minutes_total: 0,
-        status_series: [],
-        last_completed_date: "",
-        last_missed_date: ""
-      }]));
+          planned_count: 0,
+          completed_count: 0,
+          missed_count: 0,
+          due_today_count: 0,
+          logged_minutes_total: 0,
+          planned_minutes_total: 0,
+          completed_planned_minutes_total: 0,
+          planned_exercise_total: 0,
+          matched_exercise_total: 0,
+          actual_exercise_total: 0,
+          last_match_pct: null,
+          missing_examples: new Set(),
+          extra_examples: new Set(),
+          status_series: [],
+          last_completed_date: "",
+          last_missed_date: ""
+        }]));
       weekSummaries.forEach(summary => {
         summary.instances.forEach(instance => {
           const row = byId.get(instance.id);
           if (!row) return;
+          const exerciseComparison = instance.exercise_comparison || { planned_count: 0, matched_count: 0, actual_count: 0, missing_exercises: [], extra_exercises: [], match_pct: 0 };
           row.planned_count += 1;
           row.planned_minutes_total += Number(instance.planned_minutes) || 0;
+          row.planned_exercise_total += exerciseComparison.planned_count || 0;
+          row.matched_exercise_total += exerciseComparison.matched_count || 0;
+          row.actual_exercise_total += exerciseComparison.actual_count || 0;
+          row.last_match_pct = exerciseComparison.planned_count ? exerciseComparison.match_pct : row.last_match_pct;
+          exerciseComparison.missing_exercises?.slice(0, 2).forEach(item => row.missing_examples.add(item.name));
+          exerciseComparison.extra_exercises?.slice(0, 2).forEach(item => row.extra_examples.add(item.exercise));
           if (instance.status === "done") {
             row.completed_count += 1;
             row.logged_minutes_total += Number(instance.logged_minutes) || 0;
@@ -13718,12 +13994,16 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         const avgMinuteDelta = row.completed_count
           ? Math.round((row.logged_minutes_total - row.completed_planned_minutes_total) / row.completed_count)
           : null;
-        const attentionScore = (row.missed_count * 3) + row.due_today_count + (adherencePct < 60 ? 2 : 0) - row.completed_count;
+        const exerciseMatchPct = row.planned_exercise_total ? Math.round((row.matched_exercise_total / row.planned_exercise_total) * 100) : null;
+        const attentionScore = (row.missed_count * 3) + row.due_today_count + (adherencePct < 60 ? 2 : 0) + ((exerciseMatchPct != null && exerciseMatchPct < 60) ? 2 : 0) - row.completed_count;
         return {
           ...row,
           adherence_pct: adherencePct,
           avg_logged_minutes: avgLoggedMinutes,
           avg_minute_delta: avgMinuteDelta,
+          exercise_match_pct: exerciseMatchPct,
+          missing_examples: Array.from(row.missing_examples).filter(Boolean).slice(0, 3),
+          extra_examples: Array.from(row.extra_examples).filter(Boolean).slice(0, 3),
           attention_score: attentionScore
         };
       }).sort((a, b) =>
@@ -13741,7 +14021,8 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       const templates = (health.session_templates || []).map(template => ({
         ...template,
         practice_id: template.practice_id || defaultPracticeId,
-        planned_minutes: healthTemplatePlannedMinutes(template, profile)
+        planned_minutes: healthTemplatePlannedMinutes(template, profile),
+        planned_exercises: healthTemplateExercises(template, profile)
       }));
       const hasBlock = healthTrainingBlockHasData(block);
       const weekContext = healthBlockWeekContext(block);
@@ -13807,8 +14088,16 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
                       <span>${escapeHtml(template.focus || "Planned training session")}</span>
                       <span>${escapeHtml(healthTemplatePracticeTitle(template) || "No linked practice")}</span>
                       ${template.planned_minutes ? `<span>${template.planned_minutes} min target</span>` : ""}
+                      ${template.planned_exercises?.length ? `<span>${template.planned_exercises.length} planned exercises</span>` : ""}
                       ${template.execution_note ? `<span>${escapeHtml(template.execution_note)}</span>` : ""}
                     </div>
+                    ${template.planned_exercises?.length ? `
+                      <div class="health-template-exercises">
+                        ${template.planned_exercises.slice(0, 4).map(item => `
+                          <span class="health-template-exercise-chip">${escapeHtml(item.name)}${item.sets && item.reps ? ` · ${item.sets}x${item.reps}` : item.reps ? ` · ${item.reps} reps` : ""}</span>
+                        `).join("")}
+                      </div>
+                    ` : ""}
                   </div>
                   <div class="health-template-day">${escapeHtml(healthDayLabel(template.day_key))}</div>
                   <div class="health-template-actions">
@@ -13923,8 +14212,11 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
                   <span>${item.completed_count}/${item.planned_count} completed</span>
                   ${item.avg_logged_minutes ? `<span>${item.avg_logged_minutes}m avg logged</span>` : ""}
                   ${item.avg_minute_delta != null ? `<span>${item.avg_minute_delta > 0 ? "+" : ""}${item.avg_minute_delta}m vs plan</span>` : ""}
+                  ${item.exercise_match_pct != null ? `<span>${item.exercise_match_pct}% exercise match</span>` : ""}
                   ${item.missed_count ? `<span>${item.missed_count} missed</span>` : ""}
                   ${item.due_today_count ? `<span>${item.due_today_count} due today</span>` : ""}
+                  ${item.missing_examples?.length ? `<span>missing ${escapeHtml(item.missing_examples.join(", "))}</span>` : ""}
+                  ${item.extra_examples?.length ? `<span>extra ${escapeHtml(item.extra_examples.join(", "))}</span>` : ""}
                   ${item.last_completed_date ? `<span>last done ${escapeHtml(fmtEntryDate(item.last_completed_date))}</span>` : item.last_missed_date ? `<span>last missed ${escapeHtml(fmtEntryDate(item.last_missed_date))}</span>` : ""}
                 </div>
               </div>
@@ -13946,7 +14238,15 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
                     <span>${escapeHtml(item.practice_title || "No linked practice")}</span>
                     ${item.planned_minutes ? `<span>${item.planned_minutes} min target</span>` : ""}
                     ${item.logged_minutes ? `<span>${item.logged_minutes} min logged</span>` : ""}
+                    ${item.exercise_comparison?.planned_count ? `<span>${item.exercise_comparison.matched_count}/${item.exercise_comparison.planned_count} exercises matched</span>` : ""}
                   </div>
+                  ${item.exercise_comparison?.planned_exercises?.length ? `
+                    <div class="health-template-exercises">
+                      ${item.exercise_comparison.planned_exercises.slice(0, 4).map(exercise => `
+                        <span class="health-template-exercise-chip ${item.exercise_comparison.matched_exercises?.some(match => healthNormalizeExerciseLabel(match.name) === healthNormalizeExerciseLabel(exercise.name)) ? "matched" : ""}">${escapeHtml(exercise.name)}</span>
+                      `).join("")}
+                    </div>
+                  ` : ""}
                 </div>
                 <span class="health-status-badge ${escapeHtml(item.status)}">${escapeHtml(item.status_label)}</span>
                 <div class="health-schedule-actions">
@@ -14403,6 +14703,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       const template = getHealthSessionTemplateById(templateId);
       if (!template) return;
       const profile = ensureHealthStateShape().profile;
+      const effectiveExercises = healthTemplateExercises(template, profile);
       let overlay = document.getElementById("healthSessionTemplateModalOverlay");
       if (!overlay) {
         overlay = document.createElement("div");
@@ -14456,6 +14757,11 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
                 <span>Execution note</span>
                 <textarea id="healthSessionTemplateNoteInput" placeholder="Optional execution note or reminder...">${escapeHtml(template.execution_note || "")}</textarea>
               </label>
+              <label class="tiny">
+                <span>Planned exercises</span>
+                <textarea id="healthSessionTemplateExercisesInput" placeholder="One exercise per line: Bench Press | 4x6 | 80kg | optional note">${escapeHtml(healthTemplateExercisesToMultiline(effectiveExercises))}</textarea>
+              </label>
+              <div class="health-card-note">One line per exercise. Use: Exercise | 3x5 | 80kg | optional note. These planned slots are compared against structured exercise entries logged on the scheduled day.</div>
             </div>
             <div class="controls" style="justify-content:flex-end">
               <button id="healthSessionTemplateCancelBtn" class="ghost" type="button">Cancel</button>
@@ -14477,7 +14783,8 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
           practice_id: String(form.querySelector("#healthSessionTemplatePracticeInput")?.value || "").trim(),
           planned_minutes: parseHealthIntInput(form, "#healthSessionTemplateMinutesInput"),
           focus: String(form.querySelector("#healthSessionTemplateFocusInput")?.value || "").trim(),
-          execution_note: String(form.querySelector("#healthSessionTemplateNoteInput")?.value || "").trim()
+          execution_note: String(form.querySelector("#healthSessionTemplateNoteInput")?.value || "").trim(),
+          planned_exercises: parseHealthTemplateExercisesMultiline(form.querySelector("#healthSessionTemplateExercisesInput")?.value || "")
         });
         closeHealthSessionTemplateModal();
       });
@@ -14514,6 +14821,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       if (!template) return;
       const normalizedDateKey = /^\d{4}-\d{2}-\d{2}$/.test(String(dateKey || "").trim()) ? String(dateKey).trim() : todayISO();
       const defaultMinutes = template.planned_minutes || healthTemplatePlannedMinutes(template, ensureHealthStateShape().profile) || "";
+      const plannedExercises = healthTemplateExercises(template, ensureHealthStateShape().profile);
       let overlay = document.getElementById("healthSessionCompletionModalOverlay");
       if (!overlay) {
         overlay = document.createElement("div");
@@ -14556,6 +14864,19 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
                 <span>Completion note</span>
                 <textarea id="healthSessionCompletionNoteInput" placeholder="Optional note about how the session went...">${escapeHtml(template.execution_note || "")}</textarea>
               </label>
+              ${plannedExercises.length ? `
+                <div class="health-profile-section">
+                  <h4 style="margin:0">Planned exercises</h4>
+                  <div class="health-template-exercises" style="margin-top:8px">
+                    ${plannedExercises.map(item => `<span class="health-template-exercise-chip">${escapeHtml(item.name)}${item.sets && item.reps ? ` · ${item.sets}x${item.reps}` : item.reps ? ` · ${item.reps} reps` : ""}${item.weight_kg ? ` · ${item.weight_kg}kg` : ""}</span>`).join("")}
+                  </div>
+                </div>
+              ` : ""}
+              <label class="tiny">
+                <span>Performed exercises (optional)</span>
+                <textarea id="healthSessionCompletionExercisesInput" placeholder="One exercise per line: Bench Press | 4x6 | 80kg"></textarea>
+              </label>
+              <div class="health-card-note">If you fill this in, Health will log exercise-level entries for the linked practice on this date and compare them against the template automatically.</div>
             </div>
             <div class="controls" style="justify-content:flex-end">
               <button id="healthSessionCompletionCancelBtn" class="ghost" type="button">Cancel</button>
@@ -14579,16 +14900,27 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
           alert("Choose a linked exercise practice before completing this session.");
           return;
         }
+        const performedExercises = healthPerformedExercisesFromText(
+          form.querySelector("#healthSessionCompletionExercisesInput")?.value || "",
+          minutes
+        );
         appendPracticeEntryForDate(
           practiceId,
           buildHealthSessionCompletionEntry({ ...template, practice_id: practiceId, planned_minutes: minutes, execution_note: note }, completionDate, minutes, note),
           completionDate,
           { reason: "health_training_session_log", render: false }
         );
+        performedExercises.forEach(entry => {
+          appendPracticeEntryForDate(practiceId, entry, completionDate, {
+            save: false,
+            render: false
+          });
+        });
         saveHealthSessionTemplatePatch(template.id, {
           practice_id: practiceId,
           planned_minutes: minutes,
-          execution_note: note
+          execution_note: note,
+          planned_exercises: plannedExercises
         }, "health_session_template_complete");
         closeHealthSessionCompletionModal();
       });
