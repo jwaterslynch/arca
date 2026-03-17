@@ -3253,18 +3253,27 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           </div>
         </div>
 
-        <div class="review-card">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:12px;flex-wrap:wrap">
-            <div>
-              <h4 style="margin-bottom:0">Properties</h4>
-              <div class="health-card-note" style="margin-top:4px">Manual property records and baseline valuation estimates for household net worth.</div>
-            </div>
-            <button class="ghost" id="wealthAddPropertyBtn" type="button" style="font-size:.75rem">+ Add Property</button>
+      <div class="review-card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:12px;flex-wrap:wrap">
+          <div>
+            <h4 style="margin-bottom:0">Properties</h4>
+            <div class="health-card-note" style="margin-top:4px">Manual property records and baseline valuation estimates for household net worth.</div>
           </div>
-          <div id="portfolioPropertiesList" class="wealth-accounts-list">
-            <div class="wealth-empty-state">No properties yet. Add one to include it in net worth.</div>
-          </div>
+          <button class="ghost" id="wealthAddPropertyBtn" type="button" style="font-size:.75rem">+ Add Property</button>
         </div>
+        <div id="portfolioPropertiesSummary" class="health-mini-stat-grid" style="margin-bottom:12px">
+          <div class="health-mini-stat"><div class="health-mini-stat-label">Property Value</div><div class="health-mini-stat-value">—</div></div>
+          <div class="health-mini-stat"><div class="health-mini-stat-label">High Confidence</div><div class="health-mini-stat-value">—</div></div>
+          <div class="health-mini-stat"><div class="health-mini-stat-label">Needs Fresh Signals</div><div class="health-mini-stat-value">—</div></div>
+          <div class="health-mini-stat"><div class="health-mini-stat-label">Latest Evidence</div><div class="health-mini-stat-value">—</div></div>
+        </div>
+        <div id="portfolioPropertySourceMix" class="wealth-list" style="margin-bottom:12px">
+          <div class="wealth-empty-state">Add properties and signals to see source coverage.</div>
+        </div>
+        <div id="portfolioPropertiesList" class="wealth-accounts-list">
+          <div class="wealth-empty-state">No properties yet. Add one to include it in net worth.</div>
+        </div>
+      </div>
 
         <div class="review-card">
           <h4 style="margin-bottom:12px">Allocation by Asset Type</h4>
@@ -18225,6 +18234,117 @@ Data caveat`;
       return (property?.external_signals || []).find(signal => signal.id === signalId) || null;
     }
 
+    function getWealthPropertyEvidenceTimeline(property) {
+      const evidence = [];
+      (property?.external_signals || []).forEach(signal => {
+        if (Number(signal?.estimated_value_minor || 0) <= 0) return;
+        evidence.push({
+          kind: "external_signal",
+          label: signal.label || WEALTH_PROPERTY_SIGNAL_SOURCES[signal.source] || "External signal",
+          source_label: WEALTH_PROPERTY_SIGNAL_SOURCES[signal.source] || signal.source || "Other",
+          date: signal.signal_date || "",
+          value_minor: signal.estimated_value_minor || 0,
+          confidence: signal.confidence || "medium",
+          note: signal.note || "",
+          url: signal.url || ""
+        });
+      });
+      (property?.comparables || []).forEach(comparable => {
+        if (Number(comparable?.sale_price_minor || 0) <= 0) return;
+        evidence.push({
+          kind: "comparable",
+          label: comparable.label || "Comparable sale",
+          source_label: "Comparable sale",
+          date: comparable.sale_date || "",
+          value_minor: comparable.sale_price_minor || 0,
+          confidence: "market",
+          note: comparable.note || "",
+          distance_km: comparable.distance_km
+        });
+      });
+      if (Number(property?.manual_estimate_minor || 0) > 0) {
+        evidence.push({
+          kind: "manual_estimate",
+          label: "Manual estimate",
+          source_label: "Manual estimate",
+          date: property.updated_at ? String(property.updated_at).slice(0, 10) : "",
+          value_minor: property.manual_estimate_minor || 0,
+          confidence: "manual",
+          note: ""
+        });
+      }
+      if (Number(property?.purchase_price_minor || 0) > 0) {
+        evidence.push({
+          kind: "purchase_price",
+          label: "Purchase price",
+          source_label: "Purchase price",
+          date: property.purchase_date || "",
+          value_minor: property.purchase_price_minor || 0,
+          confidence: "baseline",
+          note: ""
+        });
+      }
+      return evidence.sort((a, b) => (b.date || "").localeCompare(a.date || "") || Number(b.value_minor || 0) - Number(a.value_minor || 0));
+    }
+
+    function getWealthPropertyAnalytics() {
+      const properties = getWealthPropertyViews();
+      const today = new Date(`${todayISO()}T00:00:00`);
+      const sourceMix = {};
+      let totalEstimatedMinor = 0;
+      let highConfidenceCount = 0;
+      let staleCount = 0;
+      let baselineOnlyCount = 0;
+      let latestEvidenceDate = "";
+      properties.forEach(property => {
+        totalEstimatedMinor += Math.max(0, Number(property.estimated_value_minor || 0));
+        if ((property.estimate?.confidence || "low") === "high") highConfidenceCount += 1;
+        const timeline = getWealthPropertyEvidenceTimeline(property);
+        const latestEvidence = timeline.find(item => item.date) || timeline[0] || null;
+        if (latestEvidence?.date && latestEvidence.date > latestEvidenceDate) latestEvidenceDate = latestEvidence.date;
+        if ((property.external_signals || []).length === 0 && (property.comparables || []).length === 0) baselineOnlyCount += 1;
+        const freshnessReference = latestEvidence?.date || property.purchase_date || "";
+        let isStale = false;
+        if (!freshnessReference) {
+          isStale = true;
+        } else {
+          const referenceDate = new Date(`${freshnessReference}T00:00:00`);
+          const daysOld = Math.max(0, (today - referenceDate) / (1000 * 60 * 60 * 24));
+          isStale = daysOld > 120 || ((property.external_signals || []).length === 0 && (property.comparables || []).length === 0);
+        }
+        if (isStale) staleCount += 1;
+        (property.external_signals || []).forEach(signal => {
+          const key = signal.source || "other";
+          sourceMix[key] = (sourceMix[key] || 0) + 1;
+        });
+      });
+      const sourceMixRows = Object.entries(sourceMix)
+        .sort((a, b) => b[1] - a[1])
+        .map(([source, count]) => ({
+          source,
+          label: WEALTH_PROPERTY_SIGNAL_SOURCES[source] || source,
+          count
+        }));
+      const strongestDeltaProperty = properties
+        .filter(property => property.delta_minor != null)
+        .sort((a, b) => Math.abs(Number(b.delta_minor || 0)) - Math.abs(Number(a.delta_minor || 0)))[0] || null;
+      return {
+        property_count: properties.length,
+        total_estimated_minor: totalEstimatedMinor,
+        high_confidence_count: highConfidenceCount,
+        stale_count: staleCount,
+        baseline_only_count: baselineOnlyCount,
+        latest_evidence_date: latestEvidenceDate,
+        source_mix: sourceMixRows,
+        strongest_delta_property: strongestDeltaProperty
+          ? {
+              label: strongestDeltaProperty.label,
+              delta_minor: strongestDeltaProperty.delta_minor
+            }
+          : null
+      };
+    }
+
     function saveWealthProperty(payload, propertyId = "") {
       const wealth = ensureWealthStateShape();
       const existing = propertyId ? getWealthPropertyById(propertyId) : null;
@@ -18818,6 +18938,13 @@ Data caveat`;
       const signalRows = Array.isArray(estimate.breakdown?.signals) ? estimate.breakdown.signals : [];
       const comparables = (property.comparables || []).slice().sort((a, b) => (b.sale_date || "").localeCompare(a.sale_date || ""));
       const externalSignals = (property.external_signals || []).slice().sort((a, b) => (b.signal_date || "").localeCompare(a.signal_date || "") || (b.updated_at || "").localeCompare(a.updated_at || ""));
+      const evidenceTimeline = getWealthPropertyEvidenceTimeline(property);
+      const sourceMix = Object.entries(
+        externalSignals.reduce((acc, signal) => {
+          acc[signal.source || "other"] = (acc[signal.source || "other"] || 0) + 1;
+          return acc;
+        }, {})
+      ).sort((a, b) => b[1] - a[1]);
       const estimateBand = Number(estimate.low_minor || 0) > 0 && Number(estimate.high_minor || 0) > 0
         ? `${formatCurrency(estimate.low_minor)} – ${formatCurrency(estimate.high_minor)}`
         : "No range yet";
@@ -18870,6 +18997,32 @@ Data caveat`;
                 </div>
               </div>
             `).join("") : '<div class="wealth-empty-state" style="text-align:left">Using a simple manual baseline only.</div>'}
+          </div>
+        </div>
+        <div>
+          <label>Provenance & History</label>
+          <div class="health-mini-stat-grid" style="margin-top:8px">
+            <div class="health-mini-stat"><div class="health-mini-stat-label">Latest Evidence</div><div class="health-mini-stat-value">${escapeHtml(evidenceTimeline[0]?.date ? formatDateLabel(evidenceTimeline[0].date) : "—")}</div></div>
+            <div class="health-mini-stat"><div class="health-mini-stat-label">External Signals</div><div class="health-mini-stat-value">${externalSignals.length}</div></div>
+            <div class="health-mini-stat"><div class="health-mini-stat-label">Comparables</div><div class="health-mini-stat-value">${comparables.length}</div></div>
+            <div class="health-mini-stat"><div class="health-mini-stat-label">Primary Source</div><div class="health-mini-stat-value">${escapeHtml(sourceMix[0] ? (WEALTH_PROPERTY_SIGNAL_SOURCES[sourceMix[0][0]] || sourceMix[0][0]) : "—")}</div></div>
+          </div>
+          <div class="wealth-list" style="display:flex;flex-direction:column;gap:8px;margin-top:12px">
+            ${evidenceTimeline.length ? evidenceTimeline.slice(0, 8).map(entry => `
+              <div class="wealth-account-row">
+                <div>
+                  <div class="wealth-account-name">${escapeHtml(entry.label || entry.source_label || "Evidence")}</div>
+                  <div class="wealth-rule-meta">
+                    <span>${escapeHtml(entry.source_label || entry.kind)}</span>
+                    <span>${entry.date ? escapeHtml(formatDateLabel(entry.date)) : "No date"}</span>
+                    <span>${formatCurrency(entry.value_minor || 0)}</span>
+                    ${entry.kind === "external_signal" ? `<span>${escapeHtml(String(entry.confidence || "medium").toUpperCase())} confidence</span>` : ""}
+                    ${entry.kind === "comparable" && Number.isFinite(Number(entry.distance_km)) ? `<span>${Number(entry.distance_km).toFixed(1)} km</span>` : ""}
+                  </div>
+                  ${entry.note ? `<div class="tiny" style="margin-top:4px;color:var(--text2)">${escapeHtml(entry.note)}</div>` : ""}
+                </div>
+              </div>
+            `).join("") : '<div class="wealth-empty-state" style="text-align:left">No evidence history yet.</div>'}
           </div>
         </div>
         <div>
@@ -19155,6 +19308,76 @@ Data caveat`;
       }).join("");
     }
 
+    function renderWealthPropertyOverview() {
+      const summaryEl = document.getElementById("portfolioPropertiesSummary");
+      const sourceMixEl = document.getElementById("portfolioPropertySourceMix");
+      if (!summaryEl || !sourceMixEl) return;
+      const analytics = getWealthPropertyAnalytics();
+      if (!analytics.property_count) {
+        summaryEl.innerHTML = `
+          <div class="health-mini-stat"><div class="health-mini-stat-label">Property Value</div><div class="health-mini-stat-value">—</div></div>
+          <div class="health-mini-stat"><div class="health-mini-stat-label">High Confidence</div><div class="health-mini-stat-value">—</div></div>
+          <div class="health-mini-stat"><div class="health-mini-stat-label">Needs Fresh Signals</div><div class="health-mini-stat-value">—</div></div>
+          <div class="health-mini-stat"><div class="health-mini-stat-label">Latest Evidence</div><div class="health-mini-stat-value">—</div></div>
+        `;
+        sourceMixEl.innerHTML = '<div class="wealth-empty-state">Add properties and signals to see source coverage.</div>';
+        return;
+      }
+
+      const latestEvidenceLabel = analytics.latest_evidence_date ? formatDateLabel(analytics.latest_evidence_date) : "None";
+      summaryEl.innerHTML = `
+        <div class="health-mini-stat">
+          <div class="health-mini-stat-label">Property Value</div>
+          <div class="health-mini-stat-value">${formatCurrency(analytics.total_estimated_minor || 0)}</div>
+        </div>
+        <div class="health-mini-stat">
+          <div class="health-mini-stat-label">High Confidence</div>
+          <div class="health-mini-stat-value">${analytics.high_confidence_count} / ${analytics.property_count}</div>
+        </div>
+        <div class="health-mini-stat">
+          <div class="health-mini-stat-label">Needs Fresh Signals</div>
+          <div class="health-mini-stat-value">${analytics.stale_count}</div>
+        </div>
+        <div class="health-mini-stat">
+          <div class="health-mini-stat-label">Latest Evidence</div>
+          <div class="health-mini-stat-value">${escapeHtml(latestEvidenceLabel)}</div>
+        </div>
+      `;
+
+      const rows = [];
+      if (analytics.strongest_delta_property) {
+        const deltaMinor = Number(analytics.strongest_delta_property.delta_minor || 0);
+        rows.push(`<div class="wealth-account-row">
+          <div>
+            <div class="wealth-account-name">Largest move vs purchase</div>
+            <div class="wealth-rule-meta">${escapeHtml(analytics.strongest_delta_property.label)}</div>
+          </div>
+          <div class="wealth-account-balance ${deltaMinor < 0 ? "negative" : ""}">${deltaMinor >= 0 ? "+" : "-"}${formatCurrency(Math.abs(deltaMinor))}</div>
+        </div>`);
+      }
+      if (analytics.baseline_only_count > 0) {
+        rows.push(`<div class="wealth-account-row">
+          <div>
+            <div class="wealth-account-name">Baseline-only properties</div>
+            <div class="wealth-rule-meta">These properties only have purchase or manual baseline data.</div>
+          </div>
+          <div class="wealth-account-balance negative">${analytics.baseline_only_count}</div>
+        </div>`);
+      }
+      analytics.source_mix.forEach(item => {
+        rows.push(`<div class="wealth-account-row">
+          <div>
+            <div class="wealth-account-name">${escapeHtml(item.label)}</div>
+            <div class="wealth-rule-meta">External evidence source</div>
+          </div>
+          <div class="wealth-account-balance">${item.count} signal${item.count === 1 ? "" : "s"}</div>
+        </div>`);
+      });
+      sourceMixEl.innerHTML = rows.length
+        ? rows.join("")
+        : '<div class="wealth-empty-state">No external signals yet. Add bank, portal, or agent evidence to strengthen estimates.</div>';
+    }
+
     function renderWealthOverview() {
       // Net worth summary
       const nw = wealthNetWorthCalc();
@@ -19330,6 +19553,7 @@ Data caveat`;
       if (dividendTotalEl) dividendTotalEl.textContent = formatCurrency(snapshot.totalDividendIncomeMinor || 0);
       if (staleEl) staleEl.textContent = String(snapshot.missingOrStaleCount);
       renderWealthPortfolioSnapshotTrend();
+      renderWealthPropertyOverview();
       document.querySelectorAll("#portfolioDisplayMode [data-portfolio-display]").forEach(btn => {
         btn.classList.toggle("active", btn.getAttribute("data-portfolio-display") === (displayPercentages ? "percent" : "amount"));
       });
@@ -19598,6 +19822,7 @@ Data caveat`;
         .sort((a, b) => Math.abs(b.balance_minor) - Math.abs(a.balance_minor));
       const portfolio = getPortfolioSnapshot();
       const properties = getWealthPropertyViews();
+      const propertyOverview = getWealthPropertyAnalytics();
       const review = state.wealth?.last_import_review;
       return {
         currency: state.wealth?.currency || "AUD",
@@ -19639,6 +19864,16 @@ Data caveat`;
         },
         balance_sheet: computeNetWorth(),
         accounts: accountSummary,
+        property_overview: {
+          property_count: propertyOverview.property_count,
+          total_estimated_minor: propertyOverview.total_estimated_minor,
+          high_confidence_count: propertyOverview.high_confidence_count,
+          stale_count: propertyOverview.stale_count,
+          baseline_only_count: propertyOverview.baseline_only_count,
+          latest_evidence_date: propertyOverview.latest_evidence_date || null,
+          source_mix: propertyOverview.source_mix,
+          strongest_delta_property: propertyOverview.strongest_delta_property
+        },
         properties: properties.map(property => ({
           label: property.label,
           property_type: property.property_type,
