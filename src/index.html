@@ -1959,6 +1959,24 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
   font-size:.68rem;font-weight:700;color:var(--accent);background:#fff;border:1px solid var(--line);
   border-radius:999px;padding:5px 9px;white-space:nowrap;
 }
+.health-schedule-list{display:flex;flex-direction:column;gap:8px}
+.health-schedule-row{
+  display:grid;grid-template-columns:88px minmax(0,1fr) auto auto;gap:12px;align-items:center;
+  padding:12px 14px;background:var(--bg);border-radius:var(--radius-sm);
+}
+.health-schedule-date{font-size:.72rem;color:var(--text2);font-variant-numeric:tabular-nums}
+.health-schedule-main{min-width:0;display:grid;gap:4px}
+.health-schedule-title{font-size:.8rem;font-weight:700;color:var(--text)}
+.health-schedule-meta{font-size:.72rem;color:var(--text2);display:flex;gap:8px;flex-wrap:wrap}
+.health-status-badge{
+  display:inline-flex;align-items:center;padding:4px 8px;border-radius:999px;
+  font-size:.67rem;font-weight:700;background:var(--surface);color:var(--text2);white-space:nowrap;
+}
+.health-status-badge.done{background:var(--accent-light);color:var(--accent)}
+.health-status-badge.today{background:#fff4db;color:#9a6a00}
+.health-status-badge.upcoming{background:#eef7ff;color:#2f6ca3}
+.health-status-badge.missed{background:#ffe8e8;color:var(--danger)}
+.health-status-badge.starts_later,.health-status-badge.completed_block,.health-status-badge.unscheduled{background:var(--surface);color:var(--text2)}
 .health-block-note{
   font-size:.74rem;color:var(--text2);line-height:1.45;padding:12px 14px;background:var(--bg);border-radius:var(--radius-sm);
 }
@@ -2907,6 +2925,19 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
             <div class="health-compare-card"><strong>—</strong><span>Actual Sessions</span></div>
             <div class="health-compare-card"><strong>—</strong><span>Remaining</span></div>
             <div class="health-compare-card"><strong>—</strong><span>Next Session</span></div>
+          </div>
+        </div>
+
+        <div class="review-card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:12px;flex-wrap:wrap">
+            <div>
+              <h4 style="margin-bottom:0">This Week Schedule</h4>
+              <div class="health-card-note" style="margin-top:4px">Planned training days against actual logging and current week timing.</div>
+            </div>
+            <button class="ghost" type="button" data-health-nav="execute">Log Next Session</button>
+          </div>
+          <div id="healthTrainingWeekSchedule" class="health-schedule-list">
+            <div class="health-empty-state">Set up a block to see this week’s schedule.</div>
           </div>
         </div>
 
@@ -13245,6 +13276,75 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       return getHealthPractices().reduce((sum, practice) => sum + practiceDoneSummaryForDates(practice, weekDates).sessions, 0);
     }
 
+    function getWeekDatesForAnchor(dateKey) {
+      const anchor = parseLocalDateKey(dateKey || todayISO());
+      const monday = new Date(anchor);
+      const offset = (monday.getDay() + 6) % 7;
+      monday.setDate(monday.getDate() - offset);
+      const dates = [];
+      for (let i = 0; i < 7; i += 1) {
+        const date = new Date(monday);
+        date.setDate(monday.getDate() + i);
+        dates.push(localDateKey(date));
+      }
+      return dates;
+    }
+
+    function healthLoggedSessionDates(dateKeys) {
+      const keySet = new Set(dateKeys || []);
+      const doneDates = new Set();
+      getHealthPractices().forEach(practice => {
+        keySet.forEach(dateKey => {
+          if (practiceLogEntry(practice.id, dateKey)?.done) doneDates.add(dateKey);
+        });
+      });
+      return doneDates;
+    }
+
+    function healthTrainingSchedule(snapshot) {
+      if (!snapshot?.hasBlock || !snapshot.templates?.length) return [];
+      const block = snapshot.block || {};
+      const weekDates = snapshot.weekContext?.startsSoon && block.start_date
+        ? getWeekDatesForAnchor(block.start_date)
+        : getWeekDates(0);
+      const dateByDay = Object.fromEntries(HEALTH_DAY_OPTIONS.map((option, index) => [option.key, weekDates[index]]));
+      const doneDates = healthLoggedSessionDates(weekDates);
+      const todayKey = todayISO();
+      return snapshot.templates.map((template, index) => {
+        const dateKey = dateByDay[template.day_key] || weekDates[index] || "";
+        let status = "upcoming";
+        if (!dateKey) {
+          status = "unscheduled";
+        } else if (snapshot.weekContext?.completed) {
+          status = doneDates.has(dateKey) ? "done" : "completed_block";
+        } else if (snapshot.weekContext?.startsSoon && block.start_date && dateKey < block.start_date) {
+          status = "starts_later";
+        } else if (doneDates.has(dateKey)) {
+          status = "done";
+        } else if (dateKey === todayKey) {
+          status = "today";
+        } else if (!snapshot.weekContext?.startsSoon && dateKey < todayKey) {
+          status = "missed";
+        }
+        const statusLabel = {
+          done: "Done",
+          today: "Due today",
+          upcoming: "Upcoming",
+          missed: "Missed",
+          starts_later: "Starts later",
+          completed_block: "Block complete",
+          unscheduled: "Unscheduled"
+        }[status] || "Upcoming";
+        return {
+          ...template,
+          date_key: dateKey,
+          date_label: dateKey ? fmtEntryDate(dateKey) : "No date",
+          status,
+          status_label: statusLabel
+        };
+      });
+    }
+
     function healthTrainingBlockSnapshot() {
       const health = ensureHealthStateShape();
       const profile = health.profile;
@@ -13255,8 +13355,12 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       const actualSessions = healthActualSessionsThisWeek();
       const plannedSessions = Math.max(0, Math.min(Number(block?.sessions_per_week) || 0, 7));
       const remainingSessions = plannedSessions ? Math.max(plannedSessions - actualSessions, 0) : 0;
-      const nextTemplate = templates.length ? templates[Math.min(actualSessions, templates.length - 1)] : null;
       const adherence = plannedSessions ? Math.min(100, Math.round((actualSessions / plannedSessions) * 100)) : 0;
+      const schedule = hasBlock ? healthTrainingSchedule({ profile, block, templates, hasBlock, weekContext }) : [];
+      const nextScheduled = schedule.find(item => item.status === "today" || item.status === "upcoming" || item.status === "starts_later") || null;
+      const missedCount = schedule.filter(item => item.status === "missed").length;
+      const dueTodayCount = schedule.filter(item => item.status === "today").length;
+      const completedCount = schedule.filter(item => item.status === "done").length;
       return {
         profile,
         block,
@@ -13266,8 +13370,13 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         actualSessions,
         plannedSessions,
         remainingSessions,
-        nextTemplate,
-        adherence
+        nextTemplate: nextScheduled,
+        nextScheduled,
+        adherence,
+        schedule,
+        missedCount,
+        dueTodayCount,
+        completedCount
       };
     }
 
@@ -13325,6 +13434,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       const overviewEl = document.getElementById("healthTrainingBlockOverview");
       const exerciseEl = document.getElementById("healthTrainingBlockExercise");
       const comparisonEl = document.getElementById("healthTrainingComparison");
+      const scheduleEl = document.getElementById("healthTrainingWeekSchedule");
       const openButtons = document.querySelectorAll("[data-health-block-open]");
       const snapshot = healthTrainingBlockSnapshot();
       openButtons.forEach(button => {
@@ -13333,6 +13443,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       if (!snapshot.hasBlock) {
         if (overviewEl) overviewEl.innerHTML = '<div class="health-empty-state">No training block yet. Set one up to turn Health from exercise logging into planned progression.</div>';
         if (exerciseEl) exerciseEl.innerHTML = '<div class="health-empty-state">No training block yet. Set one up so Exercise can show a planned structure instead of only historical logs.</div>';
+        if (scheduleEl) scheduleEl.innerHTML = '<div class="health-empty-state">Set up a block to see this week’s schedule.</div>';
         if (comparisonEl) {
           comparisonEl.innerHTML = `
             <div class="health-compare-card"><strong>—</strong><span>Planned Sessions</span></div>
@@ -13348,10 +13459,28 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       if (comparisonEl) {
         comparisonEl.innerHTML = `
           <div class="health-compare-card"><strong>${snapshot.plannedSessions || "—"}</strong><span>Planned Sessions</span></div>
-          <div class="health-compare-card"><strong>${snapshot.actualSessions}</strong><span>Actual Sessions</span></div>
-          <div class="health-compare-card"><strong>${snapshot.remainingSessions}</strong><span>Remaining</span></div>
-          <div class="health-compare-card"><strong>${snapshot.nextTemplate ? escapeHtml(snapshot.nextTemplate.title) : "—"}</strong><span>${snapshot.plannedSessions ? `${snapshot.adherence}% adherence` : "Next Session"}</span></div>
+          <div class="health-compare-card"><strong>${snapshot.completedCount}</strong><span>Completed on Plan Days</span></div>
+          <div class="health-compare-card"><strong>${snapshot.dueTodayCount ? `${snapshot.dueTodayCount} today` : snapshot.missedCount}</strong><span>${snapshot.dueTodayCount ? "Due Today" : "Missed Sessions"}</span></div>
+          <div class="health-compare-card"><strong>${snapshot.nextScheduled ? escapeHtml(snapshot.nextScheduled.title) : "—"}</strong><span>${snapshot.nextScheduled?.date_key ? escapeHtml(fmtEntryDate(snapshot.nextScheduled.date_key)) : (snapshot.plannedSessions ? `${snapshot.adherence}% adherence` : "Next Session")}</span></div>
         `;
+      }
+      if (scheduleEl) {
+        scheduleEl.innerHTML = snapshot.schedule.length
+          ? snapshot.schedule.map(item => `
+              <div class="health-schedule-row">
+                <div class="health-schedule-date">${escapeHtml(item.date_label)}</div>
+                <div class="health-schedule-main">
+                  <div class="health-schedule-title">${escapeHtml(item.title)}</div>
+                  <div class="health-schedule-meta">
+                    <span>${escapeHtml(item.focus || "Planned training session")}</span>
+                    <span>${escapeHtml(healthDayLabel(item.day_key))}</span>
+                  </div>
+                </div>
+                <span class="health-status-badge ${escapeHtml(item.status)}">${escapeHtml(item.status_label)}</span>
+                <button class="ghost" type="button" data-health-nav="execute">Log</button>
+              </div>
+            `).join("")
+          : '<div class="health-empty-state">No sessions scheduled for this week.</div>';
       }
     }
 
