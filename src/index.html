@@ -4855,6 +4855,8 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         connection_mode: allowedModes.includes(adapter.connection_mode) ? adapter.connection_mode : (preset.default_connection_mode || allowedModes[0] || "manual_check"),
         reference_key: String(adapter.reference_key || "").trim(),
         endpoint_hint: String(adapter.endpoint_hint || "").trim(),
+        fetch_value_mode: ["currency_scan", "regex", "json_path"].includes(adapter.fetch_value_mode) ? adapter.fetch_value_mode : (preset.default_fetch_mode || "currency_scan"),
+        fetch_rule: String(adapter.fetch_rule || "").trim(),
         note: String(adapter.note || "").trim(),
         last_checked_at: adapter.last_checked_at || "",
         last_sync_status: ["success", "warning", "error"].includes(adapter.last_sync_status) ? adapter.last_sync_status : "",
@@ -17564,19 +17566,23 @@ Data caveat`;
         reference_placeholder: "e.g. CBA home loan portal",
         check_placeholder: "Record what the lender portal showed, or note why the valuation was unavailable.",
         signal_label: "Bank valuation",
-        helper: "Track refinance, lender, or servicing valuations that recur through a bank workflow."
+        helper: "Track refinance, lender, or servicing valuations that recur through a bank workflow.",
+        default_fetch_mode: "currency_scan",
+        supports_live_fetch: false
       },
       portal_watch: {
         label: "Portal Watch",
         source: "domain",
         default_cadence: "monthly",
-        default_connection_mode: "portal_copy",
-        connection_modes: ["portal_copy", "api_stub", "manual_check"],
+        default_connection_mode: "public_html",
+        connection_modes: ["portal_copy", "public_html", "public_json", "api_stub", "manual_check"],
         reference_label: "Watchlist / property URL",
         reference_placeholder: "e.g. Domain property page",
         check_placeholder: "Record the latest portal estimate or note changes in the listing/estimate band.",
         signal_label: "Portal estimate",
-        helper: "Use for recurring Domain / realestate.com.au estimate checks."
+        helper: "Use for recurring Domain / realestate.com.au estimate checks.",
+        default_fetch_mode: "currency_scan",
+        supports_live_fetch: true
       },
       agent_panel: {
         label: "Agent Panel",
@@ -17588,31 +17594,37 @@ Data caveat`;
         reference_placeholder: "e.g. Nelson Alexander - Sarah",
         check_placeholder: "Record the latest appraisal range, or note what the agent said about the market.",
         signal_label: "Agent appraisal",
-        helper: "Use for periodic agent appraisals or CMA refreshes."
+        helper: "Use for periodic agent appraisals or CMA refreshes.",
+        default_fetch_mode: "currency_scan",
+        supports_live_fetch: false
       },
       government_notice: {
         label: "Government Notice",
         source: "government",
         default_cadence: "yearly",
-        default_connection_mode: "statement_notice",
-        connection_modes: ["statement_notice", "email_notice", "manual_check"],
+        default_connection_mode: "public_html",
+        connection_modes: ["statement_notice", "email_notice", "public_html", "public_json", "manual_check"],
         reference_label: "Notice / account reference",
         reference_placeholder: "e.g. Rates notice 2026",
         check_placeholder: "Record the notice value, or note when the next council / registry notice is expected.",
         signal_label: "Government notice",
-        helper: "Use for council, rates, land-tax, or registry value updates."
+        helper: "Use for council, rates, land-tax, or registry value updates.",
+        default_fetch_mode: "currency_scan",
+        supports_live_fetch: true
       },
       manual_watch: {
         label: "Manual Watch",
         source: "manual_external",
         default_cadence: "monthly",
-        default_connection_mode: "manual_check",
-        connection_modes: ["manual_check", "api_stub", "email_notice"],
+        default_connection_mode: "public_html",
+        connection_modes: ["manual_check", "public_html", "public_json", "api_stub", "email_notice"],
         reference_label: "Reference",
         reference_placeholder: "e.g. Spreadsheet, private source, other note",
         check_placeholder: "Record what you checked and whether it produced a usable valuation.",
         signal_label: "External estimate",
-        helper: "Generic adapter placeholder for future feeds or copied valuation sources."
+        helper: "Generic adapter placeholder for future feeds or copied valuation sources.",
+        default_fetch_mode: "currency_scan",
+        supports_live_fetch: true
       }
     };
     const WEALTH_PROPERTY_FEED_CONNECTION_MODES = {
@@ -17621,6 +17633,8 @@ Data caveat`;
       email_notice: "Email / notice",
       agent_refresh: "Agent refresh",
       statement_notice: "Statement / notice",
+      public_html: "Live HTML fetch",
+      public_json: "Live JSON fetch",
       api_stub: "API / export later"
     };
     const WEALTH_ASSET_TYPES = {
@@ -20145,8 +20159,162 @@ Data caveat`;
       return getWealthPropertyFeedProviderPreset(providerKey).signal_label || fallback || "External estimate";
     }
 
+    function wealthLooksLikeHttpUrl(value) {
+      const raw = String(value || "").trim();
+      return /^https?:\/\//i.test(raw);
+    }
+
+    function wealthPropertyFeedSupportsLiveFetch(providerKey) {
+      return !!getWealthPropertyFeedProviderPreset(providerKey).supports_live_fetch;
+    }
+
+    function wealthPropertyFeedCanLiveFetch(adapter) {
+      const mode = String(adapter?.connection_mode || "").trim();
+      return wealthPropertyFeedSupportsLiveFetch(adapter?.provider_key)
+        && ["public_html", "public_json"].includes(mode)
+        && wealthLooksLikeHttpUrl(adapter?.endpoint_hint);
+    }
+
+    function wealthPropertyFeedFetchModeLabel(mode) {
+      switch (mode) {
+        case "regex":
+          return "Regex";
+        case "json_path":
+          return "JSON path";
+        case "currency_scan":
+        default:
+          return "Currency scan";
+      }
+    }
+
     function wealthPropertyFeedAdapterIsReady(adapter) {
       return !!(String(adapter?.reference_key || "").trim() || String(adapter?.endpoint_hint || "").trim());
+    }
+
+    function wealthGetJsonPathValue(input, path) {
+      const tokens = String(path || "")
+        .split(".")
+        .map(token => token.trim())
+        .filter(Boolean);
+      let current = input;
+      for (const token of tokens) {
+        if (current == null) return null;
+        if (Array.isArray(current) && /^\d+$/.test(token)) {
+          current = current[Number.parseInt(token, 10)];
+        } else if (typeof current === "object" && Object.prototype.hasOwnProperty.call(current, token)) {
+          current = current[token];
+        } else {
+          return null;
+        }
+      }
+      return current;
+    }
+
+    function wealthExtractCurrencyCandidates(text) {
+      const raw = String(text || "");
+      const matches = [];
+      const regex = /(?:AUD|A\$|\$)?\s*([0-9][0-9,]{3,}(?:\.\d{1,2})?)/gi;
+      let match;
+      while ((match = regex.exec(raw))) {
+        const parsed = parseMoneyCell(match[1], "AUD");
+        if (!parsed || !Number.isFinite(parsed.amountMinorAbs) || parsed.amountMinorAbs <= 0) continue;
+        matches.push({
+          value_minor: parsed.amountMinorAbs,
+          raw: match[0].trim(),
+          index: match.index
+        });
+      }
+      return matches.sort((a, b) => b.value_minor - a.value_minor || a.index - b.index);
+    }
+
+    function wealthExtractPropertyFeedValue(resp, adapter) {
+      const body = String(resp?.body || "");
+      const contentType = String(resp?.content_type || "").toLowerCase();
+      const mode = String(adapter?.fetch_value_mode || "currency_scan").trim();
+      const rule = String(adapter?.fetch_rule || "").trim();
+      if (!body) return { value_minor: 0, summary: "No response body returned.", method: mode };
+
+      if (mode === "json_path" || (mode === "currency_scan" && contentType.includes("json"))) {
+        try {
+          const parsed = JSON.parse(body);
+          if (rule) {
+            const value = wealthGetJsonPathValue(parsed, rule);
+            const money = parseMoneyCell(value, "AUD");
+            if (money?.amountMinorAbs) {
+              return {
+                value_minor: money.amountMinorAbs,
+                summary: `Parsed ${formatCurrency(money.amountMinorAbs)} from JSON path ${rule}.`,
+                method: rule ? "json_path" : "currency_scan"
+              };
+            }
+          }
+          if (mode === "json_path") {
+            return { value_minor: 0, summary: `Could not resolve a valuation from JSON path ${rule || "(empty)"}.`, method: "json_path" };
+          }
+        } catch {
+          if (mode === "json_path") {
+            return { value_minor: 0, summary: "Response was not valid JSON for the configured JSON path.", method: "json_path" };
+          }
+        }
+      }
+
+      if (mode === "regex" && rule) {
+        try {
+          const regex = new RegExp(rule, "i");
+          const match = body.match(regex);
+          const candidate = match?.[1] || match?.[0] || "";
+          const money = parseMoneyCell(candidate, "AUD");
+          if (money?.amountMinorAbs) {
+            return {
+              value_minor: money.amountMinorAbs,
+              summary: `Parsed ${formatCurrency(money.amountMinorAbs)} using regex extraction.`,
+              method: "regex"
+            };
+          }
+          return { value_minor: 0, summary: "Regex matched, but the captured value did not parse as money.", method: "regex" };
+        } catch (err) {
+          return { value_minor: 0, summary: `Invalid regex: ${String(err?.message || err || "Unknown error")}`, method: "regex" };
+        }
+      }
+
+      const candidates = wealthExtractCurrencyCandidates(body);
+      if (candidates.length) {
+        const top = candidates[0];
+        return {
+          value_minor: top.value_minor,
+          summary: `Found ${formatCurrency(top.value_minor)} by scanning the response for currency-like values.`,
+          method: "currency_scan"
+        };
+      }
+      return { value_minor: 0, summary: "No currency-like valuation could be extracted from the response.", method: mode || "currency_scan" };
+    }
+
+    async function wealthFetchPropertyFeedPreview(adapter) {
+      const url = String(adapter?.endpoint_hint || "").trim();
+      if (!wealthLooksLikeHttpUrl(url)) throw new Error("This adapter needs a valid public URL in Endpoint / Source Reference.");
+      const invoke = getTauriInvoke();
+      const resp = invoke
+        ? await invoke("http_get_text", { url })
+        : await (async () => {
+            const response = await fetch(url);
+            return {
+              status: response.status,
+              body: await response.text(),
+              final_url: response.url,
+              content_type: response.headers.get("content-type") || ""
+            };
+          })();
+      if (!resp || Number(resp.status) < 200 || Number(resp.status) >= 300) {
+        throw new Error(`HTTP ${resp?.status || "error"} while fetching ${url}`);
+      }
+      const extraction = wealthExtractPropertyFeedValue(resp, adapter);
+      return {
+        url: resp.final_url || url,
+        content_type: resp.content_type || "",
+        status: resp.status,
+        preview_text: String(resp.body || "").replace(/\s+/g, " ").trim().slice(0, 220),
+        ...extraction
+      };
     }
 
     function getWealthPropertyEvidenceTimeline(property) {
@@ -21026,6 +21194,7 @@ Data caveat`;
       const initialSource = existing?.source || initialPreset.source || "manual_external";
       const initialLabel = existing?.label || initialPreset.label || "Feed Adapter";
       const initialConnectionMode = existing?.connection_mode || initialPreset.default_connection_mode || getWealthPropertyFeedConnectionOptions(initialProviderKey)[0] || "manual_check";
+      const supportsLiveFetch = wealthPropertyFeedSupportsLiveFetch(initialProviderKey);
       const html = `<div class="wealth-form-grid">
         <div>
           <label>Property</label>
@@ -21089,6 +21258,27 @@ Data caveat`;
           <label>Endpoint / Source Reference</label>
           <input id="wealthPropertyFeedEndpointInput" placeholder="e.g. Domain watchlist URL or lender portal note" value="${escapeHtml(existing?.endpoint_hint || "")}" />
         </div>
+        <div id="wealthPropertyFeedFetchConfigWrap" ${supportsLiveFetch ? "" : "hidden"}>
+          <div class="wealth-form-row">
+            <div>
+              <label>Fetch Parse Mode</label>
+              <select id="wealthPropertyFeedFetchModeInput">
+                ${[
+                  ["currency_scan", "Currency scan"],
+                  ["regex", "Regex capture"],
+                  ["json_path", "JSON path"]
+                ].map(([value, label]) => `<option value="${value}" ${(existing?.fetch_value_mode || initialPreset.default_fetch_mode || "currency_scan") === value ? "selected" : ""}>${escapeHtml(label)}</option>`).join("")}
+              </select>
+            </div>
+            <div>
+              <label>Fetch Rule</label>
+              <input id="wealthPropertyFeedFetchRuleInput" placeholder="Regex capture or JSON path (optional)" value="${escapeHtml(existing?.fetch_rule || "")}" />
+            </div>
+          </div>
+          <div class="tiny" id="wealthPropertyFeedFetchHelp" style="color:var(--text2)">
+            Use a public URL plus an extraction rule if the source page needs more than a simple currency scan.
+          </div>
+        </div>
         <div>
           <label>Note</label>
           <textarea id="wealthPropertyFeedNoteInput" rows="3" placeholder="Optional reminder about where this signal comes from...">${escapeHtml(existing?.note || "")}</textarea>
@@ -21111,6 +21301,9 @@ Data caveat`;
         const referenceLabelEl = document.getElementById("wealthPropertyFeedReferenceLabel");
         const referenceInput = document.getElementById("wealthPropertyFeedReferenceInput");
         const helperEl = document.getElementById("wealthPropertyFeedHelper");
+        const fetchWrap = document.getElementById("wealthPropertyFeedFetchConfigWrap");
+        const fetchHelp = document.getElementById("wealthPropertyFeedFetchHelp");
+        const fetchModeInput = document.getElementById("wealthPropertyFeedFetchModeInput");
         const updatePreset = () => {
           const nextProviderKey = providerInput?.value || initialProviderKey;
           const nextPreset = getWealthPropertyFeedProviderPreset(nextProviderKey);
@@ -21129,13 +21322,27 @@ Data caveat`;
           }
           if (referenceLabelEl) referenceLabelEl.textContent = wealthPropertyFeedReferenceLabel(nextProviderKey);
           if (referenceInput && !referenceInput.dataset.userChanged) referenceInput.placeholder = wealthPropertyFeedReferencePlaceholder(nextProviderKey);
+          const nextMode = connectionModeInput?.value || nextPreset.default_connection_mode || "manual_check";
+          const liveVisible = wealthPropertyFeedSupportsLiveFetch(nextProviderKey) && ["public_html", "public_json"].includes(nextMode);
+          if (fetchWrap) fetchWrap.hidden = !liveVisible;
+          if (fetchHelp) {
+            fetchHelp.textContent = nextMode === "public_json"
+              ? "Use JSON path for explicit fields like result.valuation. Leave it blank to fall back to a broad scan."
+              : "Use regex or leave it blank to scan the fetched page for the strongest currency-like valuation.";
+          }
+          if (fetchModeInput && !fetchModeInput.dataset.userChanged) {
+            fetchModeInput.value = nextPreset.default_fetch_mode || "currency_scan";
+          }
         };
         providerInput?.addEventListener("change", updatePreset);
         sourceInput?.addEventListener("change", () => { sourceInput.dataset.userChanged = "true"; });
         labelInput?.addEventListener("input", () => { labelInput.dataset.userChanged = "true"; });
         cadenceInput?.addEventListener("change", () => { cadenceInput.dataset.userChanged = "true"; });
         connectionModeInput?.addEventListener("change", () => { connectionModeInput.dataset.userChanged = "true"; });
+        fetchModeInput?.addEventListener("change", () => { fetchModeInput.dataset.userChanged = "true"; });
         referenceInput?.addEventListener("input", () => { referenceInput.dataset.userChanged = "true"; });
+        connectionModeInput?.addEventListener("change", updatePreset);
+        updatePreset();
         labelInput?.focus();
         document.getElementById("wealthPropertyFeedBackBtn")?.addEventListener("click", () => showWealthPropertyDetailModal(propertyId));
         document.getElementById("wealthPropertyFeedSubmitBtn")?.addEventListener("click", () => {
@@ -21150,6 +21357,8 @@ Data caveat`;
             connection_mode: connectionModeInput?.value || initialConnectionMode,
             reference_key: referenceInput?.value || "",
             endpoint_hint: document.getElementById("wealthPropertyFeedEndpointInput")?.value || "",
+            fetch_value_mode: document.getElementById("wealthPropertyFeedFetchModeInput")?.value || initialPreset.default_fetch_mode || "currency_scan",
+            fetch_rule: document.getElementById("wealthPropertyFeedFetchRuleInput")?.value || "",
             note: document.getElementById("wealthPropertyFeedNoteInput")?.value || ""
           }, existing?.id || "");
           showWealthPropertyDetailModal(propertyId);
@@ -21163,6 +21372,7 @@ Data caveat`;
       if (!property || !adapter) return;
       const preset = getWealthPropertyFeedProviderPreset(adapter.provider_key);
       const signalPreset = getWealthPropertySignalPreset(adapter.source);
+      const canFetch = wealthPropertyFeedCanLiveFetch(adapter);
       const html = `<div class="wealth-form-grid">
         <div class="wealth-form-row">
           <div>
@@ -21196,6 +21406,21 @@ Data caveat`;
           <label>Check Note</label>
           <textarea id="wealthPropertyFeedRunNoteInput" rows="3" placeholder="${escapeHtml(wealthPropertyFeedCheckPlaceholder(adapter.provider_key))}">${escapeHtml(adapter.last_sync_note || "")}</textarea>
         </div>
+        ${canFetch ? `
+          <div class="health-note-box" style="margin-top:0">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+              <div>
+                <div style="font-weight:700">Live Fetch Preview</div>
+                <div class="tiny" style="margin-top:4px;color:var(--text2)">
+                  ${escapeHtml(adapter.endpoint_hint)} · ${escapeHtml(wealthPropertyFeedFetchModeLabel(adapter.fetch_value_mode))}
+                  ${adapter.fetch_rule ? ` · ${escapeHtml(adapter.fetch_rule)}` : ""}
+                </div>
+              </div>
+              <button class="ghost" id="wealthPropertyFeedFetchBtn" type="button">Fetch Preview</button>
+            </div>
+            <div id="wealthPropertyFeedFetchStatus" class="tiny" style="margin-top:8px;color:var(--text2)">No live preview fetched yet.</div>
+          </div>
+        ` : ""}
         <div class="wealth-form-row">
           <div>
             <label>Signal Date</label>
@@ -21222,8 +21447,37 @@ Data caveat`;
       </div>`;
       showWealthModal("Check Feed Adapter", html);
       requestAnimationFrame(() => {
+        let latestPreview = null;
+        const fetchStatusEl = document.getElementById("wealthPropertyFeedFetchStatus");
+        const signalValueInput = document.getElementById("wealthPropertyFeedRunSignalValueInput");
+        const signalLabelInput = document.getElementById("wealthPropertyFeedRunSignalLabelInput");
+        const signalDateInput = document.getElementById("wealthPropertyFeedRunSignalDateInput");
+        const noteInput = document.getElementById("wealthPropertyFeedRunNoteInput");
         document.getElementById("wealthPropertyFeedRunSignalValueInput")?.focus();
         document.getElementById("wealthPropertyFeedRunBackBtn")?.addEventListener("click", () => showWealthPropertyDetailModal(propertyId));
+        document.getElementById("wealthPropertyFeedFetchBtn")?.addEventListener("click", async () => {
+          if (!fetchStatusEl) return;
+          fetchStatusEl.textContent = "Fetching preview...";
+          try {
+            latestPreview = await wealthFetchPropertyFeedPreview(adapter);
+            const extractedValue = Number(latestPreview.value_minor || 0) > 0 ? (Number(latestPreview.value_minor || 0) / 100).toFixed(2) : "";
+            if (signalValueInput && extractedValue) signalValueInput.value = extractedValue;
+            if (signalLabelInput && !String(signalLabelInput.value || "").trim()) signalLabelInput.value = adapter.label;
+            if (signalDateInput && !String(signalDateInput.value || "").trim()) signalDateInput.value = todayISO();
+            if (noteInput) {
+              const previewNote = `Fetched from ${latestPreview.url}. ${latestPreview.summary}`;
+              noteInput.value = noteInput.value
+                ? `${noteInput.value}\n${previewNote}`.trim()
+                : previewNote;
+            }
+            fetchStatusEl.textContent = latestPreview.value_minor > 0
+              ? `Preview ready: ${formatCurrency(latestPreview.value_minor)} · ${latestPreview.summary}`
+              : `Preview fetched, but no value extracted. ${latestPreview.summary}`;
+          } catch (err) {
+            latestPreview = null;
+            fetchStatusEl.textContent = `Fetch failed: ${String(err?.message || err || "Unknown error")}`;
+          }
+        });
         document.getElementById("wealthPropertyFeedRunSubmitBtn")?.addEventListener("click", () => {
           const checkedDate = String(document.getElementById("wealthPropertyFeedRunCheckedDateInput")?.value || todayISO()).trim();
           const signalDate = String(document.getElementById("wealthPropertyFeedRunSignalDateInput")?.value || checkedDate).trim();
@@ -21250,6 +21504,7 @@ Data caveat`;
             note,
             signal_date: signalValue ? signalDate : "",
             signal_value: signalValue,
+            signal_value_minor: latestPreview?.value_minor || 0,
             imported_signal_id: importedSignalId
           });
           showWealthPropertyDetailModal(propertyId);
@@ -21489,6 +21744,7 @@ Data caveat`;
                     <span>${escapeHtml(getWealthPropertyFeedProviderPreset(adapter.provider_key).label || adapter.provider_key)}</span>
                     <span>${escapeHtml(WEALTH_PROPERTY_SIGNAL_SOURCES[adapter.source] || adapter.source)}</span>
                     <span>${escapeHtml(wealthPropertyFeedConnectionLabel(adapter.connection_mode))}</span>
+                    ${wealthPropertyFeedCanLiveFetch(adapter) ? `<span>Live fetch</span>` : ""}
                     <span>${escapeHtml(adapter.cadence)}</span>
                     <span>${escapeHtml(adapter.status)}</span>
                     <span>${wealthPropertyFeedAdapterIsReady(adapter) ? "Configured" : "Needs setup"}</span>
@@ -21499,6 +21755,7 @@ Data caveat`;
                   ${adapter.reference_key ? `<div class="tiny" style="margin-top:4px;color:var(--text2)">${escapeHtml(wealthPropertyFeedReferenceLabel(adapter.provider_key))}: ${escapeHtml(adapter.reference_key)}</div>` : ""}
                   ${adapter.last_sync_note ? `<div class="tiny" style="margin-top:4px;color:var(--text2)">${escapeHtml(adapter.last_sync_note)}</div>` : ""}
                   ${adapter.endpoint_hint ? `<div class="tiny" style="margin-top:4px;color:var(--text2)">${escapeHtml(adapter.endpoint_hint)}</div>` : ""}
+                  ${wealthPropertyFeedCanLiveFetch(adapter) ? `<div class="tiny" style="margin-top:4px;color:var(--text2)">Fetch mode: ${escapeHtml(wealthPropertyFeedFetchModeLabel(adapter.fetch_value_mode))}${adapter.fetch_rule ? ` · ${escapeHtml(adapter.fetch_rule)}` : ""}</div>` : ""}
                   ${adapter.note ? `<div class="tiny" style="margin-top:4px;color:var(--text2)">${escapeHtml(adapter.note)}</div>` : ""}
                 </div>
                 <div style="display:flex;align-items:center;gap:8px">
@@ -22555,6 +22812,9 @@ Data caveat`;
             cadence: adapter.cadence,
             status: adapter.status,
             connection_mode: adapter.connection_mode,
+            live_fetch_capable: wealthPropertyFeedCanLiveFetch(adapter),
+            fetch_value_mode: adapter.fetch_value_mode || null,
+            fetch_rule: adapter.fetch_rule || null,
             reference_key: adapter.reference_key || null,
             configured: wealthPropertyFeedAdapterIsReady(adapter),
             last_sync_status: adapter.last_sync_status || null,

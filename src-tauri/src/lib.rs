@@ -369,13 +369,22 @@ async fn http_get_text(url: String) -> Result<HttpTextResponse, String> {
     }
 
     let host = parsed.host_str().unwrap_or_default();
-    let allowed_hosts = [
+    let allowed_exact_hosts = [
         "api.coingecko.com",
         "query1.finance.yahoo.com",
         "api.frankfurter.app",
         "open.er-api.com",
     ];
-    if !allowed_hosts.contains(&host) {
+    let allowed_domain_suffixes = [
+        "domain.com.au",
+        "realestate.com.au",
+        "onthehouse.com.au",
+        "property.com.au",
+        "propertyvalue.com.au",
+    ];
+    let host_allowed = allowed_exact_hosts.contains(&host)
+        || allowed_domain_suffixes.iter().any(|domain| host == *domain || host.ends_with(&format!(".{domain}")));
+    if !host_allowed {
         return Err(format!("Host not allowed: {host}"));
     }
 
