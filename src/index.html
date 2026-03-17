@@ -1850,6 +1850,28 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
 .health-layout{padding:20px 24px;max-width:900px;margin:0 auto;overflow-y:auto;max-height:calc(100vh - 56px)}
 .health-tabs-row{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:16px}
 .health-subtabs{display:flex;gap:0;border-bottom:2px solid var(--line);margin-bottom:0}
+.module-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.module-add-btn{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:7px 14px;border:1px dashed var(--line);border-radius:999px;
+  background:transparent;color:var(--text2);cursor:pointer;
+  font:600 .72rem var(--font);transition:all .15s;
+}
+.module-add-btn:hover{
+  border-color:var(--accent);color:var(--accent);background:var(--accent-light);
+}
+.module-welcome{
+  text-align:center;padding:36px 24px;max-width:460px;margin:0 auto;
+}
+.module-welcome h3{font-size:1.1rem;font-weight:700;margin-bottom:10px}
+.module-welcome p{font-size:.84rem;color:var(--text2);line-height:1.6;margin-bottom:18px}
+.module-picker-list{display:grid;gap:10px}
+.module-picker-item{
+  display:flex;align-items:flex-start;justify-content:space-between;gap:12px;
+  padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:var(--bg);
+}
+.module-picker-item h4{font-size:.84rem;margin-bottom:4px}
+.module-picker-item p{font-size:.76rem;color:var(--text2);line-height:1.45}
 .health-subtab{
   padding:8px 20px;font:600 .82rem var(--font);color:var(--text2);cursor:pointer;
   border:none;background:transparent;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .15s;
@@ -2725,20 +2747,17 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
   <div class="surface tab-content" id="tab-health">
     <div class="health-layout">
       <div class="health-tabs-row">
-        <div class="health-subtabs" id="healthSubtabs">
-          <div class="health-subtab active" data-health-tab="overview">Overview</div>
-          <div class="health-subtab" data-health-tab="assessment">Assessment</div>
-          <div class="health-subtab" data-health-tab="exercise">Exercise</div>
-          <div class="health-subtab" data-health-tab="nutrition">Nutrition</div>
-          <div class="health-subtab" data-health-tab="sleep">Sleep</div>
-          <div class="health-subtab" data-health-tab="measurements">Measurements</div>
-          <div class="health-subtab" data-health-tab="vitals">Vitals</div>
+        <div class="health-subtabs" id="healthSubtabs"></div>
+        <div class="module-toolbar">
+          <button id="healthOpenModulePickerBtn" class="module-add-btn" type="button">+ Add tracking module</button>
+          <button id="healthAiProviderPill" class="ai-provider-pill tiny ai-switch-trigger" data-open-ai-switch="health" type="button" title="Switch AI"></button>
         </div>
-        <button id="healthAiProviderPill" class="ai-provider-pill tiny ai-switch-trigger" data-open-ai-switch="health" type="button" title="Switch AI"></button>
       </div>
 
       <div class="health-panel active" id="health-panel-overview">
-        <div class="review-card">
+        <div id="healthOverviewWelcome" class="review-card" hidden></div>
+        <div id="healthOverviewDetails">
+        <div class="review-card" id="healthOverviewProfileCard">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:12px;flex-wrap:wrap">
             <div>
               <h4 style="margin-bottom:0">Health Profile</h4>
@@ -2751,7 +2770,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           </div>
         </div>
 
-        <div class="review-card">
+        <div class="review-card" id="healthOverviewSummaryCard">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:12px;flex-wrap:wrap">
             <h4 style="margin-bottom:0">Health Overview</h4>
             <div class="health-card-actions" style="margin-top:0">
@@ -2768,7 +2787,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           <div class="health-card-note">Health now combines exercise practice logs with intake, training blocks, nutrition, sleep, measurements, and vitals.</div>
         </div>
 
-        <div class="review-card">
+        <div class="review-card" id="healthOverviewVitalsCard">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:12px;flex-wrap:wrap">
             <div>
               <h4 style="margin-bottom:0">Vitals Snapshot</h4>
@@ -2784,7 +2803,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           </div>
         </div>
 
-        <div class="review-card">
+        <div class="review-card" id="healthOverviewSleepCard">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:12px;flex-wrap:wrap">
             <div>
               <h4 style="margin-bottom:0">Sleep Snapshot</h4>
@@ -2800,7 +2819,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           </div>
         </div>
 
-        <div class="review-card">
+        <div class="review-card" id="healthOverviewRecoveryCard">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:12px;flex-wrap:wrap">
             <div>
               <h4 style="margin-bottom:0">Recovery Overview</h4>
@@ -2813,7 +2832,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           </div>
         </div>
 
-        <div class="review-card">
+        <div class="review-card" id="healthOverviewBodyCompCard">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:12px;flex-wrap:wrap">
             <div>
               <h4 style="margin-bottom:0">Body Composition Signals</h4>
@@ -2829,7 +2848,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           </div>
         </div>
 
-        <div class="review-card">
+        <div class="review-card" id="healthOverviewTrainingBlockCard">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:12px;flex-wrap:wrap">
             <div>
               <h4 style="margin-bottom:0">Current Training Block</h4>
@@ -2845,21 +2864,21 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           </div>
         </div>
 
-        <div class="review-card">
+        <div class="review-card" id="healthOverviewPracticesCard">
           <h4 style="margin-bottom:12px">Active Health Practices</h4>
           <div id="healthPracticeSummaryList" class="health-list">
             <div class="health-empty-state">No health practices yet. Log an exercise session in Execute to start building this view.</div>
           </div>
         </div>
 
-        <div class="review-card">
+        <div class="review-card" id="healthOverviewRecentCard">
           <h4 style="margin-bottom:12px">Recent Activity</h4>
           <div id="healthRecentActivityList" class="health-list">
             <div class="health-empty-state">No recent health activity yet.</div>
           </div>
         </div>
 
-        <div class="health-section-grid">
+        <div class="health-section-grid" id="healthOverviewExerciseInsights">
           <div class="review-card">
             <h4 style="margin-bottom:12px">Progress Signals</h4>
             <div id="healthProgressSignals" class="health-progress-list">
@@ -2872,6 +2891,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
               <div class="health-empty-state">Structured exercise logs will surface lift progress here.</div>
             </div>
           </div>
+        </div>
         </div>
       </div>
 
@@ -3261,12 +3281,9 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
     <div class="wealth-layout">
       <!-- Wealth Subtabs -->
       <div class="wealth-tabs-row">
-        <div class="wealth-subtabs" id="wealthSubtabs">
-          <div class="wealth-subtab active" data-wealth-tab="overview">Overview</div>
-          <div class="wealth-subtab" data-wealth-tab="portfolio">Portfolio</div>
-          <div class="wealth-subtab" data-wealth-tab="cashflow">Cash Flow</div>
-        </div>
-        <div style="display:flex;align-items:center;gap:8px">
+        <div class="wealth-subtabs" id="wealthSubtabs"></div>
+        <div class="module-toolbar">
+          <button id="wealthOpenModulePickerBtn" class="module-add-btn" type="button">+ Add tracking module</button>
           <button id="wealthAiProviderPill" class="ai-provider-pill tiny ai-switch-trigger" data-open-ai-switch="wealth" type="button" title="Switch AI"></button>
           <button class="ghost" id="wealthOpenCoachBtn" type="button" style="font-size:.75rem">Wealth Coach</button>
         </div>
@@ -3274,8 +3291,10 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
 
       <!-- Overview Subtab -->
       <div class="wealth-panel active" id="wealth-panel-overview">
+        <div id="wealthOverviewWelcome" class="review-card" hidden></div>
+        <div id="wealthOverviewDetails">
         <!-- Net Worth Summary -->
-        <div class="review-card">
+        <div class="review-card" id="wealthOverviewNetWorthCard">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
             <h4 style="margin-bottom:0">Net Worth</h4>
             <button class="ghost" id="wealthAddAccountBtn" type="button" style="font-size:.75rem">+ Add Account</button>
@@ -3288,7 +3307,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         </div>
 
         <!-- Accounts List -->
-        <div class="review-card">
+        <div class="review-card" id="wealthOverviewAccountsCard">
           <h4 style="margin-bottom:12px">Accounts</h4>
           <div id="wealthAccountsList" class="wealth-accounts-list">
             <div class="wealth-empty-state">No accounts yet. Add one to start tracking.</div>
@@ -3296,7 +3315,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         </div>
 
         <!-- Recent Transactions -->
-        <div class="review-card">
+        <div class="review-card" id="wealthOverviewTransactionsCard">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
             <h4 style="margin-bottom:0">Recent Transactions</h4>
             <div style="display:flex;align-items:center;gap:8px">
@@ -3310,7 +3329,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           </div>
         </div>
 
-        <div class="review-card">
+        <div class="review-card" id="wealthOverviewImportReviewCard">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
             <h4 style="margin-bottom:0">Import Review</h4>
             <button class="ghost" id="wealthUndoLastImportBtn" type="button" style="font-size:.75rem">Undo Last Import</button>
@@ -3320,7 +3339,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           </div>
         </div>
 
-        <div class="review-card">
+        <div class="review-card" id="wealthOverviewCategoryRulesCard">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
             <h4 style="margin-bottom:0">Category Rules</h4>
             <div style="display:flex;align-items:center;gap:8px">
@@ -3333,14 +3352,14 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           </div>
         </div>
 
-        <div class="review-card">
+        <div class="review-card" id="wealthOverviewImportTemplatesCard">
           <h4 style="margin-bottom:12px">Import Templates</h4>
           <div id="wealthImportTemplatesList" class="wealth-accounts-list">
             <div class="wealth-empty-state">No CSV templates saved yet.</div>
           </div>
         </div>
 
-        <div class="review-card">
+        <div class="review-card" id="wealthOverviewImportFolderCard">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
             <h4 style="margin-bottom:0">Import Folder</h4>
             <button class="ghost" id="wealthRescanImportFolderBtn" type="button" style="font-size:.75rem">Rescan</button>
@@ -3348,6 +3367,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           <div id="wealthImportFolderCard" class="wealth-accounts-list">
             <div class="wealth-empty-state">Choose a folder to scan CSV files and import them one by one.</div>
           </div>
+        </div>
         </div>
       </div>
 
@@ -3409,7 +3429,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           </div>
         </div>
 
-      <div class="review-card">
+      <div class="review-card" id="portfolioPropertiesSection">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:12px;flex-wrap:wrap">
           <div>
             <h4 style="margin-bottom:0">Properties</h4>
@@ -4264,7 +4284,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
 
     function emptyState() {
       return {
-        schema_version: "3.1.0",
+        schema_version: "3.2.0",
         last_modified: null,
         last_modified_by: "dashboard",
         meta: { owner: "", timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC" },
@@ -4294,6 +4314,18 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           cloud_enabled: false,
           last_server_version: 0,
           last_synced_at: null
+        },
+        modules: {
+          health: {
+            assessment: false,
+            nutrition: false,
+            sleep: false,
+            measurements: false,
+            vitals: false
+          },
+          wealth: {
+            properties: false
+          }
         },
         health: {
           profile: {
@@ -5183,7 +5215,250 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           cashflow_scope: inferWealthTransactionCashflowScope(txn, wealthAccountsById.get(txn.account_id))
         }));
       }
+      normalized.modules = normalizeModulesState(incoming.modules, normalized);
       return normalized;
+    }
+
+    function emptyModulesState() {
+      return {
+        health: {
+          assessment: false,
+          nutrition: false,
+          sleep: false,
+          measurements: false,
+          vitals: false
+        },
+        wealth: {
+          properties: false
+        }
+      };
+    }
+
+    function healthProfileHasMeaningfulData(profile) {
+      if (!profile || typeof profile !== "object") return false;
+      return !!(
+        Number.isFinite(Number(profile.training_days_per_week)) ||
+        Number.isFinite(Number(profile.max_sessions_per_week)) ||
+        (Array.isArray(profile.blocked_days) && profile.blocked_days.length) ||
+        Number.isFinite(Number(profile.ideal_session_minutes)) ||
+        String(profile.injuries_note || "").trim() ||
+        String(profile.extra_note || "").trim() ||
+        (Array.isArray(profile.target_muscle_groups) && profile.target_muscle_groups.length) ||
+        (Array.isArray(profile.preferred_splits) && profile.preferred_splits.length) ||
+        (Array.isArray(profile.preferred_styles) && profile.preferred_styles.length) ||
+        String(profile.load_preference || "").trim() ||
+        Object.values(profile.knowledge_flags || {}).some(Boolean) ||
+        Object.values(profile.capability_flags || {}).some(Boolean) ||
+        Object.values(profile.equipment_flags || {}).some(Boolean)
+      );
+    }
+
+    function getHealthPracticesFromSnapshot(snapshot) {
+      return sortPracticesForDisplay(((snapshot?.life_practices?.practices) || []).filter(practice => inferPracticeCoachKey(practice) === "gym"));
+    }
+
+    function snapshotHasLoggedHealthPracticeData(snapshot) {
+      const practiceIds = new Set(getHealthPracticesFromSnapshot(snapshot).map(practice => practice.id));
+      if (!practiceIds.size) return false;
+      const dailyLog = snapshot?.life_practices?.daily_log || {};
+      return Object.values(dailyLog).some(dayLog => {
+        if (!dayLog || typeof dayLog !== "object") return false;
+        return Object.entries(dayLog).some(([practiceId, record]) => {
+          if (!practiceIds.has(practiceId)) return false;
+          const entry = record || {};
+          return !!(
+            entry.done ||
+            (Number.isFinite(Number(entry.minutes)) && Number(entry.minutes) > 0) ||
+            ((entry.entries || []).length > 0) ||
+            String(entry.notes || "").trim()
+          );
+        });
+      });
+    }
+
+    function snapshotHasHealthAssessmentData(snapshot) {
+      return !!String(snapshot?.health?.assessment_week?.start_date || "").trim();
+    }
+
+    function snapshotHasHealthNutritionData(snapshot) {
+      return ((snapshot?.health?.nutrition_targets || []).length + (snapshot?.health?.nutrition_logs || []).length) > 0;
+    }
+
+    function snapshotHasHealthSleepData(snapshot) {
+      return (snapshot?.health?.sleep_logs || []).length > 0;
+    }
+
+    function snapshotHasHealthMeasurementsData(snapshot) {
+      return ((snapshot?.health?.body_measurements || []).length + (snapshot?.health?.progress_checkins || []).length) > 0;
+    }
+
+    function snapshotHasHealthVitalsData(snapshot) {
+      return (snapshot?.health?.vitals_logs || []).length > 0;
+    }
+
+    function snapshotHasHealthExerciseSurface(snapshot) {
+      const health = snapshot?.health || {};
+      if (healthTrainingBlockHasData(health.training_block)) return true;
+      if ((health.session_templates || []).length > 0) return true;
+      return snapshotHasLoggedHealthPracticeData(snapshot);
+    }
+
+    function snapshotHasHealthOverviewData(snapshot) {
+      return !!(
+        healthProfileHasMeaningfulData(snapshot?.health?.profile) ||
+        snapshotHasHealthExerciseSurface(snapshot) ||
+        snapshotHasHealthAssessmentData(snapshot) ||
+        snapshotHasHealthNutritionData(snapshot) ||
+        snapshotHasHealthSleepData(snapshot) ||
+        snapshotHasHealthMeasurementsData(snapshot) ||
+        snapshotHasHealthVitalsData(snapshot)
+      );
+    }
+
+    function snapshotHasWealthPropertyData(snapshot) {
+      return (snapshot?.wealth?.properties || []).length > 0;
+    }
+
+    function snapshotHasWealthPortfolioSurface(snapshot) {
+      const wealth = snapshot?.wealth || {};
+      const modules = snapshot?.modules || emptyModulesState();
+      return !!(
+        (wealth.holdings || []).length ||
+        (wealth.trades || []).length ||
+        (wealth.dividends || []).length ||
+        (wealth.portfolio_snapshots || []).length ||
+        snapshotHasWealthPropertyData(snapshot) ||
+        modules.wealth?.properties
+      );
+    }
+
+    function snapshotHasWealthCashflowSurface(snapshot) {
+      return (snapshot?.wealth?.transactions || []).length >= 5;
+    }
+
+    function snapshotHasWealthOverviewData(snapshot) {
+      const wealth = snapshot?.wealth || {};
+      return !!(
+        (wealth.accounts || []).length ||
+        (wealth.transactions || []).length ||
+        (wealth.holdings || []).length ||
+        (wealth.trades || []).length ||
+        (wealth.dividends || []).length ||
+        (wealth.portfolio_snapshots || []).length ||
+        snapshotHasWealthPropertyData(snapshot)
+      );
+    }
+
+    function autoEnableModulesWithData(modules, snapshot) {
+      const next = modules || emptyModulesState();
+      const stateSnapshot = snapshot || state || {};
+      if (snapshotHasHealthAssessmentData(stateSnapshot)) next.health.assessment = true;
+      if (snapshotHasHealthNutritionData(stateSnapshot)) next.health.nutrition = true;
+      if (snapshotHasHealthSleepData(stateSnapshot)) next.health.sleep = true;
+      if (snapshotHasHealthMeasurementsData(stateSnapshot)) next.health.measurements = true;
+      if (snapshotHasHealthVitalsData(stateSnapshot)) next.health.vitals = true;
+      if (snapshotHasWealthPropertyData(stateSnapshot)) next.wealth.properties = true;
+      return next;
+    }
+
+    function normalizeModulesState(rawModules, snapshot) {
+      const base = emptyModulesState();
+      const incoming = rawModules || {};
+      const next = {
+        health: {
+          assessment: !!incoming.health?.assessment,
+          nutrition: !!incoming.health?.nutrition,
+          sleep: !!incoming.health?.sleep,
+          measurements: !!incoming.health?.measurements,
+          vitals: !!incoming.health?.vitals
+        },
+        wealth: {
+          properties: !!incoming.wealth?.properties
+        }
+      };
+      return autoEnableModulesWithData({
+        health: { ...base.health, ...next.health },
+        wealth: { ...base.wealth, ...next.wealth }
+      }, snapshot);
+    }
+
+    function ensureModulesStateShape() {
+      state.modules = normalizeModulesState(state.modules, state);
+      return state.modules;
+    }
+
+    const HEALTH_TAB_LABELS = {
+      overview: "Overview",
+      assessment: "Assessment",
+      exercise: "Exercise",
+      nutrition: "Nutrition",
+      sleep: "Sleep",
+      measurements: "Measurements",
+      vitals: "Vitals"
+    };
+
+    const WEALTH_TAB_LABELS = {
+      overview: "Overview",
+      portfolio: "Portfolio",
+      cashflow: "Cash Flow"
+    };
+
+    const HEALTH_OPTIONAL_MODULES = [
+      { key: "assessment", title: "Assessment Week", description: "Baseline your nutrition, weight, steps, training, cardio, and food diary over 7 days." },
+      { key: "nutrition", title: "Nutrition", description: "Track macro targets, daily intake, bodyweight, and refeed cadence." },
+      { key: "sleep", title: "Sleep", description: "Log sleep hours, quality, timing consistency, and recovery notes." },
+      { key: "measurements", title: "Measurements", description: "Track body measurements, waist-to-hip ratio, and check-in cadence." },
+      { key: "vitals", title: "Vitals", description: "Log weight, resting heart rate, blood pressure, and quick health notes." }
+    ];
+
+    const WEALTH_OPTIONAL_MODULES = [
+      { key: "properties", title: "Property Tracking", description: "Track properties, comparable sales, external signals, and valuation history." }
+    ];
+
+    function getVisibleHealthTabs(snapshot = state) {
+      const modules = normalizeModulesState(snapshot?.modules, snapshot);
+      const tabs = ["overview"];
+      if (snapshotHasHealthExerciseSurface(snapshot)) tabs.push("exercise");
+      if (modules.health.assessment || snapshotHasHealthAssessmentData(snapshot)) tabs.push("assessment");
+      if (modules.health.nutrition || snapshotHasHealthNutritionData(snapshot)) tabs.push("nutrition");
+      if (modules.health.sleep || snapshotHasHealthSleepData(snapshot)) tabs.push("sleep");
+      if (modules.health.measurements || snapshotHasHealthMeasurementsData(snapshot)) tabs.push("measurements");
+      if (modules.health.vitals || snapshotHasHealthVitalsData(snapshot)) tabs.push("vitals");
+      return tabs;
+    }
+
+    function getVisibleWealthTabs(snapshot = state) {
+      const tabs = ["overview"];
+      if (snapshotHasWealthPortfolioSurface(snapshot)) tabs.push("portfolio");
+      if (snapshotHasWealthCashflowSurface(snapshot)) tabs.push("cashflow");
+      return tabs;
+    }
+
+    function normalizeWealthTab(value, snapshot = state) {
+      const normalized = String(value || "").trim().toLowerCase();
+      const visibleTabs = getVisibleWealthTabs(snapshot);
+      return visibleTabs.includes(normalized) ? normalized : "overview";
+    }
+
+    function getAvailableModuleOptions(moduleType, snapshot = state) {
+      if (moduleType === "health") {
+        const visible = new Set(getVisibleHealthTabs(snapshot));
+        return HEALTH_OPTIONAL_MODULES.filter(module => !visible.has(module.key));
+      }
+      if (moduleType === "wealth") {
+        const modules = normalizeModulesState(snapshot?.modules, snapshot);
+        return WEALTH_OPTIONAL_MODULES.filter(module =>
+          !modules.wealth[module.key] && !snapshotHasWealthPropertyData(snapshot)
+        );
+      }
+      return [];
+    }
+
+    function enableModule(moduleType, moduleKey) {
+      const modules = ensureModulesStateShape();
+      if (!modules[moduleType] || !(moduleKey in modules[moduleType])) return;
+      modules[moduleType][moduleKey] = true;
+      saveState(`enable_${moduleType}_${moduleKey}`);
     }
 
     function loadState() {
@@ -5196,6 +5471,10 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
 
     function getTauriInvoke() {
       return window.__TAURI__?.core?.invoke || null;
+    }
+
+    function getTauriEventApi() {
+      return window.__TAURI__?.event || null;
     }
 
     async function detectNativeStore() {
@@ -5537,6 +5816,46 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         render();
       } catch (err) {
         alert("Failed to save linked JSON: " + (err?.message || err));
+      }
+    }
+
+    async function restoreLatestBackupJson() {
+      const invoke = getTauriInvoke();
+      if (!invoke) {
+        alert("Latest-backup restore is available only in the desktop app build.");
+        return;
+      }
+      const confirmed = window.confirm("Restore the latest PPP Flow backup? This will overwrite the current live board state.");
+      if (!confirmed) return;
+      try {
+        const raw = await invoke("load_latest_backup");
+        if (!raw) {
+          alert("No backup snapshot was found yet.");
+          return;
+        }
+        const imported = JSON.parse(raw);
+        await importJsonObject(imported, "backup_restore", true);
+        setSyncBanner("Data source: Restored latest backup", "file", `Recovered ${new Date().toLocaleString()}`);
+      } catch (err) {
+        alert("Failed to restore latest backup: " + (err?.message || err));
+      }
+    }
+
+    async function setupNativeFileMenuHandlers() {
+      const events = getTauriEventApi();
+      if (!events?.listen) return;
+      try {
+        await events.listen("menu://import-json", () => {
+          pickAndLinkJsonFile();
+        });
+        await events.listen("menu://export-json", () => {
+          exportJson();
+        });
+        await events.listen("menu://restore-latest-backup", () => {
+          restoreLatestBackupJson();
+        });
+      } catch {
+        // Keep the app usable even if native menu events are unavailable.
       }
     }
 
@@ -13768,26 +14087,97 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         }));
     }
 
+    function healthExerciseDelta(plannedValue, actualValue, decimals = 0) {
+      if (!Number.isFinite(plannedValue) || !Number.isFinite(actualValue)) return null;
+      const scale = decimals > 0 ? 10 ** decimals : 1;
+      return Math.round((actualValue - plannedValue) * scale) / scale;
+    }
+
+    function healthExercisePairMetrics(plannedExercise, actualExercise) {
+      const setsDelta = healthExerciseDelta(plannedExercise?.sets, actualExercise?.sets, 0);
+      const repsDelta = healthExerciseDelta(plannedExercise?.reps, actualExercise?.reps, 0);
+      const weightDelta = healthExerciseDelta(plannedExercise?.weight_kg, actualExercise?.weight_kg, 1);
+      const comparableMetricCount = [
+        Number.isFinite(plannedExercise?.sets) && Number.isFinite(actualExercise?.sets),
+        Number.isFinite(plannedExercise?.reps) && Number.isFinite(actualExercise?.reps),
+        Number.isFinite(plannedExercise?.weight_kg) && Number.isFinite(actualExercise?.weight_kg)
+      ].filter(Boolean).length;
+      const setsDrift = Number.isFinite(setsDelta) && setsDelta !== 0;
+      const repsDrift = Number.isFinite(repsDelta) && repsDelta !== 0;
+      const loadDrift = Number.isFinite(weightDelta) && weightDelta !== 0;
+      return {
+        planned: plannedExercise,
+        actual: actualExercise,
+        sets_delta: setsDelta,
+        reps_delta: repsDelta,
+        weight_delta_kg: weightDelta,
+        sets_drift: setsDrift,
+        reps_drift: repsDrift,
+        load_drift: loadDrift,
+        comparable_metric_count: comparableMetricCount,
+        exact_match: comparableMetricCount > 0 && !setsDrift && !repsDrift && !loadDrift
+      };
+    }
+
+    function healthExerciseDriftTokens(pair) {
+      if (!pair?.planned?.name) return [];
+      const tokens = [];
+      if (pair.sets_drift) {
+        const delta = pair.sets_delta > 0 ? `+${pair.sets_delta}` : `${pair.sets_delta}`;
+        tokens.push(`${pair.planned.name} ${delta} set${Math.abs(pair.sets_delta) === 1 ? "" : "s"}`);
+      }
+      if (pair.reps_drift) {
+        const delta = pair.reps_delta > 0 ? `+${pair.reps_delta}` : `${pair.reps_delta}`;
+        tokens.push(`${pair.planned.name} ${delta} rep${Math.abs(pair.reps_delta) === 1 ? "" : "s"}`);
+      }
+      if (pair.load_drift) {
+        const delta = pair.weight_delta_kg > 0 ? `+${pair.weight_delta_kg}` : `${pair.weight_delta_kg}`;
+        tokens.push(`${pair.planned.name} ${delta}kg`);
+      }
+      return tokens;
+    }
+
     function healthTemplateExerciseComparison(template, practiceId, dateKey, profile) {
       const plannedExercises = healthTemplateExercises(template, profile);
       const actualExercises = healthActualExerciseEntries(practiceId, dateKey);
-      const actualNames = new Set(actualExercises.map(item => item.normalized_exercise).filter(Boolean));
-      const matchedExercises = plannedExercises.filter(item => actualNames.has(healthNormalizeExerciseLabel(item.name)));
-      const missingExercises = plannedExercises.filter(item => !actualNames.has(healthNormalizeExerciseLabel(item.name)));
+      const actualPool = actualExercises.map(item => ({ ...item, _matched: false }));
+      const matchedPairs = [];
+      const matchedExercises = [];
+      const missingExercises = [];
+      plannedExercises.forEach(plannedExercise => {
+        const normalized = healthNormalizeExerciseLabel(plannedExercise.name);
+        const matchIndex = actualPool.findIndex(item => !item._matched && item.normalized_exercise === normalized);
+        if (matchIndex === -1) {
+          missingExercises.push(plannedExercise);
+          return;
+        }
+        const actualExercise = actualPool[matchIndex];
+        actualPool[matchIndex]._matched = true;
+        matchedExercises.push(plannedExercise);
+        matchedPairs.push(healthExercisePairMetrics(plannedExercise, actualExercise));
+      });
       const plannedCount = plannedExercises.length;
       const matchedCount = matchedExercises.length;
-      const extraExercises = actualExercises.filter(item =>
-        !plannedExercises.some(planned => healthNormalizeExerciseLabel(planned.name) === item.normalized_exercise)
-      );
+      const extraExercises = actualPool.filter(item => !item._matched);
+      const setDriftCount = matchedPairs.filter(pair => pair.sets_drift).length;
+      const repDriftCount = matchedPairs.filter(pair => pair.reps_drift).length;
+      const loadDriftCount = matchedPairs.filter(pair => pair.load_drift).length;
+      const driftExamples = matchedPairs.flatMap(healthExerciseDriftTokens).slice(0, 4);
       return {
         planned_exercises: plannedExercises,
         actual_exercises: actualExercises,
         matched_exercises: matchedExercises,
+        matched_pairs: matchedPairs,
         missing_exercises: missingExercises,
         extra_exercises: extraExercises,
         planned_count: plannedCount,
         actual_count: actualExercises.length,
         matched_count: matchedCount,
+        exact_match_count: matchedPairs.filter(pair => pair.exact_match).length,
+        set_drift_count: setDriftCount,
+        rep_drift_count: repDriftCount,
+        load_drift_count: loadDriftCount,
+        drift_examples: driftExamples,
         match_pct: plannedCount ? Math.round((matchedCount / plannedCount) * 100) : (actualExercises.length ? 100 : 0)
       };
     }
@@ -13949,9 +14339,14 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
           planned_exercise_total: 0,
           matched_exercise_total: 0,
           actual_exercise_total: 0,
+          exact_match_total: 0,
+          set_drift_count: 0,
+          rep_drift_count: 0,
+          load_drift_count: 0,
           last_match_pct: null,
           missing_examples: new Set(),
           extra_examples: new Set(),
+          drift_examples: new Set(),
           status_series: [],
           last_completed_date: "",
           last_missed_date: ""
@@ -13966,9 +14361,14 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
           row.planned_exercise_total += exerciseComparison.planned_count || 0;
           row.matched_exercise_total += exerciseComparison.matched_count || 0;
           row.actual_exercise_total += exerciseComparison.actual_count || 0;
+          row.exact_match_total += exerciseComparison.exact_match_count || 0;
+          row.set_drift_count += exerciseComparison.set_drift_count || 0;
+          row.rep_drift_count += exerciseComparison.rep_drift_count || 0;
+          row.load_drift_count += exerciseComparison.load_drift_count || 0;
           row.last_match_pct = exerciseComparison.planned_count ? exerciseComparison.match_pct : row.last_match_pct;
           exerciseComparison.missing_exercises?.slice(0, 2).forEach(item => row.missing_examples.add(item.name));
           exerciseComparison.extra_exercises?.slice(0, 2).forEach(item => row.extra_examples.add(item.exercise));
+          exerciseComparison.drift_examples?.slice(0, 3).forEach(item => row.drift_examples.add(item));
           if (instance.status === "done") {
             row.completed_count += 1;
             row.logged_minutes_total += Number(instance.logged_minutes) || 0;
@@ -14002,8 +14402,10 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
           avg_logged_minutes: avgLoggedMinutes,
           avg_minute_delta: avgMinuteDelta,
           exercise_match_pct: exerciseMatchPct,
+          exact_match_pct: row.planned_exercise_total ? Math.round((row.exact_match_total / row.planned_exercise_total) * 100) : null,
           missing_examples: Array.from(row.missing_examples).filter(Boolean).slice(0, 3),
           extra_examples: Array.from(row.extra_examples).filter(Boolean).slice(0, 3),
+          drift_examples: Array.from(row.drift_examples).filter(Boolean).slice(0, 3),
           attention_score: attentionScore
         };
       }).sort((a, b) =>
@@ -14213,8 +14615,12 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
                   ${item.avg_logged_minutes ? `<span>${item.avg_logged_minutes}m avg logged</span>` : ""}
                   ${item.avg_minute_delta != null ? `<span>${item.avg_minute_delta > 0 ? "+" : ""}${item.avg_minute_delta}m vs plan</span>` : ""}
                   ${item.exercise_match_pct != null ? `<span>${item.exercise_match_pct}% exercise match</span>` : ""}
+                  ${item.set_drift_count ? `<span>${item.set_drift_count} set drift${item.set_drift_count === 1 ? "" : "s"}</span>` : ""}
+                  ${item.rep_drift_count ? `<span>${item.rep_drift_count} rep drift${item.rep_drift_count === 1 ? "" : "s"}</span>` : ""}
+                  ${item.load_drift_count ? `<span>${item.load_drift_count} load drift${item.load_drift_count === 1 ? "" : "s"}</span>` : ""}
                   ${item.missed_count ? `<span>${item.missed_count} missed</span>` : ""}
                   ${item.due_today_count ? `<span>${item.due_today_count} due today</span>` : ""}
+                  ${item.drift_examples?.length ? `<span>${escapeHtml(item.drift_examples.join(", "))}</span>` : ""}
                   ${item.missing_examples?.length ? `<span>missing ${escapeHtml(item.missing_examples.join(", "))}</span>` : ""}
                   ${item.extra_examples?.length ? `<span>extra ${escapeHtml(item.extra_examples.join(", "))}</span>` : ""}
                   ${item.last_completed_date ? `<span>last done ${escapeHtml(fmtEntryDate(item.last_completed_date))}</span>` : item.last_missed_date ? `<span>last missed ${escapeHtml(fmtEntryDate(item.last_missed_date))}</span>` : ""}
@@ -14239,6 +14645,9 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
                     ${item.planned_minutes ? `<span>${item.planned_minutes} min target</span>` : ""}
                     ${item.logged_minutes ? `<span>${item.logged_minutes} min logged</span>` : ""}
                     ${item.exercise_comparison?.planned_count ? `<span>${item.exercise_comparison.matched_count}/${item.exercise_comparison.planned_count} exercises matched</span>` : ""}
+                    ${item.exercise_comparison?.set_drift_count ? `<span>${item.exercise_comparison.set_drift_count} set drift${item.exercise_comparison.set_drift_count === 1 ? "" : "s"}</span>` : ""}
+                    ${item.exercise_comparison?.rep_drift_count ? `<span>${item.exercise_comparison.rep_drift_count} rep drift${item.exercise_comparison.rep_drift_count === 1 ? "" : "s"}</span>` : ""}
+                    ${item.exercise_comparison?.load_drift_count ? `<span>${item.exercise_comparison.load_drift_count} load drift${item.exercise_comparison.load_drift_count === 1 ? "" : "s"}</span>` : ""}
                   </div>
                   ${item.exercise_comparison?.planned_exercises?.length ? `
                     <div class="health-template-exercises">
@@ -14246,6 +14655,9 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
                         <span class="health-template-exercise-chip ${item.exercise_comparison.matched_exercises?.some(match => healthNormalizeExerciseLabel(match.name) === healthNormalizeExerciseLabel(exercise.name)) ? "matched" : ""}">${escapeHtml(exercise.name)}</span>
                       `).join("")}
                     </div>
+                  ` : ""}
+                  ${item.exercise_comparison?.drift_examples?.length ? `
+                    <div class="health-card-note" style="margin-top:8px">${escapeHtml(item.exercise_comparison.drift_examples.join(" · "))}</div>
                   ` : ""}
                 </div>
                 <span class="health-status-badge ${escapeHtml(item.status)}">${escapeHtml(item.status_label)}</span>
@@ -16388,6 +16800,159 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       });
     }
 
+    function renderSurfaceSubtabs(containerId, activeValue, visibleTabs, labels, dataAttribute) {
+      const container = document.getElementById(containerId);
+      if (!container) return;
+      container.hidden = visibleTabs.length <= 1;
+      if (visibleTabs.length <= 1) {
+        container.innerHTML = "";
+        return;
+      }
+      const itemClass = containerId === "healthSubtabs" ? "health-subtab" : "wealth-subtab";
+      container.innerHTML = visibleTabs.map(tabKey => `
+        <div class="${itemClass} ${tabKey === activeValue ? "active" : ""}" ${dataAttribute}="${escapeHtml(tabKey)}">${escapeHtml(labels[tabKey] || tabKey)}</div>
+      `).join("");
+    }
+
+    function renderHealthModulePickerButton(snapshot = state) {
+      const btn = document.getElementById("healthOpenModulePickerBtn");
+      if (!btn) return;
+      btn.hidden = !getAvailableModuleOptions("health", snapshot).length;
+    }
+
+    function renderWealthModulePickerButton(snapshot = state) {
+      const btn = document.getElementById("wealthOpenModulePickerBtn");
+      if (!btn) return;
+      btn.hidden = !getAvailableModuleOptions("wealth", snapshot).length;
+    }
+
+    function renderHealthOverviewShell(snapshot = state) {
+      const welcomeEl = document.getElementById("healthOverviewWelcome");
+      const detailsEl = document.getElementById("healthOverviewDetails");
+      if (!welcomeEl || !detailsEl) return;
+      const visibleTabs = getVisibleHealthTabs(snapshot);
+      const addableModules = getAvailableModuleOptions("health", snapshot);
+      const hasOverviewData = snapshotHasHealthOverviewData(snapshot);
+      const exerciseVisible = visibleTabs.includes("exercise");
+      const sleepVisible = visibleTabs.includes("sleep");
+      const vitalsVisible = visibleTabs.includes("vitals");
+      const nutritionVisible = visibleTabs.includes("nutrition");
+      const measurementsVisible = visibleTabs.includes("measurements");
+      const bodyCompVisible = sleepVisible || vitalsVisible || nutritionVisible || measurementsVisible;
+      const hasProfile = healthProfileHasMeaningfulData(snapshot?.health?.profile);
+      const hasTrainingBlock = healthTrainingBlockHasData(snapshot?.health?.training_block);
+
+      welcomeEl.hidden = hasOverviewData;
+      detailsEl.hidden = !hasOverviewData;
+      if (!hasOverviewData) {
+        welcomeEl.innerHTML = `
+          <div class="module-welcome">
+            <h3>Your health dashboard</h3>
+            <p>This starts simple. Exercise appears when you log training or set up a block. Nutrition, sleep, measurements, and vitals stay optional until you need them.</p>
+            <div class="health-card-actions" style="justify-content:center;margin-top:0">
+              <button class="ghost" type="button" data-health-profile-open>Set Up Profile</button>
+              ${addableModules.length ? '<button class="module-add-btn" type="button" data-open-module-picker="health">+ Add tracking module</button>' : ""}
+            </div>
+          </div>
+        `;
+      }
+
+      const visibility = {
+        healthOverviewSummaryCard: exerciseVisible,
+        healthOverviewVitalsCard: vitalsVisible,
+        healthOverviewSleepCard: sleepVisible,
+        healthOverviewRecoveryCard: sleepVisible,
+        healthOverviewBodyCompCard: bodyCompVisible,
+        healthOverviewTrainingBlockCard: exerciseVisible || hasProfile || hasTrainingBlock,
+        healthOverviewPracticesCard: exerciseVisible,
+        healthOverviewRecentCard: exerciseVisible,
+        healthOverviewExerciseInsights: exerciseVisible
+      };
+      Object.entries(visibility).forEach(([id, visible]) => {
+        const el = document.getElementById(id);
+        if (el) el.hidden = !visible;
+      });
+      renderHealthModulePickerButton(snapshot);
+    }
+
+    function renderWealthOverviewShell(snapshot = state) {
+      const welcomeEl = document.getElementById("wealthOverviewWelcome");
+      const detailsEl = document.getElementById("wealthOverviewDetails");
+      if (!welcomeEl || !detailsEl) return;
+      const addableModules = getAvailableModuleOptions("wealth", snapshot);
+      const hasOverviewData = snapshotHasWealthOverviewData(snapshot);
+
+      welcomeEl.hidden = hasOverviewData;
+      detailsEl.hidden = !hasOverviewData;
+      if (!hasOverviewData) {
+        welcomeEl.innerHTML = `
+          <div class="module-welcome">
+            <h3>Your wealth dashboard</h3>
+            <p>Add your first account to start tracking net worth and cash flow. Portfolio and cash flow appear when the data is ready. Property tracking is optional.</p>
+            <div class="health-card-actions" style="justify-content:center;margin-top:0">
+              <button class="ghost" type="button" id="wealthWelcomeAddAccountBtn">+ Add Account</button>
+              ${addableModules.length ? '<button class="module-add-btn" type="button" data-open-module-picker="wealth">+ Add tracking module</button>' : ""}
+            </div>
+          </div>
+        `;
+      }
+
+      const importFolderLabel = String(snapshot?.wealth?.import_folder_label || "").trim();
+      const visibility = {
+        wealthOverviewImportReviewCard: !!snapshot?.wealth?.last_import_review,
+        wealthOverviewCategoryRulesCard: !!(snapshot?.wealth?.category_rules || []).length,
+        wealthOverviewImportTemplatesCard: !!(snapshot?.wealth?.import_templates || []).length,
+        wealthOverviewImportFolderCard: !!importFolderLabel || !!wealthScannedImportFiles.length
+      };
+      Object.entries(visibility).forEach(([id, visible]) => {
+        const el = document.getElementById(id);
+        if (el) el.hidden = !visible;
+      });
+      renderWealthModulePickerButton(snapshot);
+    }
+
+    function renderPortfolioPropertySectionVisibility(snapshot = state) {
+      const el = document.getElementById("portfolioPropertiesSection");
+      if (!el) return;
+      const modules = normalizeModulesState(snapshot?.modules, snapshot);
+      el.hidden = !(modules.wealth.properties || snapshotHasWealthPropertyData(snapshot));
+    }
+
+    function openModulePicker(moduleType) {
+      const options = getAvailableModuleOptions(moduleType, state);
+      const title = moduleType === "health" ? "Add Health Module" : "Add Wealth Module";
+      const emptyText = moduleType === "health"
+        ? "All available Health modules are already visible."
+        : "No additional Wealth modules are available right now.";
+      const html = options.length
+        ? `<div class="module-picker-list">
+            ${options.map(option => `
+              <div class="module-picker-item">
+                <div>
+                  <h4>${escapeHtml(option.title)}</h4>
+                  <p>${escapeHtml(option.description)}</p>
+                </div>
+                <button class="primary" type="button" data-module-enable="${escapeHtml(moduleType)}:${escapeHtml(option.key)}">Add</button>
+              </div>
+            `).join("")}
+          </div>`
+        : `<div class="wealth-empty-state" style="padding:8px 0 0;text-align:left">${escapeHtml(emptyText)}</div>`;
+      showWealthModal(title, html);
+      requestAnimationFrame(() => {
+        document.querySelectorAll("[data-module-enable]").forEach(btn => {
+          btn.addEventListener("click", () => {
+            const [type, key] = String(btn.getAttribute("data-module-enable") || "").split(":");
+            if (!type || !key) return;
+            enableModule(type, key);
+            if (type === "health") activeHealthTab = key;
+            if (type === "wealth" && key === "properties") activeWealthTab = "portfolio";
+            closeWealthModal();
+            render();
+          });
+        });
+      });
+    }
+
     function renderHealthOverview() {
       const summaryEl = document.getElementById("healthOverviewSummary");
       const practicesEl = document.getElementById("healthPracticeSummaryList");
@@ -17789,20 +18354,24 @@ Data caveat`;
     }
 
     function renderHealth() {
-      activeHealthTab = normalizeHealthTab(activeHealthTab);
-      document.querySelectorAll(".health-subtab").forEach(tab => {
-        tab.classList.toggle("active", (tab.dataset.healthTab || "overview") === activeHealthTab);
-      });
+      ensureModulesStateShape();
+      const visibleTabs = getVisibleHealthTabs(state);
+      const normalizedTab = normalizeHealthTab(activeHealthTab);
+      activeHealthTab = visibleTabs.includes(normalizedTab) ? normalizedTab : "overview";
+      renderSurfaceSubtabs("healthSubtabs", activeHealthTab, visibleTabs, HEALTH_TAB_LABELS, 'data-health-tab');
       document.querySelectorAll(".health-panel").forEach(panel => {
-        panel.classList.toggle("active", panel.id === `health-panel-${activeHealthTab}`);
+        const panelTab = panel.id.replace("health-panel-", "");
+        panel.hidden = !visibleTabs.includes(panelTab);
+        panel.classList.toggle("active", panelTab === activeHealthTab);
       });
+      renderHealthOverviewShell(state);
       renderHealthOverview();
-      renderHealthAssessment();
-      renderHealthExercise();
-      renderHealthNutrition();
-      renderHealthSleep();
-      renderHealthMeasurements();
-      renderHealthVitals();
+      if (visibleTabs.includes("assessment")) renderHealthAssessment();
+      if (visibleTabs.includes("exercise")) renderHealthExercise();
+      if (visibleTabs.includes("nutrition")) renderHealthNutrition();
+      if (visibleTabs.includes("sleep")) renderHealthSleep();
+      if (visibleTabs.includes("measurements")) renderHealthMeasurements();
+      if (visibleTabs.includes("vitals")) renderHealthVitals();
     }
 
     // ═══════════ WEALTH MODULE ═══════════
@@ -22260,9 +22829,19 @@ Data caveat`;
 
     // ── Wealth Rendering ──
     function renderWealth() {
+      ensureModulesStateShape();
+      const visibleTabs = getVisibleWealthTabs(state);
+      activeWealthTab = normalizeWealthTab(activeWealthTab, state);
+      renderSurfaceSubtabs("wealthSubtabs", activeWealthTab, visibleTabs, WEALTH_TAB_LABELS, 'data-wealth-tab');
+      document.querySelectorAll(".wealth-panel").forEach(panel => {
+        const panelTab = panel.id.replace("wealth-panel-", "");
+        panel.hidden = !visibleTabs.includes(panelTab);
+        panel.classList.toggle("active", panelTab === activeWealthTab);
+      });
+      renderWealthOverviewShell(state);
       renderWealthOverview();
-      renderWealthPortfolio();
-      renderWealthCashflow();
+      if (visibleTabs.includes("portfolio")) renderWealthPortfolio();
+      if (visibleTabs.includes("cashflow")) renderWealthCashflow();
       renderWealthCoach();
     }
 
@@ -22797,6 +23376,7 @@ Data caveat`;
       if (staleEl) staleEl.textContent = String(snapshot.missingOrStaleCount);
       renderWealthPortfolioSnapshotTrend();
       renderWealthPortfolioPerformance(snapshot);
+      renderPortfolioPropertySectionVisibility(state);
       renderWealthPropertyOverview();
       document.querySelectorAll("#portfolioDisplayMode [data-portfolio-display]").forEach(btn => {
         btn.classList.toggle("active", btn.getAttribute("data-portfolio-display") === (displayPercentages ? "percent" : "amount"));
@@ -24957,13 +25537,20 @@ Data caveat`;
     });
 
     // Health tab events
-    document.querySelectorAll(".health-subtab").forEach(tab => {
-      tab.addEventListener("click", () => {
-        activeHealthTab = normalizeHealthTab(tab.dataset.healthTab || "overview");
-        renderHealth();
-      });
+    document.getElementById("healthSubtabs")?.addEventListener("click", e => {
+      const tab = e.target.closest("[data-health-tab]");
+      if (!tab) return;
+      activeHealthTab = normalizeHealthTab(tab.dataset.healthTab || "overview");
+      renderHealth();
     });
+    document.getElementById("healthOpenModulePickerBtn")?.addEventListener("click", () => openModulePicker("health"));
     document.getElementById("tab-health")?.addEventListener("click", e => {
+      const modulePickerBtn = e.target.closest("[data-open-module-picker]");
+      if (modulePickerBtn) {
+        const moduleType = String(modulePickerBtn.getAttribute("data-open-module-picker") || "health");
+        openModulePicker(moduleType);
+        return;
+      }
       const healthOpenTabBtn = e.target.closest("[data-health-open-tab]");
       if (healthOpenTabBtn) {
         activeHealthTab = normalizeHealthTab(String(healthOpenTabBtn.getAttribute("data-health-open-tab") || "overview"));
@@ -25148,14 +25735,13 @@ Data caveat`;
     });
 
     // Wealth tab events
-    document.querySelectorAll(".wealth-subtab").forEach(tab => {
-      tab.addEventListener("click", () => {
-        activeWealthTab = tab.dataset.wealthTab || "overview";
-        document.querySelectorAll(".wealth-subtab").forEach(t => t.classList.toggle("active", t === tab));
-        document.querySelectorAll(".wealth-panel").forEach(p => p.classList.toggle("active", p.id === `wealth-panel-${activeWealthTab}`));
-        renderWealth();
-      });
+    document.getElementById("wealthSubtabs")?.addEventListener("click", e => {
+      const tab = e.target.closest("[data-wealth-tab]");
+      if (!tab) return;
+      activeWealthTab = normalizeWealthTab(tab.dataset.wealthTab || "overview", state);
+      renderWealth();
     });
+    document.getElementById("wealthOpenModulePickerBtn")?.addEventListener("click", () => openModulePicker("wealth"));
     document.getElementById("wealthAddAccountBtn")?.addEventListener("click", () => showAddAccountModal());
     document.getElementById("wealthImportSabBtn")?.addEventListener("click", () => {
       const input = document.getElementById("wealthImportCsvInput");
@@ -25261,6 +25847,17 @@ Data caveat`;
 
     // Wealth list delegation
     document.getElementById("tab-wealth")?.addEventListener("click", e => {
+      const modulePickerBtn = e.target.closest("[data-open-module-picker]");
+      if (modulePickerBtn) {
+        const moduleType = String(modulePickerBtn.getAttribute("data-open-module-picker") || "wealth");
+        openModulePicker(moduleType);
+        return;
+      }
+      const welcomeAddAccountBtn = e.target.closest("#wealthWelcomeAddAccountBtn");
+      if (welcomeAddAccountBtn) {
+        showAddAccountModal();
+        return;
+      }
       const displayBtn = e.target.closest("[data-portfolio-display]");
       if (displayBtn) {
         const mode = displayBtn.getAttribute("data-portfolio-display");
@@ -25342,8 +25939,6 @@ Data caveat`;
       if (jumpMonthBtn) {
         wealthCashflowAnchorMonth = clampWealthMonthKey(jumpMonthBtn.getAttribute("data-import-jump-month") || "");
         activeWealthTab = "cashflow";
-        document.querySelectorAll(".wealth-subtab").forEach(t => t.classList.toggle("active", t.dataset.wealthTab === "cashflow"));
-        document.querySelectorAll(".wealth-panel").forEach(p => p.classList.toggle("active", p.id === "wealth-panel-cashflow"));
         renderWealth();
         return;
       }
@@ -25848,6 +26443,7 @@ Data caveat`;
 
     (async () => {
       const nativeDetected = await detectNativeStore();
+      await setupNativeFileMenuHandlers();
       if (nativeDetected) {
         document.getElementById("loadFileBtn").textContent = "Import JSON File";
         document.getElementById("saveFileBtn").textContent = "Export JSON Backup";

@@ -8,7 +8,8 @@ use chrono::Local;
 use rusqlite::{params, types::Value, Connection};
 use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
-use tauri::{AppHandle, Manager};
+use tauri::menu::{Menu, MenuItem, PredefinedMenuItem, Submenu};
+use tauri::{AppHandle, Emitter, Manager};
 
 const APP_STATE_FILENAME: &str = "PPP_DATA.json";
 const LEDGER_DB_FILENAME: &str = "PPP_LEDGER.sqlite3";
@@ -130,6 +131,24 @@ fn ensure_daily_backup(app: &AppHandle, content: &str) -> Result<(), String> {
     }
 
     fs::write(backup_path, content).map_err(|e| e.to_string())
+}
+
+fn latest_backup_file_path(app: &AppHandle) -> Result<Option<PathBuf>, String> {
+    let backup_dir = backup_dir_path(app)?;
+    let entries = fs::read_dir(&backup_dir).map_err(|e| e.to_string())?;
+    let mut candidates = entries
+        .filter_map(|entry| entry.ok().map(|e| e.path()))
+        .filter(|path| {
+            path.extension().and_then(|ext| ext.to_str()) == Some("json")
+                && path
+                    .file_name()
+                    .and_then(|name| name.to_str())
+                    .map(|name| name.ends_with("_PPP_DATA_snapshot.json"))
+                    .unwrap_or(false)
+        })
+        .collect::<Vec<_>>();
+    candidates.sort();
+    Ok(candidates.pop())
 }
 
 #[tauri::command]
@@ -302,6 +321,16 @@ fn ledger_path(app: AppHandle) -> Result<String, String> {
 fn backup_path(app: AppHandle) -> Result<String, String> {
     let path = backup_dir_path(&app)?;
     Ok(path.to_string_lossy().to_string())
+}
+
+#[tauri::command]
+fn load_latest_backup(app: AppHandle) -> Result<Option<String>, String> {
+    let Some(path) = latest_backup_file_path(&app)? else {
+        return Ok(None);
+    };
+    fs::read_to_string(path)
+        .map(Some)
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -501,6 +530,65 @@ async fn ollama_probe() -> Result<OllamaProbeResponse, String> {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .menu(|handle| {
+            let import_json = MenuItem::with_id(handle, "file_import_json", "Import JSON…", true, Some("CmdOrCtrl+O"))?;
+            let export_json = MenuItem::with_id(handle, "file_export_json", "Export JSON Backup", true, Some("CmdOrCtrl+S"))?;
+            let restore_backup = MenuItem::with_id(handle, "file_restore_latest_backup", "Restore Latest Backup", true, Some("CmdOrCtrl+Shift+R"))?;
+            let menu = Menu::with_items(
+                handle,
+                &[
+                    &Submenu::with_items(
+                        handle,
+                        "File",
+                        true,
+                        &[
+                            &import_json,
+                            &export_json,
+                            &restore_backup,
+                            &PredefinedMenuItem::separator(handle)?,
+                            &PredefinedMenuItem::close_window(handle, None)?,
+                        ],
+                    )?,
+                    &Submenu::with_items(
+                        handle,
+                        "Edit",
+                        true,
+                        &[
+                            &PredefinedMenuItem::undo(handle, None)?,
+                            &PredefinedMenuItem::redo(handle, None)?,
+                            &PredefinedMenuItem::separator(handle)?,
+                            &PredefinedMenuItem::cut(handle, None)?,
+                            &PredefinedMenuItem::copy(handle, None)?,
+                            &PredefinedMenuItem::paste(handle, None)?,
+                            &PredefinedMenuItem::select_all(handle, None)?,
+                        ],
+                    )?,
+                    &Submenu::with_items(
+                        handle,
+                        "Window",
+                        true,
+                        &[
+                            &PredefinedMenuItem::minimize(handle, None)?,
+                            &PredefinedMenuItem::maximize(handle, None)?,
+                            &PredefinedMenuItem::fullscreen(handle, None)?,
+                        ],
+                    )?,
+                ],
+            )?;
+            Ok(menu)
+        })
+        .on_menu_event(|app, event| match event.id().0.as_str() {
+            "file_import_json" => {
+                let _ = app.emit("menu://import-json", ());
+            }
+            "file_export_json" => {
+                let _ = app.emit("menu://export-json", ());
+            }
+            "file_restore_latest_backup" => {
+                let _ = app.emit("menu://restore-latest-backup", ());
+            }
+            _ => {}
+        })
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
             load_app_state,
@@ -510,6 +598,7 @@ pub fn run() {
             app_state_path,
             ledger_path,
             backup_path,
+            load_latest_backup,
             play_native_chime,
             http_get_text,
             ollama_probe
