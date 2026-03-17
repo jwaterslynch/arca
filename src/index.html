@@ -3036,11 +3036,26 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           </div>
         </div>
 
+        <div class="health-section-grid">
+          <div class="review-card">
+            <h4 style="margin-bottom:12px">Meal Source Patterns</h4>
+            <div id="healthNutritionSourcePatterns" class="health-list">
+              <div class="health-empty-state">Log meal sources to see current patterns and how they differ from assessment baseline.</div>
+            </div>
+          </div>
+          <div class="review-card">
+            <h4 style="margin-bottom:12px">Refeed Cadence</h4>
+            <div id="healthNutritionRefeedCadence" class="health-list">
+              <div class="health-empty-state">Add a refeed target and a few nutrition logs to see cadence and intake differences.</div>
+            </div>
+          </div>
+        </div>
+
         <div class="review-card">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:12px;flex-wrap:wrap">
             <div>
               <h4 style="margin-bottom:0">Nutrition Coach</h4>
-              <div class="health-card-note" style="margin-top:4px">Ask about target adherence, food patterns, bodyweight trend, or how current intake compares with your assessment baseline.</div>
+              <div class="health-card-note" style="margin-top:4px">Ask about target adherence, meal-source drift, refeed cadence, bodyweight trend, or how current intake compares with your assessment baseline.</div>
             </div>
             <button id="healthNutritionProviderPill" class="ai-provider-pill tiny ai-switch-trigger" data-open-ai-switch="health-nutrition" type="button" title="Switch AI"></button>
           </div>
@@ -14650,6 +14665,92 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       return valid.reduce((sum, value) => sum + value, 0) / valid.length;
     }
 
+    function titleCaseWords(value) {
+      return String(value || "").replace(/\b([a-z])/g, match => match.toUpperCase());
+    }
+
+    function normalizeHealthMealSourceToken(rawToken) {
+      const token = String(rawToken || "").trim().toLowerCase();
+      if (!token) return "";
+      if (token.includes("meal prep")) return "Meal prep";
+      if (token.includes("takeaway") || token.includes("take away") || token.includes("delivery") || token.includes("uber eats") || token.includes("doordash") || token.includes("menulog")) return "Takeaway / delivery";
+      if (token.includes("restaurant") || token.includes("dine") || token.includes("eat out")) return "Restaurant";
+      if (token.includes("cafe") || token.includes("coffee")) return "Cafe";
+      if (token.includes("home")) return "Home";
+      if (token.includes("work") || token.includes("office") || token.includes("campus")) return "Work / campus";
+      if (token.includes("family") || token.includes("friends")) return "Social";
+      return titleCaseWords(token);
+    }
+
+    function parseHealthMealSources(note) {
+      const raw = String(note || "").trim();
+      if (!raw) return [];
+      const segments = raw.split(/[\n,;|/]+/).map(part => part.trim()).filter(Boolean);
+      const normalized = (segments.length ? segments : [raw])
+        .map(normalizeHealthMealSourceToken)
+        .filter(Boolean);
+      return Array.from(new Set(normalized));
+    }
+
+    function healthMealSourceStats(logs) {
+      const counts = new Map();
+      let daysWithSources = 0;
+      (logs || []).forEach(log => {
+        const labels = parseHealthMealSources(log?.meal_source_note);
+        if (labels.length) daysWithSources += 1;
+        labels.forEach(label => counts.set(label, (counts.get(label) || 0) + 1));
+      });
+      const totalMentions = Array.from(counts.values()).reduce((sum, value) => sum + value, 0);
+      return {
+        daysWithSources,
+        totalMentions,
+        rows: Array.from(counts.entries())
+          .map(([label, count]) => ({
+            label,
+            count,
+            share: totalMentions ? count / totalMentions : 0
+          }))
+          .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label))
+      };
+    }
+
+    function buildHealthMealSourceDrift(currentStats, baselineStats) {
+      const keys = new Set([
+        ...(currentStats?.rows || []).map(row => row.label),
+        ...(baselineStats?.rows || []).map(row => row.label)
+      ]);
+      const currentByLabel = Object.fromEntries((currentStats?.rows || []).map(row => [row.label, row]));
+      const baselineByLabel = Object.fromEntries((baselineStats?.rows || []).map(row => [row.label, row]));
+      return Array.from(keys).map(label => {
+        const current = currentByLabel[label] || { count: 0, share: 0 };
+        const baseline = baselineByLabel[label] || { count: 0, share: 0 };
+        return {
+          label,
+          current_count: current.count,
+          baseline_count: baseline.count,
+          current_share_pct: Math.round((current.share || 0) * 100),
+          baseline_share_pct: Math.round((baseline.share || 0) * 100),
+          delta_share_pct: Math.round(((current.share || 0) - (baseline.share || 0)) * 100)
+        };
+      }).sort((a, b) =>
+        Math.abs(b.delta_share_pct) - Math.abs(a.delta_share_pct) ||
+        b.current_count - a.current_count ||
+        a.label.localeCompare(b.label)
+      );
+    }
+
+    function averageGapDays(dateKeys) {
+      const sorted = Array.from(new Set((dateKeys || []).filter(Boolean))).sort();
+      if (sorted.length < 2) return null;
+      let total = 0;
+      for (let i = 1; i < sorted.length; i += 1) {
+        const prev = parseLocalDateKey(sorted[i - 1]);
+        const curr = parseLocalDateKey(sorted[i]);
+        total += Math.round((curr - prev) / 86400000);
+      }
+      return total / (sorted.length - 1);
+    }
+
     function healthSleepClockToMinutes(value) {
       const raw = String(value || "").trim();
       if (!/^\d{2}:\d{2}$/.test(raw)) return null;
@@ -14728,9 +14829,11 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       const activeTarget = getActiveHealthNutritionTarget(anchorDate, "daily");
       const activeRefeedTarget = getActiveHealthNutritionTarget(anchorDate, "refeed");
       const recent7Keys = getRecentDateKeys(7, anchorDate);
+      const recent30Keys = getRecentDateKeys(30, anchorDate);
       const previous7Keys = getRecentDateKeys(7, shiftLocalDateKey(anchorDate, -7));
       const recent14Keys = getRecentDateKeys(14, anchorDate);
       const recent7 = getHealthNutritionLogsForDateKeys(recent7Keys);
+      const recent30 = getHealthNutritionLogsForDateKeys(recent30Keys);
       const previous7 = getHealthNutritionLogsForDateKeys(previous7Keys);
       const recent14 = getHealthNutritionLogsForDateKeys(recent14Keys);
       const assessmentRange = getHealthAssessmentRange();
@@ -14760,6 +14863,23 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       const assessmentAvgProtein = averageOf(assessmentLogs.map(log => log.protein_g));
       const assessmentAvgWeight = averageOf(assessmentLogs.map(log => log.weight_kg));
       const assessmentAvgSteps = averageOf(assessmentLogs.map(log => log.steps));
+
+      const currentMealSourceStats = healthMealSourceStats(recent7);
+      const recent30MealSourceStats = healthMealSourceStats(recent30);
+      const baselineMealSourceStats = healthMealSourceStats(assessmentLogs);
+      const mealSourceDrift = buildHealthMealSourceDrift(currentMealSourceStats, baselineMealSourceStats);
+
+      const refeedTargets = getHealthNutritionTargets().filter(target => target.kind === "refeed");
+      const recent30RefeedLogs = recent30.filter(log => !!getActiveHealthNutritionTarget(log.date, "refeed"));
+      const recent30RegularLogs = recent30.filter(log => !getActiveHealthNutritionTarget(log.date, "refeed"));
+      const refeedDates = recent30RefeedLogs.map(log => log.date).sort();
+      const lastRefeedLog = logs.find(log => !!getActiveHealthNutritionTarget(log.date, "refeed")) || null;
+      const nextScheduledRefeed = refeedTargets
+        .filter(target => target.start_date && target.start_date > anchorDate)
+        .sort((a, b) => a.start_date.localeCompare(b.start_date))[0] || null;
+      const refeedCadenceDays = averageGapDays(refeedDates);
+      const refeedAverageKcal = averageOf(recent30RefeedLogs.map(log => log.kcal));
+      const regularAverageKcal = averageOf(recent30RegularLogs.map(log => log.kcal));
 
       const targetDeltas = activeTarget ? {
         kcal: Number.isFinite(avgKcal7) ? avgKcal7 - activeTarget.kcal : null,
@@ -14801,6 +14921,17 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         assessmentAvgProtein,
         assessmentAvgWeight,
         assessmentAvgSteps,
+        currentMealSourceStats,
+        recent30MealSourceStats,
+        baselineMealSourceStats,
+        mealSourceDrift,
+        recent30RefeedLogs,
+        recent30RegularLogs,
+        lastRefeedLog,
+        nextScheduledRefeed,
+        refeedCadenceDays,
+        refeedAverageKcal,
+        regularAverageKcal,
         targetDeltas,
         baselineDeltas,
         loggingCoverage7: `${recent7.length} / 7 days`
@@ -16020,8 +16151,10 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       const complianceEl = document.getElementById("healthNutritionCompliance");
       const signalsEl = document.getElementById("healthNutritionSignals");
       const assessmentEl = document.getElementById("healthNutritionAssessmentComparison");
+      const sourcePatternsEl = document.getElementById("healthNutritionSourcePatterns");
+      const refeedEl = document.getElementById("healthNutritionRefeedCadence");
       const logsEl = document.getElementById("healthNutritionLogsList");
-      if (!summaryEl || !targetsEl || !trendEl || !complianceEl || !signalsEl || !assessmentEl || !logsEl) return;
+      if (!summaryEl || !targetsEl || !trendEl || !complianceEl || !signalsEl || !assessmentEl || !sourcePatternsEl || !refeedEl || !logsEl) return;
 
       const snapshot = buildHealthNutritionSnapshot();
       const targets = getHealthNutritionTargets();
@@ -16200,6 +16333,76 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         assessmentEl.innerHTML = '<div class="health-empty-state">Set up an assessment week and log 7 baseline days to compare current intake against your starting point.</div>';
       }
 
+      sourcePatternsEl.innerHTML = snapshot.currentMealSourceStats.rows.length
+        ? `
+          <div class="health-row">
+            <div class="health-row-main">
+              <div class="health-row-title">Recent 7-day source mix</div>
+              <div class="health-row-meta">${snapshot.currentMealSourceStats.daysWithSources} / ${snapshot.recent7.length || 7} logged days include meal-source notes</div>
+            </div>
+            <div class="health-row-value">${snapshot.currentMealSourceStats.totalMentions} mentions</div>
+          </div>
+          ${snapshot.mealSourceDrift.slice(0, 6).map(row => `
+            <div class="health-row">
+              <div class="health-row-main">
+                <div class="health-row-title">${escapeHtml(row.label)}</div>
+                <div class="health-row-meta">
+                  Current ${row.current_count} (${row.current_share_pct}%)
+                  ${snapshot.assessmentLogs.length ? ` · Baseline ${row.baseline_count} (${row.baseline_share_pct}%)` : ""}
+                </div>
+              </div>
+              <div class="health-row-value">${snapshot.assessmentLogs.length ? `${row.delta_share_pct > 0 ? "+" : ""}${row.delta_share_pct} pts` : `${row.current_share_pct}%`}</div>
+            </div>
+          `).join("")}
+        `
+        : '<div class="health-empty-state">Add meal-source notes like “Home, takeaway, cafe” to surface pattern drift here.</div>';
+
+      const refeedRows = [
+        {
+          label: "Active refeed target",
+          meta: snapshot.activeRefeedTarget
+            ? `${Math.round(snapshot.activeRefeedTarget.kcal)} kcal · P ${Math.round(snapshot.activeRefeedTarget.protein_g)} / C ${Math.round(snapshot.activeRefeedTarget.carbs_g)} / F ${Math.round(snapshot.activeRefeedTarget.fats_g)}`
+            : "No active refeed target right now",
+          value: snapshot.activeRefeedTarget ? "Active" : "None"
+        },
+        {
+          label: "Refeed logs (30d)",
+          meta: "Logged days that fell inside a refeed target window",
+          value: `${snapshot.recent30RefeedLogs.length}`
+        },
+        {
+          label: "Cadence",
+          meta: snapshot.recent30RefeedLogs.length >= 2 ? "Average spacing between recent refeed logs" : "Need at least two recent refeed logs",
+          value: Number.isFinite(snapshot.refeedCadenceDays) ? `${snapshot.refeedCadenceDays.toFixed(1)} days` : "—"
+        },
+        {
+          label: "Refeed vs regular intake",
+          meta: "Average kcal on recent refeed days versus regular logged days",
+          value: Number.isFinite(snapshot.refeedAverageKcal) && Number.isFinite(snapshot.regularAverageKcal)
+            ? `${Math.round(snapshot.refeedAverageKcal - snapshot.regularAverageKcal)} kcal`
+            : "—"
+        },
+        {
+          label: "Last refeed log",
+          meta: snapshot.lastRefeedLog ? `Logged ${fmtEntryDate(snapshot.lastRefeedLog.date)}` : "No refeed log recorded yet",
+          value: snapshot.lastRefeedLog ? `${Math.round(snapshot.lastRefeedLog.kcal)} kcal` : "—"
+        },
+        {
+          label: "Next scheduled refeed",
+          meta: snapshot.nextScheduledRefeed ? `Starts ${fmtEntryDate(snapshot.nextScheduledRefeed.start_date)}` : "No future refeed window scheduled",
+          value: snapshot.nextScheduledRefeed ? `${Math.round(snapshot.nextScheduledRefeed.kcal)} kcal` : "—"
+        }
+      ];
+      refeedEl.innerHTML = refeedRows.map(row => `
+        <div class="health-row">
+          <div class="health-row-main">
+            <div class="health-row-title">${escapeHtml(row.label)}</div>
+            <div class="health-row-meta">${escapeHtml(row.meta)}</div>
+          </div>
+          <div class="health-row-value">${escapeHtml(String(row.value))}</div>
+        </div>
+      `).join("");
+
       logsEl.innerHTML = logs.length
         ? logs.slice(0, 12).map(log => `
           <div class="health-row">
@@ -16262,6 +16465,42 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
           previous_avg_kcal_7d: snapshot.previousAvgKcal7,
           previous_avg_protein_g_7d: snapshot.previousAvgProtein7,
           weight_trend_14d_kg: snapshot.weightTrend14
+        },
+        meal_source_patterns: {
+          recent_7d: {
+            days_with_sources: snapshot.currentMealSourceStats.daysWithSources,
+            total_mentions: snapshot.currentMealSourceStats.totalMentions,
+            top_sources: snapshot.currentMealSourceStats.rows.slice(0, 6)
+          },
+          recent_30d: {
+            days_with_sources: snapshot.recent30MealSourceStats.daysWithSources,
+            total_mentions: snapshot.recent30MealSourceStats.totalMentions,
+            top_sources: snapshot.recent30MealSourceStats.rows.slice(0, 6)
+          },
+          baseline_drift: snapshot.mealSourceDrift.slice(0, 6)
+        },
+        refeed_cadence: {
+          active_target: snapshot.activeRefeedTarget ? {
+            kcal: snapshot.activeRefeedTarget.kcal,
+            protein_g: snapshot.activeRefeedTarget.protein_g,
+            carbs_g: snapshot.activeRefeedTarget.carbs_g,
+            fats_g: snapshot.activeRefeedTarget.fats_g,
+            start_date: snapshot.activeRefeedTarget.start_date,
+            end_date: snapshot.activeRefeedTarget.end_date || ""
+          } : null,
+          recent_refeed_logs_30d: snapshot.recent30RefeedLogs.length,
+          cadence_days: snapshot.refeedCadenceDays,
+          avg_refeed_kcal_30d: snapshot.refeedAverageKcal,
+          avg_regular_kcal_30d: snapshot.regularAverageKcal,
+          last_refeed_log: snapshot.lastRefeedLog ? {
+            date: snapshot.lastRefeedLog.date,
+            kcal: snapshot.lastRefeedLog.kcal
+          } : null,
+          next_scheduled_refeed: snapshot.nextScheduledRefeed ? {
+            start_date: snapshot.nextScheduledRefeed.start_date,
+            end_date: snapshot.nextScheduledRefeed.end_date || "",
+            kcal: snapshot.nextScheduledRefeed.kcal
+          } : null
         },
         target_deltas: snapshot.targetDeltas,
         assessment_baseline: snapshot.assessmentLogs.length ? {
@@ -16327,7 +16566,7 @@ Rules:
 - This is not medical advice. Do not diagnose or overclaim.
 - Compare current intake against active targets when available.
 - Compare current intake against assessment-week baseline when available.
-- If the user asks what to do next, focus on the clearest sources of drift: calories, protein, logging gaps, repeated meal-source patterns, or obvious mismatch with weight trend.
+- If the user asks what to do next, focus on the clearest sources of drift: calories, protein, logging gaps, repeated meal-source patterns, refeed cadence, or obvious mismatch with weight trend.
 - If the user asks a product question, answer directly and concretely using current app behavior.
 
 Prefer this response shape:
@@ -16367,7 +16606,7 @@ Data caveat`;
         const targetHint = snapshot.activeTarget ? ` Current target: ${Math.round(snapshot.activeTarget.kcal)} kcal and ${Math.round(snapshot.activeTarget.protein_g)}g protein.` : "";
         const baselineHint = snapshot.assessmentLogs.length ? " Assessment baseline is available for comparison." : "";
         messagesEl.innerHTML = `${consentNotice}<div class="health-empty-state" style="text-align:left">
-          Ask about calories vs target, protein consistency, bodyweight trend, meal-source patterns, or how current intake compares with baseline.${escapeHtml(targetHint + baselineHint)}
+          Ask about calories vs target, protein consistency, meal-source patterns, refeed cadence, bodyweight trend, or how current intake compares with baseline.${escapeHtml(targetHint + baselineHint)}
         </div>`;
         return;
       }
