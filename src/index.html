@@ -4638,7 +4638,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         high_minor: normalizeMinorAmount(estimate.high_minor, estimate.high),
         confidence: ["low", "medium", "high"].includes(estimate.confidence) ? estimate.confidence : "low",
         freshness_label: String(estimate.freshness_label || "").trim(),
-        method: ["manual_estimate", "manual_baseline"].includes(estimate.method) ? estimate.method : "manual_baseline",
+        method: ["manual_estimate", "manual_baseline", "comparable_blend"].includes(estimate.method) ? estimate.method : "manual_baseline",
         breakdown: estimate.breakdown && typeof estimate.breakdown === "object" ? { ...estimate.breakdown } : null,
         estimated_at: estimate.estimated_at || new Date().toISOString()
       };
@@ -17473,6 +17473,75 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
     function buildWealthPropertyEstimate(property) {
       const manualEstimateMinor = Number(property?.manual_estimate_minor || 0);
       const purchasePriceMinor = Number(property?.purchase_price_minor || 0);
+      const comparables = Array.isArray(property?.comparables)
+        ? property.comparables.filter(comparable => Number(comparable?.sale_price_minor || 0) > 0)
+        : [];
+      if (comparables.length) {
+        const today = new Date(`${todayISO()}T00:00:00`);
+        let comparableWeightTotal = 0;
+        let comparableWeightedMinor = 0;
+        const comparableBreakdown = comparables.map(comparable => {
+          const distanceKm = Number.isFinite(Number(comparable.distance_km)) ? Math.max(0, Number(comparable.distance_km)) : null;
+          let recencyWeight = 1;
+          if (comparable.sale_date) {
+            const saleDate = new Date(`${comparable.sale_date}T00:00:00`);
+            const monthsAgo = Math.max(0, ((today - saleDate) / (1000 * 60 * 60 * 24 * 30.4375)));
+            recencyWeight = Math.max(0.35, 1 - (monthsAgo * 0.05));
+          }
+          const distanceWeight = distanceKm == null ? 0.85 : 1 / (1 + distanceKm);
+          const weight = recencyWeight * distanceWeight;
+          comparableWeightTotal += weight;
+          comparableWeightedMinor += Number(comparable.sale_price_minor || 0) * weight;
+          return {
+            label: comparable.label,
+            sale_date: comparable.sale_date,
+            sale_price_minor: comparable.sale_price_minor,
+            distance_km: comparable.distance_km,
+            weight: Number(weight.toFixed(4))
+          };
+        });
+        const comparableEstimateMinor = comparableWeightTotal > 0 ? Math.round(comparableWeightedMinor / comparableWeightTotal) : 0;
+        const signals = [];
+        if (purchasePriceMinor > 0) signals.push({ label: "purchase_price", value_minor: purchasePriceMinor, weight: 0.3 });
+        signals.push({ label: "comparables", value_minor: comparableEstimateMinor, weight: 0.5 });
+        if (manualEstimateMinor > 0) signals.push({ label: "manual_estimate", value_minor: manualEstimateMinor, weight: 0.2 });
+        const totalSignalWeight = signals.reduce((sum, signal) => sum + signal.weight, 0) || 1;
+        const estimateMinor = Math.round(signals.reduce((sum, signal) => sum + (signal.value_minor * (signal.weight / totalSignalWeight)), 0));
+        const compValues = comparables.map(comparable => Number(comparable.sale_price_minor || 0)).filter(value => value > 0);
+        const avgDeviationPct = compValues.length
+          ? compValues.reduce((sum, value) => sum + Math.abs(value - comparableEstimateMinor), 0) / compValues.length / Math.max(1, comparableEstimateMinor)
+          : 0.08;
+        const bandPct = Math.max(0.05, Math.min(0.15, avgDeviationPct || 0.08));
+        const latestComparableDate = comparables
+          .map(comparable => comparable.sale_date)
+          .filter(Boolean)
+          .sort()
+          .slice(-1)[0] || "";
+        return normalizeWealthPropertyEstimateRecord({
+          property_id: property.id,
+          estimated_value_minor: estimateMinor,
+          low_minor: Math.round(estimateMinor * (1 - bandPct)),
+          high_minor: Math.round(estimateMinor * (1 + bandPct)),
+          confidence: comparables.length >= 3 && (manualEstimateMinor > 0 || purchasePriceMinor > 0)
+            ? "high"
+            : "medium",
+          freshness_label: latestComparableDate
+            ? `Comparables through ${formatDateLabel(latestComparableDate)}`
+            : "Comparable sales",
+          method: "comparable_blend",
+          estimated_at: property.updated_at || new Date().toISOString(),
+          breakdown: {
+            source: "comparable_blend",
+            comparable_estimate_minor: comparableEstimateMinor,
+            signals: signals.map(signal => ({
+              label: signal.label,
+              value_minor: signal.value_minor,
+              weight: Number((signal.weight / totalSignalWeight).toFixed(3))
+            })),
+            comparables: comparableBreakdown
+          }
+        });
+      }
       if (manualEstimateMinor > 0) {
         return normalizeWealthPropertyEstimateRecord({
           property_id: property.id,
@@ -17542,6 +17611,10 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       return getWealthPropertyViews().reduce((sum, property) => sum + Math.max(0, Number(property.estimated_value_minor || 0)), 0);
     }
 
+    function getWealthComparableById(property, comparableId) {
+      return (property?.comparables || []).find(comparable => comparable.id === comparableId) || null;
+    }
+
     function saveWealthProperty(payload, propertyId = "") {
       const wealth = ensureWealthStateShape();
       const existing = propertyId ? getWealthPropertyById(propertyId) : null;
@@ -17575,6 +17648,51 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         delete wealth.property_estimates[propertyId];
       }
       saveState("wealth_delete_property");
+      renderWealth();
+    }
+
+    function saveWealthComparable(propertyId, payload, comparableId = "") {
+      const wealth = ensureWealthStateShape();
+      const property = getWealthPropertyById(propertyId);
+      if (!property) return null;
+      const existing = comparableId ? getWealthComparableById(property, comparableId) : null;
+      const comparable = normalizeWealthComparableRecord({
+        ...(existing || {}),
+        id: existing?.id || uid(),
+        label: payload.label,
+        sale_date: payload.sale_date,
+        sale_price: payload.sale_price,
+        distance_km: payload.distance_km,
+        note: payload.note
+      });
+      wealth.properties = (wealth.properties || []).map(item => {
+        if (item.id !== propertyId) return item;
+        const nextComparables = (item.comparables || []).filter(entry => entry.id !== comparable.id);
+        nextComparables.push(comparable);
+        return normalizeWealthPropertyRecord({
+          ...item,
+          comparables: nextComparables,
+          updated_at: new Date().toISOString()
+        });
+      });
+      rebuildWealthPropertyEstimates();
+      saveState(existing ? "wealth_edit_comparable" : "wealth_add_comparable");
+      renderWealth();
+      return comparable;
+    }
+
+    function deleteWealthComparable(propertyId, comparableId) {
+      const wealth = ensureWealthStateShape();
+      wealth.properties = (wealth.properties || []).map(property => {
+        if (property.id !== propertyId) return property;
+        return normalizeWealthPropertyRecord({
+          ...property,
+          comparables: (property.comparables || []).filter(comparable => comparable.id !== comparableId),
+          updated_at: new Date().toISOString()
+        });
+      });
+      rebuildWealthPropertyEstimates();
+      saveState("wealth_delete_comparable");
       renderWealth();
     }
 
@@ -17787,6 +17905,172 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       });
     }
 
+    function showWealthComparableModal(propertyId, comparableId = "") {
+      const property = getWealthPropertyById(propertyId);
+      if (!property) return;
+      const existing = comparableId ? getWealthComparableById(property, comparableId) : null;
+      const html = `<div class="wealth-form-grid">
+        <div>
+          <label>Property</label>
+          <div style="font-weight:700">${escapeHtml(property.label)}</div>
+        </div>
+        <div>
+          <label>Comparable Label</label>
+          <input id="wealthComparableLabelInput" placeholder="e.g. 12 Example St" value="${escapeHtml(existing?.label || "")}" />
+        </div>
+        <div class="wealth-form-row">
+          <div>
+            <label>Sale Date</label>
+            <input id="wealthComparableDateInput" type="date" value="${escapeHtml(existing?.sale_date || "")}" />
+          </div>
+          <div>
+            <label>Sale Price</label>
+            <input id="wealthComparablePriceInput" type="number" step="0.01" placeholder="0.00" value="${existing?.sale_price_minor ? escapeHtml(((existing.sale_price_minor || 0) / 100).toFixed(2)) : ""}" />
+          </div>
+        </div>
+        <div class="wealth-form-row">
+          <div>
+            <label>Distance (km)</label>
+            <input id="wealthComparableDistanceInput" type="number" step="0.1" placeholder="Optional" value="${existing?.distance_km ?? ""}" />
+          </div>
+          <div></div>
+        </div>
+        <div>
+          <label>Note</label>
+          <textarea id="wealthComparableNoteInput" rows="3" placeholder="Optional note...">${escapeHtml(existing?.note || "")}</textarea>
+        </div>
+        <div class="controls" style="justify-content:space-between">
+          <button class="ghost" id="wealthComparableBackBtn" type="button">Back</button>
+          <button class="primary" id="wealthComparableSubmitBtn" type="button">${existing ? "Save Comparable" : "Add Comparable"}</button>
+        </div>
+      </div>`;
+      showWealthModal(existing ? "Edit Comparable" : "Add Comparable", html);
+      requestAnimationFrame(() => {
+        document.getElementById("wealthComparableLabelInput")?.focus();
+        document.getElementById("wealthComparableBackBtn")?.addEventListener("click", () => showWealthPropertyDetailModal(propertyId));
+        document.getElementById("wealthComparableSubmitBtn")?.addEventListener("click", () => {
+          const label = String(document.getElementById("wealthComparableLabelInput")?.value || "").trim();
+          const salePrice = String(document.getElementById("wealthComparablePriceInput")?.value || "").trim();
+          if (!label || !salePrice) return;
+          saveWealthComparable(propertyId, {
+            label,
+            sale_date: document.getElementById("wealthComparableDateInput")?.value || "",
+            sale_price: salePrice,
+            distance_km: document.getElementById("wealthComparableDistanceInput")?.value || "",
+            note: document.getElementById("wealthComparableNoteInput")?.value || ""
+          }, existing?.id || "");
+          showWealthPropertyDetailModal(propertyId);
+        });
+      });
+    }
+
+    function showWealthPropertyDetailModal(propertyId) {
+      const property = getWealthPropertyViews().find(item => item.id === propertyId);
+      if (!property) return;
+      const estimate = property.estimate || buildWealthPropertyEstimate(property);
+      const signalRows = Array.isArray(estimate.breakdown?.signals) ? estimate.breakdown.signals : [];
+      const comparables = (property.comparables || []).slice().sort((a, b) => (b.sale_date || "").localeCompare(a.sale_date || ""));
+      const estimateBand = Number(estimate.low_minor || 0) > 0 && Number(estimate.high_minor || 0) > 0
+        ? `${formatCurrency(estimate.low_minor)} – ${formatCurrency(estimate.high_minor)}`
+        : "No range yet";
+      const meta = [
+        WEALTH_PROPERTY_TYPES[property.property_type] || property.property_type,
+        Number.isFinite(property.bedrooms) ? `${property.bedrooms} bed` : "",
+        Number.isFinite(property.land_sqm) ? `${Math.round(property.land_sqm)} sqm` : "",
+        property.region_code || ""
+      ].filter(Boolean).join(" · ");
+      const bodyHtml = `<div class="wealth-form-grid">
+        <div class="wealth-form-row">
+          <div>
+            <label>Property</label>
+            <div style="font-weight:700">${escapeHtml(property.label)}</div>
+            <div class="tiny" style="margin-top:4px;color:var(--text2)">${escapeHtml(meta || "Manual property record")}</div>
+            ${property.address ? `<div class="tiny" style="margin-top:4px;color:var(--text2)">${escapeHtml(property.address)}</div>` : ""}
+          </div>
+          <div>
+            <label>Estimate</label>
+            <div style="font-weight:700">${property.estimated_value_minor > 0 ? formatCurrency(property.estimated_value_minor) : "Not set"}</div>
+            <div class="tiny" style="margin-top:4px;color:var(--text2)">${escapeHtml((estimate.confidence || "low").toUpperCase())} confidence · ${escapeHtml(estimate.freshness_label || "Baseline only")}</div>
+          </div>
+        </div>
+        <div class="wealth-form-row">
+          <div>
+            <label>Purchase Price</label>
+            <div style="font-weight:700">${property.purchase_price_minor > 0 ? formatCurrency(property.purchase_price_minor) : "Not set"}</div>
+            <div class="tiny" style="margin-top:4px;color:var(--text2)">${property.purchase_date ? `Bought ${escapeHtml(formatDateLabel(property.purchase_date))}` : "No purchase date"}</div>
+          </div>
+          <div>
+            <label>Range</label>
+            <div style="font-weight:700">${estimateBand}</div>
+            <div class="tiny" style="margin-top:4px;color:var(--text2)">${property.delta_minor == null ? "No purchase comparison yet" : `${property.delta_minor >= 0 ? "+" : "-"}${formatCurrency(Math.abs(property.delta_minor))} vs purchase`}</div>
+          </div>
+        </div>
+        <div>
+          <label>Estimator Signals</label>
+          <div class="wealth-list" style="display:flex;flex-direction:column;gap:8px">
+            ${signalRows.length ? signalRows.map(signal => `
+              <div class="wealth-account-row">
+                <div>
+                  <div class="wealth-account-name">${escapeHtml(String(signal.label || "").replaceAll("_", " "))}</div>
+                  <div class="wealth-rule-meta">
+                    <span>${formatCurrency(signal.value_minor || 0)}</span>
+                    <span>${Math.round(Number(signal.weight || 0) * 100)}% weight</span>
+                  </div>
+                </div>
+              </div>
+            `).join("") : '<div class="wealth-empty-state" style="text-align:left">Using a simple manual baseline only.</div>'}
+          </div>
+        </div>
+        <div>
+          <div class="controls" style="justify-content:space-between;align-items:center">
+            <label style="margin:0">Comparable Sales</label>
+            <div style="display:flex;gap:8px">
+              <button class="ghost" id="wealthPropertyEditBtn" type="button">Edit Property</button>
+              <button class="primary" id="wealthPropertyAddComparableBtn" type="button">Add Comparable</button>
+            </div>
+          </div>
+          <div class="wealth-list" style="display:flex;flex-direction:column;gap:8px;margin-top:8px">
+            ${comparables.length ? comparables.map(comparable => `
+              <div class="wealth-account-row">
+                <div>
+                  <div class="wealth-account-name">${escapeHtml(comparable.label || "Comparable sale")}</div>
+                  <div class="wealth-rule-meta">
+                    <span>${comparable.sale_date ? escapeHtml(formatDateLabel(comparable.sale_date)) : "No sale date"}</span>
+                    <span>${formatCurrency(comparable.sale_price_minor || 0)}</span>
+                    ${Number.isFinite(Number(comparable.distance_km)) ? `<span>${Number(comparable.distance_km).toFixed(1)} km</span>` : ""}
+                  </div>
+                  ${comparable.note ? `<div class="tiny" style="margin-top:4px;color:var(--text2)">${escapeHtml(comparable.note)}</div>` : ""}
+                </div>
+                <div style="display:flex;align-items:center;gap:8px">
+                  <button class="wealth-inline-btn" type="button" data-edit-property-comparable="${escapeHtml(comparable.id)}">Edit</button>
+                  <button class="wealth-inline-btn warn" type="button" data-delete-property-comparable="${escapeHtml(comparable.id)}">Delete</button>
+                </div>
+              </div>
+            `).join("") : '<div class="wealth-empty-state" style="text-align:left">No comparable sales yet. Add one to strengthen the estimate.</div>'}
+          </div>
+        </div>
+      </div>`;
+      showWealthModal("Property Detail", bodyHtml);
+      requestAnimationFrame(() => {
+        document.getElementById("wealthPropertyEditBtn")?.addEventListener("click", () => showWealthPropertyModal(propertyId));
+        document.getElementById("wealthPropertyAddComparableBtn")?.addEventListener("click", () => showWealthComparableModal(propertyId));
+        document.querySelectorAll("[data-edit-property-comparable]").forEach(btn => {
+          btn.addEventListener("click", () => {
+            const comparableId = String(btn.getAttribute("data-edit-property-comparable") || "").trim();
+            if (comparableId) showWealthComparableModal(propertyId, comparableId);
+          });
+        });
+        document.querySelectorAll("[data-delete-property-comparable]").forEach(btn => {
+          btn.addEventListener("click", () => {
+            const comparableId = String(btn.getAttribute("data-delete-property-comparable") || "").trim();
+            if (!comparableId || !confirm("Delete this comparable sale?")) return;
+            deleteWealthComparable(propertyId, comparableId);
+            showWealthPropertyDetailModal(propertyId);
+          });
+        });
+      });
+    }
+
     // ── Wealth Rendering ──
     function renderWealth() {
       renderWealthOverview();
@@ -17957,10 +18241,12 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
               ${purchaseMinor > 0 ? `<span>Purchase ${formatCurrency(purchaseMinor)}</span>` : ""}
               <span>${escapeHtml(deltaText)}</span>
               <span>${escapeHtml((property.estimate.confidence || "low").toUpperCase())} confidence</span>
+              ${property.comparables_count ? `<span>${property.comparables_count} comparable${property.comparables_count === 1 ? "" : "s"}</span>` : ""}
               ${property.estimate.freshness_label ? `<span>${escapeHtml(property.estimate.freshness_label)}</span>` : ""}
             </div>
           </div>
           <div style="display:flex;align-items:center;gap:8px">
+            <button class="wealth-inline-btn" type="button" data-open-property-detail="${escapeHtml(property.id)}">Details</button>
             <button class="wealth-inline-btn" type="button" data-edit-property="${escapeHtml(property.id)}">Edit</button>
             <button class="wealth-inline-btn warn" type="button" data-delete-property="${escapeHtml(property.id)}">Delete</button>
           </div>
@@ -20546,6 +20832,12 @@ Data caveat`;
       if (delHolding) {
         const id = delHolding.dataset.deleteHolding;
         if (id && confirm("Delete this holding?")) deleteWealthHolding(id);
+        return;
+      }
+      const openPropertyDetailBtn = e.target.closest("[data-open-property-detail]");
+      if (openPropertyDetailBtn) {
+        const id = String(openPropertyDetailBtn.getAttribute("data-open-property-detail") || "").trim();
+        if (id) showWealthPropertyDetailModal(id);
         return;
       }
       const editPropertyBtn = e.target.closest("[data-edit-property]");
