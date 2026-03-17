@@ -3006,6 +3006,42 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           </div>
         </div>
 
+        <div class="health-section-grid">
+          <div class="review-card">
+            <h4 style="margin-bottom:12px">Nutrition Signals</h4>
+            <div id="healthNutritionSignals" class="health-list">
+              <div class="health-empty-state">Log a few days to surface adherence and recovery-support signals.</div>
+            </div>
+          </div>
+          <div class="review-card">
+            <h4 style="margin-bottom:12px">Assessment Baseline</h4>
+            <div id="healthNutritionAssessmentComparison" class="health-list">
+              <div class="health-empty-state">Set up an assessment week to compare current intake against baseline.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="review-card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:12px;flex-wrap:wrap">
+            <div>
+              <h4 style="margin-bottom:0">Nutrition Coach</h4>
+              <div class="health-card-note" style="margin-top:4px">Ask about target adherence, food patterns, bodyweight trend, or how current intake compares with your assessment baseline.</div>
+            </div>
+            <button id="healthNutritionProviderPill" class="ai-provider-pill tiny ai-switch-trigger" data-open-ai-switch="health-nutrition" type="button" title="Switch AI"></button>
+          </div>
+          <div id="healthNutritionCoachMessages" class="health-list">
+            <div class="health-empty-state">Ask about calories vs target, protein consistency, meal-source patterns, or whether the current weight trend looks aligned.</div>
+          </div>
+          <div id="healthNutritionCoachActions" class="wealth-coach-actions" style="margin-top:12px">
+            <span id="healthNutritionCoachStatus" class="tiny"></span>
+            <button id="healthNutritionCoachClearBtn" class="ghost" type="button" style="font-size:.75rem">Clear</button>
+          </div>
+          <div class="wealth-coach-input-row" style="margin-top:8px">
+            <textarea id="healthNutritionCoachInput" rows="1" placeholder="Ask Nutrition Coach..."></textarea>
+            <button id="healthNutritionCoachSendBtn" class="wealth-coach-send" type="button">Ask</button>
+          </div>
+        </div>
+
         <div class="review-card">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:12px;flex-wrap:wrap">
             <h4 style="margin-bottom:0">Recent Nutrition Logs</h4>
@@ -10846,13 +10882,15 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
 
     function focusHealthAiInput() {
       aiPanelForcedVisible = true;
-      activeHealthTab = activeHealthTab === "sleep" ? "sleep" : "exercise";
+      if (!["sleep", "nutrition", "exercise"].includes(activeHealthTab)) activeHealthTab = "exercise";
       setActiveTab("health");
       render();
       requestAnimationFrame(() => {
         const input = activeHealthTab === "sleep"
           ? document.getElementById("healthSleepCoachInput")
-          : document.querySelector("[data-health-coach-practice]");
+          : activeHealthTab === "nutrition"
+            ? document.getElementById("healthNutritionCoachInput")
+            : document.querySelector("[data-health-coach-practice]");
         if (focusAiInputElement(input)) return;
         focusPlanAssistantAiInput();
       });
@@ -14361,6 +14399,17 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       return getHealthNutritionLogs().filter(log => keys.has(log.date));
     }
 
+    function shiftLocalDateKey(dateKey, deltaDays = 0) {
+      const date = parseLocalDateKey(dateKey || todayISO());
+      date.setDate(date.getDate() + Number(deltaDays || 0));
+      return localDateKey(date);
+    }
+
+    function getHealthNutritionLogsForDateKeys(dateKeys = []) {
+      const keySet = new Set(Array.isArray(dateKeys) ? dateKeys.filter(Boolean) : []);
+      return getHealthNutritionLogs().filter(log => keySet.has(log.date));
+    }
+
     function averageOf(values) {
       const valid = values.filter(value => Number.isFinite(value));
       if (!valid.length) return null;
@@ -14437,6 +14486,90 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         sessions: doneSummary.sessions,
         minutes: doneSummary.minutes,
         avgEnergy
+      };
+    }
+
+    function buildHealthNutritionSnapshot(anchorDate = todayISO()) {
+      const logs = getHealthNutritionLogs();
+      const activeTarget = getActiveHealthNutritionTarget(anchorDate, "daily");
+      const activeRefeedTarget = getActiveHealthNutritionTarget(anchorDate, "refeed");
+      const recent7Keys = getRecentDateKeys(7, anchorDate);
+      const previous7Keys = getRecentDateKeys(7, shiftLocalDateKey(anchorDate, -7));
+      const recent14Keys = getRecentDateKeys(14, anchorDate);
+      const recent7 = getHealthNutritionLogsForDateKeys(recent7Keys);
+      const previous7 = getHealthNutritionLogsForDateKeys(previous7Keys);
+      const recent14 = getHealthNutritionLogsForDateKeys(recent14Keys);
+      const assessmentRange = getHealthAssessmentRange();
+      const assessmentLogs = getHealthAssessmentLogs();
+      const latest = logs[0] || null;
+      const latestWeightLog = logs.find(log => Number.isFinite(log.weight_kg)) || null;
+      const earliestRecent14WeightLog = recent14
+        .filter(log => Number.isFinite(log.weight_kg))
+        .slice()
+        .sort((a, b) => a.date.localeCompare(b.date))[0] || null;
+
+      const avgKcal7 = averageOf(recent7.map(log => log.kcal));
+      const avgProtein7 = averageOf(recent7.map(log => log.protein_g));
+      const avgCarbs7 = averageOf(recent7.map(log => log.carbs_g));
+      const avgFats7 = averageOf(recent7.map(log => log.fats_g));
+      const avgWeight7 = averageOf(recent7.map(log => log.weight_kg));
+      const avgSteps7 = averageOf(recent7.map(log => log.steps));
+      const avgTraining7 = averageOf(recent7.map(log => log.training_minutes));
+
+      const previousAvgKcal7 = averageOf(previous7.map(log => log.kcal));
+      const previousAvgProtein7 = averageOf(previous7.map(log => log.protein_g));
+      const weightTrend14 = latestWeightLog && earliestRecent14WeightLog
+        ? latestWeightLog.weight_kg - earliestRecent14WeightLog.weight_kg
+        : null;
+
+      const assessmentAvgKcal = averageOf(assessmentLogs.map(log => log.kcal));
+      const assessmentAvgProtein = averageOf(assessmentLogs.map(log => log.protein_g));
+      const assessmentAvgWeight = averageOf(assessmentLogs.map(log => log.weight_kg));
+      const assessmentAvgSteps = averageOf(assessmentLogs.map(log => log.steps));
+
+      const targetDeltas = activeTarget ? {
+        kcal: Number.isFinite(avgKcal7) ? avgKcal7 - activeTarget.kcal : null,
+        protein_g: Number.isFinite(avgProtein7) ? avgProtein7 - activeTarget.protein_g : null,
+        carbs_g: Number.isFinite(avgCarbs7) ? avgCarbs7 - activeTarget.carbs_g : null,
+        fats_g: Number.isFinite(avgFats7) ? avgFats7 - activeTarget.fats_g : null
+      } : null;
+
+      const baselineDeltas = assessmentLogs.length ? {
+        kcal: Number.isFinite(avgKcal7) && Number.isFinite(assessmentAvgKcal) ? avgKcal7 - assessmentAvgKcal : null,
+        protein_g: Number.isFinite(avgProtein7) && Number.isFinite(assessmentAvgProtein) ? avgProtein7 - assessmentAvgProtein : null,
+        weight_kg: Number.isFinite(avgWeight7) && Number.isFinite(assessmentAvgWeight) ? avgWeight7 - assessmentAvgWeight : null,
+        steps: Number.isFinite(avgSteps7) && Number.isFinite(assessmentAvgSteps) ? avgSteps7 - assessmentAvgSteps : null
+      } : null;
+
+      return {
+        anchorDate,
+        logs,
+        latest,
+        latestWeightLog,
+        activeTarget,
+        activeRefeedTarget,
+        recent7,
+        previous7,
+        recent14,
+        assessmentRange,
+        assessmentLogs,
+        avgKcal7,
+        avgProtein7,
+        avgCarbs7,
+        avgFats7,
+        avgWeight7,
+        avgSteps7,
+        avgTraining7,
+        previousAvgKcal7,
+        previousAvgProtein7,
+        weightTrend14,
+        assessmentAvgKcal,
+        assessmentAvgProtein,
+        assessmentAvgWeight,
+        assessmentAvgSteps,
+        targetDeltas,
+        baselineDeltas,
+        loggingCoverage7: `${recent7.length} / 7 days`
       };
     }
 
@@ -15651,22 +15784,21 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       const targetsEl = document.getElementById("healthNutritionTargetsList");
       const trendEl = document.getElementById("healthNutritionWeightTrend");
       const complianceEl = document.getElementById("healthNutritionCompliance");
+      const signalsEl = document.getElementById("healthNutritionSignals");
+      const assessmentEl = document.getElementById("healthNutritionAssessmentComparison");
       const logsEl = document.getElementById("healthNutritionLogsList");
-      if (!summaryEl || !targetsEl || !trendEl || !complianceEl || !logsEl) return;
+      if (!summaryEl || !targetsEl || !trendEl || !complianceEl || !signalsEl || !assessmentEl || !logsEl) return;
 
+      const snapshot = buildHealthNutritionSnapshot();
       const targets = getHealthNutritionTargets();
-      const logs = getHealthNutritionLogs();
-      const activeTarget = getActiveHealthNutritionTarget();
-      const recent7 = healthRecentNutritionLogs(7).slice().reverse();
-      const avgKcal = averageOf(recent7.map(log => log.kcal));
-      const avgProtein = averageOf(recent7.map(log => log.protein_g));
-      const avgWeight = averageOf(recent7.map(log => log.weight_kg));
+      const logs = snapshot.logs;
+      const activeTarget = snapshot.activeTarget;
 
       summaryEl.innerHTML = `
         <div class="health-mini-stat"><div class="health-mini-stat-label">Daily Target</div><div class="health-mini-stat-value">${activeTarget ? `${Math.round(activeTarget.kcal)} kcal` : "—"}</div></div>
-        <div class="health-mini-stat"><div class="health-mini-stat-label">7D Avg Kcal</div><div class="health-mini-stat-value">${Number.isFinite(avgKcal) ? `${Math.round(avgKcal)} kcal` : "—"}</div></div>
-        <div class="health-mini-stat"><div class="health-mini-stat-label">7D Avg Protein</div><div class="health-mini-stat-value">${Number.isFinite(avgProtein) ? `${Math.round(avgProtein)}g` : "—"}</div></div>
-        <div class="health-mini-stat"><div class="health-mini-stat-label">Avg Weight</div><div class="health-mini-stat-value">${Number.isFinite(avgWeight) ? `${avgWeight.toFixed(1)}kg` : "—"}</div></div>
+        <div class="health-mini-stat"><div class="health-mini-stat-label">7D Avg Kcal</div><div class="health-mini-stat-value">${Number.isFinite(snapshot.avgKcal7) ? `${Math.round(snapshot.avgKcal7)} kcal` : "—"}</div></div>
+        <div class="health-mini-stat"><div class="health-mini-stat-label">7D Avg Protein</div><div class="health-mini-stat-value">${Number.isFinite(snapshot.avgProtein7) ? `${Math.round(snapshot.avgProtein7)}g` : "—"}</div></div>
+        <div class="health-mini-stat"><div class="health-mini-stat-label">Avg Weight</div><div class="health-mini-stat-value">${Number.isFinite(snapshot.avgWeight7) ? `${snapshot.avgWeight7.toFixed(1)}kg` : "—"}</div></div>
       `;
 
       targetsEl.innerHTML = targets.length
@@ -15694,27 +15826,25 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         .reverse()
         .map(log => Number(log.weight_kg))
         .filter(value => Number.isFinite(value));
-      const latestWeightLog = logs.find(log => Number.isFinite(log.weight_kg)) || null;
+      const latestWeightLog = snapshot.latestWeightLog;
       trendEl.innerHTML = weightSeries.length
         ? `
           <div class="health-block-note">
             <strong style="display:block;color:var(--text);margin-bottom:8px">${latestWeightLog ? `${latestWeightLog.weight_kg.toFixed(1)}kg latest` : "Bodyweight trend"}</strong>
             <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
               <span>${renderSparkline(weightSeries, 180, 28)}</span>
-              <span class="tiny">${weightSeries.length} logged weights · ${Number.isFinite(avgWeight) ? `${avgWeight.toFixed(1)}kg avg` : "No average yet"}</span>
+              <span class="tiny">${weightSeries.length} logged weights · ${Number.isFinite(snapshot.avgWeight7) ? `${snapshot.avgWeight7.toFixed(1)}kg avg` : "No average yet"}${Number.isFinite(snapshot.weightTrend14) ? ` · ${snapshot.weightTrend14 > 0 ? "+" : ""}${snapshot.weightTrend14.toFixed(1)}kg over 14d` : ""}</span>
             </div>
           </div>
         `
         : '<div class="health-empty-state">No bodyweight entries yet.</div>';
 
-      if (activeTarget && recent7.length) {
-        const avgCarbs = averageOf(recent7.map(log => log.carbs_g));
-        const avgFats = averageOf(recent7.map(log => log.fats_g));
+      if (activeTarget && snapshot.recent7.length) {
         const rows = [
-          { label: "Protein", actual: avgProtein, target: activeTarget.protein_g, suffix: "g" },
-          { label: "Carbs", actual: avgCarbs, target: activeTarget.carbs_g, suffix: "g" },
-          { label: "Fats", actual: avgFats, target: activeTarget.fats_g, suffix: "g" },
-          { label: "Calories", actual: avgKcal, target: activeTarget.kcal, suffix: " kcal" }
+          { label: "Protein", actual: snapshot.avgProtein7, target: activeTarget.protein_g, suffix: "g" },
+          { label: "Carbs", actual: snapshot.avgCarbs7, target: activeTarget.carbs_g, suffix: "g" },
+          { label: "Fats", actual: snapshot.avgFats7, target: activeTarget.fats_g, suffix: "g" },
+          { label: "Calories", actual: snapshot.avgKcal7, target: activeTarget.kcal, suffix: " kcal" }
         ];
         complianceEl.innerHTML = rows.map(row => {
           const delta = Number.isFinite(row.actual) ? Math.round(row.actual - row.target) : null;
@@ -15730,6 +15860,110 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         }).join("");
       } else {
         complianceEl.innerHTML = '<div class="health-empty-state">Set a target and log a few days to compare target vs actual.</div>';
+      }
+
+      const signalRows = [
+        {
+          label: "Coverage",
+          meta: "Recent logging consistency",
+          value: snapshot.loggingCoverage7
+        },
+        {
+          label: "Calories vs target",
+          meta: activeTarget ? "7-day average against active target" : "Set a daily target to compare current intake",
+          value: activeTarget && snapshot.targetDeltas
+            ? `${snapshot.targetDeltas.kcal > 0 ? "+" : ""}${Math.round(snapshot.targetDeltas.kcal || 0)} kcal`
+            : "—"
+        },
+        {
+          label: "Protein vs target",
+          meta: activeTarget ? "7-day average against active target" : "Set a daily target to compare current intake",
+          value: activeTarget && snapshot.targetDeltas
+            ? `${snapshot.targetDeltas.protein_g > 0 ? "+" : ""}${Math.round(snapshot.targetDeltas.protein_g || 0)}g`
+            : "—"
+        },
+        {
+          label: "Weight trend",
+          meta: "Latest weight vs earliest logged weight in the recent 14-day window",
+          value: Number.isFinite(snapshot.weightTrend14)
+            ? `${snapshot.weightTrend14 > 0 ? "+" : ""}${snapshot.weightTrend14.toFixed(1)}kg`
+            : "—"
+        },
+        {
+          label: "Average steps",
+          meta: "Recent 7-day average",
+          value: Number.isFinite(snapshot.avgSteps7)
+            ? `${Math.round(snapshot.avgSteps7).toLocaleString()}`
+            : "—"
+        },
+        {
+          label: "Average training",
+          meta: "Recent 7-day average",
+          value: Number.isFinite(snapshot.avgTraining7)
+            ? `${Math.round(snapshot.avgTraining7)} min`
+            : "—"
+        }
+      ];
+      signalsEl.innerHTML = signalRows.map(row => `
+        <div class="health-row">
+          <div class="health-row-main">
+            <div class="health-row-title">${escapeHtml(row.label)}</div>
+            <div class="health-row-meta">${escapeHtml(row.meta)}</div>
+          </div>
+          <div class="health-row-value">${escapeHtml(String(row.value))}</div>
+        </div>
+      `).join("");
+
+      if (snapshot.assessmentLogs.length) {
+        const rows = [
+          {
+            label: "Calories",
+            baseline: snapshot.assessmentAvgKcal,
+            current: snapshot.avgKcal7,
+            suffix: " kcal"
+          },
+          {
+            label: "Protein",
+            baseline: snapshot.assessmentAvgProtein,
+            current: snapshot.avgProtein7,
+            suffix: "g"
+          },
+          {
+            label: "Weight",
+            baseline: snapshot.assessmentAvgWeight,
+            current: snapshot.avgWeight7,
+            suffix: "kg",
+            decimals: 1
+          },
+          {
+            label: "Steps",
+            baseline: snapshot.assessmentAvgSteps,
+            current: snapshot.avgSteps7,
+            suffix: "",
+            formatter: value => Math.round(value).toLocaleString()
+          }
+        ];
+        assessmentEl.innerHTML = rows.map(row => {
+          const baseline = row.baseline;
+          const current = row.current;
+          const formatter = row.formatter || (value => Number.isFinite(row.decimals) ? value.toFixed(row.decimals) : Math.round(value).toString());
+          const delta = Number.isFinite(baseline) && Number.isFinite(current) ? current - baseline : null;
+          return `
+            <div class="health-row">
+              <div class="health-row-main">
+                <div class="health-row-title">${row.label}</div>
+                <div class="health-row-meta">
+                  Assessment ${Number.isFinite(baseline) ? `${formatter(baseline)}${row.suffix}` : "—"} ·
+                  Current 7D ${Number.isFinite(current) ? `${formatter(current)}${row.suffix}` : "—"}
+                  ${snapshot.assessmentRange ? ` · ${escapeHtml(fmtEntryDate(snapshot.assessmentRange.start_date))} → ${escapeHtml(fmtEntryDate(snapshot.assessmentRange.end_date))}` : ""}
+                </div>
+              </div>
+              <div class="health-row-value">${delta == null ? "—" : `${delta > 0 ? "+" : ""}${formatter(delta)}${row.suffix}`}</div>
+            </div>
+          `;
+        }).join("");
+      } else {
+        assessmentEl.innerHTML = '<div class="health-empty-state">Set up an assessment week and log 7 baseline days to compare current intake against your starting point.</div>';
       }
 
       logsEl.innerHTML = logs.length
@@ -15757,6 +15991,196 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
           </div>
         `).join("")
         : '<div class="health-empty-state">No nutrition logs yet.</div>';
+
+      renderHealthNutritionCoach(snapshot);
+    }
+
+    function buildHealthNutritionCoachSnapshot() {
+      const snapshot = buildHealthNutritionSnapshot();
+      return {
+        current_surface: "Health > Nutrition",
+        active_target: snapshot.activeTarget ? {
+          kind: snapshot.activeTarget.kind,
+          start_date: snapshot.activeTarget.start_date,
+          end_date: snapshot.activeTarget.end_date || "",
+          protein_g: snapshot.activeTarget.protein_g,
+          carbs_g: snapshot.activeTarget.carbs_g,
+          fats_g: snapshot.activeTarget.fats_g,
+          kcal: snapshot.activeTarget.kcal
+        } : null,
+        active_refeed_target: snapshot.activeRefeedTarget ? {
+          start_date: snapshot.activeRefeedTarget.start_date,
+          end_date: snapshot.activeRefeedTarget.end_date || "",
+          protein_g: snapshot.activeRefeedTarget.protein_g,
+          carbs_g: snapshot.activeRefeedTarget.carbs_g,
+          fats_g: snapshot.activeRefeedTarget.fats_g,
+          kcal: snapshot.activeRefeedTarget.kcal
+        } : null,
+        recent_summary: {
+          coverage_7d: snapshot.loggingCoverage7,
+          avg_kcal_7d: snapshot.avgKcal7,
+          avg_protein_g_7d: snapshot.avgProtein7,
+          avg_carbs_g_7d: snapshot.avgCarbs7,
+          avg_fats_g_7d: snapshot.avgFats7,
+          avg_weight_kg_7d: snapshot.avgWeight7,
+          avg_steps_7d: snapshot.avgSteps7,
+          avg_training_minutes_7d: snapshot.avgTraining7,
+          previous_avg_kcal_7d: snapshot.previousAvgKcal7,
+          previous_avg_protein_g_7d: snapshot.previousAvgProtein7,
+          weight_trend_14d_kg: snapshot.weightTrend14
+        },
+        target_deltas: snapshot.targetDeltas,
+        assessment_baseline: snapshot.assessmentLogs.length ? {
+          range: snapshot.assessmentRange ? {
+            start_date: snapshot.assessmentRange.start_date,
+            end_date: snapshot.assessmentRange.end_date
+          } : null,
+          avg_kcal: snapshot.assessmentAvgKcal,
+          avg_protein_g: snapshot.assessmentAvgProtein,
+          avg_weight_kg: snapshot.assessmentAvgWeight,
+          avg_steps: snapshot.assessmentAvgSteps,
+          current_vs_baseline: snapshot.baselineDeltas
+        } : null,
+        recent_logs: snapshot.logs.slice(0, 10).map(log => ({
+          date: log.date,
+          protein_g: log.protein_g,
+          carbs_g: log.carbs_g,
+          fats_g: log.fats_g,
+          kcal: log.kcal,
+          weight_kg: log.weight_kg,
+          steps: log.steps,
+          training_minutes: log.training_minutes,
+          cardio_kcal: log.cardio_kcal,
+          cardio_type: log.cardio_type,
+          food_diary: log.food_diary,
+          meal_source_note: log.meal_source_note,
+          note: log.note
+        }))
+      };
+    }
+
+    function healthNutritionActiveProvider() {
+      return aiResolveConfig(aiPrefs).provider || aiPrefs.provider || "openai";
+    }
+
+    function healthNutritionCoachNeedsCloudConsent(provider = healthNutritionActiveProvider()) {
+      return !!aiPrefs.enabled && !!provider && provider !== "ollama" && !healthNutritionCoachCloudConsent[provider];
+    }
+
+    function allowHealthNutritionCoachCloudConsent(provider = healthNutritionActiveProvider()) {
+      if (!provider || provider === "ollama") return;
+      healthNutritionCoachCloudConsent[provider] = true;
+      renderHealthNutritionCoach();
+    }
+
+    function openAiSettingsFromHealthNutritionCoach() {
+      openAiSettingsPanel();
+      renderHealthNutritionCoach();
+    }
+
+    function healthNutritionCoachSystemPrompt() {
+      return `You are the PPP Flow Nutrition Coach.
+
+Your job is to help the user interpret nutrition, bodyweight, activity, and assessment-baseline data inside the app.
+
+You can answer two kinds of questions:
+1. Product-use questions about what the nutrition data means inside PPP Flow.
+2. Descriptive coaching questions about target adherence, macro consistency, bodyweight trend, food-pattern drift, and simple next adjustments.
+
+Rules:
+- Use only the structured snapshot provided.
+- Be conversational and direct, not robotic or third-person.
+- This is not medical advice. Do not diagnose or overclaim.
+- Compare current intake against active targets when available.
+- Compare current intake against assessment-week baseline when available.
+- If the user asks what to do next, focus on the clearest sources of drift: calories, protein, logging gaps, repeated meal-source patterns, or obvious mismatch with weight trend.
+- If the user asks a product question, answer directly and concretely using current app behavior.
+
+Prefer this response shape:
+Current picture
+What stands out
+Next adjustment
+Data caveat`;
+    }
+
+    function renderHealthNutritionCoach(snapshot = buildHealthNutritionSnapshot()) {
+      const messagesEl = document.getElementById("healthNutritionCoachMessages");
+      const statusEl = document.getElementById("healthNutritionCoachStatus");
+      const actionsEl = document.getElementById("healthNutritionCoachActions");
+      const clearBtn = document.getElementById("healthNutritionCoachClearBtn");
+      const sendBtn = document.getElementById("healthNutritionCoachSendBtn");
+      if (!messagesEl || !statusEl || !actionsEl || !clearBtn || !sendBtn) return;
+      const activeProvider = healthNutritionActiveProvider();
+      const needsConsent = healthNutritionCoachNeedsCloudConsent(activeProvider);
+      const providerInfo = aiProviderPrivacyInfo(activeProvider);
+      const providerName = aiProviderDisplayName(activeProvider);
+      const consentNotice = needsConsent ? `<div class="wealth-coach-notice ${providerInfo.level === "warning" ? "warning" : ""}">
+        <div class="wealth-coach-notice-title">Cloud analysis is blocked for this session</div>
+        <div class="wealth-coach-notice-copy">
+          Nutrition Coach is currently set to use ${escapeHtml(providerName)}. Asking a question will send nutrition and bodyweight data to that provider.
+          Switch to Ollama for local-only analysis, or explicitly allow cloud analysis for this session.
+        </div>
+        <div class="wealth-coach-notice-actions">
+          <button class="ghost" type="button" data-health-nutrition-consent-action="settings">AI Settings</button>
+          <button class="primary" type="button" data-health-nutrition-consent-action="allow">Allow This Session</button>
+        </div>
+      </div>` : "";
+      statusEl.textContent = healthNutritionCoachBusy ? "Thinking..." : (needsConsent ? "Cloud consent required" : "");
+      clearBtn.hidden = !healthNutritionCoachMessages.length;
+      actionsEl.hidden = !statusEl.textContent && !healthNutritionCoachMessages.length;
+      sendBtn.disabled = healthNutritionCoachBusy || needsConsent;
+      if (!healthNutritionCoachMessages.length) {
+        const targetHint = snapshot.activeTarget ? ` Current target: ${Math.round(snapshot.activeTarget.kcal)} kcal and ${Math.round(snapshot.activeTarget.protein_g)}g protein.` : "";
+        const baselineHint = snapshot.assessmentLogs.length ? " Assessment baseline is available for comparison." : "";
+        messagesEl.innerHTML = `${consentNotice}<div class="health-empty-state" style="text-align:left">
+          Ask about calories vs target, protein consistency, bodyweight trend, meal-source patterns, or how current intake compares with baseline.${escapeHtml(targetHint + baselineHint)}
+        </div>`;
+        return;
+      }
+      messagesEl.innerHTML = `${consentNotice}${healthNutritionCoachMessages.map(msg => `
+        <div class="wealth-coach-msg ${msg.role === "user" ? "user" : "assistant"}">${escapeHtml(msg.content)}</div>
+      `).join("")}`;
+    }
+
+    async function requestHealthNutritionCoaching() {
+      const input = document.getElementById("healthNutritionCoachInput");
+      const question = String(input?.value || "").trim();
+      if (!question || healthNutritionCoachBusy) return;
+      const cfg = aiResolveConfig(aiPrefs);
+      const activeProvider = cfg.provider || aiPrefs.provider || "openai";
+      if (healthNutritionCoachNeedsCloudConsent(activeProvider)) {
+        renderHealthNutritionCoach();
+        return;
+      }
+      healthNutritionCoachMessages.push({ role: "user", content: question });
+      if (input) {
+        input.value = "";
+        autoGrowTextarea(input);
+      }
+      renderHealthNutritionCoach();
+      if (!aiPrefs.enabled) {
+        healthNutritionCoachMessages.push({ role: "assistant", content: "AI is currently disabled. Enable AI in Settings to use Nutrition Coach." });
+        renderHealthNutritionCoach();
+        return;
+      }
+      if (aiProviderNeedsKey(activeProvider) && !cfg.apiKey) {
+        healthNutritionCoachMessages.push({ role: "assistant", content: `${aiProviderDisplayName(activeProvider)} needs an API key in Settings before Nutrition Coach can use it.` });
+        renderHealthNutritionCoach();
+        return;
+      }
+      healthNutritionCoachBusy = true;
+      renderHealthNutritionCoach();
+      try {
+        const snapshot = buildHealthNutritionCoachSnapshot();
+        const userPrompt = `User question:\n${question}\n\nCurrent nutrition snapshot:\n${JSON.stringify(snapshot, null, 2)}`;
+        const raw = await aiCallProvider(healthNutritionCoachSystemPrompt(), userPrompt, null, { temperature: 0.65 });
+        healthNutritionCoachMessages.push({ role: "assistant", content: String(raw || "").trim() || "No answer returned." });
+      } catch (err) {
+        healthNutritionCoachMessages.push({ role: "assistant", content: `I couldn't answer that from the current nutrition data. ${String(err?.message || err || "Unknown error")}` });
+      } finally {
+        healthNutritionCoachBusy = false;
+        renderHealthNutritionCoach();
+      }
     }
 
     function renderHealthSleepSummaryInto(el, snapshot = buildHealthSleepRecoverySnapshot()) {
@@ -16292,6 +16716,9 @@ Data caveat`;
 
     // ═══════════ WEALTH MODULE ═══════════
     let activeHealthTab = "overview";
+    let healthNutritionCoachBusy = false;
+    let healthNutritionCoachMessages = [];
+    let healthNutritionCoachCloudConsent = {};
     let healthSleepCoachBusy = false;
     let healthSleepCoachMessages = [];
     let healthSleepCoachCloudConsent = {};
@@ -23265,6 +23692,13 @@ Data caveat`;
         if (dateKey && confirm("Delete this nutrition log?")) deleteHealthNutritionLog(dateKey);
         return;
       }
+      const nutritionConsentBtn = e.target.closest("[data-health-nutrition-consent-action]");
+      if (nutritionConsentBtn) {
+        const action = String(nutritionConsentBtn.getAttribute("data-health-nutrition-consent-action") || "").trim();
+        if (action === "allow") allowHealthNutritionCoachCloudConsent();
+        if (action === "settings") openAiSettingsFromHealthNutritionCoach();
+        return;
+      }
       const sleepOpenBtn = e.target.closest("[data-health-sleep-open]");
       if (sleepOpenBtn) {
         showHealthSleepModal();
@@ -23347,6 +23781,20 @@ Data caveat`;
       if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
         void requestHealthSleepCoaching();
+      }
+    });
+    document.getElementById("healthNutritionCoachClearBtn")?.addEventListener("click", () => {
+      healthNutritionCoachMessages = [];
+      renderHealthNutritionCoach();
+    });
+    document.getElementById("healthNutritionCoachSendBtn")?.addEventListener("click", () => { void requestHealthNutritionCoaching(); });
+    document.getElementById("healthNutritionCoachInput")?.addEventListener("input", e => {
+      autoGrowTextarea(e.currentTarget);
+    });
+    document.getElementById("healthNutritionCoachInput")?.addEventListener("keydown", e => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        void requestHealthNutritionCoaching();
       }
     });
 
@@ -23840,7 +24288,7 @@ Data caveat`;
         const openModal = document.querySelector(".modal-backdrop:not([hidden])");
         if (openModal) return;
         const targetId = String(e.target?.id || "").trim();
-        const allowWhileEditing = new Set(["aiInlineUserInput", "aiUserInput", "planSidebarChatInput", "wealthCoachInput", "healthSleepCoachInput", "onboardAiIntake"]);
+        const allowWhileEditing = new Set(["aiInlineUserInput", "aiUserInput", "planSidebarChatInput", "wealthCoachInput", "healthSleepCoachInput", "healthNutritionCoachInput", "onboardAiIntake"]);
         if (isEditableElement(e.target) && !allowWhileEditing.has(targetId)) return;
         e.preventDefault();
         e.stopPropagation();
