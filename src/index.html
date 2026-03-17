@@ -2912,7 +2912,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           <div class="health-training-block-header">
             <div>
               <h4 style="margin-bottom:0">Current Training Block</h4>
-              <div class="health-card-note" style="margin-top:4px">This is the scaffold. Session generation and full planned-vs-actual comparison can build on it next.</div>
+              <div class="health-card-note" style="margin-top:4px">Planned sessions, recent adherence, and session-template performance now live here alongside execution.</div>
             </div>
             <div class="health-training-inline-actions">
               <button class="ghost" type="button" data-health-block-open>Set Up Block</button>
@@ -2930,6 +2930,21 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
             <div class="health-compare-card"><strong>—</strong><span>Actual Sessions</span></div>
             <div class="health-compare-card"><strong>—</strong><span>Remaining</span></div>
             <div class="health-compare-card"><strong>—</strong><span>Next Session</span></div>
+          </div>
+        </div>
+
+        <div class="health-section-grid">
+          <div class="review-card">
+            <h4 style="margin-bottom:12px">Recent Adherence</h4>
+            <div id="healthTrainingAdherenceSignals" class="health-progress-list">
+              <div class="health-empty-state">Set up a block to compare planned sessions against actual completion over time.</div>
+            </div>
+          </div>
+          <div class="review-card">
+            <h4 style="margin-bottom:12px">Template Performance</h4>
+            <div id="healthTrainingTemplatePerformance" class="health-progress-list">
+              <div class="health-empty-state">Generated session templates will show completion quality and repeated misses here.</div>
+            </div>
           </div>
         </div>
 
@@ -13532,6 +13547,153 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       });
     }
 
+    function healthTrainingBlockEndDateKey(block) {
+      const weeks = Number(block?.weeks) || 0;
+      if (!block?.start_date || !weeks) return "";
+      const endDate = parseLocalDateKey(block.start_date);
+      endDate.setDate(endDate.getDate() + (weeks * 7) - 1);
+      return localDateKey(endDate);
+    }
+
+    function healthTrainingDateWithinBlock(block, dateKey) {
+      if (!dateKey) return false;
+      if (!block?.start_date) return true;
+      const startKey = String(block.start_date || "").trim();
+      const endKey = healthTrainingBlockEndDateKey(block);
+      if (startKey && dateKey < startKey) return false;
+      if (endKey && dateKey > endKey) return false;
+      return true;
+    }
+
+    function healthTrainingWeekInstances(snapshot, weekOffset = 0) {
+      if (!snapshot?.hasBlock || !snapshot.templates?.length) return [];
+      const weekDates = getWeekDates(weekOffset);
+      const dateByDay = Object.fromEntries(HEALTH_DAY_OPTIONS.map((option, index) => [option.key, weekDates[index]]));
+      const doneDates = healthLoggedSessionDates(weekDates);
+      const todayKey = todayISO();
+      const weekLabel = `${fmtEntryDate(weekDates[0])} – ${fmtEntryDate(weekDates[6])}`;
+      return snapshot.templates.map((template, index) => {
+        const dateKey = dateByDay[template.day_key] || weekDates[index] || "";
+        if (!healthTrainingDateWithinBlock(snapshot.block, dateKey)) return null;
+        const practice = template.practice_id ? getPracticeDefinition(template.practice_id) : null;
+        const practiceLog = practice && dateKey ? practiceLogEntry(practice.id, dateKey) : null;
+        const loggedMinutes = Number(practiceLog?.minutes);
+        const plannedMinutes = healthTemplatePlannedMinutes(template, snapshot.profile);
+        const isDone = template.practice_id ? !!practiceLog?.done : doneDates.has(dateKey);
+        let status = "upcoming";
+        if (isDone) status = "done";
+        else if (dateKey === todayKey) status = "today";
+        else if (dateKey < todayKey) status = "missed";
+        return {
+          ...template,
+          week_offset: weekOffset,
+          week_label: weekLabel,
+          week_start: weekDates[0],
+          week_end: weekDates[6],
+          date_key: dateKey,
+          status,
+          planned_minutes: plannedMinutes,
+          logged_minutes: Number.isFinite(loggedMinutes) && loggedMinutes >= 0 ? loggedMinutes : null,
+          practice_title: practice?.title || ""
+        };
+      }).filter(Boolean);
+    }
+
+    function healthTrainingRecentWeekSummaries(snapshot, lookbackWeeks = 6) {
+      if (!snapshot?.hasBlock || !snapshot.templates?.length) return [];
+      const blockWeeks = Math.max(1, Number(snapshot.block?.weeks) || 1);
+      const windowSize = Math.max(1, Math.min(Number(lookbackWeeks) || 6, blockWeeks, 8));
+      const summaries = [];
+      for (let offset = -(windowSize - 1); offset <= 0; offset += 1) {
+        const instances = healthTrainingWeekInstances(snapshot, offset);
+        if (!instances.length) continue;
+        const plannedCount = instances.length;
+        const completedCount = instances.filter(item => item.status === "done").length;
+        const missedCount = instances.filter(item => item.status === "missed").length;
+        const dueTodayCount = instances.filter(item => item.status === "today").length;
+        const plannedMinutes = instances.reduce((sum, item) => sum + (Number(item.planned_minutes) || 0), 0);
+        const loggedMinutes = instances.reduce((sum, item) => sum + (Number(item.logged_minutes) || 0), 0);
+        const adherencePct = plannedCount ? Math.round((completedCount / plannedCount) * 100) : 0;
+        summaries.push({
+          offset,
+          label: offset === 0 ? "This week" : instances[0].week_label,
+          week_start: instances[0].week_start,
+          week_end: instances[0].week_end,
+          planned_count: plannedCount,
+          completed_count: completedCount,
+          missed_count: missedCount,
+          due_today_count: dueTodayCount,
+          planned_minutes: plannedMinutes,
+          logged_minutes: loggedMinutes,
+          minute_delta: loggedMinutes - plannedMinutes,
+          adherence_pct: adherencePct,
+          instances
+        });
+      }
+      return summaries;
+    }
+
+    function healthTrainingTemplatePerformance(snapshot, weekSummaries) {
+      if (!snapshot?.templates?.length || !Array.isArray(weekSummaries) || !weekSummaries.length) return [];
+      const byId = new Map(snapshot.templates.map(template => [template.id, {
+        ...template,
+        planned_count: 0,
+        completed_count: 0,
+        missed_count: 0,
+        due_today_count: 0,
+        logged_minutes_total: 0,
+        planned_minutes_total: 0,
+        completed_planned_minutes_total: 0,
+        status_series: [],
+        last_completed_date: "",
+        last_missed_date: ""
+      }]));
+      weekSummaries.forEach(summary => {
+        summary.instances.forEach(instance => {
+          const row = byId.get(instance.id);
+          if (!row) return;
+          row.planned_count += 1;
+          row.planned_minutes_total += Number(instance.planned_minutes) || 0;
+          if (instance.status === "done") {
+            row.completed_count += 1;
+            row.logged_minutes_total += Number(instance.logged_minutes) || 0;
+            row.completed_planned_minutes_total += Number(instance.planned_minutes) || 0;
+            if (!row.last_completed_date || instance.date_key > row.last_completed_date) row.last_completed_date = instance.date_key;
+          } else if (instance.status === "missed") {
+            row.missed_count += 1;
+            if (!row.last_missed_date || instance.date_key > row.last_missed_date) row.last_missed_date = instance.date_key;
+          } else if (instance.status === "today") {
+            row.due_today_count += 1;
+          }
+          row.status_series.push(
+            instance.status === "done" ? 1
+              : instance.status === "today" ? 0.7
+              : instance.status === "missed" ? 0.15
+              : 0.35
+          );
+        });
+      });
+      return Array.from(byId.values()).map(row => {
+        const adherencePct = row.planned_count ? Math.round((row.completed_count / row.planned_count) * 100) : 0;
+        const avgLoggedMinutes = row.completed_count ? Math.round(row.logged_minutes_total / row.completed_count) : null;
+        const avgMinuteDelta = row.completed_count
+          ? Math.round((row.logged_minutes_total - row.completed_planned_minutes_total) / row.completed_count)
+          : null;
+        const attentionScore = (row.missed_count * 3) + row.due_today_count + (adherencePct < 60 ? 2 : 0) - row.completed_count;
+        return {
+          ...row,
+          adherence_pct: adherencePct,
+          avg_logged_minutes: avgLoggedMinutes,
+          avg_minute_delta: avgMinuteDelta,
+          attention_score: attentionScore
+        };
+      }).sort((a, b) =>
+        b.attention_score - a.attention_score ||
+        a.adherence_pct - b.adherence_pct ||
+        a.order - b.order
+      );
+    }
+
     function healthTrainingBlockSnapshot() {
       const health = ensureHealthStateShape();
       const profile = health.profile;
@@ -13553,6 +13715,17 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       const missedCount = schedule.filter(item => item.status === "missed").length;
       const dueTodayCount = schedule.filter(item => item.status === "today").length;
       const completedCount = schedule.filter(item => item.status === "done").length;
+      const weekSummaries = hasBlock ? healthTrainingRecentWeekSummaries({ profile, block, templates, hasBlock, weekContext }, 6) : [];
+      const templatePerformance = weekSummaries.length ? healthTrainingTemplatePerformance({ profile, block, templates }, weekSummaries) : [];
+      const averageAdherence = weekSummaries.length
+        ? Math.round(weekSummaries.reduce((sum, week) => sum + week.adherence_pct, 0) / weekSummaries.length)
+        : adherence;
+      const bestWeek = weekSummaries
+        .slice()
+        .sort((a, b) => b.adherence_pct - a.adherence_pct || b.completed_count - a.completed_count || b.logged_minutes - a.logged_minutes)[0] || null;
+      const weakestWeek = weekSummaries
+        .slice()
+        .sort((a, b) => b.missed_count - a.missed_count || a.adherence_pct - b.adherence_pct || a.logged_minutes - b.logged_minutes)[0] || null;
       return {
         profile,
         block,
@@ -13568,7 +13741,12 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         schedule,
         missedCount,
         dueTodayCount,
-        completedCount
+        completedCount,
+        weekSummaries,
+        templatePerformance,
+        averageAdherence,
+        bestWeek,
+        weakestWeek
       };
     }
 
@@ -13631,6 +13809,8 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       const exerciseEl = document.getElementById("healthTrainingBlockExercise");
       const comparisonEl = document.getElementById("healthTrainingComparison");
       const scheduleEl = document.getElementById("healthTrainingWeekSchedule");
+      const adherenceEl = document.getElementById("healthTrainingAdherenceSignals");
+      const templatePerformanceEl = document.getElementById("healthTrainingTemplatePerformance");
       const openButtons = document.querySelectorAll("[data-health-block-open]");
       const snapshot = healthTrainingBlockSnapshot();
       openButtons.forEach(button => {
@@ -13648,6 +13828,8 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
             <div class="health-compare-card"><strong>Set up block</strong><span>Next Session</span></div>
           `;
         }
+        if (adherenceEl) adherenceEl.innerHTML = '<div class="health-empty-state">Set up a block to compare planned sessions against actual completion over time.</div>';
+        if (templatePerformanceEl) templatePerformanceEl.innerHTML = '<div class="health-empty-state">Generated session templates will show completion quality and repeated misses here.</div>';
         return;
       }
       if (overviewEl) overviewEl.innerHTML = renderHealthTrainingBlockMarkup(snapshot, { includeTemplates: false });
@@ -13659,6 +13841,58 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
           <div class="health-compare-card"><strong>${snapshot.dueTodayCount ? `${snapshot.dueTodayCount} today` : snapshot.missedCount}</strong><span>${snapshot.dueTodayCount ? "Due Today" : "Missed Sessions"}</span></div>
           <div class="health-compare-card"><strong>${snapshot.nextScheduled ? escapeHtml(snapshot.nextScheduled.title) : "—"}</strong><span>${snapshot.nextScheduled?.date_key ? escapeHtml(fmtEntryDate(snapshot.nextScheduled.date_key)) : (snapshot.plannedSessions ? `${snapshot.adherence}% adherence` : "Next Session")}</span></div>
         `;
+      }
+      if (adherenceEl) {
+        const weekSeries = snapshot.weekSummaries.map(week => week.completed_count);
+        adherenceEl.innerHTML = snapshot.weekSummaries.length
+          ? `
+            <div class="health-progress-row">
+              <div class="health-progress-main">
+                <div class="health-progress-title">Rolling adherence</div>
+                <div class="health-progress-meta">
+                  <span>${snapshot.averageAdherence}% avg over ${snapshot.weekSummaries.length} weeks</span>
+                  ${snapshot.bestWeek ? `<span>best ${snapshot.bestWeek.label.toLowerCase()} · ${snapshot.bestWeek.completed_count}/${snapshot.bestWeek.planned_count}</span>` : ""}
+                  ${snapshot.weakestWeek ? `<span>attention ${snapshot.weakestWeek.label.toLowerCase()} · ${snapshot.weakestWeek.missed_count} missed</span>` : ""}
+                </div>
+              </div>
+              <div class="health-progress-value"><span class="health-progress-sparkline">${weekSeries.some(Boolean) ? renderSparkline(weekSeries, 132, 24) : "—"}</span></div>
+            </div>
+            ${snapshot.weekSummaries.map(week => `
+              <div class="health-progress-row">
+                <div class="health-progress-main">
+                  <div class="health-progress-title">${escapeHtml(week.label)}</div>
+                  <div class="health-progress-meta">
+                    <span>${week.completed_count}/${week.planned_count} completed</span>
+                    <span>${week.logged_minutes}m logged vs ${week.planned_minutes}m planned</span>
+                    ${week.due_today_count ? `<span>${week.due_today_count} due today</span>` : ""}
+                    ${week.missed_count ? `<span>${week.missed_count} missed</span>` : ""}
+                  </div>
+                </div>
+                <div class="health-progress-value">${week.adherence_pct}%</div>
+              </div>
+            `).join("")}
+          `
+          : '<div class="health-empty-state">Complete a few planned weeks to see adherence patterns.</div>';
+      }
+      if (templatePerformanceEl) {
+        templatePerformanceEl.innerHTML = snapshot.templatePerformance.length
+          ? snapshot.templatePerformance.slice(0, 6).map(item => `
+            <div class="health-progress-row">
+              <div class="health-progress-main">
+                <div class="health-progress-title">${escapeHtml(item.title)}</div>
+                <div class="health-progress-meta">
+                  <span>${item.completed_count}/${item.planned_count} completed</span>
+                  ${item.avg_logged_minutes ? `<span>${item.avg_logged_minutes}m avg logged</span>` : ""}
+                  ${item.avg_minute_delta != null ? `<span>${item.avg_minute_delta > 0 ? "+" : ""}${item.avg_minute_delta}m vs plan</span>` : ""}
+                  ${item.missed_count ? `<span>${item.missed_count} missed</span>` : ""}
+                  ${item.due_today_count ? `<span>${item.due_today_count} due today</span>` : ""}
+                  ${item.last_completed_date ? `<span>last done ${escapeHtml(fmtEntryDate(item.last_completed_date))}</span>` : item.last_missed_date ? `<span>last missed ${escapeHtml(fmtEntryDate(item.last_missed_date))}</span>` : ""}
+                </div>
+              </div>
+              <div class="health-progress-value"><span class="health-progress-sparkline">${item.status_series.some(Boolean) ? renderSparkline(item.status_series, 112, 24) : "—"}</span></div>
+            </div>
+          `).join("")
+          : '<div class="health-empty-state">Generated session templates will show completion quality and repeated misses here.</div>';
       }
       if (scheduleEl) {
         scheduleEl.innerHTML = snapshot.schedule.length
