@@ -18301,6 +18301,56 @@ Data caveat`;
       return evidence.sort((a, b) => (b.date || "").localeCompare(a.date || "") || Number(b.value_minor || 0) - Number(a.value_minor || 0));
     }
 
+    function buildWealthPropertyEstimateHistory(property) {
+      if (!property) return [];
+      const evidenceTimeline = getWealthPropertyEvidenceTimeline(property);
+      const datedEvidenceKeys = evidenceTimeline
+        .map(entry => entry.date)
+        .filter(Boolean);
+      const updateDate = property.updated_at ? String(property.updated_at).slice(0, 10) : "";
+      if (updateDate) datedEvidenceKeys.push(updateDate);
+      if (!datedEvidenceKeys.length) {
+        const currentEstimate = property.estimate || buildWealthPropertyEstimate(property);
+        return [{
+          date: todayISO(),
+          estimated_value_minor: Number(currentEstimate.estimated_value_minor || 0),
+          confidence: currentEstimate.confidence || "low",
+          method: currentEstimate.method || "manual_baseline",
+          evidence_count: 0
+        }];
+      }
+
+      const uniqueDates = [...new Set(datedEvidenceKeys)].sort();
+      const series = uniqueDates.map(asOfDate => {
+        const scopedProperty = {
+          ...property,
+          comparables: (property.comparables || []).filter(comparable => !comparable.sale_date || comparable.sale_date <= asOfDate),
+          external_signals: (property.external_signals || []).filter(signal => !signal.signal_date || signal.signal_date <= asOfDate),
+          manual_estimate_minor: property.manual_estimate_minor && updateDate && updateDate <= asOfDate
+            ? property.manual_estimate_minor
+            : 0
+        };
+        const estimate = buildWealthPropertyEstimate(scopedProperty);
+        return {
+          date: asOfDate,
+          estimated_value_minor: Number(estimate.estimated_value_minor || 0),
+          confidence: estimate.confidence || "low",
+          method: estimate.method || "manual_baseline",
+          evidence_count: (scopedProperty.comparables || []).length + (scopedProperty.external_signals || []).length + (scopedProperty.manual_estimate_minor ? 1 : 0)
+        };
+      }).filter(point => Number(point.estimated_value_minor || 0) > 0);
+
+      return series.length
+        ? series
+        : [{
+            date: todayISO(),
+            estimated_value_minor: Number((property.estimate || buildWealthPropertyEstimate(property)).estimated_value_minor || 0),
+            confidence: property.estimate?.confidence || "low",
+            method: property.estimate?.method || "manual_baseline",
+            evidence_count: 0
+          }];
+    }
+
     function getWealthPropertyAnalytics() {
       const properties = getWealthPropertyViews();
       const today = new Date(`${todayISO()}T00:00:00`);
@@ -19021,6 +19071,15 @@ Data caveat`;
       const property = getWealthPropertyViews().find(item => item.id === propertyId);
       if (!property) return;
       const estimate = property.estimate || buildWealthPropertyEstimate(property);
+      const estimateHistory = buildWealthPropertyEstimateHistory(property);
+      const estimateHistorySparkline = estimateHistory.length > 1
+        ? renderSparkline(estimateHistory.map(point => point.estimated_value_minor || 0), 220, 34)
+        : "";
+      const firstEstimatePoint = estimateHistory[0] || null;
+      const latestEstimatePoint = estimateHistory[estimateHistory.length - 1] || null;
+      const estimateTrendMinor = firstEstimatePoint && latestEstimatePoint
+        ? Number(latestEstimatePoint.estimated_value_minor || 0) - Number(firstEstimatePoint.estimated_value_minor || 0)
+        : 0;
       const signalRows = Array.isArray(estimate.breakdown?.signals) ? estimate.breakdown.signals : [];
       const comparables = (property.comparables || []).slice().sort((a, b) => (b.sale_date || "").localeCompare(a.sale_date || ""));
       const externalSignals = (property.external_signals || []).slice().sort((a, b) => (b.signal_date || "").localeCompare(a.signal_date || "") || (b.updated_at || "").localeCompare(a.updated_at || ""));
@@ -19109,6 +19168,37 @@ Data caveat`;
                 </div>
               </div>
             `).join("") : '<div class="wealth-empty-state" style="text-align:left">No evidence history yet.</div>'}
+          </div>
+        </div>
+        <div>
+          <label>Estimate Trend</label>
+          <div class="health-mini-stat-grid" style="margin-top:8px">
+            <div class="health-mini-stat"><div class="health-mini-stat-label">History Points</div><div class="health-mini-stat-value">${estimateHistory.length}</div></div>
+            <div class="health-mini-stat"><div class="health-mini-stat-label">Starting Estimate</div><div class="health-mini-stat-value">${firstEstimatePoint ? formatCurrency(firstEstimatePoint.estimated_value_minor || 0) : "—"}</div></div>
+            <div class="health-mini-stat"><div class="health-mini-stat-label">Current Estimate</div><div class="health-mini-stat-value">${latestEstimatePoint ? formatCurrency(latestEstimatePoint.estimated_value_minor || 0) : "—"}</div></div>
+            <div class="health-mini-stat"><div class="health-mini-stat-label">Net Change</div><div class="health-mini-stat-value">${firstEstimatePoint && latestEstimatePoint ? `${estimateTrendMinor >= 0 ? "+" : "-"}${formatCurrency(Math.abs(estimateTrendMinor))}` : "—"}</div></div>
+          </div>
+          <div class="health-note-box" style="margin-top:12px">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+              <strong>Estimate history</strong>
+              <span class="tiny" style="color:var(--text2)">${estimateHistory.length > 1 ? `${escapeHtml(formatDateLabel(firstEstimatePoint?.date || ""))} → ${escapeHtml(formatDateLabel(latestEstimatePoint?.date || ""))}` : "Not enough evidence points yet"}</span>
+            </div>
+            <div style="margin-top:10px">${estimateHistorySparkline || '<span class="tiny" style="color:var(--text2)">Add more dated comparables or external signals to build a trend line.</span>'}</div>
+          </div>
+          <div class="wealth-list" style="display:flex;flex-direction:column;gap:8px;margin-top:12px">
+            ${estimateHistory.length ? estimateHistory.slice(-6).reverse().map(point => `
+              <div class="wealth-account-row">
+                <div>
+                  <div class="wealth-account-name">${escapeHtml(formatDateLabel(point.date))}</div>
+                  <div class="wealth-rule-meta">
+                    <span>${escapeHtml((point.confidence || "low").toUpperCase())} confidence</span>
+                    <span>${escapeHtml(String(point.method || "manual_baseline").replaceAll("_", " "))}</span>
+                    <span>${point.evidence_count} evidence item${point.evidence_count === 1 ? "" : "s"}</span>
+                  </div>
+                </div>
+                <div class="wealth-account-balance">${formatCurrency(point.estimated_value_minor || 0)}</div>
+              </div>
+            `).join("") : '<div class="wealth-empty-state" style="text-align:left">No estimate history yet.</div>'}
           </div>
         </div>
         <div>
@@ -20039,7 +20129,16 @@ Data caveat`;
               signal_date: signal.signal_date || null,
               estimated_value_minor: signal.estimated_value_minor || 0,
               confidence: signal.confidence || "medium"
-            }))[0] || null
+            }))[0] || null,
+          estimate_history: buildWealthPropertyEstimateHistory(property)
+            .slice(-6)
+            .map(point => ({
+              date: point.date,
+              estimated_value_minor: point.estimated_value_minor || 0,
+              confidence: point.confidence || "low",
+              method: point.method || "manual_baseline",
+              evidence_count: point.evidence_count || 0
+            }))
         })),
         portfolio: {
           market_value_minor: portfolio.totalMarketValueMinor,
