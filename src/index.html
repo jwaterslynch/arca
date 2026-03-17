@@ -3270,6 +3270,20 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         <div id="portfolioPropertySourceMix" class="wealth-list" style="margin-bottom:12px">
           <div class="wealth-empty-state">Add properties and signals to see source coverage.</div>
         </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+          <div>
+            <div class="health-card-note" style="margin:0 0 8px 0">Coverage & confidence</div>
+            <div id="portfolioPropertyCoverage" class="wealth-list">
+              <div class="wealth-empty-state">No property analytics yet.</div>
+            </div>
+          </div>
+          <div>
+            <div class="health-card-note" style="margin:0 0 8px 0">Attention & movers</div>
+            <div id="portfolioPropertyMovers" class="wealth-list">
+              <div class="wealth-empty-state">No property analytics yet.</div>
+            </div>
+          </div>
+        </div>
         <div id="portfolioPropertiesList" class="wealth-accounts-list">
           <div class="wealth-empty-state">No properties yet. Add one to include it in net worth.</div>
         </div>
@@ -18291,39 +18305,105 @@ Data caveat`;
       const properties = getWealthPropertyViews();
       const today = new Date(`${todayISO()}T00:00:00`);
       const sourceMix = {};
+      const confidenceMix = { high: 0, medium: 0, low: 0, manual: 0, baseline: 0 };
+      const typeMix = {};
       let totalEstimatedMinor = 0;
       let highConfidenceCount = 0;
       let staleCount = 0;
       let baselineOnlyCount = 0;
       let latestEvidenceDate = "";
+      const staleProperties = [];
       properties.forEach(property => {
         totalEstimatedMinor += Math.max(0, Number(property.estimated_value_minor || 0));
-        if ((property.estimate?.confidence || "low") === "high") highConfidenceCount += 1;
+        const confidenceKey = property.estimate?.confidence || "low";
+        confidenceMix[confidenceKey] = (confidenceMix[confidenceKey] || 0) + 1;
+        if (confidenceKey === "high") highConfidenceCount += 1;
         const timeline = getWealthPropertyEvidenceTimeline(property);
         const latestEvidence = timeline.find(item => item.date) || timeline[0] || null;
         if (latestEvidence?.date && latestEvidence.date > latestEvidenceDate) latestEvidenceDate = latestEvidence.date;
-        if ((property.external_signals || []).length === 0 && (property.comparables || []).length === 0) baselineOnlyCount += 1;
+        const externalSignalsCount = (property.external_signals || []).length;
+        const comparablesCount = (property.comparables || []).length;
+        const isBaselineOnly = externalSignalsCount === 0 && comparablesCount === 0;
+        if (isBaselineOnly) baselineOnlyCount += 1;
+        const typeKey = property.property_type || "other";
+        if (!typeMix[typeKey]) {
+          typeMix[typeKey] = {
+            type: typeKey,
+            label: WEALTH_PROPERTY_TYPES[typeKey] || typeKey,
+            count: 0,
+            total_estimated_minor: 0,
+            signal_count: 0,
+            stale_count: 0
+          };
+        }
+        typeMix[typeKey].count += 1;
+        typeMix[typeKey].total_estimated_minor += Math.max(0, Number(property.estimated_value_minor || 0));
+        typeMix[typeKey].signal_count += externalSignalsCount;
         const freshnessReference = latestEvidence?.date || property.purchase_date || "";
         let isStale = false;
+        let staleReason = "";
         if (!freshnessReference) {
           isStale = true;
+          staleReason = "No dated evidence";
         } else {
           const referenceDate = new Date(`${freshnessReference}T00:00:00`);
           const daysOld = Math.max(0, (today - referenceDate) / (1000 * 60 * 60 * 24));
-          isStale = daysOld > 120 || ((property.external_signals || []).length === 0 && (property.comparables || []).length === 0);
+          if (daysOld > 120) {
+            isStale = true;
+            staleReason = `${Math.round(daysOld)} days since latest evidence`;
+          } else if (isBaselineOnly) {
+            isStale = true;
+            staleReason = "Baseline only";
+          }
         }
-        if (isStale) staleCount += 1;
+        if (isStale) {
+          staleCount += 1;
+          typeMix[typeKey].stale_count += 1;
+          staleProperties.push({
+            label: property.label,
+            reason: staleReason || "Needs stronger evidence",
+            latest_evidence_date: latestEvidence?.date || "",
+            estimated_value_minor: property.estimated_value_minor || 0
+          });
+        }
         (property.external_signals || []).forEach(signal => {
           const key = signal.source || "other";
           sourceMix[key] = (sourceMix[key] || 0) + 1;
         });
       });
+      const confidenceLabels = {
+        high: "High confidence",
+        medium: "Medium confidence",
+        low: "Low confidence",
+        manual: "Manual estimate",
+        baseline: "Baseline only"
+      };
       const sourceMixRows = Object.entries(sourceMix)
         .sort((a, b) => b[1] - a[1])
         .map(([source, count]) => ({
           source,
           label: WEALTH_PROPERTY_SIGNAL_SOURCES[source] || source,
           count
+        }));
+      const confidenceMixRows = Object.entries(confidenceMix)
+        .filter(([, count]) => count > 0)
+        .map(([key, count]) => ({
+          key,
+          label: confidenceLabels[key] || key,
+          count
+        }))
+        .sort((a, b) => b.count - a.count);
+      const typeMixRows = Object.values(typeMix)
+        .sort((a, b) => b.total_estimated_minor - a.total_estimated_minor);
+      const movers = properties
+        .filter(property => property.delta_minor != null)
+        .sort((a, b) => Math.abs(Number(b.delta_minor || 0)) - Math.abs(Number(a.delta_minor || 0)))
+        .slice(0, 4)
+        .map(property => ({
+          label: property.label,
+          delta_minor: property.delta_minor || 0,
+          estimated_value_minor: property.estimated_value_minor || 0,
+          confidence: property.estimate?.confidence || "low"
         }));
       const strongestDeltaProperty = properties
         .filter(property => property.delta_minor != null)
@@ -18336,6 +18416,12 @@ Data caveat`;
         baseline_only_count: baselineOnlyCount,
         latest_evidence_date: latestEvidenceDate,
         source_mix: sourceMixRows,
+        confidence_mix: confidenceMixRows,
+        type_mix: typeMixRows,
+        stale_properties: staleProperties
+          .sort((a, b) => (a.latest_evidence_date || "").localeCompare(b.latest_evidence_date || ""))
+          .slice(0, 4),
+        movers,
         strongest_delta_property: strongestDeltaProperty
           ? {
               label: strongestDeltaProperty.label,
@@ -19311,7 +19397,9 @@ Data caveat`;
     function renderWealthPropertyOverview() {
       const summaryEl = document.getElementById("portfolioPropertiesSummary");
       const sourceMixEl = document.getElementById("portfolioPropertySourceMix");
-      if (!summaryEl || !sourceMixEl) return;
+      const coverageEl = document.getElementById("portfolioPropertyCoverage");
+      const moversEl = document.getElementById("portfolioPropertyMovers");
+      if (!summaryEl || !sourceMixEl || !coverageEl || !moversEl) return;
       const analytics = getWealthPropertyAnalytics();
       if (!analytics.property_count) {
         summaryEl.innerHTML = `
@@ -19321,6 +19409,8 @@ Data caveat`;
           <div class="health-mini-stat"><div class="health-mini-stat-label">Latest Evidence</div><div class="health-mini-stat-value">—</div></div>
         `;
         sourceMixEl.innerHTML = '<div class="wealth-empty-state">Add properties and signals to see source coverage.</div>';
+        coverageEl.innerHTML = '<div class="wealth-empty-state">No property analytics yet.</div>';
+        moversEl.innerHTML = '<div class="wealth-empty-state">No property analytics yet.</div>';
         return;
       }
 
@@ -19376,6 +19466,53 @@ Data caveat`;
       sourceMixEl.innerHTML = rows.length
         ? rows.join("")
         : '<div class="wealth-empty-state">No external signals yet. Add bank, portal, or agent evidence to strengthen estimates.</div>';
+
+      const coverageRows = [];
+      analytics.confidence_mix.forEach(item => {
+        coverageRows.push(`<div class="wealth-account-row">
+          <div>
+            <div class="wealth-account-name">${escapeHtml(item.label)}</div>
+            <div class="wealth-rule-meta">Current estimate confidence mix</div>
+          </div>
+          <div class="wealth-account-balance">${item.count}</div>
+        </div>`);
+      });
+      analytics.type_mix.forEach(item => {
+        coverageRows.push(`<div class="wealth-account-row">
+          <div>
+            <div class="wealth-account-name">${escapeHtml(item.label)}</div>
+            <div class="wealth-rule-meta">${item.signal_count} signal${item.signal_count === 1 ? "" : "s"} · ${item.stale_count} stale</div>
+          </div>
+          <div class="wealth-account-balance">${formatCurrency(item.total_estimated_minor || 0)}</div>
+        </div>`);
+      });
+      coverageEl.innerHTML = coverageRows.length
+        ? coverageRows.join("")
+        : '<div class="wealth-empty-state">No coverage analytics yet.</div>';
+
+      const moverRows = [];
+      analytics.stale_properties.forEach(item => {
+        moverRows.push(`<div class="wealth-account-row">
+          <div>
+            <div class="wealth-account-name">${escapeHtml(item.label)}</div>
+            <div class="wealth-rule-meta">${escapeHtml(item.reason)}${item.latest_evidence_date ? ` · Last evidence ${escapeHtml(formatDateLabel(item.latest_evidence_date))}` : ""}</div>
+          </div>
+          <div class="wealth-account-balance negative">${formatCurrency(item.estimated_value_minor || 0)}</div>
+        </div>`);
+      });
+      analytics.movers.forEach(item => {
+        const deltaMinor = Number(item.delta_minor || 0);
+        moverRows.push(`<div class="wealth-account-row">
+          <div>
+            <div class="wealth-account-name">${escapeHtml(item.label)}</div>
+            <div class="wealth-rule-meta">${escapeHtml((item.confidence || "low").toUpperCase())} confidence · Estimate ${formatCurrency(item.estimated_value_minor || 0)}</div>
+          </div>
+          <div class="wealth-account-balance ${deltaMinor < 0 ? "negative" : ""}">${deltaMinor >= 0 ? "+" : "-"}${formatCurrency(Math.abs(deltaMinor))}</div>
+        </div>`);
+      });
+      moversEl.innerHTML = moverRows.length
+        ? moverRows.join("")
+        : '<div class="wealth-empty-state">No movers or attention items yet.</div>';
     }
 
     function renderWealthOverview() {
@@ -19872,6 +20009,10 @@ Data caveat`;
           baseline_only_count: propertyOverview.baseline_only_count,
           latest_evidence_date: propertyOverview.latest_evidence_date || null,
           source_mix: propertyOverview.source_mix,
+          confidence_mix: propertyOverview.confidence_mix,
+          type_mix: propertyOverview.type_mix,
+          stale_properties: propertyOverview.stale_properties,
+          movers: propertyOverview.movers,
           strongest_delta_property: propertyOverview.strongest_delta_property
         },
         properties: properties.map(property => ({
