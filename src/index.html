@@ -4754,6 +4754,9 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       const adapter = record && typeof record === "object" ? record : {};
       const providerKey = Object.prototype.hasOwnProperty.call(WEALTH_PROPERTY_FEED_PROVIDERS, adapter.provider_key) ? adapter.provider_key : "manual_watch";
       const preset = WEALTH_PROPERTY_FEED_PROVIDERS[providerKey] || WEALTH_PROPERTY_FEED_PROVIDERS.manual_watch;
+      const allowedModes = Array.isArray(preset.connection_modes) && preset.connection_modes.length
+        ? preset.connection_modes
+        : ["manual_check"];
       return {
         id: adapter.id || uid(),
         provider_key: providerKey,
@@ -4761,6 +4764,8 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         source: Object.prototype.hasOwnProperty.call(WEALTH_PROPERTY_SIGNAL_SOURCES, adapter.source) ? adapter.source : preset.source || "manual_external",
         cadence: ["manual", "weekly", "monthly", "quarterly", "yearly"].includes(adapter.cadence) ? adapter.cadence : (preset.default_cadence || "monthly"),
         status: ["planned", "active", "paused"].includes(adapter.status) ? adapter.status : "planned",
+        connection_mode: allowedModes.includes(adapter.connection_mode) ? adapter.connection_mode : (preset.default_connection_mode || allowedModes[0] || "manual_check"),
+        reference_key: String(adapter.reference_key || "").trim(),
         endpoint_hint: String(adapter.endpoint_hint || "").trim(),
         note: String(adapter.note || "").trim(),
         last_checked_at: adapter.last_checked_at || "",
@@ -16369,32 +16374,70 @@ Data caveat`;
         label: "Bank Portal",
         source: "bank",
         default_cadence: "quarterly",
+        default_connection_mode: "portal_copy",
+        connection_modes: ["portal_copy", "email_notice", "api_stub", "manual_check"],
+        reference_label: "Lender / portal reference",
+        reference_placeholder: "e.g. CBA home loan portal",
+        check_placeholder: "Record what the lender portal showed, or note why the valuation was unavailable.",
+        signal_label: "Bank valuation",
         helper: "Track refinance, lender, or servicing valuations that recur through a bank workflow."
       },
       portal_watch: {
         label: "Portal Watch",
         source: "domain",
         default_cadence: "monthly",
+        default_connection_mode: "portal_copy",
+        connection_modes: ["portal_copy", "api_stub", "manual_check"],
+        reference_label: "Watchlist / property URL",
+        reference_placeholder: "e.g. Domain property page",
+        check_placeholder: "Record the latest portal estimate or note changes in the listing/estimate band.",
+        signal_label: "Portal estimate",
         helper: "Use for recurring Domain / realestate.com.au estimate checks."
       },
       agent_panel: {
         label: "Agent Panel",
         source: "agent",
         default_cadence: "quarterly",
+        default_connection_mode: "agent_refresh",
+        connection_modes: ["agent_refresh", "email_notice", "manual_check"],
+        reference_label: "Agency / agent contact",
+        reference_placeholder: "e.g. Nelson Alexander - Sarah",
+        check_placeholder: "Record the latest appraisal range, or note what the agent said about the market.",
+        signal_label: "Agent appraisal",
         helper: "Use for periodic agent appraisals or CMA refreshes."
       },
       government_notice: {
         label: "Government Notice",
         source: "government",
         default_cadence: "yearly",
+        default_connection_mode: "statement_notice",
+        connection_modes: ["statement_notice", "email_notice", "manual_check"],
+        reference_label: "Notice / account reference",
+        reference_placeholder: "e.g. Rates notice 2026",
+        check_placeholder: "Record the notice value, or note when the next council / registry notice is expected.",
+        signal_label: "Government notice",
         helper: "Use for council, rates, land-tax, or registry value updates."
       },
       manual_watch: {
         label: "Manual Watch",
         source: "manual_external",
         default_cadence: "monthly",
+        default_connection_mode: "manual_check",
+        connection_modes: ["manual_check", "api_stub", "email_notice"],
+        reference_label: "Reference",
+        reference_placeholder: "e.g. Spreadsheet, private source, other note",
+        check_placeholder: "Record what you checked and whether it produced a usable valuation.",
+        signal_label: "External estimate",
         helper: "Generic adapter placeholder for future feeds or copied valuation sources."
       }
+    };
+    const WEALTH_PROPERTY_FEED_CONNECTION_MODES = {
+      manual_check: "Manual check",
+      portal_copy: "Portal copy",
+      email_notice: "Email / notice",
+      agent_refresh: "Agent refresh",
+      statement_notice: "Statement / notice",
+      api_stub: "API / export later"
     };
     const WEALTH_ASSET_TYPES = {
       stock: "Stock",
@@ -18887,6 +18930,41 @@ Data caveat`;
       return (property?.feed_adapters || []).find(adapter => adapter.id === adapterId) || null;
     }
 
+    function getWealthPropertyFeedProviderPreset(providerKey) {
+      return WEALTH_PROPERTY_FEED_PROVIDERS[providerKey] || WEALTH_PROPERTY_FEED_PROVIDERS.manual_watch;
+    }
+
+    function getWealthPropertyFeedConnectionOptions(providerKey) {
+      const preset = getWealthPropertyFeedProviderPreset(providerKey);
+      return Array.isArray(preset.connection_modes) && preset.connection_modes.length
+        ? preset.connection_modes
+        : ["manual_check"];
+    }
+
+    function wealthPropertyFeedConnectionLabel(mode) {
+      return WEALTH_PROPERTY_FEED_CONNECTION_MODES[mode] || mode || "Manual check";
+    }
+
+    function wealthPropertyFeedReferenceLabel(providerKey) {
+      return getWealthPropertyFeedProviderPreset(providerKey).reference_label || "Reference";
+    }
+
+    function wealthPropertyFeedReferencePlaceholder(providerKey) {
+      return getWealthPropertyFeedProviderPreset(providerKey).reference_placeholder || "Optional reference";
+    }
+
+    function wealthPropertyFeedCheckPlaceholder(providerKey) {
+      return getWealthPropertyFeedProviderPreset(providerKey).check_placeholder || "Optional note about what you found...";
+    }
+
+    function wealthPropertyFeedSignalLabelHint(providerKey, fallback = "") {
+      return getWealthPropertyFeedProviderPreset(providerKey).signal_label || fallback || "External estimate";
+    }
+
+    function wealthPropertyFeedAdapterIsReady(adapter) {
+      return !!(String(adapter?.reference_key || "").trim() || String(adapter?.endpoint_hint || "").trim());
+    }
+
     function getWealthPropertyEvidenceTimeline(property) {
       const evidence = [];
       (property?.external_signals || []).forEach(signal => {
@@ -19315,6 +19393,8 @@ Data caveat`;
         source: payload.source,
         cadence: payload.cadence,
         status: payload.status,
+        connection_mode: payload.connection_mode,
+        reference_key: payload.reference_key,
         endpoint_hint: payload.endpoint_hint,
         note: payload.note,
         last_checked_at: existing?.last_checked_at || "",
@@ -19758,9 +19838,10 @@ Data caveat`;
       if (!property) return;
       const existing = adapterId ? getWealthPropertyFeedAdapterById(property, adapterId) : null;
       const initialProviderKey = existing?.provider_key || "manual_watch";
-      const initialPreset = WEALTH_PROPERTY_FEED_PROVIDERS[initialProviderKey] || WEALTH_PROPERTY_FEED_PROVIDERS.manual_watch;
+      const initialPreset = getWealthPropertyFeedProviderPreset(initialProviderKey);
       const initialSource = existing?.source || initialPreset.source || "manual_external";
       const initialLabel = existing?.label || initialPreset.label || "Feed Adapter";
+      const initialConnectionMode = existing?.connection_mode || initialPreset.default_connection_mode || getWealthPropertyFeedConnectionOptions(initialProviderKey)[0] || "manual_check";
       const html = `<div class="wealth-form-grid">
         <div>
           <label>Property</label>
@@ -19808,6 +19889,18 @@ Data caveat`;
             </select>
           </div>
         </div>
+        <div class="wealth-form-row">
+          <div>
+            <label>Connection Mode</label>
+            <select id="wealthPropertyFeedConnectionModeInput">
+              ${getWealthPropertyFeedConnectionOptions(initialProviderKey).map(mode => `<option value="${mode}" ${initialConnectionMode === mode ? "selected" : ""}>${escapeHtml(wealthPropertyFeedConnectionLabel(mode))}</option>`).join("")}
+            </select>
+          </div>
+          <div>
+            <label id="wealthPropertyFeedReferenceLabel">${escapeHtml(wealthPropertyFeedReferenceLabel(initialProviderKey))}</label>
+            <input id="wealthPropertyFeedReferenceInput" placeholder="${escapeHtml(wealthPropertyFeedReferencePlaceholder(initialProviderKey))}" value="${escapeHtml(existing?.reference_key || "")}" />
+          </div>
+        </div>
         <div>
           <label>Endpoint / Source Reference</label>
           <input id="wealthPropertyFeedEndpointInput" placeholder="e.g. Domain watchlist URL or lender portal note" value="${escapeHtml(existing?.endpoint_hint || "")}" />
@@ -19830,18 +19923,35 @@ Data caveat`;
         const sourceInput = document.getElementById("wealthPropertyFeedSourceInput");
         const labelInput = document.getElementById("wealthPropertyFeedLabelInput");
         const cadenceInput = document.getElementById("wealthPropertyFeedCadenceInput");
+        const connectionModeInput = document.getElementById("wealthPropertyFeedConnectionModeInput");
+        const referenceLabelEl = document.getElementById("wealthPropertyFeedReferenceLabel");
+        const referenceInput = document.getElementById("wealthPropertyFeedReferenceInput");
         const helperEl = document.getElementById("wealthPropertyFeedHelper");
         const updatePreset = () => {
-          const nextPreset = WEALTH_PROPERTY_FEED_PROVIDERS[providerInput?.value || initialProviderKey] || WEALTH_PROPERTY_FEED_PROVIDERS.manual_watch;
+          const nextProviderKey = providerInput?.value || initialProviderKey;
+          const nextPreset = getWealthPropertyFeedProviderPreset(nextProviderKey);
           if (helperEl) helperEl.textContent = nextPreset.helper || "Track a recurring property evidence source.";
           if (sourceInput && !sourceInput.dataset.userChanged) sourceInput.value = nextPreset.source || "manual_external";
           if (labelInput && !labelInput.dataset.userChanged) labelInput.value = nextPreset.label || "";
           if (cadenceInput && !cadenceInput.dataset.userChanged) cadenceInput.value = nextPreset.default_cadence || "monthly";
+          if (connectionModeInput) {
+            const options = getWealthPropertyFeedConnectionOptions(nextProviderKey)
+              .map(mode => `<option value="${mode}">${escapeHtml(wealthPropertyFeedConnectionLabel(mode))}</option>`)
+              .join("");
+            connectionModeInput.innerHTML = options;
+            connectionModeInput.value = (!connectionModeInput.dataset.userChanged
+              ? nextPreset.default_connection_mode
+              : connectionModeInput.value) || getWealthPropertyFeedConnectionOptions(nextProviderKey)[0] || "manual_check";
+          }
+          if (referenceLabelEl) referenceLabelEl.textContent = wealthPropertyFeedReferenceLabel(nextProviderKey);
+          if (referenceInput && !referenceInput.dataset.userChanged) referenceInput.placeholder = wealthPropertyFeedReferencePlaceholder(nextProviderKey);
         };
         providerInput?.addEventListener("change", updatePreset);
         sourceInput?.addEventListener("change", () => { sourceInput.dataset.userChanged = "true"; });
         labelInput?.addEventListener("input", () => { labelInput.dataset.userChanged = "true"; });
         cadenceInput?.addEventListener("change", () => { cadenceInput.dataset.userChanged = "true"; });
+        connectionModeInput?.addEventListener("change", () => { connectionModeInput.dataset.userChanged = "true"; });
+        referenceInput?.addEventListener("input", () => { referenceInput.dataset.userChanged = "true"; });
         labelInput?.focus();
         document.getElementById("wealthPropertyFeedBackBtn")?.addEventListener("click", () => showWealthPropertyDetailModal(propertyId));
         document.getElementById("wealthPropertyFeedSubmitBtn")?.addEventListener("click", () => {
@@ -19853,6 +19963,8 @@ Data caveat`;
             source: sourceInput?.value || initialSource,
             cadence: cadenceInput?.value || "monthly",
             status: document.getElementById("wealthPropertyFeedStatusInput")?.value || "planned",
+            connection_mode: connectionModeInput?.value || initialConnectionMode,
+            reference_key: referenceInput?.value || "",
             endpoint_hint: document.getElementById("wealthPropertyFeedEndpointInput")?.value || "",
             note: document.getElementById("wealthPropertyFeedNoteInput")?.value || ""
           }, existing?.id || "");
@@ -19865,7 +19977,7 @@ Data caveat`;
       const property = getWealthPropertyById(propertyId);
       const adapter = property ? getWealthPropertyFeedAdapterById(property, adapterId) : null;
       if (!property || !adapter) return;
-      const preset = WEALTH_PROPERTY_FEED_PROVIDERS[adapter.provider_key] || WEALTH_PROPERTY_FEED_PROVIDERS.manual_watch;
+      const preset = getWealthPropertyFeedProviderPreset(adapter.provider_key);
       const signalPreset = getWealthPropertySignalPreset(adapter.source);
       const html = `<div class="wealth-form-grid">
         <div class="wealth-form-row">
@@ -19876,7 +19988,8 @@ Data caveat`;
           <div>
             <label>Adapter</label>
             <div style="font-weight:700">${escapeHtml(adapter.label)}</div>
-            <div class="tiny" style="margin-top:4px;color:var(--text2)">${escapeHtml(preset.label)} · ${escapeHtml(adapter.cadence)}</div>
+            <div class="tiny" style="margin-top:4px;color:var(--text2)">${escapeHtml(preset.label)} · ${escapeHtml(wealthPropertyFeedConnectionLabel(adapter.connection_mode))} · ${escapeHtml(adapter.cadence)}</div>
+            ${adapter.reference_key ? `<div class="tiny" style="margin-top:4px;color:var(--text2)">${escapeHtml(wealthPropertyFeedReferenceLabel(adapter.provider_key))}: ${escapeHtml(adapter.reference_key)}</div>` : ""}
           </div>
         </div>
         <div class="wealth-form-row">
@@ -19897,7 +20010,7 @@ Data caveat`;
         </div>
         <div>
           <label>Check Note</label>
-          <textarea id="wealthPropertyFeedRunNoteInput" rows="3" placeholder="Optional note about what you found...">${escapeHtml(adapter.last_sync_note || "")}</textarea>
+          <textarea id="wealthPropertyFeedRunNoteInput" rows="3" placeholder="${escapeHtml(wealthPropertyFeedCheckPlaceholder(adapter.provider_key))}">${escapeHtml(adapter.last_sync_note || "")}</textarea>
         </div>
         <div class="wealth-form-row">
           <div>
@@ -19911,12 +20024,13 @@ Data caveat`;
         </div>
         <div>
           <label>Signal Label</label>
-          <input id="wealthPropertyFeedRunSignalLabelInput" placeholder="e.g. ${escapeHtml(signalPreset.default_label || adapter.label)}" value="${escapeHtml(adapter.label)}" />
+          <input id="wealthPropertyFeedRunSignalLabelInput" placeholder="e.g. ${escapeHtml(wealthPropertyFeedSignalLabelHint(adapter.provider_key, signalPreset.default_label || adapter.label))}" value="${escapeHtml(adapter.label)}" />
         </div>
         <div class="tiny" style="color:var(--text2)">
           ${escapeHtml(preset.helper || "Record a feed check and optionally import a fresh signal from it.")}
           ${adapter.endpoint_hint ? ` Source reference: ${escapeHtml(adapter.endpoint_hint)}` : ""}
         </div>
+        ${wealthPropertyFeedAdapterIsReady(adapter) ? "" : `<div class="health-note-box" style="margin-top:0"><div class="tiny" style="color:var(--text2)">This adapter is still a stub. Add a ${escapeHtml(wealthPropertyFeedReferenceLabel(adapter.provider_key).toLowerCase())} or endpoint in the adapter setup so future live checks have a concrete source to target.</div></div>`}
         <div class="controls" style="justify-content:space-between">
           <button class="ghost" id="wealthPropertyFeedRunBackBtn" type="button">Back</button>
           <button class="primary" id="wealthPropertyFeedRunSubmitBtn" type="button">Save Check</button>
@@ -20188,14 +20302,17 @@ Data caveat`;
                 <div>
                   <div class="wealth-account-name">${escapeHtml(adapter.label)}</div>
                   <div class="wealth-rule-meta">
-                    <span>${escapeHtml((WEALTH_PROPERTY_FEED_PROVIDERS[adapter.provider_key] || WEALTH_PROPERTY_FEED_PROVIDERS.manual_watch).label || adapter.provider_key)}</span>
+                    <span>${escapeHtml(getWealthPropertyFeedProviderPreset(adapter.provider_key).label || adapter.provider_key)}</span>
                     <span>${escapeHtml(WEALTH_PROPERTY_SIGNAL_SOURCES[adapter.source] || adapter.source)}</span>
+                    <span>${escapeHtml(wealthPropertyFeedConnectionLabel(adapter.connection_mode))}</span>
                     <span>${escapeHtml(adapter.cadence)}</span>
                     <span>${escapeHtml(adapter.status)}</span>
+                    <span>${wealthPropertyFeedAdapterIsReady(adapter) ? "Configured" : "Needs setup"}</span>
                     ${adapter.last_sync_status ? `<span>${escapeHtml(adapter.last_sync_status.toUpperCase())}</span>` : ""}
                     ${adapter.last_signal_date ? `<span>Last signal ${escapeHtml(formatDateLabel(adapter.last_signal_date))}</span>` : `<span>No signal yet</span>`}
                     ${adapter.last_signal_value_minor ? `<span>${formatCurrency(adapter.last_signal_value_minor)}</span>` : ""}
                   </div>
+                  ${adapter.reference_key ? `<div class="tiny" style="margin-top:4px;color:var(--text2)">${escapeHtml(wealthPropertyFeedReferenceLabel(adapter.provider_key))}: ${escapeHtml(adapter.reference_key)}</div>` : ""}
                   ${adapter.last_sync_note ? `<div class="tiny" style="margin-top:4px;color:var(--text2)">${escapeHtml(adapter.last_sync_note)}</div>` : ""}
                   ${adapter.endpoint_hint ? `<div class="tiny" style="margin-top:4px;color:var(--text2)">${escapeHtml(adapter.endpoint_hint)}</div>` : ""}
                   ${adapter.note ? `<div class="tiny" style="margin-top:4px;color:var(--text2)">${escapeHtml(adapter.note)}</div>` : ""}
@@ -21253,6 +21370,9 @@ Data caveat`;
             source: adapter.source,
             cadence: adapter.cadence,
             status: adapter.status,
+            connection_mode: adapter.connection_mode,
+            reference_key: adapter.reference_key || null,
+            configured: wealthPropertyFeedAdapterIsReady(adapter),
             last_sync_status: adapter.last_sync_status || null,
             last_sync_note: adapter.last_sync_note || null,
             last_signal_date: adapter.last_signal_date || null,
