@@ -2075,6 +2075,13 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
 .wealth-merchant-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .wealth-merchant-total{font-weight:700;font-variant-numeric:tabular-nums}
 .wealth-allocation-list{display:flex;flex-direction:column;gap:10px}
+.wealth-snapshot-list{display:flex;flex-direction:column;gap:10px}
+.wealth-snapshot-row{display:grid;grid-template-columns:110px 1fr auto;gap:12px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--bg)}
+.wealth-snapshot-month{font-weight:700;color:var(--text)}
+.wealth-snapshot-meta{font-size:.72rem;color:var(--text2);margin-top:4px}
+.wealth-snapshot-bar{height:10px;border-radius:999px;background:#edf2ed;overflow:hidden}
+.wealth-snapshot-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,var(--accent),#7ed0a6)}
+.wealth-snapshot-value{text-align:right;font-weight:700;color:var(--text)}
 .wealth-allocation-item{display:grid;grid-template-columns:140px 1fr 72px;gap:12px;align-items:center;font-size:.82rem}
 .wealth-allocation-label{font-weight:600}
 .wealth-allocation-track{height:10px;border-radius:999px;background:var(--line);overflow:hidden}
@@ -3149,6 +3156,13 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         </div>
 
         <div class="review-card">
+          <h4 style="margin-bottom:12px">Snapshot Trend</h4>
+          <div id="portfolioSnapshotTrend" class="wealth-snapshot-list">
+            <div class="wealth-empty-state">Portfolio snapshots will build as monthly history accumulates.</div>
+          </div>
+        </div>
+
+        <div class="review-card">
           <h4 style="margin-bottom:12px">Allocation by Asset Type</h4>
           <div id="portfolioAllocation" class="wealth-allocation-list">
             <div class="wealth-empty-state">Add holdings to see allocation.</div>
@@ -4110,17 +4124,18 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           accounts: [],
           transactions: [],
           currency: "AUD",
-        display_percentages: false,
+          display_percentages: false,
         cashflow_scope_filter: "household",
         cashflow_account_filter: "",
         holdings_sort: { key: "marketValueMinor", dir: "desc" },
-        holdings: [],
-        trades: [],
-        dividends: [],
-        price_quotes: {},
-        fx_quotes: {},
-        properties: [],
-        property_estimates: {},
+          holdings: [],
+          trades: [],
+          dividends: [],
+          portfolio_snapshots: [],
+          price_quotes: {},
+          fx_quotes: {},
+          properties: [],
+          property_estimates: {},
           import_templates: [],
           category_rules: [],
           last_import_review: null,
@@ -4279,6 +4294,19 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         sample_transactions: Array.isArray(review.sample_transactions)
           ? review.sample_transactions.map(txn => normalizeWealthTransactionRecord(txn))
           : []
+      };
+    }
+
+    function normalizeWealthPortfolioSnapshotRecord(record) {
+      return {
+        month_key: String(record?.month_key || "").trim(),
+        captured_at: record?.captured_at || new Date().toISOString(),
+        market_value_minor: normalizeMinorAmount(record?.market_value_minor, record?.market_value),
+        cost_basis_minor: normalizeMinorAmount(record?.cost_basis_minor, record?.cost_basis),
+        unrealized_gain_loss_minor: normalizeMinorAmount(record?.unrealized_gain_loss_minor, record?.unrealized_gain_loss),
+        trailing12_dividend_income_minor: normalizeMinorAmount(record?.trailing12_dividend_income_minor, record?.trailing12_dividend_income),
+        total_dividend_income_minor: normalizeMinorAmount(record?.total_dividend_income_minor, record?.total_dividend_income),
+        holding_count: Number.isFinite(Number(record?.holding_count)) ? Number(record.holding_count) : 0
       };
     }
 
@@ -4659,6 +4687,9 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         })) : [],
         trades: Array.isArray(iw.trades) ? iw.trades.map(normalizeWealthTradeRecord).filter(trade => trade.holding_id) : [],
         dividends: Array.isArray(iw.dividends) ? iw.dividends.map(normalizeWealthDividendRecord).filter(dividend => dividend.holding_id) : [],
+        portfolio_snapshots: Array.isArray(iw.portfolio_snapshots)
+          ? iw.portfolio_snapshots.map(normalizeWealthPortfolioSnapshotRecord).filter(snapshot => snapshot.month_key)
+          : [],
         price_quotes: iw.price_quotes && typeof iw.price_quotes === "object" ? Object.fromEntries(
           Object.entries(iw.price_quotes).map(([key, q]) => [key, {
             provider_symbol: String(q?.provider_symbol || "").trim(),
@@ -15719,6 +15750,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
           holdings: [],
           trades: [],
           dividends: [],
+          portfolio_snapshots: [],
           price_quotes: {},
           fx_quotes: {},
           properties: [],
@@ -15734,6 +15766,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       if (!Array.isArray(state.wealth.holdings)) state.wealth.holdings = [];
       if (!Array.isArray(state.wealth.trades)) state.wealth.trades = [];
       if (!Array.isArray(state.wealth.dividends)) state.wealth.dividends = [];
+      if (!Array.isArray(state.wealth.portfolio_snapshots)) state.wealth.portfolio_snapshots = [];
       if (!Array.isArray(state.wealth.import_templates)) state.wealth.import_templates = [];
       if (!Array.isArray(state.wealth.category_rules)) state.wealth.category_rules = [];
       if (!state.wealth.price_quotes || typeof state.wealth.price_quotes !== "object") state.wealth.price_quotes = {};
@@ -16824,6 +16857,56 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       };
     }
 
+    function getWealthPortfolioSnapshots() {
+      return (state.wealth?.portfolio_snapshots || [])
+        .map(normalizeWealthPortfolioSnapshotRecord)
+        .filter(snapshot => snapshot.month_key)
+        .sort((a, b) => a.month_key.localeCompare(b.month_key));
+    }
+
+    function currentPortfolioSnapshotMonthKey(dateKey = todayISO()) {
+      return String(dateKey || todayISO()).slice(0, 7);
+    }
+
+    function maybeCaptureWealthPortfolioSnapshot(portfolio, dateKey = todayISO()) {
+      const wealth = ensureWealthStateShape();
+      const monthKey = currentPortfolioSnapshotMonthKey(dateKey);
+      if (!monthKey) return false;
+      const holdingCount = (portfolio?.holdingViews || []).length;
+      if (!holdingCount && !(portfolio?.totalCostBasisMinor || 0) && !(portfolio?.totalMarketValueMinor || 0) && !(portfolio?.totalDividendIncomeMinor || 0)) return false;
+      const nextRecord = normalizeWealthPortfolioSnapshotRecord({
+        month_key: monthKey,
+        captured_at: new Date().toISOString(),
+        market_value_minor: portfolio?.totalMarketValueMinor || 0,
+        cost_basis_minor: portfolio?.totalCostBasisMinor || 0,
+        unrealized_gain_loss_minor: portfolio?.unrealizedGainLossMinor || 0,
+        trailing12_dividend_income_minor: portfolio?.trailing12DividendIncomeMinor || 0,
+        total_dividend_income_minor: portfolio?.totalDividendIncomeMinor || 0,
+        holding_count: holdingCount
+      });
+      const snapshots = Array.isArray(wealth.portfolio_snapshots) ? wealth.portfolio_snapshots : [];
+      const existingIndex = snapshots.findIndex(snapshot => snapshot.month_key === monthKey);
+      if (existingIndex >= 0) {
+        const existing = normalizeWealthPortfolioSnapshotRecord(snapshots[existingIndex]);
+        const unchanged =
+          existing.market_value_minor === nextRecord.market_value_minor &&
+          existing.cost_basis_minor === nextRecord.cost_basis_minor &&
+          existing.unrealized_gain_loss_minor === nextRecord.unrealized_gain_loss_minor &&
+          existing.trailing12_dividend_income_minor === nextRecord.trailing12_dividend_income_minor &&
+          existing.total_dividend_income_minor === nextRecord.total_dividend_income_minor &&
+          existing.holding_count === nextRecord.holding_count;
+        if (unchanged) return false;
+        snapshots[existingIndex] = nextRecord;
+      } else {
+        snapshots.push(nextRecord);
+      }
+      wealth.portfolio_snapshots = snapshots
+        .map(normalizeWealthPortfolioSnapshotRecord)
+        .sort((a, b) => a.month_key.localeCompare(b.month_key));
+      saveState("wealth_capture_portfolio_snapshot");
+      return true;
+    }
+
     function computeHoldingPosition(holdingId) {
       const trades = getTradesForHolding(holdingId);
       let unitsHeld = 0;
@@ -17349,8 +17432,47 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       </div>`;
     }
 
+    function renderWealthPortfolioSnapshotTrend() {
+      const el = document.getElementById("portfolioSnapshotTrend");
+      if (!el) return;
+      const snapshots = getWealthPortfolioSnapshots().slice(-6);
+      if (!snapshots.length) {
+        el.innerHTML = '<div class="wealth-empty-state">Portfolio snapshots will build as monthly history accumulates.</div>';
+        return;
+      }
+      const latest = snapshots[snapshots.length - 1];
+      const first = snapshots[0];
+      const changeMinor = Number(latest.market_value_minor || 0) - Number(first.market_value_minor || 0);
+      const maxMarketMinor = Math.max(...snapshots.map(snapshot => Number(snapshot.market_value_minor || 0)), 1);
+      const summaryBits = [
+        `${snapshots.length} month${snapshots.length === 1 ? "" : "s"} tracked`,
+        `Latest ${formatCurrency(latest.market_value_minor || 0)}`,
+        snapshots.length > 1 ? `Change ${changeMinor >= 0 ? "+" : "-"}${formatCurrency(Math.abs(changeMinor))}` : "Tracking started this month"
+      ];
+      el.innerHTML = `
+        <div class="tiny" style="color:var(--text2);margin-bottom:4px">${summaryBits.join(" · ")}</div>
+        ${snapshots.map(snapshot => {
+          const widthPct = Math.max(6, Math.round((Number(snapshot.market_value_minor || 0) / maxMarketMinor) * 100));
+          const [year, month] = String(snapshot.month_key || "").split("-");
+          const monthLabel = year && month
+            ? new Date(Number(year), Number(month) - 1, 1).toLocaleDateString("en-AU", { month: "short", year: "numeric" })
+            : snapshot.month_key;
+          const returnPct = simpleReturnPct(snapshot.cost_basis_minor || 0, snapshot.market_value_minor || 0);
+          return `<div class="wealth-snapshot-row">
+            <div>
+              <div class="wealth-snapshot-month">${escapeHtml(monthLabel)}</div>
+              <div class="wealth-snapshot-meta">${snapshot.holding_count || 0} holding${snapshot.holding_count === 1 ? "" : "s"} · ${returnPct == null ? "No return yet" : `${formatPct(returnPct)} return`}</div>
+            </div>
+            <div class="wealth-snapshot-bar"><div class="wealth-snapshot-fill" style="width:${widthPct}%"></div></div>
+            <div class="wealth-snapshot-value">${formatCurrency(snapshot.market_value_minor || 0)}</div>
+          </div>`;
+        }).join("")}
+      `;
+    }
+
     function renderWealthPortfolio() {
       const snapshot = getPortfolioSnapshot();
+      maybeCaptureWealthPortfolioSnapshot(snapshot);
       const displayPercentages = !!state.wealth?.display_percentages;
       const sort = normalizeWealthSort(state);
       const totalReturnPct = simpleReturnPct(snapshot.totalCostBasisMinor, snapshot.totalMarketValueMinor);
@@ -17374,6 +17496,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       if (dividendTtmEl) dividendTtmEl.textContent = formatCurrency(snapshot.trailing12DividendIncomeMinor || 0);
       if (dividendTotalEl) dividendTotalEl.textContent = formatCurrency(snapshot.totalDividendIncomeMinor || 0);
       if (staleEl) staleEl.textContent = String(snapshot.missingOrStaleCount);
+      renderWealthPortfolioSnapshotTrend();
       document.querySelectorAll("#portfolioDisplayMode [data-portfolio-display]").forEach(btn => {
         btn.classList.toggle("active", btn.getAttribute("data-portfolio-display") === (displayPercentages ? "percent" : "amount"));
       });
@@ -17688,6 +17811,15 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
           dividend_income_minor: portfolio.totalDividendIncomeMinor,
           trailing12_dividend_income_minor: portfolio.trailing12DividendIncomeMinor,
           missing_or_stale_quotes: portfolio.missingOrStaleCount,
+          snapshots: getWealthPortfolioSnapshots().slice(-6).map(snapshot => ({
+            month_key: snapshot.month_key,
+            market_value_minor: snapshot.market_value_minor,
+            cost_basis_minor: snapshot.cost_basis_minor,
+            unrealized_gain_loss_minor: snapshot.unrealized_gain_loss_minor,
+            trailing12_dividend_income_minor: snapshot.trailing12_dividend_income_minor,
+            total_dividend_income_minor: snapshot.total_dividend_income_minor,
+            holding_count: snapshot.holding_count
+          })),
           holdings: portfolio.holdingViews
             .slice(0, 20)
             .map(h => ({
