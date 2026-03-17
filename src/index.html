@@ -15792,6 +15792,43 @@ Data caveat`;
       manual_external: "External estimate",
       other: "Other"
     };
+    const WEALTH_PROPERTY_SIGNAL_PRESETS = {
+      bank: {
+        title: "Bank valuation",
+        default_confidence: "high",
+        default_label: "Bank valuation",
+        helper: "Use for refinance, lender, or servicing valuations.",
+        example: "2026-03-01, 965000, Refinance valuation"
+      },
+      domain: {
+        title: "Portal estimate",
+        default_confidence: "medium",
+        default_label: "Portal estimate",
+        helper: "Use for Domain, realestate.com.au, or other portal estimates.",
+        example: "2026-03-10, 982000, Domain estimate"
+      },
+      agent: {
+        title: "Agent appraisal",
+        default_confidence: "medium",
+        default_label: "Agent appraisal",
+        helper: "Use for a CMA or an agent’s current sale-range estimate.",
+        example: "2026-03-15, 990000, Local agent appraisal"
+      },
+      government: {
+        title: "Gov / registry signal",
+        default_confidence: "medium",
+        default_label: "Government signal",
+        helper: "Use for rates notices, registry values, or council valuations.",
+        example: "2026-03-01, 940000, Council valuation"
+      },
+      manual_external: {
+        title: "External estimate",
+        default_confidence: "medium",
+        default_label: "External estimate",
+        helper: "Use for third-party values that are not already covered by a dedicated preset.",
+        example: "2026-03-20, 975000, External estimate"
+      }
+    };
     const WEALTH_ASSET_TYPES = {
       stock: "Stock",
       etf: "ETF",
@@ -17909,6 +17946,65 @@ Data caveat`;
       return 0.82;
     }
 
+    function getWealthPropertySignalPreset(source) {
+      return WEALTH_PROPERTY_SIGNAL_PRESETS[source] || WEALTH_PROPERTY_SIGNAL_PRESETS.manual_external;
+    }
+
+    function parseLooseDateInput(value) {
+      const raw = String(value || "").trim();
+      if (!raw) return "";
+      if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+      const dmy = raw.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+      if (dmy) {
+        const day = String(dmy[1]).padStart(2, "0");
+        const month = String(dmy[2]).padStart(2, "0");
+        const year = dmy[3].length === 2 ? `20${dmy[3]}` : dmy[3];
+        return `${year}-${month}-${day}`;
+      }
+      const parsed = new Date(raw);
+      if (Number.isNaN(parsed.getTime())) return "";
+      const year = parsed.getFullYear();
+      const month = String(parsed.getMonth() + 1).padStart(2, "0");
+      const day = String(parsed.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    }
+
+    function parsePropertySignalImportAmount(value) {
+      const normalized = String(value || "").replace(/[^0-9.-]/g, "");
+      return normalized || "";
+    }
+
+    function parseWealthPropertySignalImportRows(rawText, source, confidence) {
+      const lines = String(rawText || "").split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+      const parsed = [];
+      let skipped = 0;
+      lines.forEach(line => {
+        const parts = line.includes("\t")
+          ? line.split("\t").map(part => part.trim())
+          : line.split(",").map(part => part.trim());
+        const rawDate = parts[0] || "";
+        const rawValue = parts[1] || "";
+        const label = parts[2] || "";
+        const note = parts.slice(3).join(", ").trim();
+        const signalDate = parseLooseDateInput(rawDate);
+        const amount = parsePropertySignalImportAmount(rawValue);
+        if (!amount) {
+          skipped += 1;
+          return;
+        }
+        parsed.push({
+          source,
+          confidence,
+          signal_date: signalDate || todayISO(),
+          estimated_value: amount,
+          label,
+          note,
+          url: ""
+        });
+      });
+      return { parsed, skipped, total: lines.length };
+    }
+
     function summarizeWealthPropertySignals(signals, today) {
       const validSignals = Array.isArray(signals)
         ? signals.filter(signal => Number(signal?.estimated_value_minor || 0) > 0)
@@ -18259,6 +18355,42 @@ Data caveat`;
       renderWealth();
     }
 
+    function importWealthPropertySignals(propertyId, rows) {
+      const wealth = ensureWealthStateShape();
+      const property = getWealthPropertyById(propertyId);
+      if (!property || !Array.isArray(rows) || !rows.length) return 0;
+      let importedCount = 0;
+      wealth.properties = (wealth.properties || []).map(item => {
+        if (item.id !== propertyId) return item;
+        const nextSignals = [...(item.external_signals || [])];
+        rows.forEach(row => {
+          nextSignals.push(normalizeWealthPropertySignalRecord({
+            id: uid(),
+            source: row.source,
+            label: row.label,
+            signal_date: row.signal_date,
+            estimated_value: row.estimated_value,
+            confidence: row.confidence,
+            note: row.note,
+            url: row.url,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          }));
+          importedCount += 1;
+        });
+        return normalizeWealthPropertyRecord({
+          ...item,
+          external_signals: nextSignals,
+          updated_at: new Date().toISOString()
+        });
+      });
+      if (!importedCount) return 0;
+      rebuildWealthPropertyEstimates();
+      saveState("wealth_import_property_signals");
+      renderWealth();
+      return importedCount;
+    }
+
     function addWealthAccount(name, type, openingBalance) {
       ensureWealthStateShape();
       const account = {
@@ -18527,10 +18659,13 @@ Data caveat`;
       });
     }
 
-    function showWealthPropertySignalModal(propertyId, signalId = "") {
+    function showWealthPropertySignalModal(propertyId, signalId = "", presetSource = "") {
       const property = getWealthPropertyById(propertyId);
       if (!property) return;
       const existing = signalId ? getWealthPropertySignalById(property, signalId) : null;
+      const initialSource = existing?.source || presetSource || "manual_external";
+      const preset = getWealthPropertySignalPreset(initialSource);
+      const initialConfidence = existing?.confidence || preset.default_confidence || "medium";
       const html = `<div class="wealth-form-grid">
         <div>
           <label>Property</label>
@@ -18540,20 +18675,20 @@ Data caveat`;
           <div>
             <label>Signal Source</label>
             <select id="wealthPropertySignalSourceInput">
-              ${Object.entries(WEALTH_PROPERTY_SIGNAL_SOURCES).map(([key, label]) => `<option value="${key}" ${existing?.source === key ? "selected" : ""}>${escapeHtml(label)}</option>`).join("")}
+              ${Object.entries(WEALTH_PROPERTY_SIGNAL_SOURCES).map(([key, label]) => `<option value="${key}" ${initialSource === key ? "selected" : ""}>${escapeHtml(label)}</option>`).join("")}
             </select>
           </div>
           <div>
             <label>Confidence</label>
             <select id="wealthPropertySignalConfidenceInput">
-              ${["low", "medium", "high"].map(level => `<option value="${level}" ${existing?.confidence === level ? "selected" : ""}>${escapeHtml(level.charAt(0).toUpperCase() + level.slice(1))}</option>`).join("")}
+              ${["low", "medium", "high"].map(level => `<option value="${level}" ${initialConfidence === level ? "selected" : ""}>${escapeHtml(level.charAt(0).toUpperCase() + level.slice(1))}</option>`).join("")}
             </select>
           </div>
         </div>
         <div class="wealth-form-row">
           <div>
             <label>Label</label>
-            <input id="wealthPropertySignalLabelInput" placeholder="e.g. CoreLogic estimate" value="${escapeHtml(existing?.label || "")}" />
+            <input id="wealthPropertySignalLabelInput" placeholder="e.g. ${escapeHtml(preset.default_label)}" value="${escapeHtml(existing?.label || preset.default_label || "")}" />
           </div>
           <div>
             <label>Signal Date</label>
@@ -18573,6 +18708,9 @@ Data caveat`;
         <div>
           <label>Note</label>
           <textarea id="wealthPropertySignalNoteInput" rows="3" placeholder="Optional note...">${escapeHtml(existing?.note || "")}</textarea>
+        </div>
+        <div class="tiny" style="color:var(--text2)">
+          ${escapeHtml(preset.helper || "Add an external property value signal.")} Example: ${escapeHtml(preset.example || "")}
         </div>
         <div class="controls" style="justify-content:space-between">
           <button class="ghost" id="wealthPropertySignalBackBtn" type="button">Back</button>
@@ -18596,6 +18734,78 @@ Data caveat`;
             note: document.getElementById("wealthPropertySignalNoteInput")?.value || "",
             url: document.getElementById("wealthPropertySignalUrlInput")?.value || ""
           }, existing?.id || "");
+          showWealthPropertyDetailModal(propertyId);
+        });
+      });
+    }
+
+    function showWealthPropertySignalImportModal(propertyId, initialSource = "bank") {
+      const property = getWealthPropertyById(propertyId);
+      if (!property) return;
+      const preset = getWealthPropertySignalPreset(initialSource);
+      const html = `<div class="wealth-form-grid">
+        <div>
+          <label>Property</label>
+          <div style="font-weight:700">${escapeHtml(property.label)}</div>
+        </div>
+        <div class="wealth-form-row">
+          <div>
+            <label>Source Preset</label>
+            <select id="wealthPropertySignalImportSourceInput">
+              ${Object.entries(WEALTH_PROPERTY_SIGNAL_PRESETS).map(([key, config]) => `<option value="${key}" ${initialSource === key ? "selected" : ""}>${escapeHtml(config.title)}</option>`).join("")}
+            </select>
+          </div>
+          <div>
+            <label>Default Confidence</label>
+            <select id="wealthPropertySignalImportConfidenceInput">
+              ${["low", "medium", "high"].map(level => `<option value="${level}" ${(preset.default_confidence || "medium") === level ? "selected" : ""}>${escapeHtml(level.charAt(0).toUpperCase() + level.slice(1))}</option>`).join("")}
+            </select>
+          </div>
+        </div>
+        <div class="tiny" id="wealthPropertySignalImportHelp" style="color:var(--text2)">
+          ${escapeHtml(preset.helper)} Example: ${escapeHtml(preset.example)}
+        </div>
+        <div>
+          <label>Paste Signals</label>
+          <textarea id="wealthPropertySignalImportTextInput" rows="7" placeholder="One signal per line: date, value, label, note(optional)"></textarea>
+        </div>
+        <div class="tiny" style="color:var(--text2)">
+          Accepted formats: comma-separated or tab-separated. Example: <code>${escapeHtml(preset.example)}</code>
+        </div>
+        <div class="tiny" id="wealthPropertySignalImportStatus" style="color:var(--text2)"></div>
+        <div class="controls" style="justify-content:space-between">
+          <button class="ghost" id="wealthPropertySignalImportBackBtn" type="button">Back</button>
+          <button class="primary" id="wealthPropertySignalImportSubmitBtn" type="button">Import Signals</button>
+        </div>
+      </div>`;
+      showWealthModal("Import External Signals", html);
+      requestAnimationFrame(() => {
+        const sourceSelect = document.getElementById("wealthPropertySignalImportSourceInput");
+        const confidenceSelect = document.getElementById("wealthPropertySignalImportConfidenceInput");
+        const helpEl = document.getElementById("wealthPropertySignalImportHelp");
+        const statusEl = document.getElementById("wealthPropertySignalImportStatus");
+        const updatePresetHelp = () => {
+          const nextPreset = getWealthPropertySignalPreset(sourceSelect?.value || initialSource);
+          if (confidenceSelect && !confidenceSelect.dataset.userChanged) confidenceSelect.value = nextPreset.default_confidence || "medium";
+          if (helpEl) helpEl.textContent = `${nextPreset.helper} Example: ${nextPreset.example}`;
+        };
+        sourceSelect?.addEventListener("change", updatePresetHelp);
+        confidenceSelect?.addEventListener("change", () => { confidenceSelect.dataset.userChanged = "true"; });
+        document.getElementById("wealthPropertySignalImportTextInput")?.focus();
+        document.getElementById("wealthPropertySignalImportBackBtn")?.addEventListener("click", () => showWealthPropertyDetailModal(propertyId));
+        document.getElementById("wealthPropertySignalImportSubmitBtn")?.addEventListener("click", () => {
+          const source = sourceSelect?.value || initialSource;
+          const confidence = confidenceSelect?.value || getWealthPropertySignalPreset(source).default_confidence || "medium";
+          const rows = parseWealthPropertySignalImportRows(document.getElementById("wealthPropertySignalImportTextInput")?.value || "", source, confidence);
+          if (!rows.parsed.length) {
+            if (statusEl) statusEl.textContent = rows.total ? `No valid rows found. Skipped ${rows.skipped} line${rows.skipped === 1 ? "" : "s"}.` : "Paste at least one row to import.";
+            return;
+          }
+          const imported = importWealthPropertySignals(propertyId, rows.parsed);
+          if (!imported) {
+            if (statusEl) statusEl.textContent = "No signals were imported.";
+            return;
+          }
           showWealthPropertyDetailModal(propertyId);
         });
       });
@@ -18665,7 +18875,13 @@ Data caveat`;
         <div>
           <div class="controls" style="justify-content:space-between;align-items:center">
             <label style="margin:0">External Signals</label>
-            <button class="primary" id="wealthPropertyAddSignalBtn" type="button">Add Signal</button>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">
+              <button class="wealth-inline-btn" id="wealthPropertyPresetBankBtn" type="button">Bank</button>
+              <button class="wealth-inline-btn" id="wealthPropertyPresetDomainBtn" type="button">Portal</button>
+              <button class="wealth-inline-btn" id="wealthPropertyPresetAgentBtn" type="button">Agent</button>
+              <button class="wealth-inline-btn" id="wealthPropertyImportSignalsBtn" type="button">Import</button>
+              <button class="primary" id="wealthPropertyAddSignalBtn" type="button">Manual</button>
+            </div>
           </div>
           <div class="wealth-list" style="display:flex;flex-direction:column;gap:8px;margin-top:8px">
             ${externalSignals.length ? externalSignals.map(signal => `
@@ -18719,6 +18935,10 @@ Data caveat`;
       requestAnimationFrame(() => {
         document.getElementById("wealthPropertyEditBtn")?.addEventListener("click", () => showWealthPropertyModal(propertyId));
         document.getElementById("wealthPropertyAddSignalBtn")?.addEventListener("click", () => showWealthPropertySignalModal(propertyId));
+        document.getElementById("wealthPropertyPresetBankBtn")?.addEventListener("click", () => showWealthPropertySignalModal(propertyId, "", "bank"));
+        document.getElementById("wealthPropertyPresetDomainBtn")?.addEventListener("click", () => showWealthPropertySignalModal(propertyId, "", "domain"));
+        document.getElementById("wealthPropertyPresetAgentBtn")?.addEventListener("click", () => showWealthPropertySignalModal(propertyId, "", "agent"));
+        document.getElementById("wealthPropertyImportSignalsBtn")?.addEventListener("click", () => showWealthPropertySignalImportModal(propertyId, "bank"));
         document.getElementById("wealthPropertyAddComparableBtn")?.addEventListener("click", () => showWealthComparableModal(propertyId));
         document.querySelectorAll("[data-edit-property-signal]").forEach(btn => {
           btn.addEventListener("click", () => {
