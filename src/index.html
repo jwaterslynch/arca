@@ -2736,7 +2736,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
             <div class="stat-box"><div class="stat-val">0 / 7</div><div class="stat-label">Consistency</div></div>
             <div class="stat-box"><div class="stat-val">—</div><div class="stat-label">Last Session</div></div>
           </div>
-          <div class="health-card-note">Health now combines your existing exercise practice logs with intake, nutrition, measurements, and vitals. Sleep can build on this next.</div>
+          <div class="health-card-note">Health now combines exercise practice logs with intake, training blocks, nutrition, sleep, measurements, and vitals.</div>
         </div>
 
         <div class="review-card">
@@ -2768,6 +2768,19 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
             <div class="health-mini-stat"><div class="health-mini-stat-label">7D Avg Sleep</div><div class="health-mini-stat-value">—</div></div>
             <div class="health-mini-stat"><div class="health-mini-stat-label">7D Avg Quality</div><div class="health-mini-stat-value">—</div></div>
             <div class="health-mini-stat"><div class="health-mini-stat-label">Short Nights</div><div class="health-mini-stat-value">—</div></div>
+          </div>
+        </div>
+
+        <div class="review-card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:12px;flex-wrap:wrap">
+            <div>
+              <h4 style="margin-bottom:0">Recovery Overview</h4>
+              <div class="health-card-note" style="margin-top:4px">Readiness, schedule consistency, sleep debt, and any simple vitals context from recent logs.</div>
+            </div>
+            <button class="ghost" type="button" data-health-open-tab="sleep" style="font-size:.75rem">Open Sleep</button>
+          </div>
+          <div id="healthRecoveryOverviewSignals" class="health-list">
+            <div class="health-empty-state">Log a few nights to surface recovery patterns.</div>
           </div>
         </div>
 
@@ -2997,6 +3010,27 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
             <div id="healthSleepNotes" class="health-list">
               <div class="health-empty-state">No sleep notes yet.</div>
             </div>
+          </div>
+        </div>
+
+        <div class="review-card">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;gap:12px;flex-wrap:wrap">
+            <div>
+              <h4 style="margin-bottom:0">Sleep Coach</h4>
+              <div class="health-card-note" style="margin-top:4px">Ask about recovery patterns, schedule drift, short nights, or what to adjust next. Local AI is recommended for private health data.</div>
+            </div>
+            <button id="healthSleepProviderPill" class="ai-provider-pill tiny ai-switch-trigger" data-open-ai-switch="health-sleep" type="button" title="Switch AI"></button>
+          </div>
+          <div id="healthSleepCoachMessages" class="health-list">
+            <div class="health-empty-state">Ask about sleep quality, bedtime drift, short nights, or what the recent recovery pattern suggests.</div>
+          </div>
+          <div id="healthSleepCoachActions" class="wealth-coach-actions" style="margin-top:12px">
+            <span id="healthSleepCoachStatus" class="tiny"></span>
+            <button class="ghost" id="healthSleepCoachClearBtn" type="button" style="font-size:.75rem">Clear</button>
+          </div>
+          <div class="wealth-coach-input-row" style="margin-top:8px">
+            <textarea id="healthSleepCoachInput" rows="1" placeholder="Ask Sleep Coach..."></textarea>
+            <button id="healthSleepCoachSendBtn" class="wealth-coach-send" type="button">Ask</button>
           </div>
         </div>
 
@@ -10630,11 +10664,13 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
 
     function focusHealthAiInput() {
       aiPanelForcedVisible = true;
-      activeHealthTab = "exercise";
+      activeHealthTab = activeHealthTab === "sleep" ? "sleep" : "exercise";
       setActiveTab("health");
       render();
       requestAnimationFrame(() => {
-        const input = document.querySelector("[data-health-coach-practice]");
+        const input = activeHealthTab === "sleep"
+          ? document.getElementById("healthSleepCoachInput")
+          : document.querySelector("[data-health-coach-practice]");
         if (focusAiInputElement(input)) return;
         focusPlanAssistantAiInput();
       });
@@ -13775,6 +13811,153 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       return valid.reduce((sum, value) => sum + value, 0) / valid.length;
     }
 
+    function healthSleepClockToMinutes(value) {
+      const raw = String(value || "").trim();
+      if (!/^\d{2}:\d{2}$/.test(raw)) return null;
+      const [hours, minutes] = raw.split(":").map(Number);
+      if (!Number.isFinite(hours) || !Number.isFinite(minutes)) return null;
+      return (hours * 60) + minutes;
+    }
+
+    function circularTimeSpreadMinutes(values) {
+      const normalized = values.filter(value => Number.isFinite(value)).sort((a, b) => a - b);
+      if (normalized.length < 2) return null;
+      let maxGap = -1;
+      for (let idx = 0; idx < normalized.length; idx += 1) {
+        const current = normalized[idx];
+        const next = idx === normalized.length - 1 ? normalized[0] + 1440 : normalized[idx + 1];
+        maxGap = Math.max(maxGap, next - current);
+      }
+      return Math.max(0, 1440 - maxGap);
+    }
+
+    function formatHealthMinuteSpread(value) {
+      if (!Number.isFinite(value)) return "—";
+      if (value < 60) return `${Math.round(value)} min`;
+      const hours = Math.floor(value / 60);
+      const minutes = Math.round(value % 60);
+      return minutes ? `${hours}h ${minutes}m` : `${hours}h`;
+    }
+
+    function healthSleepLoggingStreak(logs) {
+      if (!Array.isArray(logs) || !logs.length) return 0;
+      const sorted = logs
+        .map(log => String(log.date || "").trim())
+        .filter(Boolean)
+        .sort((a, b) => b.localeCompare(a));
+      let streak = 0;
+      let cursor = parseLocalDateKey(sorted[0]);
+      for (const dateKey of sorted) {
+        const current = parseLocalDateKey(dateKey);
+        const diffDays = Math.round((cursor - current) / 86400000);
+        if (diffDays === 0) {
+          streak += 1;
+          cursor = new Date(current.getTime() - 86400000);
+          continue;
+        }
+        if (diffDays === 1) {
+          streak += 1;
+          cursor = new Date(current.getTime() - 86400000);
+          continue;
+        }
+        break;
+      }
+      return streak;
+    }
+
+    function healthRecentExerciseLoad(days = 14) {
+      const practices = getHealthPractices();
+      const dateKeys = getRecentDateKeys(days);
+      const entries = practices.flatMap(practice => practiceEntriesInDates(practice.id, dateKeys));
+      const doneSummary = practices.reduce((acc, practice) => {
+        const summary = practiceDoneSummaryForDates(practice, dateKeys);
+        acc.sessions += summary.sessions;
+        acc.minutes += summary.minutes;
+        return acc;
+      }, { sessions: 0, minutes: 0 });
+      const avgEnergy = averageOf(entries.map(entry => Number(entry?.metrics?.energy)));
+      return {
+        days,
+        sessions: doneSummary.sessions,
+        minutes: doneSummary.minutes,
+        avgEnergy
+      };
+    }
+
+    function buildHealthSleepRecoverySnapshot() {
+      const logs = getHealthSleepLogs();
+      const latest = logs[0] || null;
+      const previous = logs[1] || null;
+      const recent7 = logs.slice(0, 7);
+      const previous7 = logs.slice(7, 14);
+      const recent14 = logs.slice(0, 14);
+      const avgSleep = averageOf(recent7.map(log => Number(log.sleep_hours)));
+      const avgQuality = averageOf(recent7.map(log => Number(log.quality_1_5)));
+      const previousAvgSleep = averageOf(previous7.map(log => Number(log.sleep_hours)));
+      const durationTrendHours = Number.isFinite(avgSleep) && Number.isFinite(previousAvgSleep) ? avgSleep - previousAvgSleep : null;
+      const shortNights7 = recent7.filter(log => Number(log.sleep_hours) > 0 && Number(log.sleep_hours) < 6).length;
+      const debtNights14 = recent14.filter(log => Number(log.sleep_hours) > 0 && Number(log.sleep_hours) < 7).length;
+      const bedtimeSpreadMinutes = circularTimeSpreadMinutes(recent7.map(log => healthSleepClockToMinutes(log.bedtime)));
+      const wakeSpreadMinutes = circularTimeSpreadMinutes(recent7.map(log => healthSleepClockToMinutes(log.wake_time)));
+      const latestVitals = getHealthVitalsLogs()[0] || null;
+      const previousVitals = getHealthVitalsLogs()[1] || null;
+      const restingHrDelta = (latestVitals && previousVitals && Number.isFinite(latestVitals.resting_hr_bpm) && Number.isFinite(previousVitals.resting_hr_bpm))
+        ? latestVitals.resting_hr_bpm - previousVitals.resting_hr_bpm
+        : null;
+      const exerciseLoad = healthRecentExerciseLoad(14);
+      const loggingStreak = healthSleepLoggingStreak(logs);
+
+      let readinessScore = 0;
+      if (Number.isFinite(avgSleep)) {
+        if (avgSleep >= 7.5) readinessScore += 2;
+        else if (avgSleep >= 7) readinessScore += 1;
+        else if (avgSleep < 6) readinessScore -= 2;
+        else if (avgSleep < 6.5) readinessScore -= 1;
+      }
+      if (Number.isFinite(avgQuality)) {
+        if (avgQuality >= 4) readinessScore += 1;
+        else if (avgQuality <= 2.5) readinessScore -= 1;
+      }
+      if (shortNights7 === 0 && recent7.length >= 3) readinessScore += 1;
+      else if (shortNights7 >= 3) readinessScore -= 1;
+      if (Number.isFinite(bedtimeSpreadMinutes)) {
+        if (bedtimeSpreadMinutes <= 60) readinessScore += 1;
+        else if (bedtimeSpreadMinutes >= 150) readinessScore -= 1;
+      }
+      if (Number.isFinite(restingHrDelta)) {
+        if (restingHrDelta >= 5) readinessScore -= 1;
+        else if (restingHrDelta <= -3) readinessScore += 1;
+      }
+
+      const readiness = readinessScore >= 3
+        ? { label: "Stable", note: "Recovery inputs look steady across recent logs." }
+        : readinessScore >= 1
+          ? { label: "Watch", note: "Mostly workable, but there are recovery leaks worth tightening." }
+          : { label: "Strained", note: "Recent sleep and recovery signals suggest accumulated strain." };
+
+      return {
+        latest,
+        previous,
+        recent7,
+        previous7,
+        recent14,
+        avgSleep,
+        avgQuality,
+        previousAvgSleep,
+        durationTrendHours,
+        shortNights7,
+        debtNights14,
+        bedtimeSpreadMinutes,
+        wakeSpreadMinutes,
+        loggingStreak,
+        latestVitals,
+        previousVitals,
+        restingHrDelta,
+        exerciseLoad,
+        readiness
+      };
+    }
+
     function renderHealthAssessment() {
       const summaryEl = document.getElementById("healthAssessmentSummary");
       const signalsEl = document.getElementById("healthAssessmentSignals");
@@ -15020,89 +15203,141 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         : '<div class="health-empty-state">No nutrition logs yet.</div>';
     }
 
-    function renderHealthSleepSummaryInto(el) {
+    function renderHealthSleepSummaryInto(el, snapshot = buildHealthSleepRecoverySnapshot()) {
       if (!el) return;
-      const logs = getHealthSleepLogs();
-      const latest = logs[0] || null;
-      const recent7 = logs.slice(0, 7);
-      const avgSleep = averageOf(recent7.map(log => log.sleep_hours));
-      const avgQuality = averageOf(recent7.map(log => log.quality_1_5));
-      const shortNights = recent7.filter(log => Number(log.sleep_hours) > 0 && Number(log.sleep_hours) < 6).length;
       el.innerHTML = `
-        <div class="health-mini-stat"><div class="health-mini-stat-label">Latest Log</div><div class="health-mini-stat-value">${latest ? escapeHtml(fmtEntryDate(latest.date)) : "—"}</div></div>
-        <div class="health-mini-stat"><div class="health-mini-stat-label">7D Avg Sleep</div><div class="health-mini-stat-value">${Number.isFinite(avgSleep) ? `${avgSleep.toFixed(1)}h` : "—"}</div></div>
-        <div class="health-mini-stat"><div class="health-mini-stat-label">7D Avg Quality</div><div class="health-mini-stat-value">${Number.isFinite(avgQuality) ? `${avgQuality.toFixed(1)} / 5` : "—"}</div></div>
-        <div class="health-mini-stat"><div class="health-mini-stat-label">Short Nights</div><div class="health-mini-stat-value">${recent7.length ? `${shortNights} / ${recent7.length}` : "—"}</div></div>
+        <div class="health-mini-stat"><div class="health-mini-stat-label">Latest Log</div><div class="health-mini-stat-value">${snapshot.latest ? escapeHtml(fmtEntryDate(snapshot.latest.date)) : "—"}</div></div>
+        <div class="health-mini-stat"><div class="health-mini-stat-label">7D Avg Sleep</div><div class="health-mini-stat-value">${Number.isFinite(snapshot.avgSleep) ? `${snapshot.avgSleep.toFixed(1)}h` : "—"}</div></div>
+        <div class="health-mini-stat"><div class="health-mini-stat-label">7D Avg Quality</div><div class="health-mini-stat-value">${Number.isFinite(snapshot.avgQuality) ? `${snapshot.avgQuality.toFixed(1)} / 5` : "—"}</div></div>
+        <div class="health-mini-stat"><div class="health-mini-stat-label">Recovery State</div><div class="health-mini-stat-value">${escapeHtml(snapshot.latest ? snapshot.readiness.label : "—")}</div></div>
       `;
+    }
+
+    function renderHealthRecoveryOverviewInto(el, snapshot = buildHealthSleepRecoverySnapshot()) {
+      if (!el) return;
+      if (!snapshot.latest) {
+        el.innerHTML = '<div class="health-empty-state">Log a few nights to surface recovery patterns.</div>';
+        return;
+      }
+      const rows = [
+        {
+          label: "Recovery state",
+          meta: snapshot.readiness.note,
+          value: snapshot.readiness.label
+        },
+        {
+          label: "Sleep debt",
+          meta: "Nights under 7 hours across the recent 14-log window",
+          value: `${snapshot.debtNights14} / ${snapshot.recent14.length || 14}`
+        },
+        {
+          label: "Bedtime consistency",
+          meta: Number.isFinite(snapshot.bedtimeSpreadMinutes) ? "Smaller spread means a steadier schedule" : "Need at least two bedtimes in the recent window",
+          value: Number.isFinite(snapshot.bedtimeSpreadMinutes) ? formatHealthMinuteSpread(snapshot.bedtimeSpreadMinutes) : "—"
+        },
+        {
+          label: "Resting HR context",
+          meta: snapshot.latestVitals ? `Latest vitals from ${fmtEntryDate(snapshot.latestVitals.date)}` : "No recent vitals log to compare against recovery",
+          value: Number.isFinite(snapshot.restingHrDelta)
+            ? `${snapshot.restingHrDelta > 0 ? "+" : ""}${Math.round(snapshot.restingHrDelta)} bpm`
+            : (Number.isFinite(snapshot.latestVitals?.resting_hr_bpm) ? `${Math.round(snapshot.latestVitals.resting_hr_bpm)} bpm` : "—")
+        }
+      ];
+      el.innerHTML = rows.map(row => `
+        <div class="health-row">
+          <div class="health-row-main">
+            <div class="health-row-title">${escapeHtml(row.label)}</div>
+            <div class="health-row-meta">${escapeHtml(row.meta)}</div>
+          </div>
+          <div class="health-row-value">${escapeHtml(row.value)}</div>
+        </div>
+      `).join("");
     }
 
     function renderHealthSleep() {
       const overviewSummaryEl = document.getElementById("healthSleepOverviewSummary");
+      const recoveryOverviewEl = document.getElementById("healthRecoveryOverviewSignals");
       const summaryEl = document.getElementById("healthSleepSummary");
       const signalsEl = document.getElementById("healthSleepSignals");
       const notesEl = document.getElementById("healthSleepNotes");
       const historyEl = document.getElementById("healthSleepHistory");
-      renderHealthSleepSummaryInto(overviewSummaryEl);
+      const snapshot = buildHealthSleepRecoverySnapshot();
+      renderHealthSleepSummaryInto(overviewSummaryEl, snapshot);
+      renderHealthRecoveryOverviewInto(recoveryOverviewEl, snapshot);
       if (!summaryEl || !signalsEl || !notesEl || !historyEl) return;
 
       const logs = getHealthSleepLogs();
-      const latest = logs[0] || null;
-      const previous = logs[1] || null;
-      const recent7 = logs.slice(0, 7);
-      const avgSleep = averageOf(recent7.map(log => log.sleep_hours));
-      const avgQuality = averageOf(recent7.map(log => log.quality_1_5));
-      const shortNights = recent7.filter(log => Number(log.sleep_hours) > 0 && Number(log.sleep_hours) < 6).length;
-      renderHealthSleepSummaryInto(summaryEl);
+      renderHealthSleepSummaryInto(summaryEl, snapshot);
 
-      if (latest) {
-        const signals = [];
-        if (Number.isFinite(avgSleep)) {
-          signals.push({
-            label: "Recent sleep duration",
-            meta: `7-day average across ${recent7.length} night${recent7.length === 1 ? "" : "s"}`,
-            value: `${avgSleep.toFixed(1)}h`
-          });
-        }
-        if (Number.isFinite(avgQuality)) {
-          signals.push({
-            label: "Recent sleep quality",
-            meta: "Average subjective rating",
-            value: `${avgQuality.toFixed(1)} / 5`
-          });
-        }
-        if (shortNights > 0) {
-          signals.push({
-            label: "Short-sleep nights",
-            meta: "Nights under 6 hours in the recent window",
-            value: `${shortNights}`
-          });
-        }
-        if (latest.bedtime || latest.wake_time) {
-          signals.push({
+      if (snapshot.latest) {
+        const signals = [
+          {
+            label: "Recovery state",
+            meta: snapshot.readiness.note,
+            value: snapshot.readiness.label
+          },
+          {
+            label: "Sleep duration trend",
+            meta: Number.isFinite(snapshot.previousAvgSleep)
+              ? `Recent 7-log average vs the previous 7 logs`
+              : `7-log average across ${snapshot.recent7.length} night${snapshot.recent7.length === 1 ? "" : "s"}`,
+            value: Number.isFinite(snapshot.durationTrendHours)
+              ? `${snapshot.durationTrendHours > 0 ? "+" : ""}${snapshot.durationTrendHours.toFixed(1)}h`
+              : (Number.isFinite(snapshot.avgSleep) ? `${snapshot.avgSleep.toFixed(1)}h` : "—")
+          },
+          {
+            label: "Sleep debt signal",
+            meta: "Nights under 7 hours in the recent 14-log window",
+            value: `${snapshot.debtNights14} / ${snapshot.recent14.length || 14}`
+          },
+          {
+            label: "Bedtime consistency",
+            meta: Number.isFinite(snapshot.bedtimeSpreadMinutes) ? "Minimal spread across recent logged bedtimes" : "Need at least two logged bedtimes",
+            value: Number.isFinite(snapshot.bedtimeSpreadMinutes) ? formatHealthMinuteSpread(snapshot.bedtimeSpreadMinutes) : "—"
+          },
+          {
+            label: "Wake-time consistency",
+            meta: Number.isFinite(snapshot.wakeSpreadMinutes) ? "Minimal spread across recent logged wake times" : "Need at least two logged wake times",
+            value: Number.isFinite(snapshot.wakeSpreadMinutes) ? formatHealthMinuteSpread(snapshot.wakeSpreadMinutes) : "—"
+          },
+          {
+            label: "Recent exercise load",
+            meta: `Last ${snapshot.exerciseLoad.days} days of logged exercise`,
+            value: snapshot.exerciseLoad.sessions
+              ? `${snapshot.exerciseLoad.sessions} sessions · ${snapshot.exerciseLoad.minutes}m${Number.isFinite(snapshot.exerciseLoad.avgEnergy) ? ` · energy ${snapshot.exerciseLoad.avgEnergy.toFixed(1)}/10` : ""}`
+              : "No recent exercise logs"
+          }
+        ];
+        if (snapshot.latest.bedtime || snapshot.latest.wake_time) {
+          signals.splice(4, 0, {
             label: "Latest schedule",
-            meta: `Logged ${fmtEntryDate(latest.date)}`,
-            value: [latest.bedtime ? `Bed ${latest.bedtime}` : "", latest.wake_time ? `Wake ${latest.wake_time}` : ""].filter(Boolean).join(" · ") || "—"
+            meta: `Logged ${fmtEntryDate(snapshot.latest.date)}`,
+            value: [snapshot.latest.bedtime ? `Bed ${snapshot.latest.bedtime}` : "", snapshot.latest.wake_time ? `Wake ${snapshot.latest.wake_time}` : ""].filter(Boolean).join(" · ") || "—"
           });
         }
-        if (latest && previous && Number.isFinite(latest.sleep_hours) && Number.isFinite(previous.sleep_hours)) {
-          const delta = latest.sleep_hours - previous.sleep_hours;
+        if (Number.isFinite(snapshot.restingHrDelta)) {
           signals.push({
-            label: "Change vs previous log",
-            meta: `Compared with ${fmtEntryDate(previous.date)}`,
-            value: `${delta > 0 ? "+" : ""}${delta.toFixed(1)}h`
+            label: "Resting HR context",
+            meta: `Compared with vitals from ${fmtEntryDate(snapshot.previousVitals?.date || snapshot.latestVitals?.date || snapshot.latest.date)}`,
+            value: `${snapshot.restingHrDelta > 0 ? "+" : ""}${Math.round(snapshot.restingHrDelta)} bpm`
           });
         }
-        signalsEl.innerHTML = signals.length
-          ? signals.map(signal => `
-            <div class="health-row">
-              <div class="health-row-main">
-                <div class="health-row-title">${escapeHtml(signal.label)}</div>
-                <div class="health-row-meta">${escapeHtml(signal.meta)}</div>
-              </div>
-              <div class="health-row-value">${escapeHtml(signal.value)}</div>
+        if (snapshot.loggingStreak > 0) {
+          signals.push({
+            label: "Logging streak",
+            meta: "Consecutive sleep logs from the latest entry backward",
+            value: `${snapshot.loggingStreak} day${snapshot.loggingStreak === 1 ? "" : "s"}`
+          });
+        }
+        signalsEl.innerHTML = signals.map(signal => `
+          <div class="health-row">
+            <div class="health-row-main">
+              <div class="health-row-title">${escapeHtml(signal.label)}</div>
+              <div class="health-row-meta">${escapeHtml(signal.meta)}</div>
             </div>
-          `).join("")
-          : '<div class="health-empty-state">Log at least a few nights to see recovery signals.</div>';
+            <div class="health-row-value">${escapeHtml(signal.value)}</div>
+          </div>
+        `).join("");
       } else {
         signalsEl.innerHTML = '<div class="health-empty-state">Log at least a few nights to see recovery signals.</div>';
       }
@@ -15143,6 +15378,176 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
           </div>
         `).join("")
         : '<div class="health-empty-state">No sleep logs yet.</div>';
+
+      renderHealthSleepCoach(snapshot);
+    }
+
+    function buildHealthSleepCoachSnapshot() {
+      const snapshot = buildHealthSleepRecoverySnapshot();
+      return {
+        current_surface: "Health > Sleep",
+        summary: {
+          recovery_state: snapshot.latest ? snapshot.readiness.label : null,
+          avg_sleep_hours_7d: snapshot.avgSleep,
+          avg_quality_7d: snapshot.avgQuality,
+          short_nights_under_6h_7d: snapshot.shortNights7,
+          debt_nights_under_7h_14d: snapshot.debtNights14,
+          bedtime_spread_minutes_7d: snapshot.bedtimeSpreadMinutes,
+          wake_spread_minutes_7d: snapshot.wakeSpreadMinutes,
+          sleep_duration_trend_hours: snapshot.durationTrendHours,
+          logging_streak_days: snapshot.loggingStreak
+        },
+        latest_sleep_log: snapshot.latest ? {
+          date: snapshot.latest.date,
+          sleep_hours: snapshot.latest.sleep_hours,
+          quality_1_5: snapshot.latest.quality_1_5,
+          bedtime: snapshot.latest.bedtime,
+          wake_time: snapshot.latest.wake_time,
+          note: snapshot.latest.note || ""
+        } : null,
+        latest_vitals: snapshot.latestVitals ? {
+          date: snapshot.latestVitals.date,
+          weight_kg: snapshot.latestVitals.weight_kg,
+          resting_hr_bpm: snapshot.latestVitals.resting_hr_bpm,
+          systolic_bp: snapshot.latestVitals.systolic_bp,
+          diastolic_bp: snapshot.latestVitals.diastolic_bp,
+          note: snapshot.latestVitals.note || ""
+        } : null,
+        vitals_context: {
+          resting_hr_delta_bpm: snapshot.restingHrDelta
+        },
+        recent_exercise_load: snapshot.exerciseLoad,
+        recent_sleep_logs: snapshot.recent14.map(log => ({
+          date: log.date,
+          sleep_hours: log.sleep_hours,
+          quality_1_5: log.quality_1_5,
+          bedtime: log.bedtime,
+          wake_time: log.wake_time,
+          note: log.note || ""
+        }))
+      };
+    }
+
+    function healthSleepActiveProvider() {
+      return aiResolveConfig(aiPrefs).provider || aiPrefs.provider || "openai";
+    }
+
+    function healthSleepCoachNeedsCloudConsent(provider = healthSleepActiveProvider()) {
+      return !!aiPrefs.enabled && !!provider && provider !== "ollama" && !healthSleepCoachCloudConsent[provider];
+    }
+
+    function allowHealthSleepCoachCloudConsent(provider = healthSleepActiveProvider()) {
+      if (!provider || provider === "ollama") return;
+      healthSleepCoachCloudConsent[provider] = true;
+      renderHealthSleepCoach();
+    }
+
+    function openAiSettingsFromHealthSleepCoach() {
+      openAiSettingsPanel();
+      renderHealthSleepCoach();
+    }
+
+    function healthSleepCoachSystemPrompt() {
+      return `You are the PPP Flow Sleep Coach.
+
+Your job is to help the user interpret their sleep and recovery data inside the app.
+
+You can answer two kinds of questions:
+1. Product-use questions about what the sleep/recovery data means inside PPP Flow.
+2. Descriptive coaching questions about sleep duration, quality, schedule consistency, recovery strain, and obvious next adjustments.
+
+Rules:
+- Use only the structured snapshot provided.
+- Be conversational and direct, not robotic or third-person.
+- This is not medical advice or diagnosis. Do not overclaim from limited logs.
+- Be explicit when the data is sparse, subjective, or missing vitals context.
+- If the user asks what to do next, focus on bedtime consistency, repeated short nights, logging gaps, and simple recovery behaviors rather than generic wellness advice.
+- If the user asks a platform question, answer directly and concretely using the current app behavior.
+
+Prefer this response shape:
+Current picture
+What stands out
+Next adjustment
+Data caveat`;
+    }
+
+    function renderHealthSleepCoach(snapshot = buildHealthSleepRecoverySnapshot()) {
+      const messagesEl = document.getElementById("healthSleepCoachMessages");
+      const statusEl = document.getElementById("healthSleepCoachStatus");
+      const actionsEl = document.getElementById("healthSleepCoachActions");
+      const clearBtn = document.getElementById("healthSleepCoachClearBtn");
+      const sendBtn = document.getElementById("healthSleepCoachSendBtn");
+      if (!messagesEl || !statusEl || !actionsEl || !clearBtn || !sendBtn) return;
+      const activeProvider = healthSleepActiveProvider();
+      const needsConsent = healthSleepCoachNeedsCloudConsent(activeProvider);
+      const providerInfo = aiProviderPrivacyInfo(activeProvider);
+      const providerName = aiProviderDisplayName(activeProvider);
+      const consentNotice = needsConsent ? `<div class="wealth-coach-notice ${providerInfo.level === "warning" ? "warning" : ""}">
+        <div class="wealth-coach-notice-title">Cloud analysis is blocked for this session</div>
+        <div class="wealth-coach-notice-copy">
+          Sleep Coach is currently set to use ${escapeHtml(providerName)}. Asking a question will send sleep and recovery data to that provider.
+          Switch to Ollama for local-only analysis, or explicitly allow cloud analysis for this session.
+        </div>
+        <div class="wealth-coach-notice-actions">
+          <button class="ghost" type="button" data-health-sleep-consent-action="settings">AI Settings</button>
+          <button class="primary" type="button" data-health-sleep-consent-action="allow">Allow This Session</button>
+        </div>
+      </div>` : "";
+      statusEl.textContent = healthSleepCoachBusy ? "Thinking..." : (needsConsent ? "Cloud consent required" : "");
+      clearBtn.hidden = !healthSleepCoachMessages.length;
+      actionsEl.hidden = !statusEl.textContent && !healthSleepCoachMessages.length;
+      sendBtn.disabled = healthSleepCoachBusy || needsConsent;
+      if (!healthSleepCoachMessages.length) {
+        messagesEl.innerHTML = `${consentNotice}<div class="health-empty-state" style="text-align:left">
+          Ask about sleep quality, bedtime drift, short nights, recovery state, or what the recent pattern suggests.
+          ${snapshot.latest ? ` Latest recovery state: ${escapeHtml(snapshot.readiness.label)}.` : ""}
+        </div>`;
+        return;
+      }
+      messagesEl.innerHTML = `${consentNotice}${healthSleepCoachMessages.map(msg => `
+        <div class="wealth-coach-msg ${msg.role === "user" ? "user" : "assistant"}">${escapeHtml(msg.content)}</div>
+      `).join("")}`;
+    }
+
+    async function requestHealthSleepCoaching() {
+      const input = document.getElementById("healthSleepCoachInput");
+      const question = String(input?.value || "").trim();
+      if (!question || healthSleepCoachBusy) return;
+      const cfg = aiResolveConfig(aiPrefs);
+      const activeProvider = cfg.provider || aiPrefs.provider || "openai";
+      if (healthSleepCoachNeedsCloudConsent(activeProvider)) {
+        renderHealthSleepCoach();
+        return;
+      }
+      healthSleepCoachMessages.push({ role: "user", content: question });
+      if (input) {
+        input.value = "";
+        autoGrowTextarea(input);
+      }
+      renderHealthSleepCoach();
+      if (!aiPrefs.enabled) {
+        healthSleepCoachMessages.push({ role: "assistant", content: "AI is currently disabled. Enable AI in Settings to use Sleep Coach." });
+        renderHealthSleepCoach();
+        return;
+      }
+      if (aiProviderNeedsKey(activeProvider) && !cfg.apiKey) {
+        healthSleepCoachMessages.push({ role: "assistant", content: `${aiProviderDisplayName(activeProvider)} needs an API key in Settings before Sleep Coach can use it.` });
+        renderHealthSleepCoach();
+        return;
+      }
+      healthSleepCoachBusy = true;
+      renderHealthSleepCoach();
+      try {
+        const snapshot = buildHealthSleepCoachSnapshot();
+        const userPrompt = `User question:\n${question}\n\nCurrent sleep and recovery snapshot:\n${JSON.stringify(snapshot, null, 2)}`;
+        const raw = await aiCallProvider(healthSleepCoachSystemPrompt(), userPrompt, null, { temperature: 0.65 });
+        healthSleepCoachMessages.push({ role: "assistant", content: String(raw || "").trim() || "No answer returned." });
+      } catch (err) {
+        healthSleepCoachMessages.push({ role: "assistant", content: `I couldn't answer that from the current sleep data. ${String(err?.message || err || "Unknown error")}` });
+      } finally {
+        healthSleepCoachBusy = false;
+        renderHealthSleepCoach();
+      }
     }
 
     function renderHealthVitalsSummaryInto(el) {
@@ -15331,6 +15736,9 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
 
     // ═══════════ WEALTH MODULE ═══════════
     let activeHealthTab = "overview";
+    let healthSleepCoachBusy = false;
+    let healthSleepCoachMessages = [];
+    let healthSleepCoachCloudConsent = {};
     let activeWealthTab = "overview";
     let wealthCashflowAnchorMonth = todayISO().slice(0, 7);
     let wealthCashflowRange = "month";
@@ -20485,6 +20893,12 @@ Data caveat`;
       });
     });
     document.getElementById("tab-health")?.addEventListener("click", e => {
+      const healthOpenTabBtn = e.target.closest("[data-health-open-tab]");
+      if (healthOpenTabBtn) {
+        activeHealthTab = normalizeHealthTab(String(healthOpenTabBtn.getAttribute("data-health-open-tab") || "overview"));
+        renderHealth();
+        return;
+      }
       const assessmentOpenBtn = e.target.closest("[data-health-assessment-open]");
       if (assessmentOpenBtn) {
         showHealthAssessmentModal();
@@ -20560,6 +20974,13 @@ Data caveat`;
         if (dateKey && confirm("Delete this sleep log?")) deleteHealthSleep(dateKey);
         return;
       }
+      const sleepConsentBtn = e.target.closest("[data-health-sleep-consent-action]");
+      if (sleepConsentBtn) {
+        const action = String(sleepConsentBtn.getAttribute("data-health-sleep-consent-action") || "").trim();
+        if (action === "allow") allowHealthSleepCoachCloudConsent();
+        if (action === "settings") openAiSettingsFromHealthSleepCoach();
+        return;
+      }
       const measurementOpenBtn = e.target.closest("[data-health-measurement-open]");
       if (measurementOpenBtn) {
         showHealthMeasurementModal();
@@ -20605,6 +21026,20 @@ Data caveat`;
       }
       if (target === "review") {
         openReviewPracticeSection();
+      }
+    });
+    document.getElementById("healthSleepCoachClearBtn")?.addEventListener("click", () => {
+      healthSleepCoachMessages = [];
+      renderHealthSleepCoach();
+    });
+    document.getElementById("healthSleepCoachSendBtn")?.addEventListener("click", () => { void requestHealthSleepCoaching(); });
+    document.getElementById("healthSleepCoachInput")?.addEventListener("input", e => {
+      autoGrowTextarea(e.currentTarget);
+    });
+    document.getElementById("healthSleepCoachInput")?.addEventListener("keydown", e => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        void requestHealthSleepCoaching();
       }
     });
 
@@ -21074,7 +21509,7 @@ Data caveat`;
         const openModal = document.querySelector(".modal-backdrop:not([hidden])");
         if (openModal) return;
         const targetId = String(e.target?.id || "").trim();
-        const allowWhileEditing = new Set(["aiInlineUserInput", "aiUserInput", "planSidebarChatInput", "wealthCoachInput", "onboardAiIntake"]);
+        const allowWhileEditing = new Set(["aiInlineUserInput", "aiUserInput", "planSidebarChatInput", "wealthCoachInput", "healthSleepCoachInput", "onboardAiIntake"]);
         if (isEditableElement(e.target) && !allowWhileEditing.has(targetId)) return;
         e.preventDefault();
         e.stopPropagation();
