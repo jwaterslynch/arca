@@ -4638,6 +4638,22 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       };
     }
 
+    function normalizeWealthPropertySignalRecord(record) {
+      const signal = record && typeof record === "object" ? record : {};
+      return {
+        id: signal.id || uid(),
+        source: Object.prototype.hasOwnProperty.call(WEALTH_PROPERTY_SIGNAL_SOURCES, signal.source) ? signal.source : "other",
+        label: String(signal.label || "").trim(),
+        signal_date: /^\d{4}-\d{2}-\d{2}$/.test(String(signal.signal_date || "").trim()) ? String(signal.signal_date).trim() : "",
+        estimated_value_minor: normalizeMinorAmount(signal.estimated_value_minor, signal.estimated_value),
+        confidence: ["low", "medium", "high"].includes(signal.confidence) ? signal.confidence : "medium",
+        note: String(signal.note || "").trim(),
+        url: String(signal.url || "").trim(),
+        created_at: signal.created_at || new Date().toISOString(),
+        updated_at: signal.updated_at || new Date().toISOString()
+      };
+    }
+
     function normalizeWealthPropertyRecord(record) {
       const property = record && typeof record === "object" ? record : {};
       return {
@@ -4658,6 +4674,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           return Number.isFinite(minor) && minor > 0 ? minor : null;
         })(),
         comparables: Array.isArray(property.comparables) ? property.comparables.map(normalizeWealthComparableRecord) : [],
+        external_signals: Array.isArray(property.external_signals) ? property.external_signals.map(normalizeWealthPropertySignalRecord) : [],
         created_at: property.created_at || new Date().toISOString(),
         updated_at: property.updated_at || new Date().toISOString()
       };
@@ -4672,7 +4689,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         high_minor: normalizeMinorAmount(estimate.high_minor, estimate.high),
         confidence: ["low", "medium", "high"].includes(estimate.confidence) ? estimate.confidence : "low",
         freshness_label: String(estimate.freshness_label || "").trim(),
-        method: ["manual_estimate", "manual_baseline", "comparable_blend"].includes(estimate.method) ? estimate.method : "manual_baseline",
+        method: ["manual_estimate", "manual_baseline", "comparable_blend", "signal_blend"].includes(estimate.method) ? estimate.method : "manual_baseline",
         breakdown: estimate.breakdown && typeof estimate.breakdown === "object" ? { ...estimate.breakdown } : null,
         estimated_at: estimate.estimated_at || new Date().toISOString()
       };
@@ -15767,6 +15784,14 @@ Data caveat`;
       land: "Land",
       other: "Other"
     };
+    const WEALTH_PROPERTY_SIGNAL_SOURCES = {
+      bank: "Bank valuation",
+      domain: "Portal estimate",
+      agent: "Agent appraisal",
+      government: "Gov / registry",
+      manual_external: "External estimate",
+      other: "Other"
+    };
     const WEALTH_ASSET_TYPES = {
       stock: "Stock",
       etf: "ETF",
@@ -17878,14 +17903,70 @@ Data caveat`;
       return getWealthProperties().find(property => property.id === propertyId) || null;
     }
 
+    function wealthPropertySignalConfidenceWeight(confidence) {
+      if (confidence === "high") return 1;
+      if (confidence === "low") return 0.65;
+      return 0.82;
+    }
+
+    function summarizeWealthPropertySignals(signals, today) {
+      const validSignals = Array.isArray(signals)
+        ? signals.filter(signal => Number(signal?.estimated_value_minor || 0) > 0)
+        : [];
+      if (!validSignals.length) {
+        return {
+          estimate_minor: 0,
+          latest_date: "",
+          values: [],
+          breakdown: []
+        };
+      }
+      let weightTotal = 0;
+      let weightedMinor = 0;
+      const breakdown = validSignals.map(signal => {
+        let recencyWeight = 1;
+        if (signal.signal_date) {
+          const signalDate = new Date(`${signal.signal_date}T00:00:00`);
+          const monthsAgo = Math.max(0, ((today - signalDate) / (1000 * 60 * 60 * 24 * 30.4375)));
+          recencyWeight = Math.max(0.45, 1 - (monthsAgo * 0.04));
+        }
+        const confidenceWeight = wealthPropertySignalConfidenceWeight(signal.confidence);
+        const weight = recencyWeight * confidenceWeight;
+        weightTotal += weight;
+        weightedMinor += Number(signal.estimated_value_minor || 0) * weight;
+        return {
+          label: signal.label || WEALTH_PROPERTY_SIGNAL_SOURCES[signal.source] || "External signal",
+          source: signal.source,
+          signal_date: signal.signal_date,
+          estimated_value_minor: signal.estimated_value_minor,
+          confidence: signal.confidence,
+          weight: Number(weight.toFixed(4))
+        };
+      });
+      return {
+        estimate_minor: weightTotal > 0 ? Math.round(weightedMinor / weightTotal) : 0,
+        latest_date: validSignals
+          .map(signal => signal.signal_date)
+          .filter(Boolean)
+          .sort()
+          .slice(-1)[0] || "",
+        values: validSignals.map(signal => Number(signal.estimated_value_minor || 0)).filter(value => value > 0),
+        breakdown
+      };
+    }
+
     function buildWealthPropertyEstimate(property) {
       const manualEstimateMinor = Number(property?.manual_estimate_minor || 0);
       const purchasePriceMinor = Number(property?.purchase_price_minor || 0);
+      const today = new Date(`${todayISO()}T00:00:00`);
       const comparables = Array.isArray(property?.comparables)
         ? property.comparables.filter(comparable => Number(comparable?.sale_price_minor || 0) > 0)
         : [];
-      if (comparables.length) {
-        const today = new Date(`${todayISO()}T00:00:00`);
+      const externalSignals = Array.isArray(property?.external_signals)
+        ? property.external_signals.filter(signal => Number(signal?.estimated_value_minor || 0) > 0)
+        : [];
+      const externalSignalSummary = summarizeWealthPropertySignals(externalSignals, today);
+      if (comparables.length || externalSignals.length) {
         let comparableWeightTotal = 0;
         let comparableWeightedMinor = 0;
         const comparableBreakdown = comparables.map(comparable => {
@@ -17910,43 +17991,63 @@ Data caveat`;
         });
         const comparableEstimateMinor = comparableWeightTotal > 0 ? Math.round(comparableWeightedMinor / comparableWeightTotal) : 0;
         const signals = [];
-        if (purchasePriceMinor > 0) signals.push({ label: "purchase_price", value_minor: purchasePriceMinor, weight: 0.3 });
-        signals.push({ label: "comparables", value_minor: comparableEstimateMinor, weight: 0.5 });
-        if (manualEstimateMinor > 0) signals.push({ label: "manual_estimate", value_minor: manualEstimateMinor, weight: 0.2 });
+        if (purchasePriceMinor > 0) signals.push({ label: "purchase_price", value_minor: purchasePriceMinor, weight: 0.1 });
+        if (comparableEstimateMinor > 0) signals.push({ label: "comparables", value_minor: comparableEstimateMinor, weight: 0.5 });
+        if (externalSignalSummary.estimate_minor > 0) signals.push({ label: "external_signals", value_minor: externalSignalSummary.estimate_minor, weight: 0.25 });
+        if (manualEstimateMinor > 0) signals.push({ label: "manual_estimate", value_minor: manualEstimateMinor, weight: 0.15 });
         const totalSignalWeight = signals.reduce((sum, signal) => sum + signal.weight, 0) || 1;
         const estimateMinor = Math.round(signals.reduce((sum, signal) => sum + (signal.value_minor * (signal.weight / totalSignalWeight)), 0));
         const compValues = comparables.map(comparable => Number(comparable.sale_price_minor || 0)).filter(value => value > 0);
-        const avgDeviationPct = compValues.length
-          ? compValues.reduce((sum, value) => sum + Math.abs(value - comparableEstimateMinor), 0) / compValues.length / Math.max(1, comparableEstimateMinor)
-          : 0.08;
-        const bandPct = Math.max(0.05, Math.min(0.15, avgDeviationPct || 0.08));
+        const evidenceValues = [...compValues, ...externalSignalSummary.values];
+        const avgDeviationPct = evidenceValues.length
+          ? evidenceValues.reduce((sum, value) => sum + Math.abs(value - estimateMinor), 0) / evidenceValues.length / Math.max(1, estimateMinor)
+          : 0;
+        const fallbackBandPct = comparables.length && externalSignals.length
+          ? 0.07
+          : comparables.length
+            ? 0.1
+            : externalSignals.length > 1
+              ? 0.12
+              : 0.15;
+        const bandPct = Math.max(0.05, Math.min(0.18, avgDeviationPct || fallbackBandPct));
         const latestComparableDate = comparables
           .map(comparable => comparable.sale_date)
           .filter(Boolean)
           .sort()
           .slice(-1)[0] || "";
+        const latestExternalDate = externalSignalSummary.latest_date;
+        const freshnessDate = [latestComparableDate, latestExternalDate].filter(Boolean).sort().slice(-1)[0] || "";
+        const freshnessLabel = latestComparableDate && latestExternalDate
+          ? `Signals through ${formatDateLabel(freshnessDate)}`
+          : latestComparableDate
+            ? `Comparables through ${formatDateLabel(latestComparableDate)}`
+            : latestExternalDate
+              ? `External signals through ${formatDateLabel(latestExternalDate)}`
+              : "Blended signals";
         return normalizeWealthPropertyEstimateRecord({
           property_id: property.id,
           estimated_value_minor: estimateMinor,
           low_minor: Math.round(estimateMinor * (1 - bandPct)),
           high_minor: Math.round(estimateMinor * (1 + bandPct)),
-          confidence: comparables.length >= 3 && (manualEstimateMinor > 0 || purchasePriceMinor > 0)
+          confidence: comparables.length >= 3 && externalSignals.length >= 1
             ? "high"
-            : "medium",
-          freshness_label: latestComparableDate
-            ? `Comparables through ${formatDateLabel(latestComparableDate)}`
-            : "Comparable sales",
-          method: "comparable_blend",
+            : comparables.length >= 1 || externalSignals.length >= 2 || manualEstimateMinor > 0
+              ? "medium"
+              : "low",
+          freshness_label: freshnessLabel,
+          method: comparables.length ? "comparable_blend" : "signal_blend",
           estimated_at: property.updated_at || new Date().toISOString(),
           breakdown: {
-            source: "comparable_blend",
+            source: comparables.length ? "comparable_blend" : "signal_blend",
             comparable_estimate_minor: comparableEstimateMinor,
+            external_signal_estimate_minor: externalSignalSummary.estimate_minor,
             signals: signals.map(signal => ({
               label: signal.label,
               value_minor: signal.value_minor,
               weight: Number((signal.weight / totalSignalWeight).toFixed(3))
             })),
-            comparables: comparableBreakdown
+            comparables: comparableBreakdown,
+            external_signals: externalSignalSummary.breakdown
           }
         });
       }
@@ -18010,7 +18111,8 @@ Data caveat`;
           estimate,
           estimated_value_minor: estimatedValueMinor,
           delta_minor: purchasePriceMinor > 0 && estimatedValueMinor > 0 ? estimatedValueMinor - purchasePriceMinor : null,
-          comparables_count: Array.isArray(property.comparables) ? property.comparables.length : 0
+          comparables_count: Array.isArray(property.comparables) ? property.comparables.length : 0,
+          external_signals_count: Array.isArray(property.external_signals) ? property.external_signals.length : 0
         };
       });
     }
@@ -18021,6 +18123,10 @@ Data caveat`;
 
     function getWealthComparableById(property, comparableId) {
       return (property?.comparables || []).find(comparable => comparable.id === comparableId) || null;
+    }
+
+    function getWealthPropertySignalById(property, signalId) {
+      return (property?.external_signals || []).find(signal => signal.id === signalId) || null;
     }
 
     function saveWealthProperty(payload, propertyId = "") {
@@ -18101,6 +18207,55 @@ Data caveat`;
       });
       rebuildWealthPropertyEstimates();
       saveState("wealth_delete_comparable");
+      renderWealth();
+    }
+
+    function saveWealthPropertySignal(propertyId, payload, signalId = "") {
+      const wealth = ensureWealthStateShape();
+      const property = getWealthPropertyById(propertyId);
+      if (!property) return null;
+      const existing = signalId ? getWealthPropertySignalById(property, signalId) : null;
+      const signal = normalizeWealthPropertySignalRecord({
+        ...(existing || {}),
+        id: existing?.id || uid(),
+        source: payload.source,
+        label: payload.label,
+        signal_date: payload.signal_date,
+        estimated_value: payload.estimated_value,
+        confidence: payload.confidence,
+        note: payload.note,
+        url: payload.url,
+        updated_at: new Date().toISOString(),
+        created_at: existing?.created_at || new Date().toISOString()
+      });
+      wealth.properties = (wealth.properties || []).map(item => {
+        if (item.id !== propertyId) return item;
+        const nextSignals = (item.external_signals || []).filter(entry => entry.id !== signal.id);
+        nextSignals.push(signal);
+        return normalizeWealthPropertyRecord({
+          ...item,
+          external_signals: nextSignals,
+          updated_at: new Date().toISOString()
+        });
+      });
+      rebuildWealthPropertyEstimates();
+      saveState(existing ? "wealth_edit_property_signal" : "wealth_add_property_signal");
+      renderWealth();
+      return signal;
+    }
+
+    function deleteWealthPropertySignal(propertyId, signalId) {
+      const wealth = ensureWealthStateShape();
+      wealth.properties = (wealth.properties || []).map(property => {
+        if (property.id !== propertyId) return property;
+        return normalizeWealthPropertyRecord({
+          ...property,
+          external_signals: (property.external_signals || []).filter(signal => signal.id !== signalId),
+          updated_at: new Date().toISOString()
+        });
+      });
+      rebuildWealthPropertyEstimates();
+      saveState("wealth_delete_property_signal");
       renderWealth();
     }
 
@@ -18372,12 +18527,87 @@ Data caveat`;
       });
     }
 
+    function showWealthPropertySignalModal(propertyId, signalId = "") {
+      const property = getWealthPropertyById(propertyId);
+      if (!property) return;
+      const existing = signalId ? getWealthPropertySignalById(property, signalId) : null;
+      const html = `<div class="wealth-form-grid">
+        <div>
+          <label>Property</label>
+          <div style="font-weight:700">${escapeHtml(property.label)}</div>
+        </div>
+        <div class="wealth-form-row">
+          <div>
+            <label>Signal Source</label>
+            <select id="wealthPropertySignalSourceInput">
+              ${Object.entries(WEALTH_PROPERTY_SIGNAL_SOURCES).map(([key, label]) => `<option value="${key}" ${existing?.source === key ? "selected" : ""}>${escapeHtml(label)}</option>`).join("")}
+            </select>
+          </div>
+          <div>
+            <label>Confidence</label>
+            <select id="wealthPropertySignalConfidenceInput">
+              ${["low", "medium", "high"].map(level => `<option value="${level}" ${existing?.confidence === level ? "selected" : ""}>${escapeHtml(level.charAt(0).toUpperCase() + level.slice(1))}</option>`).join("")}
+            </select>
+          </div>
+        </div>
+        <div class="wealth-form-row">
+          <div>
+            <label>Label</label>
+            <input id="wealthPropertySignalLabelInput" placeholder="e.g. CoreLogic estimate" value="${escapeHtml(existing?.label || "")}" />
+          </div>
+          <div>
+            <label>Signal Date</label>
+            <input id="wealthPropertySignalDateInput" type="date" value="${escapeHtml(existing?.signal_date || todayISO())}" />
+          </div>
+        </div>
+        <div class="wealth-form-row">
+          <div>
+            <label>Estimated Value</label>
+            <input id="wealthPropertySignalValueInput" type="number" step="0.01" placeholder="0.00" value="${existing?.estimated_value_minor ? escapeHtml(((existing.estimated_value_minor || 0) / 100).toFixed(2)) : ""}" />
+          </div>
+          <div>
+            <label>URL</label>
+            <input id="wealthPropertySignalUrlInput" placeholder="Optional source link" value="${escapeHtml(existing?.url || "")}" />
+          </div>
+        </div>
+        <div>
+          <label>Note</label>
+          <textarea id="wealthPropertySignalNoteInput" rows="3" placeholder="Optional note...">${escapeHtml(existing?.note || "")}</textarea>
+        </div>
+        <div class="controls" style="justify-content:space-between">
+          <button class="ghost" id="wealthPropertySignalBackBtn" type="button">Back</button>
+          <button class="primary" id="wealthPropertySignalSubmitBtn" type="button">${existing ? "Save Signal" : "Add Signal"}</button>
+        </div>
+      </div>`;
+      showWealthModal(existing ? "Edit External Signal" : "Add External Signal", html);
+      requestAnimationFrame(() => {
+        document.getElementById("wealthPropertySignalLabelInput")?.focus();
+        document.getElementById("wealthPropertySignalBackBtn")?.addEventListener("click", () => showWealthPropertyDetailModal(propertyId));
+        document.getElementById("wealthPropertySignalSubmitBtn")?.addEventListener("click", () => {
+          const value = String(document.getElementById("wealthPropertySignalValueInput")?.value || "").trim();
+          const label = String(document.getElementById("wealthPropertySignalLabelInput")?.value || "").trim();
+          if (!value) return;
+          saveWealthPropertySignal(propertyId, {
+            source: document.getElementById("wealthPropertySignalSourceInput")?.value || "other",
+            confidence: document.getElementById("wealthPropertySignalConfidenceInput")?.value || "medium",
+            label,
+            signal_date: document.getElementById("wealthPropertySignalDateInput")?.value || todayISO(),
+            estimated_value: value,
+            note: document.getElementById("wealthPropertySignalNoteInput")?.value || "",
+            url: document.getElementById("wealthPropertySignalUrlInput")?.value || ""
+          }, existing?.id || "");
+          showWealthPropertyDetailModal(propertyId);
+        });
+      });
+    }
+
     function showWealthPropertyDetailModal(propertyId) {
       const property = getWealthPropertyViews().find(item => item.id === propertyId);
       if (!property) return;
       const estimate = property.estimate || buildWealthPropertyEstimate(property);
       const signalRows = Array.isArray(estimate.breakdown?.signals) ? estimate.breakdown.signals : [];
       const comparables = (property.comparables || []).slice().sort((a, b) => (b.sale_date || "").localeCompare(a.sale_date || ""));
+      const externalSignals = (property.external_signals || []).slice().sort((a, b) => (b.signal_date || "").localeCompare(a.signal_date || "") || (b.updated_at || "").localeCompare(a.updated_at || ""));
       const estimateBand = Number(estimate.low_minor || 0) > 0 && Number(estimate.high_minor || 0) > 0
         ? `${formatCurrency(estimate.low_minor)} – ${formatCurrency(estimate.high_minor)}`
         : "No range yet";
@@ -18413,6 +18643,9 @@ Data caveat`;
             <div class="tiny" style="margin-top:4px;color:var(--text2)">${property.delta_minor == null ? "No purchase comparison yet" : `${property.delta_minor >= 0 ? "+" : "-"}${formatCurrency(Math.abs(property.delta_minor))} vs purchase`}</div>
           </div>
         </div>
+        <div class="controls" style="justify-content:flex-end">
+          <button class="ghost" id="wealthPropertyEditBtn" type="button">Edit Property</button>
+        </div>
         <div>
           <label>Estimator Signals</label>
           <div class="wealth-list" style="display:flex;flex-direction:column;gap:8px">
@@ -18431,11 +18664,35 @@ Data caveat`;
         </div>
         <div>
           <div class="controls" style="justify-content:space-between;align-items:center">
+            <label style="margin:0">External Signals</label>
+            <button class="primary" id="wealthPropertyAddSignalBtn" type="button">Add Signal</button>
+          </div>
+          <div class="wealth-list" style="display:flex;flex-direction:column;gap:8px;margin-top:8px">
+            ${externalSignals.length ? externalSignals.map(signal => `
+              <div class="wealth-account-row">
+                <div>
+                  <div class="wealth-account-name">${escapeHtml(signal.label || WEALTH_PROPERTY_SIGNAL_SOURCES[signal.source] || "External signal")}</div>
+                  <div class="wealth-rule-meta">
+                    <span>${escapeHtml(WEALTH_PROPERTY_SIGNAL_SOURCES[signal.source] || signal.source || "Other")}</span>
+                    <span>${signal.signal_date ? escapeHtml(formatDateLabel(signal.signal_date)) : "No date"}</span>
+                    <span>${formatCurrency(signal.estimated_value_minor || 0)}</span>
+                    <span>${escapeHtml((signal.confidence || "medium").toUpperCase())} confidence</span>
+                  </div>
+                  ${signal.note ? `<div class="tiny" style="margin-top:4px;color:var(--text2)">${escapeHtml(signal.note)}</div>` : ""}
+                  ${signal.url ? `<div class="tiny" style="margin-top:4px;color:var(--text2);word-break:break-all">${escapeHtml(signal.url)}</div>` : ""}
+                </div>
+                <div style="display:flex;align-items:center;gap:8px">
+                  <button class="wealth-inline-btn" type="button" data-edit-property-signal="${escapeHtml(signal.id)}">Edit</button>
+                  <button class="wealth-inline-btn warn" type="button" data-delete-property-signal="${escapeHtml(signal.id)}">Delete</button>
+                </div>
+              </div>
+            `).join("") : '<div class="wealth-empty-state" style="text-align:left">No external signals yet. Add a bank, portal, or agent estimate to strengthen the property view.</div>'}
+          </div>
+        </div>
+        <div>
+          <div class="controls" style="justify-content:space-between;align-items:center">
             <label style="margin:0">Comparable Sales</label>
-            <div style="display:flex;gap:8px">
-              <button class="ghost" id="wealthPropertyEditBtn" type="button">Edit Property</button>
-              <button class="primary" id="wealthPropertyAddComparableBtn" type="button">Add Comparable</button>
-            </div>
+            <button class="primary" id="wealthPropertyAddComparableBtn" type="button">Add Comparable</button>
           </div>
           <div class="wealth-list" style="display:flex;flex-direction:column;gap:8px;margin-top:8px">
             ${comparables.length ? comparables.map(comparable => `
@@ -18461,7 +18718,22 @@ Data caveat`;
       showWealthModal("Property Detail", bodyHtml);
       requestAnimationFrame(() => {
         document.getElementById("wealthPropertyEditBtn")?.addEventListener("click", () => showWealthPropertyModal(propertyId));
+        document.getElementById("wealthPropertyAddSignalBtn")?.addEventListener("click", () => showWealthPropertySignalModal(propertyId));
         document.getElementById("wealthPropertyAddComparableBtn")?.addEventListener("click", () => showWealthComparableModal(propertyId));
+        document.querySelectorAll("[data-edit-property-signal]").forEach(btn => {
+          btn.addEventListener("click", () => {
+            const signalId = String(btn.getAttribute("data-edit-property-signal") || "").trim();
+            if (signalId) showWealthPropertySignalModal(propertyId, signalId);
+          });
+        });
+        document.querySelectorAll("[data-delete-property-signal]").forEach(btn => {
+          btn.addEventListener("click", () => {
+            const signalId = String(btn.getAttribute("data-delete-property-signal") || "").trim();
+            if (!signalId || !confirm("Delete this external signal?")) return;
+            deleteWealthPropertySignal(propertyId, signalId);
+            showWealthPropertyDetailModal(propertyId);
+          });
+        });
         document.querySelectorAll("[data-edit-property-comparable]").forEach(btn => {
           btn.addEventListener("click", () => {
             const comparableId = String(btn.getAttribute("data-edit-property-comparable") || "").trim();
@@ -18650,6 +18922,7 @@ Data caveat`;
               <span>${escapeHtml(deltaText)}</span>
               <span>${escapeHtml((property.estimate.confidence || "low").toUpperCase())} confidence</span>
               ${property.comparables_count ? `<span>${property.comparables_count} comparable${property.comparables_count === 1 ? "" : "s"}</span>` : ""}
+              ${property.external_signals_count ? `<span>${property.external_signals_count} external signal${property.external_signals_count === 1 ? "" : "s"}</span>` : ""}
               ${property.estimate.freshness_label ? `<span>${escapeHtml(property.estimate.freshness_label)}</span>` : ""}
             </div>
           </div>
@@ -19157,7 +19430,20 @@ Data caveat`;
           delta_minor: property.delta_minor,
           confidence: property.estimate?.confidence || "low",
           freshness_label: property.estimate?.freshness_label || "",
-          method: property.estimate?.method || "manual_baseline"
+          method: property.estimate?.method || "manual_baseline",
+          comparables_count: property.comparables_count || 0,
+          external_signals_count: property.external_signals_count || 0,
+          latest_external_signal: (property.external_signals || [])
+            .slice()
+            .sort((a, b) => (b.signal_date || "").localeCompare(a.signal_date || "") || (b.updated_at || "").localeCompare(a.updated_at || ""))
+            .slice(0, 1)
+            .map(signal => ({
+              source: signal.source,
+              label: signal.label || null,
+              signal_date: signal.signal_date || null,
+              estimated_value_minor: signal.estimated_value_minor || 0,
+              confidence: signal.confidence || "medium"
+            }))[0] || null
         })),
         portfolio: {
           market_value_minor: portfolio.totalMarketValueMinor,
@@ -19260,6 +19546,7 @@ Rules:
 - Be explicit when data is incomplete, imported, estimated, filtered, or limited to the selected range.
 - If the user asks what is in "Other", inspect the provided other_breakdown and name the major transactions.
 - If the user asks where they could save money, focus on the largest expense categories, repeated merchants, and ambiguous categories that deserve recategorization.
+- If the user asks about a property estimate, explain whether it is being driven by purchase price, comparable sales, external signals, or a manual estimate.
 - If the user asks a platform question, answer directly and concretely using the current app behavior.
 - Keep answers concise and structured.
 
