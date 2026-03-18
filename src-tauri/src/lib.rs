@@ -58,6 +58,15 @@ struct OllamaProbeResponse {
     error: Option<String>,
 }
 
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct AppRuntimeInfo {
+    version: String,
+    profile: String,
+    executable_path: String,
+    app_data_path: String,
+}
+
 fn app_data_dir(app: &AppHandle) -> Result<PathBuf, String> {
     let dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
     fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
@@ -334,6 +343,25 @@ fn load_latest_backup(app: AppHandle) -> Result<Option<String>, String> {
 }
 
 #[tauri::command]
+fn app_runtime_info(app: AppHandle) -> Result<AppRuntimeInfo, String> {
+    let executable_path = std::env::current_exe()
+        .map_err(|e| e.to_string())?
+        .to_string_lossy()
+        .to_string();
+    let app_data_path = app_data_dir(&app)?.to_string_lossy().to_string();
+    Ok(AppRuntimeInfo {
+        version: env!("CARGO_PKG_VERSION").to_string(),
+        profile: if cfg!(debug_assertions) {
+            "debug".to_string()
+        } else {
+            "release".to_string()
+        },
+        executable_path,
+        app_data_path,
+    })
+}
+
+#[tauri::command]
 fn play_native_chime(
     sound_profile: Option<String>,
     chime_length: Option<String>,
@@ -599,6 +627,7 @@ pub fn run() {
             ledger_path,
             backup_path,
             load_latest_backup,
+            app_runtime_info,
             play_native_chime,
             http_get_text,
             ollama_probe

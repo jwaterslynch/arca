@@ -46,6 +46,17 @@ body{font-family:var(--font);color:var(--text);background:var(--bg);-webkit-font
 .mode-btn:hover:not(.active){color:var(--text)}
 
 .top-right{display:flex;align-items:center;gap:12px}
+.top-meta-btn{
+  display:inline-flex;align-items:center;gap:8px;max-width:240px;
+  padding:8px 12px;border-radius:999px;border:1px solid var(--line);
+  background:var(--surface);color:var(--text2);font:600 .78rem var(--font);
+  cursor:pointer;transition:all .15s;
+}
+.top-meta-btn:hover{border-color:var(--accent);color:var(--accent)}
+.top-meta-btn .meta{
+  font-size:.7rem;color:var(--accent);font-weight:700;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
 .icon-btn{
   width:36px;height:36px;border-radius:var(--radius-sm);border:1px solid var(--line);
   background:var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;
@@ -1516,6 +1527,24 @@ button.warn {
 .modal-backdrop { position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:200; display:flex; align-items:center; justify-content:center; }
 .modal-backdrop[hidden] { display:none !important; }
 .modal-panel { background:var(--surface); border-radius:16px; max-width:680px; width:92%; max-height:85vh; overflow-y:auto; padding:28px; box-shadow:var(--shadow-lg); }
+.app-data-modal{max-width:760px}
+.app-data-summary{display:grid;gap:12px;margin-bottom:16px}
+.app-data-status{display:grid;gap:8px;padding:14px 16px;border:1px solid var(--line);border-radius:14px;background:var(--bg)}
+.app-data-status .label{font-size:.72rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text2)}
+.app-data-status .value{font-size:1rem;font-weight:700;color:var(--text)}
+.app-data-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:16px}
+.app-data-card{display:grid;gap:10px;padding:16px;border:1px solid var(--line);border-radius:14px;background:#fff}
+.app-data-card h4{font-size:.82rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text2)}
+.app-data-kv{display:grid;gap:4px}
+.app-data-kv .key{font-size:.72rem;font-weight:600;color:var(--text2)}
+.app-data-kv .value{font-size:.84rem;color:var(--text);line-height:1.45;word-break:break-word}
+.app-data-code{
+  display:block;padding:10px 12px;border-radius:10px;background:var(--bg);
+  font:500 .74rem/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+.app-data-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:12px}
+.app-data-actions button{justify-content:flex-start}
+.app-data-note{font-size:.76rem;color:var(--text2);line-height:1.45}
 .ai-quick-switch-modal{max-width:720px}
 .ai-quick-switch-body{display:grid;gap:14px}
 .ai-quick-switch-providers{padding-top:2px}
@@ -2262,6 +2291,8 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
   .wealth-cashflow-control-row{justify-content:flex-start}
 }
 @media (max-width: 860px){
+  .top-meta-btn{max-width:none}
+  .app-data-grid,.app-data-actions{grid-template-columns:1fr}
   .health-tabs-row{align-items:stretch;flex-direction:column}
   .health-summary-grid{grid-template-columns:1fr}
   .health-mini-stat-grid{grid-template-columns:1fr}
@@ -2306,6 +2337,10 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
     <div class="top-right">
       <div id="streakDisplay" class="streak-badge streak-flame"></div>
       <div id="activePill" class="active-pill">No active timer</div>
+      <button class="top-meta-btn" id="appDataBtn" title="Data, backups, and build info">
+        <span>Data</span>
+        <span id="appVersionStamp" class="meta">Loading…</span>
+      </button>
       <button class="icon-btn" id="aiSetupBtn" title="AI Settings">⚙</button>
     </div>
   </div>
@@ -3770,6 +3805,67 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
     </div>
   </div>
 
+  <div id="appDataModal" class="modal-backdrop" hidden aria-hidden="true">
+    <div class="modal-panel app-data-modal" role="dialog" aria-modal="true" aria-labelledby="appDataTitle">
+      <div class="modal-head">
+        <div>
+          <h3 id="appDataTitle">App & Data</h3>
+          <div class="tiny">Visible recovery path for import, export, restore, and runtime/build verification.</div>
+        </div>
+        <button id="appDataCloseBtn" class="ghost" type="button">Close</button>
+      </div>
+      <div class="app-data-summary">
+        <div class="app-data-status">
+          <div class="label">Current data source</div>
+          <div class="value" id="appDataSourceValue">Loading…</div>
+          <div class="tiny" id="appDataSourceMeta"></div>
+        </div>
+      </div>
+      <div class="app-data-grid">
+        <div class="app-data-card">
+          <h4>Runtime</h4>
+          <div class="app-data-kv">
+            <div class="key">Version</div>
+            <div class="value" id="appDataVersionValue">—</div>
+          </div>
+          <div class="app-data-kv">
+            <div class="key">Profile</div>
+            <div class="value" id="appDataProfileValue">—</div>
+          </div>
+          <div class="app-data-kv">
+            <div class="key">Executable</div>
+            <div class="value"><code class="app-data-code" id="appDataExecutableValue">—</code></div>
+          </div>
+        </div>
+        <div class="app-data-card">
+          <h4>Storage</h4>
+          <div class="app-data-kv">
+            <div class="key">App state JSON</div>
+            <div class="value"><code class="app-data-code" id="appDataStatePathValue">—</code></div>
+          </div>
+          <div class="app-data-kv">
+            <div class="key">Ledger DB</div>
+            <div class="value"><code class="app-data-code" id="appDataLedgerPathValue">—</code></div>
+          </div>
+          <div class="app-data-kv">
+            <div class="key">Backup folder</div>
+            <div class="value"><code class="app-data-code" id="appDataBackupPathValue">—</code></div>
+          </div>
+        </div>
+      </div>
+      <div class="app-data-actions">
+        <button id="appDataImportBtn" class="ghost" type="button">Import JSON…</button>
+        <button id="appDataExportBtn" class="ghost" type="button">Export JSON Backup</button>
+        <button id="appDataRestoreBtn" class="ghost" type="button">Restore Latest Backup</button>
+        <button id="appDataCloudSyncBtn" class="ghost" type="button">Cloud Sync</button>
+        <button id="appDataAiSettingsBtn" class="ghost" type="button">AI Settings</button>
+      </div>
+      <div class="app-data-note">
+        Import and restore overwrite the current live board state. Export writes a standalone JSON backup without changing the current data source.
+      </div>
+    </div>
+  </div>
+
   <div id="localAiWizardModal" class="modal-backdrop" hidden aria-hidden="true">
     <div class="modal-panel local-ai-modal" role="dialog" aria-modal="true" aria-labelledby="localAiWizardTitle">
       <div class="modal-head">
@@ -4215,8 +4311,16 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       backupPath: "",
       error: ""
     };
+    const appRuntime = {
+      version: "",
+      profile: "",
+      executablePath: "",
+      appDataPath: "",
+      error: ""
+    };
     const ledgerEventsQueue = [];
     let ledgerEventsFlushing = false;
+    let appDataModalOpen = false;
     let state = loadState();
     let reviewWeekOffset = 0;
     let lifeManagerOpen = false;
@@ -5531,6 +5635,26 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       return window.__TAURI__?.event || null;
     }
 
+    async function detectAppRuntime() {
+      const invoke = getTauriInvoke();
+      if (!invoke) {
+        appRuntime.error = "Desktop runtime metadata is unavailable in browser mode.";
+        return false;
+      }
+      try {
+        const info = await invoke("app_runtime_info");
+        appRuntime.version = String(info?.version || "");
+        appRuntime.profile = String(info?.profile || "");
+        appRuntime.executablePath = String(info?.executablePath || "");
+        appRuntime.appDataPath = String(info?.appDataPath || "");
+        appRuntime.error = "";
+        return true;
+      } catch (err) {
+        appRuntime.error = String(err?.message || err);
+        return false;
+      }
+    }
+
     async function detectNativeStore() {
       const invoke = getTauriInvoke();
       nativeStore.available = !!invoke;
@@ -5551,6 +5675,69 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         nativeStore.backupPath = "";
       }
       return true;
+    }
+
+    function currentDataSourceSummary() {
+      if (nativeStore.available) {
+        if (nativeStore.error) return { label: "Desktop app storage (save issue)", detail: nativeStore.error };
+        return { label: "Desktop app storage (autosave)", detail: nativeStore.path || appRuntime.appDataPath || "App data path unavailable" };
+      }
+      if (linkedDataFileHandle) {
+        return { label: "Linked JSON file", detail: "Auto-load on next open is enabled for the linked file." };
+      }
+      return { label: "Browser cache only", detail: "Use Import JSON if you want to migrate or restore a board." };
+    }
+
+    function renderAppDataPanel() {
+      const dataBtn = document.getElementById("appDataBtn");
+      const versionStamp = document.getElementById("appVersionStamp");
+      if (versionStamp) {
+        const version = appRuntime.version || "browser";
+        const profile = appRuntime.profile ? ` · ${appRuntime.profile}` : "";
+        versionStamp.textContent = `v${version}${profile}`;
+      }
+      if (dataBtn) {
+        dataBtn.title = appRuntime.executablePath
+          ? `Build ${appRuntime.version || "unknown"} · ${appRuntime.profile || "desktop"}\n${appRuntime.executablePath}`
+          : "Data, backups, and build info";
+      }
+      const modal = document.getElementById("appDataModal");
+      if (modal) {
+        modal.hidden = !appDataModalOpen;
+        modal.setAttribute("aria-hidden", appDataModalOpen ? "false" : "true");
+      }
+      const source = currentDataSourceSummary();
+      const sourceValue = document.getElementById("appDataSourceValue");
+      const sourceMeta = document.getElementById("appDataSourceMeta");
+      if (sourceValue) sourceValue.textContent = source.label;
+      if (sourceMeta) {
+        const parts = [source.detail];
+        if (state.last_modified) parts.push(`Last modified ${new Date(state.last_modified).toLocaleString()}`);
+        if (state.last_backup) parts.push(`Last backup ${new Date(state.last_backup).toLocaleString()}`);
+        sourceMeta.textContent = parts.filter(Boolean).join(" · ");
+      }
+      const versionValue = document.getElementById("appDataVersionValue");
+      const profileValue = document.getElementById("appDataProfileValue");
+      const executableValue = document.getElementById("appDataExecutableValue");
+      const statePathValue = document.getElementById("appDataStatePathValue");
+      const ledgerPathValue = document.getElementById("appDataLedgerPathValue");
+      const backupPathValue = document.getElementById("appDataBackupPathValue");
+      if (versionValue) versionValue.textContent = appRuntime.version ? `PPP Flow Desktop ${appRuntime.version}` : "Browser mode";
+      if (profileValue) profileValue.textContent = appRuntime.profile || (nativeStore.available ? "desktop" : "browser");
+      if (executableValue) executableValue.textContent = appRuntime.executablePath || "Unavailable";
+      if (statePathValue) statePathValue.textContent = nativeStore.path || "Unavailable";
+      if (ledgerPathValue) ledgerPathValue.textContent = nativeStore.ledgerPath || "Unavailable";
+      if (backupPathValue) backupPathValue.textContent = nativeStore.backupPath || "Unavailable";
+    }
+
+    function openAppDataModal() {
+      appDataModalOpen = true;
+      renderAppDataPanel();
+    }
+
+    function closeAppDataModal() {
+      appDataModalOpen = false;
+      renderAppDataPanel();
     }
 
     function queueLedgerEvent(eventType, entityType, entityId, occurredAt, payload, eventId = null) {
@@ -5820,6 +6007,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
     }
 
     async function pickAndLinkJsonFile() {
+      closeAppDataModal();
       if (!window.showOpenFilePicker) {
         document.getElementById("loadFileInput").click();
         return;
@@ -5843,6 +6031,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
     }
 
     async function saveToLinkedFile() {
+      closeAppDataModal();
       if (!window.showOpenFilePicker) {
         exportJson();
         return;
@@ -5874,6 +6063,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
     }
 
     async function restoreLatestBackupJson() {
+      closeAppDataModal();
       const invoke = getTauriInvoke();
       if (!invoke) {
         alert("Latest-backup restore is available only in the desktop app build.");
@@ -6206,6 +6396,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       };
     }
     function openCloudSyncModal() {
+      closeAppDataModal();
       const modal = document.getElementById("cloudSyncModal");
       if (!modal) return;
       cloudSyncEnsureDeviceId();
@@ -6431,6 +6622,26 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       return aiResolveConfig(aiQuickSwitchDraftPrefs());
     }
 
+    function aiQuickSwitchModelOptions(provider, availableModels = [], selectedModel = "") {
+      const preferred = provider === "ollama"
+        ? LOCAL_AI_RECOMMENDED_MODELS.map(model => model.name)
+        : aiPreferredModelHints(provider);
+      const normalizedAvailable = Array.from(new Set(
+        (Array.isArray(availableModels) ? availableModels : [])
+          .map(model => aiNormalizeModelId(provider, model))
+          .filter(Boolean)
+      ));
+      let options = preferred.length
+        ? preferred.filter(model => !normalizedAvailable.length || normalizedAvailable.some(available => available.toLowerCase() === model.toLowerCase()))
+        : normalizedAvailable.slice();
+      if (!options.length) options = preferred.length ? preferred.slice() : normalizedAvailable.slice();
+      const selected = aiNormalizeModelId(provider, selectedModel);
+      if (selected && !options.some(model => model.toLowerCase() === selected.toLowerCase())) {
+        options.unshift(selected);
+      }
+      return Array.from(new Set(options.filter(Boolean)));
+    }
+
     function aiQuickSwitchSourceLabel(source = "") {
       const key = String(source || "").trim();
       const labels = {
@@ -6457,9 +6668,11 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       const resolved = aiQuickSwitchResolvedConfig();
       try {
         const models = await aiFetchAvailableModels(resolved);
-        aiQuickSwitch.models = Array.isArray(models) ? models.filter(Boolean) : [];
+        const fallbackModel = aiGetProviderConfig(provider).model || aiDefaultModel(provider);
+        aiQuickSwitch.models = aiQuickSwitchModelOptions(provider, models, aiQuickSwitch.selectedModel || fallbackModel);
       } catch (err) {
-        aiQuickSwitch.models = aiPreferredModelHints(provider);
+        const fallbackModel = aiGetProviderConfig(provider).model || aiDefaultModel(provider);
+        aiQuickSwitch.models = aiQuickSwitchModelOptions(provider, [], aiQuickSwitch.selectedModel || fallbackModel);
         aiQuickSwitch.error = String(err?.message || err || "Could not load models");
       } finally {
         aiQuickSwitch.loading = false;
@@ -6496,7 +6709,11 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
 
       const resolved = aiQuickSwitchResolvedConfig();
       const needsKey = aiProviderNeedsKey(aiQuickSwitch.provider) && !resolved.apiKey;
-      const options = (aiQuickSwitch.models.length ? aiQuickSwitch.models : aiPreferredModelHints(aiQuickSwitch.provider)).filter(Boolean);
+      const options = aiQuickSwitchModelOptions(
+        aiQuickSwitch.provider,
+        aiQuickSwitch.models,
+        aiQuickSwitch.selectedModel || aiGetProviderConfig(aiQuickSwitch.provider).model || aiDefaultModel(aiQuickSwitch.provider)
+      );
       modelSelect.innerHTML = options.length
         ? options.map(model => `<option value="${escapeHtml(model)}">${escapeHtml(model)}</option>`).join("")
         : `<option value="${escapeHtml(aiDefaultModel(aiQuickSwitch.provider))}">${escapeHtml(aiDefaultModel(aiQuickSwitch.provider))}</option>`;
@@ -6533,7 +6750,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       } else if (aiQuickSwitch.error) {
         statusEl.textContent = `${aiQuickSwitch.error}. Showing available defaults.`;
       } else {
-        statusEl.textContent = `${options.length} model${options.length === 1 ? "" : "s"} available for ${aiProviderDisplayName(aiQuickSwitch.provider)}.`;
+        statusEl.textContent = `${options.length} recommended model${options.length === 1 ? "" : "s"} shown for ${aiProviderDisplayName(aiQuickSwitch.provider)}.`;
       }
     }
     function openAiQuickSwitch(source = "") {
@@ -8808,22 +9025,10 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         inputEl: document.querySelector(`[data-coach-practice="${pid}"]`),
         responseEl: document.getElementById(`pdCoachResponse_${pid}`)
       });
-      const findHealthUi = () => ({
-        surface: "health",
-        btn: document.querySelector(`[data-health-coach-send="${pid}"]`),
-        inputEl: document.querySelector(`[data-health-coach-practice="${pid}"]`),
-        responseEl: document.getElementById(`healthCoachResponse_${pid}`)
-      });
-      if (preferredSurface === "health") return findHealthUi();
       if (preferredSurface === "review") return findReviewUi();
-      const healthActive = document.getElementById("tab-health")?.classList.contains("active");
-      if (healthActive) {
-        const healthUi = findHealthUi();
-        if (healthUi.btn || healthUi.inputEl || healthUi.responseEl) return healthUi;
-      }
       const reviewUi = findReviewUi();
       if (reviewUi.btn || reviewUi.inputEl || reviewUi.responseEl) return reviewUi;
-      return findHealthUi();
+      return reviewUi;
     }
 
     async function requestPracticeCoaching(practiceId, userQuestion, options = {}) {
@@ -11372,8 +11577,15 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       });
     }
 
+    function currentTopLevelAiSurface() {
+      if (document.getElementById("tab-wealth")?.classList.contains("active")) return "wealth";
+      if (document.getElementById("tab-health")?.classList.contains("active")) return "health";
+      if (document.getElementById("surface-plan")?.classList.contains("active")) return "plan";
+      return "execute";
+    }
+
     function focusBestAiEntry() {
-      const activeTopTab = String(document.querySelector(".tab.active")?.getAttribute("data-tab") || "execute").trim();
+      const activeTopTab = currentTopLevelAiSurface();
       if (activeTopTab === "wealth") {
         focusWealthAiInput();
         return;
@@ -17278,11 +17490,9 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
             </div>
             ${practice.coach_enabled !== false ? `
               <div class="pd-coach" data-practice-id="${escapeHtml(practice.id)}">
-                <div class="health-card-note">Exercise coaching now lives here. Local AI is recommended for private health data.</div>
-                <div class="pd-coach-response" id="healthCoachResponse_${escapeHtml(practice.id)}" hidden></div>
-                <div class="pd-coach-input-row">
-                  <textarea rows="1" class="pd-coach-input" data-health-coach-practice="${escapeHtml(practice.id)}" placeholder="Ask your coach about ${escapeHtml(practice.title.toLowerCase())}..."></textarea>
-                  <button type="button" class="pd-coach-btn" data-health-coach-send="${escapeHtml(practice.id)}" title="Get coaching">✦</button>
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+                  <div class="health-card-note">Use the Health Coach side panel for questions about ${escapeHtml(practice.title.toLowerCase())}. Local AI is recommended for private health data.</div>
+                  <button type="button" class="ghost" data-health-coach-open="${escapeHtml(practice.id)}" data-health-coach-title="${escapeHtml(practice.title)}">Coach · ⌘K</button>
                 </div>
               </div>` : ""}
           </div>
@@ -18443,6 +18653,7 @@ Data caveat`;
     let healthCoachOpen = false;
     let healthCoachBusy = false;
     let healthCoachMessages = [];
+    let healthCoachFocusPracticeId = "";
     let healthCoachCloudConsent = {};
     let healthNutritionCoachBusy = false;
     let healthNutritionCoachMessages = [];
@@ -23936,6 +24147,7 @@ Data caveat`;
     }
 
     function openAiSettingsPanel() {
+      closeAppDataModal();
       aiPanelForcedVisible = true;
       aiConfigOpen = true;
       setActiveTab("assistant");
@@ -24787,6 +24999,7 @@ Data caveat`;
       renderHealth();
       renderWealth();
       renderLocalAiWizard();
+      renderAppDataPanel();
     }
 
     // ── Plan Sidebar Display ──
@@ -24996,9 +25209,20 @@ Data caveat`;
       const bodyComp = buildHealthBodyCompositionSnapshot();
       const practices = getHealthPractices();
       const profile = health.profile || {};
+      const focusedPractice = practices.find(practice => practice.id === healthCoachFocusPracticeId) || null;
+      const focusedPracticeProgress = focusedPractice ? healthPracticeProgress(focusedPractice) : null;
       return {
         current_surface: `Health > ${HEALTH_TAB_LABELS[activeHealthTab] || "Overview"}`,
         visible_modules: getVisibleHealthTabs().map(tab => HEALTH_TAB_LABELS[tab] || tab),
+        focused_practice: focusedPractice ? {
+          id: focusedPractice.id,
+          title: focusedPractice.title,
+          target: formatPracticeTarget(focusedPractice),
+          sessions_30d: focusedPracticeProgress?.currentSessions || 0,
+          minutes_30d: focusedPracticeProgress?.currentMinutes || 0,
+          avg_energy: focusedPracticeProgress?.metrics?.avg_energy || null,
+          top_lifts: (focusedPracticeProgress?.topLifts || []).slice(0, 5)
+        } : null,
         profile_summary: healthProfileHasData(profile) ? {
           target_sessions_per_week: profile.training_days_per_week,
           max_sessions_per_week: profile.max_sessions_per_week,
@@ -25116,10 +25340,12 @@ Data caveat`;
       const actionsEl = document.getElementById("healthCoachActions");
       const clearBtn = document.getElementById("healthCoachClearBtn");
       const sendBtn = document.getElementById("healthCoachSendBtn");
+      const inputEl = document.getElementById("healthCoachInput");
       const activeProvider = healthCoachActiveProvider();
       const needsConsent = healthCoachNeedsCloudConsent(activeProvider);
       const providerInfo = aiProviderPrivacyInfo(activeProvider);
       const providerName = aiProviderDisplayName(activeProvider);
+      const snapshot = buildHealthCoachSnapshot();
       const emptyHintByTab = {
         exercise: "Ask about missed sessions, exercise drift, training adherence, or what the block suggests next.",
         nutrition: "Ask about calories vs target, protein drift, meal-source patterns, or refeed cadence.",
@@ -25145,13 +25371,18 @@ Data caveat`;
         backdrop.classList.toggle("open", healthCoachOpen);
       }
       if (meta) {
-        const snapshot = buildHealthCoachSnapshot();
         const parts = [
           `Surface: ${snapshot.current_surface}`,
+          snapshot.focused_practice?.title ? `Focus: ${snapshot.focused_practice.title}` : null,
           snapshot.training_block?.week_label ? `Block: ${snapshot.training_block.week_label}` : null,
           snapshot.sleep_summary?.recovery_state ? `Recovery: ${snapshot.sleep_summary.recovery_state}` : null
         ].filter(Boolean);
         meta.innerHTML = parts.map(text => `<span>${escapeHtml(text)}</span>`).join("");
+      }
+      if (inputEl) {
+        inputEl.placeholder = snapshot.focused_practice?.title
+          ? `Ask Health Coach about ${snapshot.focused_practice.title}...`
+          : "Ask Health Coach...";
       }
       const statusText = healthCoachBusy ? "Thinking..." : (needsConsent ? "Cloud consent required" : "");
       if (statusEl) statusEl.textContent = statusText;
@@ -25161,7 +25392,9 @@ Data caveat`;
       if (!messagesEl) return;
       if (!healthCoachMessages.length) {
         messagesEl.innerHTML = `${consentNotice}<div class="wealth-coach-empty">
-          ${escapeHtml(emptyHintByTab[activeHealthTab] || "Ask about training, recovery, nutrition, body-composition signals, or how to use the Health module.")} Local AI is recommended for private health data.
+          ${escapeHtml(snapshot.focused_practice?.title
+            ? `Ask about ${snapshot.focused_practice.title}, recent exercise drift, missed sessions, or what to do next.`
+            : (emptyHintByTab[activeHealthTab] || "Ask about training, recovery, nutrition, body-composition signals, or how to use the Health module."))} Local AI is recommended for private health data.
         </div>`;
         return;
       }
@@ -25171,11 +25404,20 @@ Data caveat`;
       messagesEl.scrollTop = messagesEl.scrollHeight;
     }
 
-    function openHealthCoach() {
+    function openHealthCoach(options = {}) {
+      const practiceId = String(options.practiceId || "").trim();
+      healthCoachFocusPracticeId = practiceId;
       healthCoachOpen = true;
       renderHealthCoach();
       requestAnimationFrame(() => {
-        document.getElementById("healthCoachInput")?.focus();
+        const input = document.getElementById("healthCoachInput");
+        if (!input) return;
+        input.focus();
+        if (options.prefill) {
+          input.value = String(options.prefill);
+          autoGrowTextarea(input);
+          input.setSelectionRange(input.value.length, input.value.length);
+        }
       });
     }
 
@@ -25244,6 +25486,7 @@ Data caveat`;
     }
 
     function exportJson() {
+      closeAppDataModal();
       state.last_backup=new Date().toISOString();
       saveState("dashboard_export");
       download(`PPP_DATA.json`, JSON.stringify(state,null,2), "application/json");
@@ -25780,6 +26023,16 @@ Data caveat`;
     });
 
     // AI assistant controls
+    document.getElementById("appDataBtn").addEventListener("click", openAppDataModal);
+    document.getElementById("appDataCloseBtn").addEventListener("click", closeAppDataModal);
+    document.getElementById("appDataModal").addEventListener("click", e => {
+      if (e.target && e.target.id === "appDataModal") closeAppDataModal();
+    });
+    document.getElementById("appDataImportBtn").addEventListener("click", () => { void pickAndLinkJsonFile(); });
+    document.getElementById("appDataExportBtn").addEventListener("click", exportJson);
+    document.getElementById("appDataRestoreBtn").addEventListener("click", () => { void restoreLatestBackupJson(); });
+    document.getElementById("appDataCloudSyncBtn").addEventListener("click", openCloudSyncModal);
+    document.getElementById("appDataAiSettingsBtn").addEventListener("click", openAiSettingsPanel);
     document.getElementById("aiSetupBtn").addEventListener("click",()=>{
       aiPanelForcedVisible = true;
       aiConfigOpen = true;
@@ -25994,6 +26247,16 @@ Data caveat`;
       if (healthOpenTabBtn) {
         activeHealthTab = normalizeHealthTab(String(healthOpenTabBtn.getAttribute("data-health-open-tab") || "overview"));
         renderHealth();
+        return;
+      }
+      const healthCoachOpenBtn = e.target.closest("[data-health-coach-open]");
+      if (healthCoachOpenBtn) {
+        const practiceId = String(healthCoachOpenBtn.getAttribute("data-health-coach-open") || "").trim();
+        const practiceTitle = String(healthCoachOpenBtn.getAttribute("data-health-coach-title") || "").trim();
+        openHealthCoach({
+          practiceId,
+          prefill: practiceTitle ? `How am I doing with ${practiceTitle}?` : ""
+        });
         return;
       }
       const assessmentOpenBtn = e.target.closest("[data-health-assessment-open]");
@@ -26601,6 +26864,13 @@ Data caveat`;
         closeLocalAiWizard();
         return;
       }
+      const appDataModal = document.getElementById("appDataModal");
+      if (appDataModal && !appDataModal.hidden && e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        closeAppDataModal();
+        return;
+      }
       const healthProfileModal = document.getElementById("healthProfileModalOverlay");
       if (healthProfileModal && !healthProfileModal.hidden && e.key === "Escape") {
         e.preventDefault();
@@ -26832,38 +27102,6 @@ Data caveat`;
       });
     }
 
-    const healthExerciseList = document.getElementById("healthExerciseList");
-    if (healthExerciseList) {
-      healthExerciseList.addEventListener("click", e => {
-        const sendBtn = e.target.closest("[data-health-coach-send]");
-        if (sendBtn) {
-          const pid = sendBtn.dataset.healthCoachSend;
-          const input = healthExerciseList.querySelector(`[data-health-coach-practice="${pid}"]`);
-          const q = input ? input.value.trim() : "";
-          void requestPracticeCoaching(pid, q || null, { surface: "health" });
-          if (input) input.value = "";
-          return;
-        }
-        const actionBtn = e.target.closest("[data-coach-action-idx]");
-        if (actionBtn) {
-          const pid = actionBtn.dataset.coachActionPractice;
-          const idx = Number(actionBtn.dataset.coachActionIdx);
-          applyCoachAction(pid, idx, { surface: actionBtn.dataset.coachSurface || "health" });
-        }
-      });
-      healthExerciseList.addEventListener("keydown", e => {
-        if (e.key !== "Enter") return;
-        if (e.shiftKey) return;
-        const input = e.target.closest("[data-health-coach-practice]");
-        if (!input) return;
-        e.preventDefault();
-        const pid = input.dataset.healthCoachPractice;
-        const q = input.value.trim();
-        void requestPracticeCoaching(pid, q || null, { surface: "health" });
-        input.value = "";
-      });
-    }
-
     // Streak badge click → open Review tab
     const streakBadgeEl = document.getElementById("streakDisplay");
     if (streakBadgeEl) {
@@ -26946,6 +27184,7 @@ Data caveat`;
 
     (async () => {
       const nativeDetected = await detectNativeStore();
+      await detectAppRuntime();
       await setupNativeFileMenuHandlers();
       if (nativeDetected) {
         document.getElementById("loadFileBtn").textContent = "Import JSON File";
