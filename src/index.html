@@ -1466,6 +1466,7 @@ button.warn {
 .ai-provider-pill.ai-switch-trigger::after{content:"▾";font-size:.58rem;opacity:.72}
 .ai-surface-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
 .ai-surface-head h4{margin:0}
+.ai-surface-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .ai-provider-pill[data-privacy="local"]{border-color:var(--green,#22c55e);color:var(--green,#22c55e)}
 .ai-provider-pill[data-privacy="warning"]{border-color:#e8a308;color:#b8860b}
 .ai-inline-toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:var(--text); color:#fff; padding:10px 20px; border-radius:var(--radius); font:600 .85rem var(--font); box-shadow:var(--shadow-lg); z-index:100; }
@@ -2689,7 +2690,10 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         <div class="plan-card ai-chat" id="planSidebarAiChat">
           <div class="ai-surface-head">
             <h4>AI Assistant <span style="font-size:.7rem;font-weight:500;color:var(--text2);margin-left:6px" id="planAiModeLabel">Review mode</span></h4>
-            <button id="planSidebarProviderPill" class="ai-provider-pill tiny ai-switch-trigger" data-open-ai-switch="plan-sidebar" type="button" title="Switch AI"></button>
+            <div class="ai-surface-actions">
+              <button class="ghost" id="planOpenCoachBtn" type="button" style="font-size:.75rem">Coach · ⌘K</button>
+              <button id="planSidebarProviderPill" class="ai-provider-pill tiny ai-switch-trigger" data-open-ai-switch="plan-sidebar" type="button" title="Switch AI"></button>
+            </div>
           </div>
           <div class="chat-messages" id="planSidebarMessages"></div>
           <div class="chat-input-row" style="margin-top:8px">
@@ -2750,6 +2754,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         <div class="health-subtabs" id="healthSubtabs"></div>
         <div class="module-toolbar">
           <button id="healthOpenModulePickerBtn" class="module-add-btn" type="button">+ Add tracking module</button>
+          <button class="ghost" id="healthOpenCoachBtn" type="button" style="font-size:.75rem">Coach · ⌘K</button>
           <button id="healthAiProviderPill" class="ai-provider-pill tiny ai-switch-trigger" data-open-ai-switch="health" type="button" title="Switch AI"></button>
         </div>
       </div>
@@ -3285,7 +3290,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         <div class="module-toolbar">
           <button id="wealthOpenModulePickerBtn" class="module-add-btn" type="button">+ Add tracking module</button>
           <button id="wealthAiProviderPill" class="ai-provider-pill tiny ai-switch-trigger" data-open-ai-switch="wealth" type="button" title="Switch AI"></button>
-          <button class="ghost" id="wealthOpenCoachBtn" type="button" style="font-size:.75rem">Wealth Coach</button>
+          <button class="ghost" id="wealthOpenCoachBtn" type="button" style="font-size:.75rem">Coach · ⌘K</button>
         </div>
       </div>
 
@@ -3556,6 +3561,54 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         </div>
       </div>
     </div>
+    <div id="planCoachBackdrop" class="wealth-coach-backdrop" hidden></div>
+    <aside id="planCoachDrawer" class="wealth-coach-drawer" aria-hidden="true">
+      <div class="wealth-coach-head">
+        <div>
+          <h4>Plan Coach</h4>
+          <div class="wealth-coach-meta" id="planCoachMeta"></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <button id="planCoachProviderPill" class="ai-provider-pill ai-switch-trigger" data-open-ai-switch="plan-coach" type="button" title="Switch AI" hidden></button>
+          <button class="ghost" id="planCloseCoachBtn" type="button" style="font-size:.75rem">Close</button>
+        </div>
+      </div>
+      <div id="planCoachMessages" class="wealth-coach-body"></div>
+      <div class="wealth-coach-foot">
+        <div id="planCoachActions" class="wealth-coach-actions">
+          <span id="planCoachStatus" class="tiny"></span>
+          <button class="ghost" id="planCoachClearBtn" type="button" style="font-size:.75rem">Clear</button>
+        </div>
+        <div class="wealth-coach-input-row">
+          <textarea id="planCoachInput" rows="1" placeholder="Ask Plan Coach..."></textarea>
+          <button id="planCoachSendBtn" class="wealth-coach-send" type="button">Ask</button>
+        </div>
+      </div>
+    </aside>
+    <div id="healthCoachBackdrop" class="wealth-coach-backdrop" hidden></div>
+    <aside id="healthCoachDrawer" class="wealth-coach-drawer" aria-hidden="true">
+      <div class="wealth-coach-head">
+        <div>
+          <h4>Health Coach</h4>
+          <div class="wealth-coach-meta" id="healthCoachMeta"></div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <button id="healthCoachProviderPill" class="ai-provider-pill ai-switch-trigger" data-open-ai-switch="health-coach" type="button" title="Switch AI" hidden></button>
+          <button class="ghost" id="healthCloseCoachBtn" type="button" style="font-size:.75rem">Close</button>
+        </div>
+      </div>
+      <div id="healthCoachMessages" class="wealth-coach-body"></div>
+      <div class="wealth-coach-foot">
+        <div id="healthCoachActions" class="wealth-coach-actions">
+          <span id="healthCoachStatus" class="tiny"></span>
+          <button class="ghost" id="healthCoachClearBtn" type="button" style="font-size:.75rem">Clear</button>
+        </div>
+        <div class="wealth-coach-input-row">
+          <textarea id="healthCoachInput" rows="1" placeholder="Ask Health Coach..."></textarea>
+          <button id="healthCoachSendBtn" class="wealth-coach-send" type="button">Ask</button>
+        </div>
+      </div>
+    </aside>
     <div id="wealthCoachBackdrop" class="wealth-coach-backdrop" hidden></div>
     <aside id="wealthCoachDrawer" class="wealth-coach-drawer" aria-hidden="true">
       <div class="wealth-coach-head">
@@ -3570,7 +3623,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       </div>
       <div id="wealthCoachMessages" class="wealth-coach-body"></div>
       <div class="wealth-coach-foot">
-        <div class="wealth-coach-actions">
+        <div id="wealthCoachActions" class="wealth-coach-actions">
           <span id="wealthCoachStatus" class="tiny"></span>
           <button class="ghost" id="wealthCoachClearBtn" type="button" style="font-size:.75rem">Clear</button>
         </div>
@@ -4256,6 +4309,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
     let aiHighlightClearTimer = null;
     let aiHighlightedTaskIds = new Set();
     let activePlanTab = "focus";
+    let planCoachOpen = false;
     let todayPanelDelegated = false;
     let lifePracticesDelegated = false;
     let focusUiPrefs = loadFocusUiPrefs();
@@ -6376,6 +6430,23 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
     function aiQuickSwitchResolvedConfig() {
       return aiResolveConfig(aiQuickSwitchDraftPrefs());
     }
+
+    function aiQuickSwitchSourceLabel(source = "") {
+      const key = String(source || "").trim();
+      const labels = {
+        execute: "Execute",
+        assistant: "Plan AI Workspace",
+        "plan-sidebar": "Plan sidebar",
+        "plan-coach": "Plan Coach",
+        health: "Health",
+        "health-coach": "Health Coach",
+        "health-nutrition": "Nutrition Coach",
+        "health-sleep": "Sleep Coach",
+        wealth: "Wealth",
+        "wealth-coach": "Wealth Coach"
+      };
+      return labels[key] || "this surface";
+    }
     async function refreshAiQuickSwitchModels(options = {}) {
       const preserveSelection = options.preserveSelection !== false;
       const provider = AI_ALLOWED_PROVIDERS.includes(aiQuickSwitch.provider) ? aiQuickSwitch.provider : aiPrefs.provider;
@@ -6454,7 +6525,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       applyBtn.textContent = aiQuickSwitch.provider === "ollama" ? "Use Local AI" : "Use This AI";
       const info = aiProviderPrivacyInfo(aiQuickSwitch.provider);
       privacyEl.textContent = `${info.icon} ${info.text}`;
-      metaEl.textContent = `Switch provider or model from ${aiQuickSwitch.source || "this surface"}.`;
+      metaEl.textContent = `Switch provider or model from ${aiQuickSwitchSourceLabel(aiQuickSwitch.source)}.`;
       if (needsKey) {
         statusEl.textContent = `${aiProviderDisplayName(aiQuickSwitch.provider)} needs an API key in Settings before it can be used here.`;
       } else if (aiQuickSwitch.provider === "ollama" && !ollamaReady) {
@@ -8039,6 +8110,9 @@ If you do propose actions, they must exactly match the supported schema in the u
       });
       renderLocalAiEntryPoints(formPrefs.provider);
       renderAiQuickSwitch();
+      renderPlanCoach();
+      renderHealthCoach();
+      renderWealthCoach();
 
       const disabledText = aiPrefs.enabled
         ? (keyMissing ? "AI is enabled but API key is missing. Open Settings, add a key, and save." : "")
@@ -11267,7 +11341,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       setActiveTab("plan");
       render();
       requestAnimationFrame(() => {
-        focusAiInputElement(document.getElementById("planSidebarChatInput"));
+        openPlanCoach();
       });
     }
 
@@ -11282,17 +11356,10 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
 
     function focusHealthAiInput() {
       aiPanelForcedVisible = true;
-      if (!["sleep", "nutrition", "exercise"].includes(activeHealthTab)) activeHealthTab = "exercise";
       setActiveTab("health");
       render();
       requestAnimationFrame(() => {
-        const input = activeHealthTab === "sleep"
-          ? document.getElementById("healthSleepCoachInput")
-          : activeHealthTab === "nutrition"
-            ? document.getElementById("healthNutritionCoachInput")
-            : document.querySelector("[data-health-coach-practice]");
-        if (focusAiInputElement(input)) return;
-        focusPlanAssistantAiInput();
+        openHealthCoach();
       });
     }
 
@@ -11316,10 +11383,6 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         return;
       }
       if (activeTopTab === "plan") {
-        if (activePlanTab === "assistant") {
-          focusPlanAssistantAiInput();
-          return;
-        }
         focusPlanSidebarAiInput();
         return;
       }
@@ -18377,6 +18440,10 @@ Data caveat`;
 
     // ═══════════ WEALTH MODULE ═══════════
     let activeHealthTab = "overview";
+    let healthCoachOpen = false;
+    let healthCoachBusy = false;
+    let healthCoachMessages = [];
+    let healthCoachCloudConsent = {};
     let healthNutritionCoachBusy = false;
     let healthNutritionCoachMessages = [];
     let healthNutritionCoachCloudConsent = {};
@@ -23913,7 +23980,7 @@ Data caveat`;
       const meta = document.getElementById("wealthCoachMeta");
       const messagesEl = document.getElementById("wealthCoachMessages");
       const statusEl = document.getElementById("wealthCoachStatus");
-      const actionsEl = document.querySelector(".wealth-coach-actions");
+      const actionsEl = document.getElementById("wealthCoachActions");
       const clearBtn = document.getElementById("wealthCoachClearBtn");
       const sendBtn = document.getElementById("wealthCoachSendBtn");
       const activeProvider = wealthCoachActiveProvider();
@@ -24783,8 +24850,378 @@ Data caveat`;
           });
           planMsgs.innerHTML = html;
         } else {
-          planMsgs.innerHTML = '<div style="font-size:.78rem;color:var(--text2);padding:8px 0">No AI messages yet. Use the AI bar or AI Workspace to start.</div>';
+          planMsgs.innerHTML = '<div style="font-size:.78rem;color:var(--text2);padding:8px 0">No AI messages yet. Use Coach · ⌘K, the AI bar, or AI Workspace to start.</div>';
         }
+      }
+    }
+
+    function activePlanSurfaceLabel() {
+      if (activePlanTab === "assistant") return "Plan > AI Workspace";
+      if (activePlanTab === "review") return "Plan > Review";
+      return "Plan > Pipeline";
+    }
+
+    function renderPlanCoach() {
+      const drawer = document.getElementById("planCoachDrawer");
+      const backdrop = document.getElementById("planCoachBackdrop");
+      const meta = document.getElementById("planCoachMeta");
+      const messagesEl = document.getElementById("planCoachMessages");
+      const statusEl = document.getElementById("planCoachStatus");
+      const actionsEl = document.getElementById("planCoachActions");
+      const clearBtn = document.getElementById("planCoachClearBtn");
+      const sendBtn = document.getElementById("planCoachSendBtn");
+      if (drawer) {
+        drawer.classList.toggle("open", planCoachOpen);
+        drawer.setAttribute("aria-hidden", planCoachOpen ? "false" : "true");
+      }
+      if (backdrop) {
+        backdrop.hidden = !planCoachOpen;
+        backdrop.classList.toggle("open", planCoachOpen);
+      }
+      if (meta) {
+        const parts = [
+          `Source: ${activePlanSurfaceLabel()}`,
+          aiPrefs.inlineAutoApply ? "Mode: Auto" : "Mode: Review"
+        ];
+        if (aiProposal && !aiProposal.appliedAt) parts.push(`Pending actions: ${aiProposal.items.filter(item => item.valid && item.selected).length}`);
+        meta.innerHTML = parts.map(text => `<span>${escapeHtml(text)}</span>`).join("");
+      }
+      const cfg = aiResolveConfig(aiPrefs);
+      const activeProvider = cfg.provider || aiPrefs.provider || "openai";
+      const statusText = aiBusy
+        ? "Thinking..."
+        : !aiPrefs.enabled
+          ? "AI disabled"
+          : (aiProviderNeedsKey(activeProvider) && !cfg.apiKey ? `${aiProviderDisplayName(activeProvider)} needs API key` : "");
+      if (statusEl) statusEl.textContent = statusText;
+      if (clearBtn) clearBtn.hidden = !aiMessages.length && !aiProposal;
+      if (actionsEl) actionsEl.hidden = !statusText && !aiMessages.length && !aiProposal;
+      if (sendBtn) sendBtn.disabled = aiBusy;
+      if (!messagesEl) return;
+      const proposalNotice = aiProposal
+        ? `<div class="wealth-coach-notice">
+            <div class="wealth-coach-notice-title">${aiProposal.appliedAt ? "Latest proposal applied" : "Latest proposal ready"}</div>
+            <div class="wealth-coach-notice-copy">
+              ${escapeHtml(aiProposal.summary || "AI generated proposed board updates.")}
+              ${aiProposal.appliedAt ? "" : " Open AI Workspace if you want to inspect or apply changes in detail."}
+            </div>
+          </div>`
+        : "";
+      if (!aiMessages.length) {
+        messagesEl.innerHTML = `${proposalNotice}<div class="wealth-coach-empty">
+          Ask for prioritization, planning, reflection, or a next-step recommendation from the current Plan screen.
+          Use Coach · ⌘K from any Plan view to open this drawer.
+        </div>`;
+        return;
+      }
+      messagesEl.innerHTML = `${proposalNotice}${aiMessages.map(msg => `
+        <div class="wealth-coach-msg ${msg.role === "user" ? "user" : "assistant"}">${escapeHtml(msg.content)}</div>
+      `).join("")}`;
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    function openPlanCoach() {
+      planCoachOpen = true;
+      renderPlanCoach();
+      requestAnimationFrame(() => {
+        document.getElementById("planCoachInput")?.focus();
+      });
+    }
+
+    function closePlanCoach() {
+      planCoachOpen = false;
+      renderPlanCoach();
+    }
+
+    async function requestPlanCoaching() {
+      const input = document.getElementById("planCoachInput");
+      const text = String(input?.value || "").trim();
+      if (!text || aiBusy) return;
+      if (input) {
+        input.value = "";
+        autoGrowTextarea(input);
+      }
+      const cfg = aiResolveConfig(aiPrefs);
+      const activeProvider = cfg.provider || aiPrefs.provider || "openai";
+      if (!aiPrefs.enabled) {
+        aiMessages.push({ role: "assistant", content: "AI is currently disabled. Enable AI in Settings to use Plan Coach." });
+        renderPlanSidebar();
+        renderPlanCoach();
+        return;
+      }
+      if (aiProviderNeedsKey(activeProvider) && !cfg.apiKey) {
+        aiMessages.push({ role: "assistant", content: `${aiProviderDisplayName(activeProvider)} needs an API key in Settings before Plan Coach can use it.` });
+        renderPlanSidebar();
+        renderPlanCoach();
+        return;
+      }
+      const targetInputId = aiPrefs.inlineAutoApply ? "aiInlineUserInput" : "aiUserInput";
+      const targetInput = document.getElementById(targetInputId);
+      if (!targetInput) return;
+      targetInput.value = text;
+      autoGrowTextarea(targetInput);
+      aiPanelForcedVisible = true;
+      renderPlanSidebar();
+      renderPlanCoach();
+      await requestAiProposal(targetInputId).finally(() => {
+        renderPlanSidebar();
+        renderPlanCoach();
+      });
+    }
+
+    function healthCoachActiveProvider() {
+      return aiResolveConfig(aiPrefs).provider || aiPrefs.provider || "openai";
+    }
+
+    function healthCoachNeedsCloudConsent(provider = healthCoachActiveProvider()) {
+      return !!aiPrefs.enabled && !!provider && provider !== "ollama" && !healthCoachCloudConsent[provider];
+    }
+
+    function allowHealthCoachCloudConsent(provider = healthCoachActiveProvider()) {
+      if (!provider || provider === "ollama") return;
+      healthCoachCloudConsent[provider] = true;
+      renderHealthCoach();
+    }
+
+    function openAiSettingsFromHealthCoach() {
+      openAiSettingsPanel();
+      renderHealthCoach();
+    }
+
+    function buildHealthCoachSnapshot() {
+      const health = ensureHealthStateShape();
+      const training = healthTrainingBlockSnapshot();
+      const nutrition = buildHealthNutritionSnapshot();
+      const sleep = buildHealthSleepRecoverySnapshot();
+      const bodyComp = buildHealthBodyCompositionSnapshot();
+      const practices = getHealthPractices();
+      const profile = health.profile || {};
+      return {
+        current_surface: `Health > ${HEALTH_TAB_LABELS[activeHealthTab] || "Overview"}`,
+        visible_modules: getVisibleHealthTabs().map(tab => HEALTH_TAB_LABELS[tab] || tab),
+        profile_summary: healthProfileHasData(profile) ? {
+          target_sessions_per_week: profile.training_days_per_week,
+          max_sessions_per_week: profile.max_sessions_per_week,
+          ideal_session_minutes: profile.ideal_session_minutes,
+          blocked_days: profile.blocked_days || [],
+          injuries_note: profile.injuries_note || "",
+          target_muscle_groups: profile.target_muscle_groups || [],
+          preferred_splits: profile.preferred_splits || [],
+          preferred_styles: profile.preferred_styles || [],
+          load_preference: profile.load_preference || ""
+        } : null,
+        training_block: training.hasBlock ? {
+          title: training.block.title,
+          split: training.block.split,
+          week_label: training.weekContext.label,
+          adherence_pct: training.adherence,
+          planned_sessions_this_week: training.plannedSessions,
+          actual_sessions_this_week: training.actualSessions,
+          next_session: training.nextScheduled ? {
+            title: training.nextScheduled.title,
+            date: training.nextScheduled.date_key,
+            status: training.nextScheduled.status_label
+          } : null,
+          template_performance: training.templatePerformance.slice(0, 6).map(item => ({
+            title: item.title,
+            completed_count: item.completed_count,
+            planned_count: item.planned_count,
+            exercise_match_pct: item.exercise_match_pct,
+            set_drift_count: item.set_drift_count,
+            rep_drift_count: item.rep_drift_count,
+            load_drift_count: item.load_drift_count,
+            missed_count: item.missed_count,
+            due_today_count: item.due_today_count,
+            drift_examples: item.drift_examples || []
+          }))
+        } : null,
+        exercise_summary: {
+          practice_count: practices.length,
+          recent_activity: recentHealthActivity(8).map(entry => ({
+            date: entry.date,
+            practice: entry.practiceTitle,
+            summary: practiceEntryDisplayText(entry),
+            minutes: entry.minutes || 0
+          })),
+          practice_signals: practices.slice(0, 8).map(practice => {
+            const progress = healthPracticeProgress(practice);
+            return {
+              title: practice.title,
+              sessions_30d: progress.currentSessions,
+              minutes_30d: progress.currentMinutes,
+              minutes_vs_prior_30d: progress.currentMinutes - progress.previousMinutes,
+              avg_energy: progress.metrics.avg_energy || null,
+              top_lifts: progress.topLifts.slice(0, 3)
+            };
+          })
+        },
+        nutrition_summary: snapshotHasHealthNutritionData() ? {
+          active_target_kcal: nutrition.activeTarget?.kcal ?? null,
+          avg_kcal_7d: nutrition.avgKcal7,
+          avg_protein_g_7d: nutrition.avgProtein7,
+          weight_trend_14d_kg: nutrition.weightTrend14,
+          meal_source_drift: nutrition.mealSourceDrift.slice(0, 5),
+          refeed_cadence_days: nutrition.refeedCadenceDays
+        } : null,
+        sleep_summary: snapshotHasHealthSleepData() ? {
+          recovery_state: sleep.latest ? sleep.readiness.label : null,
+          avg_sleep_hours_7d: sleep.avgSleep,
+          avg_quality_7d: sleep.avgQuality,
+          short_nights_under_6h_7d: sleep.shortNights7,
+          bedtime_spread_minutes_7d: sleep.bedtimeSpreadMinutes,
+          wake_spread_minutes_7d: sleep.wakeSpreadMinutes,
+          resting_hr_delta_bpm: sleep.restingHrDelta
+        } : null,
+        body_composition: {
+          latest_weight_kg: bodyComp.latestWeightPoint?.weight_kg ?? null,
+          weight_vs_assessment_baseline_kg: bodyComp.weightVsAssessmentBaseline,
+          latest_waist_cm: bodyComp.latestMeasurement?.waist_cm ?? null,
+          waist_delta_cm: bodyComp.waistDelta,
+          waist_to_hip_ratio: bodyComp.latestRatio,
+          ratio_delta: bodyComp.ratioDelta
+        }
+      };
+    }
+
+    function healthCoachSystemPrompt() {
+      return `You are the PPP Flow Health Coach.
+
+Your job is to help the user understand and work with the health data currently in the app.
+
+You can help with:
+1. Product-use questions about how Health works in PPP Flow.
+2. Descriptive coaching questions about training adherence, recovery, nutrition drift, and body-composition signals.
+
+Rules:
+- Use only the structured snapshot provided.
+- Be conversational and direct, not robotic or third-person.
+- This is not medical advice. Do not diagnose, prescribe, or overclaim from limited data.
+- Focus on the current Health surface first, but pull in cross-signal context when it materially helps.
+- If the user asks what to do next, prioritize the clearest signals: missed sessions, repeated drift, logging gaps, low recovery, or obvious nutrition mismatch.
+- If the user asks a product question, answer directly and concretely using current app behavior.
+
+Prefer this response shape:
+Current picture
+What stands out
+Next adjustment
+Data caveat`;
+    }
+
+    function renderHealthCoach() {
+      const drawer = document.getElementById("healthCoachDrawer");
+      const backdrop = document.getElementById("healthCoachBackdrop");
+      const meta = document.getElementById("healthCoachMeta");
+      const messagesEl = document.getElementById("healthCoachMessages");
+      const statusEl = document.getElementById("healthCoachStatus");
+      const actionsEl = document.getElementById("healthCoachActions");
+      const clearBtn = document.getElementById("healthCoachClearBtn");
+      const sendBtn = document.getElementById("healthCoachSendBtn");
+      const activeProvider = healthCoachActiveProvider();
+      const needsConsent = healthCoachNeedsCloudConsent(activeProvider);
+      const providerInfo = aiProviderPrivacyInfo(activeProvider);
+      const providerName = aiProviderDisplayName(activeProvider);
+      const emptyHintByTab = {
+        exercise: "Ask about missed sessions, exercise drift, training adherence, or what the block suggests next.",
+        nutrition: "Ask about calories vs target, protein drift, meal-source patterns, or refeed cadence.",
+        sleep: "Ask about recovery state, short nights, bedtime drift, or what the recent sleep pattern suggests."
+      };
+      const consentNotice = needsConsent ? `<div class="wealth-coach-notice ${providerInfo.level === "warning" ? "warning" : ""}">
+        <div class="wealth-coach-notice-title">Cloud analysis is blocked for this session</div>
+        <div class="wealth-coach-notice-copy">
+          Health Coach is currently set to use ${escapeHtml(providerName)}. Asking a question will send health data to that provider.
+          Switch to Ollama for local-only analysis, or explicitly allow cloud analysis for this session.
+        </div>
+        <div class="wealth-coach-notice-actions">
+          <button class="ghost" type="button" data-health-consent-action="settings">AI Settings</button>
+          <button class="primary" type="button" data-health-consent-action="allow">Allow This Session</button>
+        </div>
+      </div>` : "";
+      if (drawer) {
+        drawer.classList.toggle("open", healthCoachOpen);
+        drawer.setAttribute("aria-hidden", healthCoachOpen ? "false" : "true");
+      }
+      if (backdrop) {
+        backdrop.hidden = !healthCoachOpen;
+        backdrop.classList.toggle("open", healthCoachOpen);
+      }
+      if (meta) {
+        const snapshot = buildHealthCoachSnapshot();
+        const parts = [
+          `Surface: ${snapshot.current_surface}`,
+          snapshot.training_block?.week_label ? `Block: ${snapshot.training_block.week_label}` : null,
+          snapshot.sleep_summary?.recovery_state ? `Recovery: ${snapshot.sleep_summary.recovery_state}` : null
+        ].filter(Boolean);
+        meta.innerHTML = parts.map(text => `<span>${escapeHtml(text)}</span>`).join("");
+      }
+      const statusText = healthCoachBusy ? "Thinking..." : (needsConsent ? "Cloud consent required" : "");
+      if (statusEl) statusEl.textContent = statusText;
+      if (clearBtn) clearBtn.hidden = !healthCoachMessages.length;
+      if (actionsEl) actionsEl.hidden = !statusText && !healthCoachMessages.length;
+      if (sendBtn) sendBtn.disabled = healthCoachBusy || needsConsent;
+      if (!messagesEl) return;
+      if (!healthCoachMessages.length) {
+        messagesEl.innerHTML = `${consentNotice}<div class="wealth-coach-empty">
+          ${escapeHtml(emptyHintByTab[activeHealthTab] || "Ask about training, recovery, nutrition, body-composition signals, or how to use the Health module.")} Local AI is recommended for private health data.
+        </div>`;
+        return;
+      }
+      messagesEl.innerHTML = `${consentNotice}${healthCoachMessages.map(msg => `
+        <div class="wealth-coach-msg ${msg.role === "user" ? "user" : "assistant"}">${escapeHtml(msg.content)}</div>
+      `).join("")}`;
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    function openHealthCoach() {
+      healthCoachOpen = true;
+      renderHealthCoach();
+      requestAnimationFrame(() => {
+        document.getElementById("healthCoachInput")?.focus();
+      });
+    }
+
+    function closeHealthCoach() {
+      healthCoachOpen = false;
+      renderHealthCoach();
+    }
+
+    async function requestHealthCoaching() {
+      const input = document.getElementById("healthCoachInput");
+      const question = String(input?.value || "").trim();
+      if (!question || healthCoachBusy) return;
+      const cfg = aiResolveConfig(aiPrefs);
+      const activeProvider = cfg.provider || aiPrefs.provider || "openai";
+      if (healthCoachNeedsCloudConsent(activeProvider)) {
+        renderHealthCoach();
+        return;
+      }
+      healthCoachMessages.push({ role: "user", content: question });
+      if (input) {
+        input.value = "";
+        autoGrowTextarea(input);
+      }
+      renderHealthCoach();
+      if (!aiPrefs.enabled) {
+        healthCoachMessages.push({ role: "assistant", content: "AI is currently disabled. Enable AI in Settings to use Health Coach." });
+        renderHealthCoach();
+        return;
+      }
+      if (aiProviderNeedsKey(activeProvider) && !cfg.apiKey) {
+        healthCoachMessages.push({ role: "assistant", content: `${aiProviderDisplayName(activeProvider)} needs an API key in Settings before Health Coach can use it.` });
+        renderHealthCoach();
+        return;
+      }
+      healthCoachBusy = true;
+      renderHealthCoach();
+      try {
+        const snapshot = buildHealthCoachSnapshot();
+        const userPrompt = `User question:\n${question}\n\nCurrent health snapshot:\n${JSON.stringify(snapshot, null, 2)}`;
+        const raw = await aiCallProvider(healthCoachSystemPrompt(), userPrompt, null, { temperature: 0.65 });
+        healthCoachMessages.push({ role: "assistant", content: String(raw || "").trim() || "No answer returned." });
+      } catch (err) {
+        healthCoachMessages.push({ role: "assistant", content: `I couldn't answer that from the current health data. ${String(err?.message || err || "Unknown error")}` });
+      } finally {
+        healthCoachBusy = false;
+        renderHealthCoach();
       }
     }
 
@@ -25545,6 +25982,7 @@ Data caveat`;
       renderHealth();
     });
     document.getElementById("healthOpenModulePickerBtn")?.addEventListener("click", () => openModulePicker("health"));
+    document.getElementById("healthOpenCoachBtn")?.addEventListener("click", () => openHealthCoach());
     document.getElementById("tab-health")?.addEventListener("click", e => {
       const modulePickerBtn = e.target.closest("[data-open-module-picker]");
       if (modulePickerBtn) {
@@ -25734,6 +26172,33 @@ Data caveat`;
         void requestHealthNutritionCoaching();
       }
     });
+    document.getElementById("healthCloseCoachBtn")?.addEventListener("click", () => closeHealthCoach());
+    document.getElementById("healthCoachBackdrop")?.addEventListener("click", () => closeHealthCoach());
+    document.getElementById("healthCoachClearBtn")?.addEventListener("click", () => {
+      healthCoachMessages = [];
+      renderHealthCoach();
+    });
+    document.getElementById("healthCoachMessages")?.addEventListener("click", e => {
+      const btn = e.target?.closest?.("[data-health-consent-action]");
+      if (!btn) return;
+      const action = String(btn.getAttribute("data-health-consent-action") || "");
+      if (action === "allow") {
+        allowHealthCoachCloudConsent();
+      } else if (action === "settings") {
+        openAiSettingsFromHealthCoach();
+      }
+    });
+    document.getElementById("healthCoachSendBtn")?.addEventListener("click", () => { void requestHealthCoaching(); });
+    document.getElementById("healthCoachInput")?.addEventListener("input", e => {
+      autoGrowTextarea(e.currentTarget);
+    });
+    document.getElementById("healthCoachInput")?.addEventListener("keydown", e => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        void requestHealthCoaching();
+      }
+    });
+    autoGrowTextarea("healthCoachInput");
 
     // Wealth tab events
     document.getElementById("wealthSubtabs")?.addEventListener("click", e => {
@@ -26213,6 +26678,24 @@ Data caveat`;
         closeWealthModal();
         return;
       }
+      if (e.key === "Escape" && planCoachOpen) {
+        e.preventDefault();
+        e.stopPropagation();
+        closePlanCoach();
+        return;
+      }
+      if (e.key === "Escape" && healthCoachOpen) {
+        e.preventDefault();
+        e.stopPropagation();
+        closeHealthCoach();
+        return;
+      }
+      if (e.key === "Escape" && wealthCoachOpen) {
+        e.preventDefault();
+        e.stopPropagation();
+        closeWealthCoach();
+        return;
+      }
       if ((e.metaKey || e.ctrlKey) && e.shiftKey && !e.altKey && String(e.key || "").toLowerCase() === "o") {
         const openModal = document.querySelector(".modal-backdrop:not([hidden])");
         if (openModal) return;
@@ -26233,7 +26716,7 @@ Data caveat`;
         const openModal = document.querySelector(".modal-backdrop:not([hidden])");
         if (openModal) return;
         const targetId = String(e.target?.id || "").trim();
-        const allowWhileEditing = new Set(["aiInlineUserInput", "aiUserInput", "planSidebarChatInput", "wealthCoachInput", "healthSleepCoachInput", "healthNutritionCoachInput", "onboardAiIntake"]);
+        const allowWhileEditing = new Set(["aiInlineUserInput", "aiUserInput", "planSidebarChatInput", "planCoachInput", "wealthCoachInput", "healthCoachInput", "healthSleepCoachInput", "healthNutritionCoachInput", "onboardAiIntake"]);
         if (isEditableElement(e.target) && !allowWhileEditing.has(targetId)) return;
         e.preventDefault();
         e.stopPropagation();
@@ -26429,8 +26912,27 @@ Data caveat`;
         document.getElementById("planSidebarSendBtn").click();
       }
     });
+    document.getElementById("planOpenCoachBtn")?.addEventListener("click", () => openPlanCoach());
+    document.getElementById("planCloseCoachBtn")?.addEventListener("click", () => closePlanCoach());
+    document.getElementById("planCoachBackdrop")?.addEventListener("click", () => closePlanCoach());
+    document.getElementById("planCoachClearBtn")?.addEventListener("click", () => {
+      clearAiChat();
+      renderPlanSidebar();
+      renderPlanCoach();
+    });
+    document.getElementById("planCoachSendBtn")?.addEventListener("click", () => { void requestPlanCoaching(); });
+    document.getElementById("planCoachInput")?.addEventListener("input", e => {
+      autoGrowTextarea(e.currentTarget);
+    });
+    document.getElementById("planCoachInput")?.addEventListener("keydown", e => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        void requestPlanCoaching();
+      }
+    });
     autoGrowTextarea("aiInlineUserInput");
     autoGrowTextarea("planSidebarChatInput");
+    autoGrowTextarea("planCoachInput");
 
     // Live tick
     setInterval(()=>{
