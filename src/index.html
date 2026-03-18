@@ -13709,13 +13709,14 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
     }
 
     function healthTrainingBlockHasData(block) {
+      const hasNumericValue = value => value !== null && value !== undefined && value !== "" && Number.isFinite(Number(value));
       return !!(
         block?.title ||
         block?.start_date ||
-        Number.isFinite(Number(block?.weeks)) ||
-        Number.isFinite(Number(block?.sessions_per_week)) ||
+        hasNumericValue(block?.weeks) ||
+        hasNumericValue(block?.sessions_per_week) ||
         block?.split ||
-        Number.isFinite(Number(block?.deload_week)) ||
+        hasNumericValue(block?.deload_week) ||
         block?.focus_note
       );
     }
