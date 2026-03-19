@@ -11579,7 +11579,27 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       });
     }
 
+    function isElementActuallyVisible(el) {
+      if (!(el instanceof Element)) return false;
+      const style = window.getComputedStyle(el);
+      if (style.display === "none" || style.visibility === "hidden" || style.opacity === "0") return false;
+      const rect = el.getBoundingClientRect();
+      return rect.width > 0 && rect.height > 0;
+    }
+
     function currentTopLevelAiSurface() {
+      const wealthSurface = document.getElementById("tab-wealth");
+      const healthSurface = document.getElementById("tab-health");
+      const planSurface = document.getElementById("surface-plan");
+      const executeSurface = document.getElementById("tab-execute");
+      const activePlanPanelVisible = ["tab-focus", "tab-assistant", "tab-review"].some(id => {
+        const panel = document.getElementById(id);
+        return !!(panel && panel.classList.contains("active") && isElementActuallyVisible(panel));
+      });
+      if (wealthSurface?.classList.contains("active") && isElementActuallyVisible(wealthSurface)) return "wealth";
+      if (healthSurface?.classList.contains("active") && isElementActuallyVisible(healthSurface)) return "health";
+      if ((planSurface?.classList.contains("active") && isElementActuallyVisible(planSurface)) || activePlanPanelVisible) return "plan";
+      if (executeSurface?.classList.contains("active") && isElementActuallyVisible(executeSurface)) return "execute";
       if (activeTopLevelTab === "wealth" || activeTopLevelTab === "health" || activeTopLevelTab === "plan" || activeTopLevelTab === "execute") {
         return activeTopLevelTab;
       }
