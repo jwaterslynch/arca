@@ -25055,6 +25055,7 @@ CRITICAL RULES FOR ACTIONS:
       const attachments = aiCloneAttachments(aiGetComposerAttachments("wealthCoachInput"));
       if ((!question && !attachments.length) || wealthCoachBusy) return;
       const activeProvider = wealthCoachActiveProvider();
+      const priorMessages = buildCoachConversationHistory(wealthCoachMessages, "__WEALTH_PROPOSAL__", 10);
       if (wealthCoachNeedsCloudConsent(activeProvider)) {
         renderWealthCoach();
         return;
@@ -25073,11 +25074,7 @@ CRITICAL RULES FOR ACTIONS:
       renderWealthCoach();
       try {
         const snapshot = buildWealthCoachSnapshot();
-        const priorMessages = wealthCoachMessages
-          .filter(m => !m._isProposal && m.content !== "__WEALTH_PROPOSAL__")
-          .slice(-10)
-          .map(m => ({ role: m.role, content: m.content }));
-        const userPrompt = `User message:\n${userMessage}\n\nCurrent wealth snapshot:\n${JSON.stringify(snapshot, null, 2)}`;
+        const userPrompt = `User message:\n${userMessage}\n\n${buildWealthCoachActionSchemaHint()}\n\nCurrent wealth snapshot:\n${JSON.stringify(snapshot, null, 2)}`;
         const raw = await aiCallProvider(wealthCoachSystemPrompt(), userPrompt, null, { messages: priorMessages, attachments });
         const parsed = parseCoachActionsFromResponse(String(raw || "").trim());
         if (parsed.proposal) {
@@ -26358,6 +26355,56 @@ CRITICAL RULES FOR ACTIONS:
       return { text: rawText, proposal: null };
     }
 
+    function buildCoachConversationHistory(messages = [], proposalMarker = "", limit = 10) {
+      return (Array.isArray(messages) ? messages : [])
+        .filter(msg => {
+          if (!msg || msg._isProposal) return false;
+          const content = String(msg.content || "");
+          return !proposalMarker || content !== proposalMarker;
+        })
+        .slice(-Math.max(1, Number(limit) || 10))
+        .map(msg => ({
+          role: msg.role === "assistant" ? "assistant" : "user",
+          content: String(msg.content || "")
+        }));
+    }
+
+    function buildHealthCoachActionSchemaHint() {
+      return `ACTION_SCHEMA_HINT:
+If the user asks you to log, record, set, create, or update something, you MUST include a fenced JSON block in this exact shape:
+
+\`\`\`json
+{
+  "summary": "Short description of the change",
+  "actions": [
+    {
+      "type": "health.log_session"
+    }
+  ]
+}
+\`\`\`
+
+You cannot change app state without that JSON block. Do not say something is logged or updated unless the JSON block is present.`;
+    }
+
+    function buildWealthCoachActionSchemaHint() {
+      return `ACTION_SCHEMA_HINT:
+If the user asks you to add, record, recategorise, or update something, you MUST include a fenced JSON block in this exact shape:
+
+\`\`\`json
+{
+  "summary": "Short description of the change",
+  "actions": [
+    {
+      "type": "wealth.add_transaction"
+    }
+  ]
+}
+\`\`\`
+
+You cannot change app state without that JSON block. Do not say something was added, updated, or recategorised unless the JSON block is present.`;
+    }
+
     function applyHealthCoachProposal() {
       if (!healthCoachProposal || healthCoachProposal.appliedAt) return;
       const selectedItems = healthCoachProposal.items.filter(item => item.selected && item.valid && item.action);
@@ -26393,6 +26440,7 @@ CRITICAL RULES FOR ACTIONS:
       if ((!question && !attachments.length) || healthCoachBusy) return;
       const cfg = aiResolveConfig(aiPrefs);
       const activeProvider = cfg.provider || aiPrefs.provider || "openai";
+      const priorMessages = buildCoachConversationHistory(healthCoachMessages, "__HEALTH_PROPOSAL__", 10);
       if (healthCoachNeedsCloudConsent(activeProvider)) {
         renderHealthCoach();
         return;
@@ -26416,11 +26464,7 @@ CRITICAL RULES FOR ACTIONS:
       renderHealthCoach();
       try {
         const snapshot = buildHealthCoachSnapshot();
-        const priorMessages = healthCoachMessages
-          .filter(m => !m._isProposal && m.content !== "__HEALTH_PROPOSAL__")
-          .slice(-10)
-          .map(m => ({ role: m.role, content: m.content }));
-        const userPrompt = `User message:\n${userMessage}\n\nCurrent health snapshot:\n${JSON.stringify(snapshot, null, 2)}`;
+        const userPrompt = `User message:\n${userMessage}\n\n${buildHealthCoachActionSchemaHint()}\n\nCurrent health snapshot:\n${JSON.stringify(snapshot, null, 2)}`;
         const raw = await aiCallProvider(healthCoachSystemPrompt(), userPrompt, null, { temperature: 0.65, messages: priorMessages, attachments });
         const parsed = parseCoachActionsFromResponse(String(raw || "").trim());
         if (parsed.proposal) {
