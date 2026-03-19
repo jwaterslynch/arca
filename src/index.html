@@ -2784,6 +2784,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           <h4>Primary Goal</h4>
           <div class="goal-display" id="goalDisplayCard">
             <div class="goal-title" id="goalDisplayTitle">No goal set</div>
+            <div class="goal-deadline" id="goalDisplaySecondary"></div>
             <div class="goal-deadline" id="goalDisplayDeadline"></div>
             <div class="goal-measure" id="goalDisplayMeasure"></div>
           </div>
@@ -7828,6 +7829,7 @@ If you do propose actions, they must exactly match the supported schema in the u
           "commitment.update",
           "commitment.set_finish_track",
           "focus.update_primary_goal",
+          "focus.update_secondary_goal",
           "health.log_session",
           "health.set_weekly_target",
           "health.update_profile",
@@ -7877,6 +7879,16 @@ If you do propose actions, they must exactly match the supported schema in the u
             commitment: { title: "Review draft by Friday", goal: "PG1" }
           },
           {
+            type: "focus.update_primary_goal",
+            title: "Submit 10 papers under review",
+            deadline: "2026-05-12",
+            measure: "10 submission emails confirmed"
+          },
+          {
+            type: "focus.update_secondary_goal",
+            title: "Build products and publish them on GitHub and the website"
+          },
+          {
             type: "life_practice.log",
             practice_id: "<existing practice id>",
             entry: { done: true, minutes: 10 }
@@ -7908,6 +7920,7 @@ If you do propose actions, they must exactly match the supported schema in the u
         `RECENT_CHAT_JSON:\n${JSON.stringify(recent)}`,
         `SCHEMA_HINT_JSON:\n${JSON.stringify(schemaHint)}`,
         `USER_REQUEST:\n${userInput}`,
+        "If the user asks to set or update PG1, use focus.update_primary_goal. If the user asks to set or update PG2, use focus.update_secondary_goal.",
         mode === "coach"
           ? "This is a conversational coaching context. Answer the question directly in summary. Use actions only if they would clearly help."
           : "This is an execution/proposal context. Prioritise concrete, valid board actions when appropriate.",
@@ -7928,6 +7941,30 @@ If you do propose actions, they must exactly match the supported schema in the u
         }
       }
       throw new Error("Model response is not valid JSON.");
+    }
+    async function aiExtractJsonObjectWithRepair(rawText, interactionMode = "proposal") {
+      try {
+        return extractJsonObject(rawText);
+      } catch (firstErr) {
+        const repairSystemPrompt = `You repair malformed AI responses into valid JSON.
+
+Return valid JSON only. No markdown. No code fences. No explanation.
+Preserve the original intent. Keep the same schema:
+- summary (string)
+- actions (array)
+- assumptions (array of strings)
+- questions (array of strings)
+
+If the original response clearly intended a board mutation, keep that action in the repaired JSON using the supported schema. If no valid action can be inferred safely, return actions: [].`;
+        const repairUserPrompt = [
+          `INTERACTION_MODE: ${interactionMode}`,
+          "TASK: Rewrite the malformed response below into a valid JSON object using the required schema.",
+          `MALFORMED_RESPONSE:\n${String(rawText || "")}`,
+          'Return only JSON with keys "summary", "actions", "assumptions", and "questions".'
+        ].join("\n\n");
+        const repairedRaw = await aiCallProvider(repairSystemPrompt, repairUserPrompt, null, { temperature: 0 });
+        return extractJsonObject(repairedRaw);
+      }
     }
     function normalizeAiLookupText(value) {
       return String(value || "").trim().toLowerCase().replace(/\s+/g, " ");
@@ -8191,6 +8228,11 @@ If you do propose actions, they must exactly match the supported schema in the u
         const measure = String(merged.measure || "").trim();
         return { action: { type, title, deadline: deadline || undefined, measure: measure || undefined } };
       }
+      if (type === "focus.update_secondary_goal") {
+        const title = String(merged.title || "").trim();
+        if (!title) return { error: "focus.update_secondary_goal requires title." };
+        return { action: { type, title } };
+      }
       return { error: `Unsupported action type: ${type}` };
     }
     function resolveTaskTitle(taskId) {
@@ -8238,6 +8280,7 @@ If you do propose actions, they must exactly match the supported schema in the u
       if (action.type === "commitment.update") return `Update commitment ${resolveCommitmentTitle(action.commitment_id)}`;
       if (action.type === "commitment.set_finish_track") return `Lock finish track: ${resolveCommitmentTitle(action.commitment_id)}`;
       if (action.type === "focus.update_primary_goal") return `Update primary goal: ${action.title}`;
+      if (action.type === "focus.update_secondary_goal") return `Update secondary goal: ${action.title}`;
       if (action.type === "health.log_session") {
         const exerciseList = (action.exercises || [])
           .map(ex => `${ex.name || "exercise"}${ex.sets ? ` ${ex.sets}×${ex.reps || "?"}` : ""}${ex.weight ? ` @${ex.weight}kg` : ""}`)
@@ -9416,7 +9459,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
           null,
           { temperature: interactionMode === "coach" ? 0.7 : 0.2, attachments }
         );
-        const parsed = extractJsonObject(raw);
+        const parsed = await aiExtractJsonObjectWithRepair(raw, interactionMode);
         buildAiProposal(parsed);
         aiMessages.push({ role: "assistant", content: aiProposal.summary, at: new Date().toISOString() });
         if (interactionMode === "coach") {
@@ -9698,6 +9741,12 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
           created_at: state.focus.wig?.created_at || nowIso
         };
         state.focus.wig1 = action.title;
+        state.focus.updated_at = nowIso;
+        return "";
+      }
+      if (action.type === "focus.update_secondary_goal") {
+        const nowIso = new Date().toISOString();
+        state.focus.wig2 = action.title;
         state.focus.updated_at = nowIso;
         return "";
       }
@@ -25805,12 +25854,15 @@ CRITICAL RULES FOR ACTIONS:
     function renderPlanSidebar() {
       // 1. Goal Display Card
       const goalTitle = document.getElementById("goalDisplayTitle");
+      const goalSecondary = document.getElementById("goalDisplaySecondary");
       const goalDeadline = document.getElementById("goalDisplayDeadline");
       const goalMeasure = document.getElementById("goalDisplayMeasure");
       const planAiModeLabel = document.getElementById("planAiModeLabel");
       const wig1Val = (document.getElementById("wig1Input") || {}).value || "";
+      const wig2Val = (document.getElementById("wig2Input") || {}).value || "";
       const leadVal = (document.getElementById("leadMeasuresInput") || {}).value || "";
       if (goalTitle) goalTitle.textContent = wig1Val || "No goal set";
+      if (goalSecondary) goalSecondary.textContent = wig2Val ? `PG2: ${wig2Val}` : "";
       if (planAiModeLabel) planAiModeLabel.textContent = aiPrefs.inlineAutoApply ? "Auto" : "Review";
       if (goalDeadline) {
         // Try to extract a deadline from the goal text (e.g., "by 30 June 2026")
