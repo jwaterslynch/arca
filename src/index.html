@@ -2789,12 +2789,11 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           </div>
         </div>
 
-        <!-- AI Assistant Chat (mirrors AI workspace) -->
+        <!-- Plan Coach -->
         <div class="plan-card ai-chat" id="planSidebarAiChat">
           <div class="ai-surface-head">
-            <h4>AI Assistant <span style="font-size:.7rem;font-weight:500;color:var(--text2);margin-left:6px" id="planAiModeLabel">Review mode</span></h4>
+            <h4>Plan Coach <span style="font-size:.7rem;font-weight:600;color:var(--text2);margin-left:6px" id="planAiModeLabel">Review</span></h4>
           <div class="ai-surface-actions">
-              <button class="ghost" id="planOpenCoachBtn" type="button" style="font-size:.75rem">Coach · ⌘K</button>
               <button id="planSidebarProviderPill" class="ai-provider-pill tiny ai-switch-trigger" data-open-ai-switch="plan-sidebar" type="button" title="Switch AI"></button>
             </div>
           </div>
@@ -2802,7 +2801,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           <div id="planSidebarChatAttachments" class="ai-attachment-strip" hidden></div>
           <div class="chat-input-row with-attach" style="margin-top:8px">
             <button class="ghost ai-attach-btn" id="planSidebarAttachBtn" type="button" title="Add image or file">+</button>
-            <textarea class="chat-input" id="planSidebarChatInput" rows="1" placeholder="Brain dump, plan, or ask for advice..."></textarea>
+            <textarea class="chat-input" id="planSidebarChatInput" rows="1" placeholder="Ask Plan Coach..."></textarea>
             <button class="ai-send" id="planSidebarSendBtn" type="button" style="align-self:flex-end">↑</button>
           </div>
         </div>
@@ -12009,7 +12008,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       setActiveTab("plan");
       render();
       requestAnimationFrame(() => {
-        openPlanCoach();
+        focusAiInputElement(document.getElementById("planSidebarChatInput"));
       });
     }
 
@@ -25812,7 +25811,7 @@ CRITICAL RULES FOR ACTIONS:
       const wig1Val = (document.getElementById("wig1Input") || {}).value || "";
       const leadVal = (document.getElementById("leadMeasuresInput") || {}).value || "";
       if (goalTitle) goalTitle.textContent = wig1Val || "No goal set";
-      if (planAiModeLabel) planAiModeLabel.textContent = aiPrefs.inlineAutoApply ? "Auto mode" : "Review mode";
+      if (planAiModeLabel) planAiModeLabel.textContent = aiPrefs.inlineAutoApply ? "Auto" : "Review";
       if (goalDeadline) {
         // Try to extract a deadline from the goal text (e.g., "by 30 June 2026")
         const deadlineMatch = wig1Val.match(/by\s+(.+)/i);
@@ -25857,7 +25856,7 @@ CRITICAL RULES FOR ACTIONS:
             <div class="chat-msg ${msg.role === "user" ? "user" : "assistant"}">${escapeHtml(msg.content)}${renderAiMessageAttachmentsHtml(msg.attachments)}</div>
           `).join("");
         } else {
-          planMsgs.innerHTML = '<div style="font-size:.78rem;color:var(--text2);padding:8px 0">No AI messages yet. Use Coach · ⌘K, the AI bar, or AI Workspace to start.</div>';
+          planMsgs.innerHTML = '<div style="font-size:.78rem;color:var(--text2);padding:8px 0">No Plan Coach messages yet. Ask for prioritization, planning, reflection, or the next best step.</div>';
         }
       }
       renderAiAttachmentStrip("planSidebarChatAttachments", "planSidebarChatInput");
@@ -25872,69 +25871,20 @@ CRITICAL RULES FOR ACTIONS:
     function renderPlanCoach() {
       const drawer = document.getElementById("planCoachDrawer");
       const backdrop = document.getElementById("planCoachBackdrop");
-      const meta = document.getElementById("planCoachMeta");
-      const messagesEl = document.getElementById("planCoachMessages");
-      const statusEl = document.getElementById("planCoachStatus");
-      const actionsEl = document.getElementById("planCoachActions");
-      const clearBtn = document.getElementById("planCoachClearBtn");
-      const sendBtn = document.getElementById("planCoachSendBtn");
-      renderAiAttachmentStrip("planCoachAttachments", "planCoachInput");
+      planCoachOpen = false;
       if (drawer) {
-        drawer.classList.toggle("open", planCoachOpen);
-        drawer.setAttribute("aria-hidden", planCoachOpen ? "false" : "true");
+        drawer.hidden = true;
+        drawer.classList.remove("open");
+        drawer.setAttribute("aria-hidden", "true");
       }
       if (backdrop) {
-        backdrop.hidden = !planCoachOpen;
-        backdrop.classList.toggle("open", planCoachOpen);
+        backdrop.hidden = true;
+        backdrop.classList.remove("open");
       }
-      if (meta) {
-        const parts = [
-          `Source: ${activePlanSurfaceLabel()}`,
-          aiPrefs.inlineAutoApply ? "Mode: Auto" : "Mode: Review"
-        ];
-        if (aiProposal && !aiProposal.appliedAt) parts.push(`Pending actions: ${aiProposal.items.filter(item => item.valid && item.selected).length}`);
-        meta.innerHTML = parts.map(text => `<span>${escapeHtml(text)}</span>`).join("");
-      }
-      const cfg = aiResolveConfig(aiPrefs);
-      const activeProvider = cfg.provider || aiPrefs.provider || "openai";
-      const statusText = aiBusy
-        ? "Thinking..."
-        : !aiPrefs.enabled
-          ? "AI disabled"
-          : (aiProviderNeedsKey(activeProvider) && !cfg.apiKey ? `${aiProviderDisplayName(activeProvider)} needs API key` : "");
-      if (statusEl) statusEl.textContent = statusText;
-      if (clearBtn) clearBtn.hidden = !aiMessages.length && !aiProposal;
-      if (actionsEl) actionsEl.hidden = !statusText && !aiMessages.length && !aiProposal;
-      if (sendBtn) sendBtn.disabled = aiBusy;
-      if (!messagesEl) return;
-      const proposalNotice = aiProposal
-        ? `<div class="wealth-coach-notice">
-            <div class="wealth-coach-notice-title">${aiProposal.appliedAt ? "Latest proposal applied" : "Latest proposal ready"}</div>
-            <div class="wealth-coach-notice-copy">
-              ${escapeHtml(aiProposal.summary || "AI generated proposed board updates.")}
-              ${aiProposal.appliedAt ? "" : " Open AI Workspace if you want to inspect or apply changes in detail."}
-            </div>
-          </div>`
-        : "";
-      if (!aiMessages.length) {
-        messagesEl.innerHTML = `${proposalNotice}<div class="wealth-coach-empty">
-          Ask for prioritization, planning, reflection, or a next-step recommendation from the current Plan screen.
-          Use Coach · ⌘K from any Plan view to open this drawer.
-        </div>`;
-        return;
-      }
-      messagesEl.innerHTML = `${proposalNotice}${aiMessages.map(msg => `
-        <div class="wealth-coach-msg ${msg.role === "user" ? "user" : "assistant"}">${escapeHtml(msg.content)}${renderAiMessageAttachmentsHtml(msg.attachments)}</div>
-      `).join("")}`;
-      messagesEl.scrollTop = messagesEl.scrollHeight;
     }
 
     function openPlanCoach() {
-      planCoachOpen = true;
-      renderPlanCoach();
-      requestAnimationFrame(() => {
-        document.getElementById("planCoachInput")?.focus();
-      });
+      focusPlanSidebarAiInput();
     }
 
     function closePlanCoach() {
