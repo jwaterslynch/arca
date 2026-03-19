@@ -7741,7 +7741,20 @@ If you do propose actions, they must exactly match the supported schema in the u
           "commitment.create",
           "commitment.update",
           "commitment.set_finish_track",
-          "focus.update_primary_goal"
+          "focus.update_primary_goal",
+          "health.log_session",
+          "health.set_weekly_target",
+          "health.update_profile",
+          "health.create_training_block",
+          "health.log_nutrition",
+          "health.log_sleep",
+          "health.log_vitals",
+          "health.log_measurement",
+          "wealth.add_account",
+          "wealth.add_transaction",
+          "wealth.recategorise",
+          "wealth.add_holding",
+          "wealth.update_property_estimate"
         ],
         enums: {
           stage: AI_ALLOWED_STAGES,
@@ -7781,6 +7794,24 @@ If you do propose actions, they must exactly match the supported schema in the u
             type: "life_practice.log",
             practice_id: "<existing practice id>",
             entry: { done: true, minutes: 10 }
+          },
+          {
+            type: "health.log_session",
+            practice_id: "<health practice id>",
+            date: todayISO(),
+            duration_minutes: 30,
+            exercises: [{ name: "Goblet Squats", sets: 3, reps: 10, weight: 20 }],
+            energy: null,
+            notes: ""
+          },
+          {
+            type: "wealth.add_transaction",
+            account_id: "<account id or empty>",
+            date: todayISO(),
+            description: "Grocery shop",
+            amount: -85.50,
+            category: "Groceries",
+            notes: ""
           }
         ]
       };
@@ -8137,6 +8168,11 @@ If you do propose actions, they must exactly match the supported schema in the u
       if (action.type === "health.log_sleep") return `Log sleep for ${action.date || "today"}: ${action.hours || "?"}h`;
       if (action.type === "health.log_vitals") return `Log vitals for ${action.date || "today"}`;
       if (action.type === "health.log_measurement") return `Log body measurement for ${action.date || "today"}`;
+      if (action.type === "wealth.add_transaction") return `Add transaction: ${action.description || "?"} $${action.amount || "?"}`;
+      if (action.type === "wealth.recategorise") return `Recategorise transaction → ${action.new_category || "?"}`;
+      if (action.type === "wealth.add_holding") return `Add holding: ${action.units || "?"} × ${action.symbol || "?"}`;
+      if (action.type === "wealth.update_property_estimate") return `Update property estimate: $${Number(action.estimate_value || 0).toLocaleString()}`;
+      if (action.type === "wealth.add_account") return `Add account: ${action.name || "?"} (${action.type_code || "?"})`;
       return action.type;
     }
     function humanStage(stage) {
@@ -9493,6 +9529,81 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         };
         state.focus.wig1 = action.title;
         state.focus.updated_at = nowIso;
+        return "";
+      }
+      // ── Wealth Coach Actions ──
+      if (action.type === "wealth.add_account") {
+        if (!Array.isArray(state.wealth_accounts)) state.wealth_accounts = [];
+        const name = String(action.name || "").trim();
+        if (!name) return "Account name is required.";
+        const typeCode = String(action.type_code || "checking").trim();
+        const currency = String(action.currency || "AUD").trim().toUpperCase();
+        const openingBalance = Number(action.opening_balance) || 0;
+        state.wealth_accounts.push({
+          id: uid(),
+          name,
+          type: typeCode,
+          currency,
+          opening_balance_minor: Math.round(openingBalance * 100),
+          balance: openingBalance,
+          created_at: new Date().toISOString()
+        });
+        return "";
+      }
+      if (action.type === "wealth.add_transaction") {
+        if (!Array.isArray(state.wealth_transactions)) state.wealth_transactions = [];
+        const description = String(action.description || "").trim();
+        if (!description) return "Transaction description is required.";
+        const date = /^\d{4}-\d{2}-\d{2}$/.test(String(action.date || "")) ? String(action.date) : todayISO();
+        const amountRaw = Number(action.amount) || 0;
+        const category = String(action.category || "Other").trim();
+        const accountId = String(action.account_id || "").trim();
+        state.wealth_transactions.push({
+          id: uid(),
+          account_id: accountId || null,
+          date,
+          description,
+          amount_minor: Math.round(amountRaw * 100),
+          category,
+          notes: String(action.notes || "").trim(),
+          source: "coach",
+          created_at: new Date().toISOString()
+        });
+        return "";
+      }
+      if (action.type === "wealth.recategorise") {
+        if (!Array.isArray(state.wealth_transactions)) return "No transactions found.";
+        const txn = state.wealth_transactions.find(t => t.id === action.transaction_id);
+        if (!txn) return `Transaction not found: ${action.transaction_id}`;
+        txn.category = String(action.new_category || "Other").trim();
+        return "";
+      }
+      if (action.type === "wealth.add_holding") {
+        if (!Array.isArray(state.wealth_holdings)) state.wealth_holdings = [];
+        const symbol = String(action.symbol || "").trim().toUpperCase();
+        if (!symbol) return "Holding symbol is required.";
+        state.wealth_holdings.push({
+          id: uid(),
+          account_id: String(action.account_id || "").trim() || null,
+          symbol,
+          display_symbol: symbol,
+          units: Number(action.units) || 0,
+          avg_cost_minor: Math.round((Number(action.avg_cost) || 0) * 100),
+          currency: String(action.currency || "AUD").trim().toUpperCase(),
+          provider: "manual",
+          created_at: new Date().toISOString()
+        });
+        return "";
+      }
+      if (action.type === "wealth.update_property_estimate") {
+        if (!Array.isArray(state.wealth_properties)) return "No properties found.";
+        const prop = state.wealth_properties.find(p => p.id === action.property_id);
+        if (!prop) return `Property not found: ${action.property_id}`;
+        prop.current_estimate_minor = Math.round((Number(action.estimate_value) || 0) * 100);
+        prop.confidence = String(action.confidence || prop.confidence || "medium").trim();
+        prop.estimate_source = String(action.source || "coach").trim();
+        prop.estimate_notes = String(action.notes || "").trim();
+        prop.updated_at = new Date().toISOString();
         return "";
       }
       // ── Health Coach Actions ──
@@ -18881,6 +18992,7 @@ Data caveat`;
     let wealthCoachOpen = false;
     let wealthCoachBusy = false;
     let wealthCoachMessages = [];
+    let wealthCoachProposal = null;
     const WEALTH_HOLDING_SORT_KEYS = ["display_symbol", "units", "priceMinorAud", "marketValueMinor", "costBasisMinor", "gainLossMinor", "provider"];
 
     const WEALTH_ACCOUNT_TYPES = {
@@ -24365,13 +24477,16 @@ Data caveat`;
     }
 
     function wealthCoachSystemPrompt() {
+      const accounts = (state.wealth_accounts || []).map(a => `  - id: "${a.id}", name: "${a.name}", type: "${a.type}"`).join("\n");
+      const properties = (state.wealth_properties || []).map(p => `  - id: "${p.id}", name: "${p.name || p.address || "unnamed"}"`).join("\n");
       return `You are the PPP Flow Wealth Coach.
 
 Your job is to help the user understand the current wealth data inside the app.
 
-You can answer two kinds of questions:
+You can help with:
 1. Product-use questions about what the imported data means inside PPP Flow.
 2. Descriptive analysis questions about spending, categories, account balances, and portfolio state.
+3. TAKING ACTIONS on the user's behalf when they ask you to add, record, recategorise, or update something.
 
 Rules:
 - Use only the structured snapshot provided. Do not invent data.
@@ -24383,11 +24498,42 @@ Rules:
 - If the user asks a platform question, answer directly and concretely using the current app behavior.
 - Keep answers concise and structured.
 
-Prefer this response shape:
+When giving advice only, prefer this response shape:
 Current picture
 What stands out
 Suggested next check
-Data caveat`;
+Data caveat
+
+ACTIONS — IMPORTANT:
+When the user asks you to ADD, RECORD, RECATEGORISE, or UPDATE something, you MUST respond with a JSON code block containing a "summary" and "actions" array. Do NOT tell the user to do it manually. You have the ability to take actions directly.
+
+Write a brief confirmation message BEFORE the JSON block. The JSON block must be fenced with \`\`\`json and \`\`\`.
+
+Available accounts:
+${accounts || "  (none yet)"}
+
+Available properties:
+${properties || "  (none yet)"}
+
+Available action types:
+
+wealth.add_account — Create a new account
+  Fields: name (string), type_code (checking/savings/credit_card/brokerage/super/offset/loan/other), opening_balance (number), currency (string, default AUD)
+
+wealth.add_transaction — Add a manual transaction
+  Fields: account_id (string, from list above), date (YYYY-MM-DD), description (string), amount (number, negative for expenses), category (string), notes (string)
+
+wealth.recategorise — Change the category of a transaction
+  Fields: transaction_id (string), new_category (string)
+
+wealth.add_holding — Add a holding to the portfolio
+  Fields: account_id (string), symbol (string), units (number), avg_cost (number per unit), currency (string)
+
+wealth.update_property_estimate — Update a property valuation
+  Fields: property_id (string, from list above), estimate_value (number), confidence (low/medium/high), source (string), notes (string)
+
+If the user is just asking questions or seeking advice, respond normally with text only — no JSON block.
+When the user asks you to do something, ALWAYS return the appropriate action. Never tell the user to do it manually.`;
     }
 
     function renderWealthCoach() {
@@ -24445,9 +24591,30 @@ Data caveat`;
         </div>`;
         return;
       }
-      messagesEl.innerHTML = `${consentNotice}${wealthCoachMessages.map(msg => `
-        <div class="wealth-coach-msg ${msg.role === "user" ? "user" : "assistant"}">${escapeHtml(msg.content)}</div>
-      `).join("")}`;
+      messagesEl.innerHTML = `${consentNotice}${wealthCoachMessages.map(msg => {
+        if (msg._isProposal && wealthCoachProposal) {
+          const p = wealthCoachProposal;
+          const alreadyApplied = !!p.appliedAt;
+          const itemsHtml = p.items.map((item, idx) => `
+            <label class="coach-action-item">
+              <input type="checkbox" ${item.selected && !alreadyApplied ? "checked" : ""} ${alreadyApplied ? "disabled" : ""} data-wealth-proposal-idx="${idx}">
+              <span>${escapeHtml(item.label)}</span>
+            </label>
+          `).join("");
+          return `<div class="wealth-coach-msg assistant">
+            <div class="coach-action-card${alreadyApplied ? " applied" : ""}">
+              <div class="coach-action-summary">${escapeHtml(p.summary)}</div>
+              <div class="coach-action-items">${itemsHtml}</div>
+              <div class="coach-action-buttons">
+                ${alreadyApplied
+                  ? `<span class="coach-action-applied-label">Applied ${p.appliedCount} change${p.appliedCount === 1 ? "" : "s"}</span>`
+                  : `<button class="primary" type="button" data-wealth-coach-apply>Apply</button>`}
+              </div>
+            </div>
+          </div>`;
+        }
+        return `<div class="wealth-coach-msg ${msg.role === "user" ? "user" : "assistant"}">${escapeHtml(msg.content)}</div>`;
+      }).join("")}`;
       messagesEl.scrollTop = messagesEl.scrollHeight;
     }
 
@@ -24461,6 +24628,34 @@ Data caveat`;
 
     function closeWealthCoach() {
       wealthCoachOpen = false;
+      renderWealthCoach();
+    }
+
+    function applyWealthCoachProposal() {
+      if (!wealthCoachProposal || wealthCoachProposal.appliedAt) return;
+      const selectedItems = wealthCoachProposal.items.filter(item => item.selected && item.valid && item.action);
+      if (!selectedItems.length) return;
+      const snapshot = JSON.stringify(state);
+      for (const item of selectedItems) {
+        const err = applySingleAiAction(item.action);
+        if (err) {
+          state = normalizeState(JSON.parse(snapshot));
+          saveState("wealth_coach_apply_reverted");
+          render();
+          wealthCoachMessages.push({ role: "assistant", content: `Could not apply: ${err}` });
+          renderWealthCoach();
+          return;
+        }
+      }
+      wealthCoachProposal.appliedAt = new Date().toISOString();
+      wealthCoachProposal.appliedCount = selectedItems.length;
+      wealthCoachProposal.items.forEach(item => { item.selected = false; });
+      wealthCoachMessages.push({
+        role: "assistant",
+        content: `Done — applied ${selectedItems.length} change${selectedItems.length === 1 ? "" : "s"}.`
+      });
+      saveState("wealth_coach_apply");
+      render();
       renderWealthCoach();
     }
 
@@ -24490,7 +24685,17 @@ Data caveat`;
         const snapshot = buildWealthCoachSnapshot();
         const userPrompt = `User question:\n${question}\n\nCurrent wealth snapshot:\n${JSON.stringify(snapshot, null, 2)}`;
         const raw = await aiCallProvider(wealthCoachSystemPrompt(), userPrompt);
-        wealthCoachMessages.push({ role: "assistant", content: String(raw || "").trim() || "No answer returned." });
+        const parsed = parseCoachActionsFromResponse(String(raw || "").trim());
+        if (parsed.proposal) {
+          wealthCoachProposal = parsed.proposal;
+          if (parsed.text) {
+            wealthCoachMessages.push({ role: "assistant", content: parsed.text });
+          }
+          wealthCoachMessages.push({ role: "assistant", content: "__WEALTH_PROPOSAL__", _isProposal: true });
+        } else {
+          wealthCoachProposal = null;
+          wealthCoachMessages.push({ role: "assistant", content: String(raw || "").trim() || "No answer returned." });
+        }
       } catch (err) {
         wealthCoachMessages.push({ role: "assistant", content: `I couldn't answer that from the current data. ${String(err?.message || err || "Unknown error")}` });
       } finally {
@@ -26884,13 +27089,24 @@ When the user describes a workout, ALWAYS parse it into structured exercises and
       renderWealthCoach();
     });
     document.getElementById("wealthCoachMessages")?.addEventListener("click", e => {
-      const btn = e.target?.closest?.("[data-wealth-consent-action]");
-      if (!btn) return;
-      const action = String(btn.getAttribute("data-wealth-consent-action") || "");
-      if (action === "allow") {
-        allowWealthCoachCloudConsent();
-      } else if (action === "settings") {
-        openAiSettingsFromWealthCoach();
+      const consentBtn = e.target?.closest?.("[data-wealth-consent-action]");
+      if (consentBtn) {
+        const action = String(consentBtn.getAttribute("data-wealth-consent-action") || "");
+        if (action === "allow") allowWealthCoachCloudConsent();
+        else if (action === "settings") openAiSettingsFromWealthCoach();
+        return;
+      }
+      const applyBtn = e.target?.closest?.("[data-wealth-coach-apply]");
+      if (applyBtn) {
+        applyWealthCoachProposal();
+        return;
+      }
+      const checkbox = e.target?.closest?.("[data-wealth-proposal-idx]");
+      if (checkbox && wealthCoachProposal && !wealthCoachProposal.appliedAt) {
+        const idx = Number(checkbox.getAttribute("data-wealth-proposal-idx"));
+        if (wealthCoachProposal.items[idx]) {
+          wealthCoachProposal.items[idx].selected = checkbox.checked;
+        }
       }
     });
     document.getElementById("wealthCoachSendBtn")?.addEventListener("click", () => { void requestWealthCoaching(); });
