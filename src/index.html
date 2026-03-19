@@ -2261,6 +2261,8 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
 .wealth-coach-actions{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:22px}
 .wealth-coach-actions[hidden]{display:none}
 .wealth-coach-input-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:10px}
+.wealth-coach-input-row.with-attach,
+.ai-chat .chat-input-row.with-attach{grid-template-columns:auto minmax(0,1fr) auto}
 .wealth-coach-input-row textarea{
   flex:1;
   min-height:44px;
@@ -2283,6 +2285,62 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
 }
 .wealth-coach-input-row textarea:focus{outline:none;border-color:var(--accent)}
 .wealth-coach-input-row textarea::placeholder{font-size:.82rem;line-height:1.15}
+.ai-attachment-strip{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  align-items:center;
+}
+.ai-attachment-strip[hidden]{display:none}
+.ai-attachment-chip{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  max-width:100%;
+  padding:6px 10px;
+  border:1px solid var(--line);
+  border-radius:999px;
+  background:var(--bg);
+  color:var(--text);
+  font:500 .76rem var(--font);
+  cursor:pointer;
+}
+.ai-attachment-chip:hover{border-color:var(--accent)}
+.ai-attachment-chip-name{
+  max-width:220px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.ai-message-attachments{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  margin-top:8px;
+}
+.ai-message-attachment{
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  padding:4px 8px;
+  border:1px solid rgba(0,0,0,.08);
+  border-radius:999px;
+  background:rgba(255,255,255,.6);
+  font-size:.7rem;
+  color:var(--text2);
+}
+.ai-attach-btn{
+  width:44px;
+  min-width:44px;
+  height:44px;
+  padding:0;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  font-size:1.1rem;
+  font-weight:700;
+  border-radius:14px;
+}
 .wealth-coach-send{height:44px;padding:0 16px;border:0;border-radius:14px;background:var(--accent);color:#fff;font-weight:700;cursor:pointer}
 .wealth-coach-send[disabled]{opacity:.6;cursor:default}
 @media (max-width: 1100px){
@@ -2623,8 +2681,10 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
             <div id="aiDisabledNotice" class="ai-note" hidden>AI is off. Enable above.</div>
             <div id="aiChatWrap" class="ai-chat-box" hidden>
               <div id="aiMessages" class="ai-messages"></div>
+              <div id="aiUserInputAttachments" class="ai-attachment-strip" hidden></div>
               <textarea id="aiUserInput" placeholder="Ask AI..."></textarea>
               <div class="controls">
+                <button id="aiAttachBtn" class="ghost ai-attach-btn" type="button" title="Add image or file">+</button>
                 <button id="aiSendBtn" class="primary" type="button">Send</button>
                 <button id="aiClearChatBtn" class="ghost" type="button">Clear</button>
                 <span id="aiBusyStatus" class="tiny"></span>
@@ -2733,13 +2793,15 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         <div class="plan-card ai-chat" id="planSidebarAiChat">
           <div class="ai-surface-head">
             <h4>AI Assistant <span style="font-size:.7rem;font-weight:500;color:var(--text2);margin-left:6px" id="planAiModeLabel">Review mode</span></h4>
-            <div class="ai-surface-actions">
+          <div class="ai-surface-actions">
               <button class="ghost" id="planOpenCoachBtn" type="button" style="font-size:.75rem">Coach · ⌘K</button>
               <button id="planSidebarProviderPill" class="ai-provider-pill tiny ai-switch-trigger" data-open-ai-switch="plan-sidebar" type="button" title="Switch AI"></button>
             </div>
           </div>
           <div class="chat-messages" id="planSidebarMessages"></div>
-          <div class="chat-input-row" style="margin-top:8px">
+          <div id="planSidebarChatAttachments" class="ai-attachment-strip" hidden></div>
+          <div class="chat-input-row with-attach" style="margin-top:8px">
+            <button class="ghost ai-attach-btn" id="planSidebarAttachBtn" type="button" title="Add image or file">+</button>
             <textarea class="chat-input" id="planSidebarChatInput" rows="1" placeholder="Brain dump, plan, or ask for advice..."></textarea>
             <button class="ai-send" id="planSidebarSendBtn" type="button" style="align-self:flex-end">↑</button>
           </div>
@@ -3156,7 +3218,9 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
             <span id="healthNutritionCoachStatus" class="tiny"></span>
             <button id="healthNutritionCoachClearBtn" class="ghost" type="button" style="font-size:.75rem">Clear</button>
           </div>
-          <div class="wealth-coach-input-row" style="margin-top:8px">
+          <div id="healthNutritionCoachAttachments" class="ai-attachment-strip" hidden></div>
+          <div class="wealth-coach-input-row with-attach" style="margin-top:8px">
+            <button id="healthNutritionCoachAttachBtn" class="ghost ai-attach-btn" type="button" title="Add image or file">+</button>
             <textarea id="healthNutritionCoachInput" rows="1" placeholder="Ask Nutrition Coach..."></textarea>
             <button id="healthNutritionCoachSendBtn" class="wealth-coach-send" type="button">Ask</button>
           </div>
@@ -3220,7 +3284,9 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
             <span id="healthSleepCoachStatus" class="tiny"></span>
             <button class="ghost" id="healthSleepCoachClearBtn" type="button" style="font-size:.75rem">Clear</button>
           </div>
-          <div class="wealth-coach-input-row" style="margin-top:8px">
+          <div id="healthSleepCoachAttachments" class="ai-attachment-strip" hidden></div>
+          <div class="wealth-coach-input-row with-attach" style="margin-top:8px">
+            <button id="healthSleepCoachAttachBtn" class="ghost ai-attach-btn" type="button" title="Add image or file">+</button>
             <textarea id="healthSleepCoachInput" rows="1" placeholder="Ask Sleep Coach..."></textarea>
             <button id="healthSleepCoachSendBtn" class="wealth-coach-send" type="button">Ask</button>
           </div>
@@ -3625,7 +3691,9 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         <span id="planCoachStatus" class="tiny"></span>
         <button class="ghost" id="planCoachClearBtn" type="button" style="font-size:.75rem">Clear</button>
       </div>
-      <div class="wealth-coach-input-row">
+      <div id="planCoachAttachments" class="ai-attachment-strip" hidden></div>
+      <div class="wealth-coach-input-row with-attach">
+        <button id="planCoachAttachBtn" class="ghost ai-attach-btn" type="button" title="Add image or file">+</button>
         <textarea id="planCoachInput" rows="1" placeholder="Ask Plan Coach..."></textarea>
         <button id="planCoachSendBtn" class="wealth-coach-send" type="button">Ask</button>
       </div>
@@ -3649,7 +3717,9 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         <span id="healthCoachStatus" class="tiny"></span>
         <button class="ghost" id="healthCoachClearBtn" type="button" style="font-size:.75rem">Clear</button>
       </div>
-      <div class="wealth-coach-input-row">
+      <div id="healthCoachAttachments" class="ai-attachment-strip" hidden></div>
+      <div class="wealth-coach-input-row with-attach">
+        <button id="healthCoachAttachBtn" class="ghost ai-attach-btn" type="button" title="Add image or file">+</button>
         <textarea id="healthCoachInput" rows="1" placeholder="Ask Health Coach..."></textarea>
         <button id="healthCoachSendBtn" class="wealth-coach-send" type="button">Ask</button>
       </div>
@@ -3673,7 +3743,9 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         <span id="wealthCoachStatus" class="tiny"></span>
         <button class="ghost" id="wealthCoachClearBtn" type="button" style="font-size:.75rem">Clear</button>
       </div>
-      <div class="wealth-coach-input-row">
+      <div id="wealthCoachAttachments" class="ai-attachment-strip" hidden></div>
+      <div class="wealth-coach-input-row with-attach">
+        <button id="wealthCoachAttachBtn" class="ghost ai-attach-btn" type="button" title="Add image or file">+</button>
         <textarea id="wealthCoachInput" rows="1" placeholder="Ask Wealth Coach..."></textarea>
         <button id="wealthCoachSendBtn" class="wealth-coach-send" type="button">Ask</button>
       </div>
@@ -3742,6 +3814,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
     <button id="loadFileBtn">Load</button>
     <button id="saveFileBtn">Save</button>
     <input type="file" id="loadFileInput" accept=".json" />
+    <input type="file" id="aiAttachmentInput" accept="image/*,.txt,.md,.json,.csv,text/plain,text/markdown,application/json,text/csv" multiple />
     <input type="file" id="wealthImportCsvInput" accept=".csv,text/csv" />
     <input type="file" id="wealthImportFolderInput" webkitdirectory directory multiple />
   </div>
@@ -4374,6 +4447,10 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
     const AI_ALLOWED_URGENCY = ["High", "Low"];
     const AI_ALLOWED_DEPTH = ["Deep", "Shallow"];
     const AI_ALLOWED_CATEGORIES = ["Strategic", "Maintenance", "Body/Mind", "Travel/Admin", "Revenue/Venture"];
+    const AI_ATTACHMENT_MAX_FILES = 4;
+    const AI_ATTACHMENT_MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+    const AI_ATTACHMENT_MAX_TEXT_BYTES = 512 * 1024;
+    const AI_ATTACHMENT_MAX_TEXT_CHARS = 12000;
     let pipelineDragTaskId = null;
     let aiPrefs = loadAiPrefs();
     let aiMessages = [];
@@ -4422,6 +4499,16 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
     let aiInlineToastTimer = null;
     let aiHighlightClearTimer = null;
     let aiHighlightedTaskIds = new Set();
+    let aiAttachmentPickerTarget = "";
+    let aiComposerAttachments = {
+      aiUserInput: [],
+      planSidebarChatInput: [],
+      planCoachInput: [],
+      healthCoachInput: [],
+      wealthCoachInput: [],
+      healthNutritionCoachInput: [],
+      healthSleepCoachInput: []
+    };
     let activeTopLevelTab = "execute";
     let activePlanTab = "focus";
     let planCoachOpen = false;
@@ -8221,7 +8308,7 @@ If you do propose actions, they must exactly match the supported schema in the u
         el.innerHTML = '<div class="tiny">No messages yet. Brain-dump what you want changed and the AI will propose structured board updates.</div>';
         return;
       }
-      el.innerHTML = aiMessages.map(m => `<div class="ai-msg ${m.role === "user" ? "user" : "assistant"}"><strong>${m.role === "user" ? "You" : "Assistant"}:</strong> ${escapeHtml(m.content)}</div>`).join("");
+      el.innerHTML = aiMessages.map(m => `<div class="ai-msg ${m.role === "user" ? "user" : "assistant"}"><strong>${m.role === "user" ? "You" : "Assistant"}:</strong> ${escapeHtml(m.content)}${renderAiMessageAttachmentsHtml(m.attachments)}</div>`).join("");
       el.scrollTop = el.scrollHeight;
     }
     function renderAiProposalInto(surface) {
@@ -8390,6 +8477,7 @@ If you do propose actions, they must exactly match the supported schema in the u
       });
       renderLocalAiEntryPoints(formPrefs.provider);
       renderAiQuickSwitch();
+      renderAllAiAttachmentStrips();
       renderPlanCoach();
       renderHealthCoach();
       renderWealthCoach();
@@ -8535,6 +8623,55 @@ If you do propose actions, they must exactly match the supported schema in the u
       if (!model) throw new Error("Model is required.");
       const baseUrl = cfg.baseUrl.replace(/\/+$/, "");
       const priorMessages = Array.isArray(options?.messages) ? options.messages : [];
+      const attachments = aiCloneAttachments(options?.attachments || []);
+      const imageAttachments = attachments.filter(item => item.kind === "image" && item.dataUrl);
+      const textAttachmentContext = aiBuildAttachmentTextContext(attachments);
+      const effectiveUserPrompt = textAttachmentContext
+        ? `${String(userPrompt || "").trim()}\n\nAttached file context:\n${textAttachmentContext}`
+        : String(userPrompt || "");
+      const buildOpenAiCurrentUserContent = () => {
+        if (!imageAttachments.length) return effectiveUserPrompt;
+        return [
+          { type: "text", text: effectiveUserPrompt },
+          ...imageAttachments.map(item => ({
+            type: "image_url",
+            image_url: { url: item.dataUrl }
+          }))
+        ];
+      };
+      const buildAnthropicCurrentUserContent = () => {
+        if (!imageAttachments.length) return effectiveUserPrompt;
+        return [
+          { type: "text", text: effectiveUserPrompt },
+          ...imageAttachments.map(item => {
+            const parsed = aiParseDataUrl(item.dataUrl);
+            return {
+              type: "image",
+              source: {
+                type: "base64",
+                media_type: parsed.mimeType || item.mimeType || "image/png",
+                data: parsed.base64
+              }
+            };
+          })
+        ];
+      };
+      const buildGeminiCurrentUserParts = () => {
+        const parts = [{ text: effectiveUserPrompt }];
+        imageAttachments.forEach(item => {
+          const parsed = aiParseDataUrl(item.dataUrl);
+          parts.push({
+            inline_data: {
+              mime_type: parsed.mimeType || item.mimeType || "image/png",
+              data: parsed.base64
+            }
+          });
+        });
+        return parts;
+      };
+      if (imageAttachments.length && !aiProviderSupportsImageAttachments(cfg.provider, model)) {
+        throw new Error(`${aiProviderDisplayName(cfg.provider)} does not support image attachments in PPP Flow yet. Switch to OpenAI, Anthropic, Gemini, or Grok for image analysis.`);
+      }
       const runOpenAiCompatibleChat = async (modelId) => {
         const chatMessages = [{ role: "system", content: systemPrompt }];
         priorMessages.forEach(m => {
@@ -8542,7 +8679,7 @@ If you do propose actions, they must exactly match the supported schema in the u
             chatMessages.push({ role: m.role, content: String(m.content || "") });
           }
         });
-        chatMessages.push({ role: "user", content: userPrompt });
+        chatMessages.push({ role: "user", content: buildOpenAiCurrentUserContent() });
         const chatBody = {
           model: modelId,
           messages: chatMessages
@@ -8588,6 +8725,9 @@ If you do propose actions, they must exactly match the supported schema in the u
       };
       const runWithModel = async (modelId) => {
         if (cfg.provider === "grok") {
+          if (imageAttachments.length) {
+            return runOpenAiCompatibleChat(modelId);
+          }
           try {
             const url = `${baseUrl}/responses`;
             let res;
@@ -8604,7 +8744,7 @@ If you do propose actions, they must exactly match the supported schema in the u
                   input: [
                     { role: "system", content: String(systemPrompt || "") },
                     ...priorMessages.filter(m => m.role === "user" || m.role === "assistant").map(m => ({ role: m.role, content: String(m.content || "") })),
-                    { role: "user", content: String(userPrompt || "") }
+                    { role: "user", content: effectiveUserPrompt }
                   ]
                 })
               });
@@ -8655,7 +8795,7 @@ If you do propose actions, they must exactly match the supported schema in the u
             system: systemPrompt,
             messages: [
               ...priorMessages.filter(m => m.role === "user" || m.role === "assistant").map(m => ({ role: m.role, content: String(m.content || "") })),
-              { role: "user", content: userPrompt }
+              { role: "user", content: buildAnthropicCurrentUserContent() }
             ]
           })
         });
@@ -8687,7 +8827,7 @@ If you do propose actions, they must exactly match the supported schema in the u
               })),
               {
                 role: "user",
-                parts: [{ text: userPrompt }]
+                parts: buildGeminiCurrentUserParts()
               }
             ]
           })
@@ -9228,7 +9368,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       }
     }
 
-    async function requestAiProposal(inputId = "aiUserInput") {
+    async function requestAiProposal(inputIdOrOptions = "aiUserInput") {
       if (aiBusy) return;
       if (!aiPrefs.enabled) {
         alert("Enable AI in Settings first.");
@@ -9239,16 +9379,30 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         alert("Add an API key in AI Settings first.");
         return;
       }
+      const requestOptions = typeof inputIdOrOptions === "string"
+        ? { inputId: inputIdOrOptions }
+        : (inputIdOrOptions && typeof inputIdOrOptions === "object" ? inputIdOrOptions : {});
+      const inputId = String(requestOptions.inputId || "aiUserInput").trim() || "aiUserInput";
+      const composerKey = String(requestOptions.composerKey || requestOptions.restoreInputId || inputId).trim() || inputId;
+      const restoreInputId = String(requestOptions.restoreInputId || composerKey).trim() || composerKey;
       const input = document.getElementById(inputId);
-      const text = String(input?.value || "").trim();
-      if (!text) return;
+      const restoreInput = document.getElementById(restoreInputId);
+      const rawText = requestOptions.text != null ? String(requestOptions.text) : String(input?.value || "");
+      const text = rawText.trim();
+      const attachments = Array.isArray(requestOptions.attachments)
+        ? aiCloneAttachments(requestOptions.attachments)
+        : aiCloneAttachments(aiGetComposerAttachments(composerKey));
+      if (!text && !attachments.length) return;
       const inlineSource = inputId === "aiInlineUserInput";
       const interactionMode = aiResolveInteractionMode(inputId);
       const autoApplyInline = inlineSource && interactionMode === "proposal" && aiPrefs.inlineAutoApply;
-      const savedText = text;  /* Save before clearing so we can restore on error */
+      const savedText = rawText;
+      const savedAttachments = aiCloneAttachments(attachments);
+      const userMessageText = text || aiComposerPromptFallback(composerKey, interactionMode);
 
-      aiMessages.push({ role: "user", content: text, at: new Date().toISOString() });
-      clearAiComposer(input);
+      aiMessages.push({ role: "user", content: userMessageText, attachments: aiCloneAttachments(attachments), at: new Date().toISOString() });
+      if (restoreInput) clearAiComposer(restoreInput);
+      aiClearComposerAttachments(composerKey);
       aiBusy = true;
 
       /* ── Spinner state on send button ── */
@@ -9259,9 +9413,9 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       try {
         const raw = await aiCallProvider(
           aiBuildSystemPrompt(interactionMode),
-          aiBuildUserPrompt(text, interactionMode),
+          aiBuildUserPrompt(userMessageText, interactionMode),
           null,
-          { temperature: interactionMode === "coach" ? 0.7 : 0.2 }
+          { temperature: interactionMode === "coach" ? 0.7 : 0.2, attachments }
         );
         const parsed = extractJsonObject(raw);
         buildAiProposal(parsed);
@@ -9292,8 +9446,11 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       } catch (err) {
         aiProposal = null;
         /* ── Restore the user's typed prompt so they don't lose it ── */
-        if (input) input.value = savedText;
-        autoGrowTextarea(input);
+        if (restoreInput) {
+          restoreInput.value = savedText;
+          autoGrowTextarea(restoreInput);
+        }
+        aiSetComposerAttachments(composerKey, savedAttachments);
         const errMsg = String(err?.message || err || "");
         /* Friendly error messages instead of raw API errors */
         let friendlyMsg = "Something went wrong — your message is still in the box, try again.";
@@ -9840,6 +9997,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
     function clearAiChat() {
       aiMessages = [];
       aiProposal = null;
+      aiClearComposerAttachments("aiUserInput");
       renderAiAssistant();
     }
     function showAiInlineToast(message, variant = "success") {
@@ -11936,6 +12094,217 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       const minHeight = Number.parseFloat(window.getComputedStyle(el).minHeight) || 32;
       const nextHeight = Math.max(minHeight, Math.min(el.scrollHeight, 160));
       el.style.height = `${nextHeight}px`;
+    }
+
+    function aiCloneAttachments(list = []) {
+      return Array.isArray(list)
+        ? list.map(item => ({
+            id: String(item?.id || uid()),
+            kind: String(item?.kind || "text"),
+            name: String(item?.name || "Attachment"),
+            mimeType: String(item?.mimeType || ""),
+            sizeBytes: Number(item?.sizeBytes || 0),
+            textContent: typeof item?.textContent === "string" ? item.textContent : undefined,
+            dataUrl: typeof item?.dataUrl === "string" ? item.dataUrl : undefined,
+            truncated: !!item?.truncated
+          }))
+        : [];
+    }
+
+    function aiGetComposerAttachments(key) {
+      const composerKey = String(key || "").trim();
+      if (!composerKey) return [];
+      if (!Array.isArray(aiComposerAttachments[composerKey])) aiComposerAttachments[composerKey] = [];
+      return aiComposerAttachments[composerKey];
+    }
+
+    function aiSetComposerAttachments(key, attachments) {
+      const composerKey = String(key || "").trim();
+      if (!composerKey) return;
+      aiComposerAttachments[composerKey] = aiCloneAttachments(attachments);
+      renderAllAiAttachmentStrips();
+    }
+
+    function aiClearComposerAttachments(key) {
+      aiSetComposerAttachments(key, []);
+    }
+
+    function aiInferAttachmentMimeType(name = "", fallback = "") {
+      const lower = String(name || "").trim().toLowerCase();
+      if (fallback) return fallback;
+      if (/\.(png)$/i.test(lower)) return "image/png";
+      if (/\.(jpe?g)$/i.test(lower)) return "image/jpeg";
+      if (/\.(webp)$/i.test(lower)) return "image/webp";
+      if (/\.(gif)$/i.test(lower)) return "image/gif";
+      if (/\.(md)$/i.test(lower)) return "text/markdown";
+      if (/\.(json)$/i.test(lower)) return "application/json";
+      if (/\.(csv)$/i.test(lower)) return "text/csv";
+      if (/\.(txt)$/i.test(lower)) return "text/plain";
+      return "application/octet-stream";
+    }
+
+    function aiAttachmentIsImage(file) {
+      const mime = String(file?.type || "").trim().toLowerCase();
+      const name = String(file?.name || "").trim().toLowerCase();
+      return mime.startsWith("image/") || /\.(png|jpe?g|webp|gif)$/i.test(name);
+    }
+
+    function aiAttachmentIsTextLike(file) {
+      const mime = String(file?.type || "").trim().toLowerCase();
+      const name = String(file?.name || "").trim().toLowerCase();
+      return mime.startsWith("text/")
+        || mime === "application/json"
+        || /\.(txt|md|json|csv)$/i.test(name);
+    }
+
+    function aiReadFileAsDataUrl(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onerror = () => reject(new Error(`Could not read ${file?.name || "attachment"}.`));
+        reader.onload = () => resolve(String(reader.result || ""));
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function aiParseDataUrl(dataUrl = "") {
+      const match = String(dataUrl || "").match(/^data:([^;,]+)?(?:;[^,]*)?,(.*)$/);
+      if (!match) return { mimeType: "", base64: "" };
+      return {
+        mimeType: String(match[1] || "").trim(),
+        base64: String(match[2] || "").trim()
+      };
+    }
+
+    async function aiBuildAttachmentFromFile(file) {
+      const name = String(file?.name || "").trim() || "Attachment";
+      const mimeType = aiInferAttachmentMimeType(name, String(file?.type || "").trim().toLowerCase());
+      const sizeBytes = Number(file?.size || 0);
+      if (aiAttachmentIsImage(file)) {
+        if (sizeBytes > AI_ATTACHMENT_MAX_IMAGE_BYTES) {
+          throw new Error(`${name} is too large. Images must be under 5 MB.`);
+        }
+        const dataUrl = await aiReadFileAsDataUrl(file);
+        return { id: uid(), kind: "image", name, mimeType, sizeBytes, dataUrl };
+      }
+      if (aiAttachmentIsTextLike(file)) {
+        if (sizeBytes > AI_ATTACHMENT_MAX_TEXT_BYTES) {
+          throw new Error(`${name} is too large. Text-like files must be under 512 KB.`);
+        }
+        let textContent = await file.text();
+        textContent = String(textContent || "").replace(/\r\n/g, "\n");
+        const truncated = textContent.length > AI_ATTACHMENT_MAX_TEXT_CHARS;
+        if (truncated) textContent = textContent.slice(0, AI_ATTACHMENT_MAX_TEXT_CHARS);
+        return { id: uid(), kind: "text", name, mimeType, sizeBytes, textContent, truncated };
+      }
+      throw new Error(`${name} is not a supported attachment type yet. Use an image, TXT, MD, JSON, or CSV file.`);
+    }
+
+    function aiBuildAttachmentTextContext(attachments = []) {
+      const textAttachments = aiCloneAttachments(attachments).filter(item => item.kind === "text" && item.textContent);
+      if (!textAttachments.length) return "";
+      return textAttachments.map(item => {
+        const header = `Attached file: ${item.name} (${item.mimeType || "text"})`;
+        const body = String(item.textContent || "").trim();
+        const suffix = item.truncated ? "\n[Truncated for size]" : "";
+        return `${header}\n${body}${suffix}`;
+      }).join("\n\n---\n\n");
+    }
+
+    function aiProviderSupportsImageAttachments(provider, modelId = "") {
+      const name = String(provider || "").trim();
+      if (["openai", "anthropic", "gemini", "grok"].includes(name)) return true;
+      return false;
+    }
+
+    function aiComposerPromptFallback(composerKey = "", mode = "coach") {
+      const key = String(composerKey || "").trim();
+      if (key === "wealthCoachInput") return "Please review the attached material and tell me what stands out for this wealth view.";
+      if (key === "healthCoachInput") return "Please review the attached material and tell me what stands out for this health view.";
+      if (key === "healthNutritionCoachInput") return "Please review the attached nutrition material and tell me what stands out.";
+      if (key === "healthSleepCoachInput") return "Please review the attached sleep or recovery material and tell me what stands out.";
+      if (key === "planCoachInput" || key === "planSidebarChatInput") return "Please review the attached material and help me plan the next step.";
+      if (mode === "proposal") return "Use the attached material to propose the right board changes.";
+      return "Please review the attached material and tell me what stands out.";
+    }
+
+    function renderAiMessageAttachmentsHtml(attachments = []) {
+      const items = aiCloneAttachments(attachments);
+      if (!items.length) return "";
+      return `<div class="ai-message-attachments">${items.map(item => {
+        const icon = item.kind === "image" ? "🖼" : "📄";
+        return `<span class="ai-message-attachment">${icon} ${escapeHtml(item.name || "Attachment")}</span>`;
+      }).join("")}</div>`;
+    }
+
+    function renderAiAttachmentStrip(stripId, composerKey) {
+      const el = document.getElementById(stripId);
+      if (!el) return;
+      const attachments = aiGetComposerAttachments(composerKey);
+      el.hidden = !attachments.length;
+      if (!attachments.length) {
+        el.innerHTML = "";
+        return;
+      }
+      el.innerHTML = attachments.map(item => {
+        const icon = item.kind === "image" ? "🖼" : "📄";
+        const meta = item.kind === "text" && item.truncated ? " (truncated)" : "";
+        return `<button class="ai-attachment-chip" type="button" data-ai-attachment-remove="${escapeHtml(item.id)}" data-ai-attachment-target="${escapeHtml(composerKey)}" title="Remove attachment">
+          <span aria-hidden="true">${icon}</span>
+          <span class="ai-attachment-chip-name">${escapeHtml(item.name)}</span>
+          <span class="tiny" style="color:var(--text2)">${escapeHtml(meta)}</span>
+          <span aria-hidden="true">×</span>
+        </button>`;
+      }).join("");
+    }
+
+    function renderAllAiAttachmentStrips() {
+      renderAiAttachmentStrip("aiUserInputAttachments", "aiUserInput");
+      renderAiAttachmentStrip("planSidebarChatAttachments", "planSidebarChatInput");
+      renderAiAttachmentStrip("planCoachAttachments", "planCoachInput");
+      renderAiAttachmentStrip("healthCoachAttachments", "healthCoachInput");
+      renderAiAttachmentStrip("wealthCoachAttachments", "wealthCoachInput");
+      renderAiAttachmentStrip("healthNutritionCoachAttachments", "healthNutritionCoachInput");
+      renderAiAttachmentStrip("healthSleepCoachAttachments", "healthSleepCoachInput");
+    }
+
+    function aiOpenAttachmentPicker(targetKey) {
+      const composerKey = String(targetKey || "").trim();
+      if (!composerKey) return;
+      const current = aiGetComposerAttachments(composerKey);
+      if (current.length >= AI_ATTACHMENT_MAX_FILES) {
+        showAiInlineToast(`You can attach up to ${AI_ATTACHMENT_MAX_FILES} files at a time.`, "error");
+        return;
+      }
+      const input = document.getElementById("aiAttachmentInput");
+      if (!(input instanceof HTMLInputElement)) return;
+      aiAttachmentPickerTarget = composerKey;
+      input.value = "";
+      input.click();
+    }
+
+    async function aiHandleAttachmentSelection(targetKey, fileList) {
+      const composerKey = String(targetKey || "").trim();
+      const files = Array.from(fileList || []);
+      if (!composerKey || !files.length) return;
+      const current = aiGetComposerAttachments(composerKey);
+      const remaining = AI_ATTACHMENT_MAX_FILES - current.length;
+      if (remaining <= 0) {
+        showAiInlineToast(`You can attach up to ${AI_ATTACHMENT_MAX_FILES} files at a time.`, "error");
+        return;
+      }
+      const next = current.slice();
+      const errors = [];
+      for (const file of files.slice(0, remaining)) {
+        try {
+          next.push(await aiBuildAttachmentFromFile(file));
+        } catch (err) {
+          errors.push(String(err?.message || err || "Attachment failed"));
+        }
+      }
+      aiSetComposerAttachments(composerKey, next);
+      if (errors.length) {
+        showAiInlineToast(errors[0], "error");
+      }
     }
 
     function clearAiComposer(target) {
@@ -18309,6 +18678,7 @@ Data caveat`;
       const clearBtn = document.getElementById("healthNutritionCoachClearBtn");
       const sendBtn = document.getElementById("healthNutritionCoachSendBtn");
       if (!messagesEl || !statusEl || !actionsEl || !clearBtn || !sendBtn) return;
+      renderAiAttachmentStrip("healthNutritionCoachAttachments", "healthNutritionCoachInput");
       const activeProvider = healthNutritionActiveProvider();
       const needsConsent = healthNutritionCoachNeedsCloudConsent(activeProvider);
       const providerInfo = aiProviderPrivacyInfo(activeProvider);
@@ -18337,25 +18707,25 @@ Data caveat`;
         return;
       }
       messagesEl.innerHTML = `${consentNotice}${healthNutritionCoachMessages.map(msg => `
-        <div class="wealth-coach-msg ${msg.role === "user" ? "user" : "assistant"}">${escapeHtml(msg.content)}</div>
+        <div class="wealth-coach-msg ${msg.role === "user" ? "user" : "assistant"}">${escapeHtml(msg.content)}${renderAiMessageAttachmentsHtml(msg.attachments)}</div>
       `).join("")}`;
     }
 
     async function requestHealthNutritionCoaching() {
       const input = document.getElementById("healthNutritionCoachInput");
       const question = String(input?.value || "").trim();
-      if (!question || healthNutritionCoachBusy) return;
+      const attachments = aiCloneAttachments(aiGetComposerAttachments("healthNutritionCoachInput"));
+      if ((!question && !attachments.length) || healthNutritionCoachBusy) return;
       const cfg = aiResolveConfig(aiPrefs);
       const activeProvider = cfg.provider || aiPrefs.provider || "openai";
       if (healthNutritionCoachNeedsCloudConsent(activeProvider)) {
         renderHealthNutritionCoach();
         return;
       }
-      healthNutritionCoachMessages.push({ role: "user", content: question });
-      if (input) {
-        input.value = "";
-        autoGrowTextarea(input);
-      }
+      const userMessage = question || aiComposerPromptFallback("healthNutritionCoachInput", "coach");
+      healthNutritionCoachMessages.push({ role: "user", content: userMessage, attachments });
+      if (input) clearAiComposer(input);
+      aiClearComposerAttachments("healthNutritionCoachInput");
       renderHealthNutritionCoach();
       if (!aiPrefs.enabled) {
         healthNutritionCoachMessages.push({ role: "assistant", content: "AI is currently disabled. Enable AI in Settings to use Nutrition Coach." });
@@ -18371,8 +18741,8 @@ Data caveat`;
       renderHealthNutritionCoach();
       try {
         const snapshot = buildHealthNutritionCoachSnapshot();
-        const userPrompt = `User question:\n${question}\n\nCurrent nutrition snapshot:\n${JSON.stringify(snapshot, null, 2)}`;
-        const raw = await aiCallProvider(healthNutritionCoachSystemPrompt(), userPrompt, null, { temperature: 0.65 });
+        const userPrompt = `User question:\n${userMessage}\n\nCurrent nutrition snapshot:\n${JSON.stringify(snapshot, null, 2)}`;
+        const raw = await aiCallProvider(healthNutritionCoachSystemPrompt(), userPrompt, null, { temperature: 0.65, attachments });
         healthNutritionCoachMessages.push({ role: "assistant", content: String(raw || "").trim() || "No answer returned." });
       } catch (err) {
         healthNutritionCoachMessages.push({ role: "assistant", content: `I couldn't answer that from the current nutrition data. ${String(err?.message || err || "Unknown error")}` });
@@ -18657,6 +19027,7 @@ Data caveat`;
       const clearBtn = document.getElementById("healthSleepCoachClearBtn");
       const sendBtn = document.getElementById("healthSleepCoachSendBtn");
       if (!messagesEl || !statusEl || !actionsEl || !clearBtn || !sendBtn) return;
+      renderAiAttachmentStrip("healthSleepCoachAttachments", "healthSleepCoachInput");
       const activeProvider = healthSleepActiveProvider();
       const needsConsent = healthSleepCoachNeedsCloudConsent(activeProvider);
       const providerInfo = aiProviderPrivacyInfo(activeProvider);
@@ -18684,25 +19055,25 @@ Data caveat`;
         return;
       }
       messagesEl.innerHTML = `${consentNotice}${healthSleepCoachMessages.map(msg => `
-        <div class="wealth-coach-msg ${msg.role === "user" ? "user" : "assistant"}">${escapeHtml(msg.content)}</div>
+        <div class="wealth-coach-msg ${msg.role === "user" ? "user" : "assistant"}">${escapeHtml(msg.content)}${renderAiMessageAttachmentsHtml(msg.attachments)}</div>
       `).join("")}`;
     }
 
     async function requestHealthSleepCoaching() {
       const input = document.getElementById("healthSleepCoachInput");
       const question = String(input?.value || "").trim();
-      if (!question || healthSleepCoachBusy) return;
+      const attachments = aiCloneAttachments(aiGetComposerAttachments("healthSleepCoachInput"));
+      if ((!question && !attachments.length) || healthSleepCoachBusy) return;
       const cfg = aiResolveConfig(aiPrefs);
       const activeProvider = cfg.provider || aiPrefs.provider || "openai";
       if (healthSleepCoachNeedsCloudConsent(activeProvider)) {
         renderHealthSleepCoach();
         return;
       }
-      healthSleepCoachMessages.push({ role: "user", content: question });
-      if (input) {
-        input.value = "";
-        autoGrowTextarea(input);
-      }
+      const userMessage = question || aiComposerPromptFallback("healthSleepCoachInput", "coach");
+      healthSleepCoachMessages.push({ role: "user", content: userMessage, attachments });
+      if (input) clearAiComposer(input);
+      aiClearComposerAttachments("healthSleepCoachInput");
       renderHealthSleepCoach();
       if (!aiPrefs.enabled) {
         healthSleepCoachMessages.push({ role: "assistant", content: "AI is currently disabled. Enable AI in Settings to use Sleep Coach." });
@@ -18718,8 +19089,8 @@ Data caveat`;
       renderHealthSleepCoach();
       try {
         const snapshot = buildHealthSleepCoachSnapshot();
-        const userPrompt = `User question:\n${question}\n\nCurrent sleep and recovery snapshot:\n${JSON.stringify(snapshot, null, 2)}`;
-        const raw = await aiCallProvider(healthSleepCoachSystemPrompt(), userPrompt, null, { temperature: 0.65 });
+        const userPrompt = `User question:\n${userMessage}\n\nCurrent sleep and recovery snapshot:\n${JSON.stringify(snapshot, null, 2)}`;
+        const raw = await aiCallProvider(healthSleepCoachSystemPrompt(), userPrompt, null, { temperature: 0.65, attachments });
         healthSleepCoachMessages.push({ role: "assistant", content: String(raw || "").trim() || "No answer returned." });
       } catch (err) {
         healthSleepCoachMessages.push({ role: "assistant", content: `I couldn't answer that from the current sleep data. ${String(err?.message || err || "Unknown error")}` });
@@ -24563,6 +24934,7 @@ CRITICAL RULES FOR ACTIONS:
       const actionsEl = document.getElementById("wealthCoachActions");
       const clearBtn = document.getElementById("wealthCoachClearBtn");
       const sendBtn = document.getElementById("wealthCoachSendBtn");
+      renderAiAttachmentStrip("wealthCoachAttachments", "wealthCoachInput");
       const activeProvider = wealthCoachActiveProvider();
       const needsConsent = wealthCoachNeedsCloudConsent(activeProvider);
       const providerInfo = aiProviderPrivacyInfo(activeProvider);
@@ -24631,7 +25003,7 @@ CRITICAL RULES FOR ACTIONS:
             </div>
           </div>`;
         }
-        return `<div class="wealth-coach-msg ${msg.role === "user" ? "user" : "assistant"}">${escapeHtml(msg.content)}</div>`;
+        return `<div class="wealth-coach-msg ${msg.role === "user" ? "user" : "assistant"}">${escapeHtml(msg.content)}${renderAiMessageAttachmentsHtml(msg.attachments)}</div>`;
       }).join("")}`;
       messagesEl.scrollTop = messagesEl.scrollHeight;
     }
@@ -24680,17 +25052,17 @@ CRITICAL RULES FOR ACTIONS:
     async function requestWealthCoaching() {
       const input = document.getElementById("wealthCoachInput");
       const question = String(input?.value || "").trim();
-      if (!question || wealthCoachBusy) return;
+      const attachments = aiCloneAttachments(aiGetComposerAttachments("wealthCoachInput"));
+      if ((!question && !attachments.length) || wealthCoachBusy) return;
       const activeProvider = wealthCoachActiveProvider();
       if (wealthCoachNeedsCloudConsent(activeProvider)) {
         renderWealthCoach();
         return;
       }
-      wealthCoachMessages.push({ role: "user", content: question });
-      if (input) {
-        input.value = "";
-        autoGrowTextarea(input);
-      }
+      const userMessage = question || aiComposerPromptFallback("wealthCoachInput", "coach");
+      wealthCoachMessages.push({ role: "user", content: userMessage, attachments });
+      if (input) clearAiComposer(input);
+      aiClearComposerAttachments("wealthCoachInput");
       renderWealthCoach();
       if (!aiPrefs.enabled) {
         wealthCoachMessages.push({ role: "assistant", content: "AI is currently disabled. Enable AI in Settings to use Wealth Coach." });
@@ -24705,8 +25077,8 @@ CRITICAL RULES FOR ACTIONS:
           .filter(m => !m._isProposal && m.content !== "__WEALTH_PROPOSAL__")
           .slice(-10)
           .map(m => ({ role: m.role, content: m.content }));
-        const userPrompt = `User message:\n${question}\n\nCurrent wealth snapshot:\n${JSON.stringify(snapshot, null, 2)}`;
-        const raw = await aiCallProvider(wealthCoachSystemPrompt(), userPrompt, null, { messages: priorMessages });
+        const userPrompt = `User message:\n${userMessage}\n\nCurrent wealth snapshot:\n${JSON.stringify(snapshot, null, 2)}`;
+        const raw = await aiCallProvider(wealthCoachSystemPrompt(), userPrompt, null, { messages: priorMessages, attachments });
         const parsed = parseCoachActionsFromResponse(String(raw || "").trim());
         if (parsed.proposal) {
           wealthCoachProposal = parsed.proposal;
@@ -25479,24 +25851,19 @@ CRITICAL RULES FOR ACTIONS:
         }
       }
 
-      // 3. AI chat mirror - show messages from the AI workspace
+      // 3. AI chat mirror - show recent AI workspace / coach messages
       const planMsgs = document.getElementById("planSidebarMessages");
-      const aiMsgs = document.getElementById("aiMessages");
-      if (planMsgs && aiMsgs) {
-        // Copy last few messages from the AI workspace chat
-        const msgs = aiMsgs.querySelectorAll(".ai-msg, .chat-msg");
-        if (msgs.length) {
-          let html = "";
-          const recent = Array.from(msgs).slice(-4); // show last 4 messages
-          recent.forEach(m => {
-            const isUser = m.classList.contains("user") || m.dataset.role === "user";
-            html += `<div class="chat-msg ${isUser ? "user" : "assistant"}">${m.textContent}</div>`;
-          });
-          planMsgs.innerHTML = html;
+      if (planMsgs) {
+        if (aiMessages.length) {
+          const recent = aiMessages.slice(-4);
+          planMsgs.innerHTML = recent.map(msg => `
+            <div class="chat-msg ${msg.role === "user" ? "user" : "assistant"}">${escapeHtml(msg.content)}${renderAiMessageAttachmentsHtml(msg.attachments)}</div>
+          `).join("");
         } else {
           planMsgs.innerHTML = '<div style="font-size:.78rem;color:var(--text2);padding:8px 0">No AI messages yet. Use Coach · ⌘K, the AI bar, or AI Workspace to start.</div>';
         }
       }
+      renderAiAttachmentStrip("planSidebarChatAttachments", "planSidebarChatInput");
     }
 
     function activePlanSurfaceLabel() {
@@ -25514,6 +25881,7 @@ CRITICAL RULES FOR ACTIONS:
       const actionsEl = document.getElementById("planCoachActions");
       const clearBtn = document.getElementById("planCoachClearBtn");
       const sendBtn = document.getElementById("planCoachSendBtn");
+      renderAiAttachmentStrip("planCoachAttachments", "planCoachInput");
       if (drawer) {
         drawer.classList.toggle("open", planCoachOpen);
         drawer.setAttribute("aria-hidden", planCoachOpen ? "false" : "true");
@@ -25559,7 +25927,7 @@ CRITICAL RULES FOR ACTIONS:
         return;
       }
       messagesEl.innerHTML = `${proposalNotice}${aiMessages.map(msg => `
-        <div class="wealth-coach-msg ${msg.role === "user" ? "user" : "assistant"}">${escapeHtml(msg.content)}</div>
+        <div class="wealth-coach-msg ${msg.role === "user" ? "user" : "assistant"}">${escapeHtml(msg.content)}${renderAiMessageAttachmentsHtml(msg.attachments)}</div>
       `).join("")}`;
       messagesEl.scrollTop = messagesEl.scrollHeight;
     }
@@ -25580,11 +25948,8 @@ CRITICAL RULES FOR ACTIONS:
     async function requestPlanCoaching() {
       const input = document.getElementById("planCoachInput");
       const text = String(input?.value || "").trim();
-      if (!text || aiBusy) return;
-      if (input) {
-        input.value = "";
-        autoGrowTextarea(input);
-      }
+      const attachments = aiCloneAttachments(aiGetComposerAttachments("planCoachInput"));
+      if ((!text && !attachments.length) || aiBusy) return;
       const cfg = aiResolveConfig(aiPrefs);
       const activeProvider = cfg.provider || aiPrefs.provider || "openai";
       if (!aiPrefs.enabled) {
@@ -25600,14 +25965,16 @@ CRITICAL RULES FOR ACTIONS:
         return;
       }
       const targetInputId = aiPrefs.inlineAutoApply ? "aiInlineUserInput" : "aiUserInput";
-      const targetInput = document.getElementById(targetInputId);
-      if (!targetInput) return;
-      targetInput.value = text;
-      autoGrowTextarea(targetInput);
       aiPanelForcedVisible = true;
       renderPlanSidebar();
       renderPlanCoach();
-      await requestAiProposal(targetInputId).finally(() => {
+      await requestAiProposal({
+        inputId: targetInputId,
+        composerKey: "planCoachInput",
+        restoreInputId: "planCoachInput",
+        text,
+        attachments
+      }).finally(() => {
         renderPlanSidebar();
         renderPlanCoach();
       });
@@ -25853,6 +26220,7 @@ CRITICAL RULES FOR ACTIONS:
       const clearBtn = document.getElementById("healthCoachClearBtn");
       const sendBtn = document.getElementById("healthCoachSendBtn");
       const inputEl = document.getElementById("healthCoachInput");
+      renderAiAttachmentStrip("healthCoachAttachments", "healthCoachInput");
       const activeProvider = healthCoachActiveProvider();
       const needsConsent = healthCoachNeedsCloudConsent(activeProvider);
       const providerInfo = aiProviderPrivacyInfo(activeProvider);
@@ -25932,7 +26300,7 @@ CRITICAL RULES FOR ACTIONS:
             </div>
           </div>`;
         }
-        return `<div class="wealth-coach-msg ${msg.role === "user" ? "user" : "assistant"}">${escapeHtml(msg.content)}</div>`;
+        return `<div class="wealth-coach-msg ${msg.role === "user" ? "user" : "assistant"}">${escapeHtml(msg.content)}${renderAiMessageAttachmentsHtml(msg.attachments)}</div>`;
       }).join("")}`;
       messagesEl.scrollTop = messagesEl.scrollHeight;
     }
@@ -26021,18 +26389,18 @@ CRITICAL RULES FOR ACTIONS:
     async function requestHealthCoaching() {
       const input = document.getElementById("healthCoachInput");
       const question = String(input?.value || "").trim();
-      if (!question || healthCoachBusy) return;
+      const attachments = aiCloneAttachments(aiGetComposerAttachments("healthCoachInput"));
+      if ((!question && !attachments.length) || healthCoachBusy) return;
       const cfg = aiResolveConfig(aiPrefs);
       const activeProvider = cfg.provider || aiPrefs.provider || "openai";
       if (healthCoachNeedsCloudConsent(activeProvider)) {
         renderHealthCoach();
         return;
       }
-      healthCoachMessages.push({ role: "user", content: question });
-      if (input) {
-        input.value = "";
-        autoGrowTextarea(input);
-      }
+      const userMessage = question || aiComposerPromptFallback("healthCoachInput", "coach");
+      healthCoachMessages.push({ role: "user", content: userMessage, attachments });
+      if (input) clearAiComposer(input);
+      aiClearComposerAttachments("healthCoachInput");
       renderHealthCoach();
       if (!aiPrefs.enabled) {
         healthCoachMessages.push({ role: "assistant", content: "AI is currently disabled. Enable AI in Settings to use Health Coach." });
@@ -26052,8 +26420,8 @@ CRITICAL RULES FOR ACTIONS:
           .filter(m => !m._isProposal && m.content !== "__HEALTH_PROPOSAL__")
           .slice(-10)
           .map(m => ({ role: m.role, content: m.content }));
-        const userPrompt = `User message:\n${question}\n\nCurrent health snapshot:\n${JSON.stringify(snapshot, null, 2)}`;
-        const raw = await aiCallProvider(healthCoachSystemPrompt(), userPrompt, null, { temperature: 0.65, messages: priorMessages });
+        const userPrompt = `User message:\n${userMessage}\n\nCurrent health snapshot:\n${JSON.stringify(snapshot, null, 2)}`;
+        const raw = await aiCallProvider(healthCoachSystemPrompt(), userPrompt, null, { temperature: 0.65, messages: priorMessages, attachments });
         const parsed = parseCoachActionsFromResponse(String(raw || "").trim());
         if (parsed.proposal) {
           healthCoachProposal = parsed.proposal;
@@ -26764,12 +27132,39 @@ CRITICAL RULES FOR ACTIONS:
     document.getElementById("aiRefreshModelsBtn").addEventListener("click",()=>{ void aiPopulateModelDropdown(); });
     // Auto-populate model dropdown when API key field loses focus
     document.getElementById("aiApiKeyInput").addEventListener("blur",()=>{ void aiPopulateModelDropdown({ quiet: true }); });
-    document.getElementById("aiSendBtn").addEventListener("click",()=>{ void requestAiProposal("aiUserInput"); });
+    document.getElementById("aiAttachBtn")?.addEventListener("click", () => aiOpenAttachmentPicker("aiUserInput"));
+    document.getElementById("planSidebarAttachBtn")?.addEventListener("click", () => aiOpenAttachmentPicker("planSidebarChatInput"));
+    document.getElementById("planCoachAttachBtn")?.addEventListener("click", () => aiOpenAttachmentPicker("planCoachInput"));
+    document.getElementById("healthCoachAttachBtn")?.addEventListener("click", () => aiOpenAttachmentPicker("healthCoachInput"));
+    document.getElementById("wealthCoachAttachBtn")?.addEventListener("click", () => aiOpenAttachmentPicker("wealthCoachInput"));
+    document.getElementById("healthNutritionCoachAttachBtn")?.addEventListener("click", () => aiOpenAttachmentPicker("healthNutritionCoachInput"));
+    document.getElementById("healthSleepCoachAttachBtn")?.addEventListener("click", () => aiOpenAttachmentPicker("healthSleepCoachInput"));
+    document.getElementById("aiAttachmentInput")?.addEventListener("change", e => {
+      void aiHandleAttachmentSelection(aiAttachmentPickerTarget, e.target?.files || []);
+    });
+    document.addEventListener("click", e => {
+      const removeBtn = e.target?.closest?.("[data-ai-attachment-remove]");
+      if (!removeBtn) return;
+      const target = String(removeBtn.getAttribute("data-ai-attachment-target") || "").trim();
+      const attachmentId = String(removeBtn.getAttribute("data-ai-attachment-remove") || "").trim();
+      if (!target || !attachmentId) return;
+      const next = aiGetComposerAttachments(target).filter(item => item.id !== attachmentId);
+      aiSetComposerAttachments(target, next);
+    });
+    document.getElementById("aiSendBtn").addEventListener("click",()=>{ void requestAiProposal({
+      inputId: "aiUserInput",
+      composerKey: "aiUserInput",
+      restoreInputId: "aiUserInput"
+    }); });
     document.getElementById("aiInlineSendBtn").addEventListener("click",()=>{ void requestAiProposal("aiInlineUserInput"); });
     document.getElementById("aiUserInput").addEventListener("keydown",e=>{
       if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
-        void requestAiProposal("aiUserInput");
+        void requestAiProposal({
+          inputId: "aiUserInput",
+          composerKey: "aiUserInput",
+          restoreInputId: "aiUserInput"
+        });
       }
     });
     document.getElementById("aiInlineUserInput").addEventListener("input",e=>{
@@ -27015,6 +27410,7 @@ CRITICAL RULES FOR ACTIONS:
     });
     document.getElementById("healthSleepCoachClearBtn")?.addEventListener("click", () => {
       healthSleepCoachMessages = [];
+      aiClearComposerAttachments("healthSleepCoachInput");
       renderHealthSleepCoach();
     });
     document.getElementById("healthSleepCoachSendBtn")?.addEventListener("click", () => { void requestHealthSleepCoaching(); });
@@ -27029,6 +27425,7 @@ CRITICAL RULES FOR ACTIONS:
     });
     document.getElementById("healthNutritionCoachClearBtn")?.addEventListener("click", () => {
       healthNutritionCoachMessages = [];
+      aiClearComposerAttachments("healthNutritionCoachInput");
       renderHealthNutritionCoach();
     });
     document.getElementById("healthNutritionCoachSendBtn")?.addEventListener("click", () => { void requestHealthNutritionCoaching(); });
@@ -27045,6 +27442,7 @@ CRITICAL RULES FOR ACTIONS:
     document.getElementById("healthCoachBackdrop")?.addEventListener("click", () => closeHealthCoach());
     document.getElementById("healthCoachClearBtn")?.addEventListener("click", () => {
       healthCoachMessages = [];
+      aiClearComposerAttachments("healthCoachInput");
       renderHealthCoach();
     });
     document.getElementById("healthCoachMessages")?.addEventListener("click", e => {
@@ -27116,6 +27514,7 @@ CRITICAL RULES FOR ACTIONS:
     document.getElementById("wealthCoachBackdrop")?.addEventListener("click", () => closeWealthCoach());
     document.getElementById("wealthCoachClearBtn")?.addEventListener("click", () => {
       wealthCoachMessages = [];
+      aiClearComposerAttachments("wealthCoachInput");
       renderWealthCoach();
     });
     document.getElementById("wealthCoachMessages")?.addEventListener("click", e => {
@@ -27756,16 +28155,18 @@ CRITICAL RULES FOR ACTIONS:
     document.getElementById("planSidebarSendBtn").addEventListener("click", () => {
       const input = document.getElementById("planSidebarChatInput");
       const text = String(input?.value || "").trim();
-      if (!text) return;
-      clearAiComposer(input);
+      const attachments = aiCloneAttachments(aiGetComposerAttachments("planSidebarChatInput"));
+      if (!text && !attachments.length) return;
       const useAutoApply = !!aiPrefs.inlineAutoApply;
       const targetInputId = useAutoApply ? "aiInlineUserInput" : "aiUserInput";
-      const targetInput = document.getElementById(targetInputId);
-      if (!targetInput) return;
-      targetInput.value = text;
-      autoGrowTextarea(targetInput);
       if (!useAutoApply) setActiveTab("assistant");
-      void requestAiProposal(targetInputId).finally(() => {
+      void requestAiProposal({
+        inputId: targetInputId,
+        composerKey: "planSidebarChatInput",
+        restoreInputId: "planSidebarChatInput",
+        text,
+        attachments
+      }).finally(() => {
         renderPlanSidebar();
       });
     });
@@ -27783,6 +28184,7 @@ CRITICAL RULES FOR ACTIONS:
     document.getElementById("planCoachBackdrop")?.addEventListener("click", () => closePlanCoach());
     document.getElementById("planCoachClearBtn")?.addEventListener("click", () => {
       clearAiChat();
+      aiClearComposerAttachments("planCoachInput");
       renderPlanSidebar();
       renderPlanCoach();
     });
