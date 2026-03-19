@@ -8534,13 +8534,18 @@ If you do propose actions, they must exactly match the supported schema in the u
       let model = aiNormalizeModelId(cfg.provider, cfg.model);
       if (!model) throw new Error("Model is required.");
       const baseUrl = cfg.baseUrl.replace(/\/+$/, "");
+      const priorMessages = Array.isArray(options?.messages) ? options.messages : [];
       const runOpenAiCompatibleChat = async (modelId) => {
+        const chatMessages = [{ role: "system", content: systemPrompt }];
+        priorMessages.forEach(m => {
+          if (m.role === "user" || m.role === "assistant") {
+            chatMessages.push({ role: m.role, content: String(m.content || "") });
+          }
+        });
+        chatMessages.push({ role: "user", content: userPrompt });
         const chatBody = {
           model: modelId,
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: userPrompt }
-          ]
+          messages: chatMessages
         };
         const requestedTemperature = Number(options?.temperature);
         if (Number.isFinite(requestedTemperature) && aiModelSupportsTemperature(modelId)) {
@@ -8598,6 +8603,7 @@ If you do propose actions, they must exactly match the supported schema in the u
                   store: false,
                   input: [
                     { role: "system", content: String(systemPrompt || "") },
+                    ...priorMessages.filter(m => m.role === "user" || m.role === "assistant").map(m => ({ role: m.role, content: String(m.content || "") })),
                     { role: "user", content: String(userPrompt || "") }
                   ]
                 })
@@ -8647,7 +8653,10 @@ If you do propose actions, they must exactly match the supported schema in the u
             model: modelId,
             max_tokens: 1400,
             system: systemPrompt,
-            messages: [{ role: "user", content: userPrompt }]
+            messages: [
+              ...priorMessages.filter(m => m.role === "user" || m.role === "assistant").map(m => ({ role: m.role, content: String(m.content || "") })),
+              { role: "user", content: userPrompt }
+            ]
           })
         });
         if (!res.ok) throw new Error(`Anthropic API error ${res.status}: ${await res.text()}`);
@@ -8670,10 +8679,15 @@ If you do propose actions, they must exactly match the supported schema in the u
             generationConfig: {
               maxOutputTokens: 1400
             },
+            systemInstruction: { parts: [{ text: systemPrompt }] },
             contents: [
+              ...priorMessages.filter(m => m.role === "user" || m.role === "assistant").map(m => ({
+                role: m.role === "assistant" ? "model" : "user",
+                parts: [{ text: String(m.content || "") }]
+              })),
               {
                 role: "user",
-                parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }]
+                parts: [{ text: userPrompt }]
               }
             ]
           })
@@ -24532,8 +24546,12 @@ wealth.add_holding — Add a holding to the portfolio
 wealth.update_property_estimate — Update a property valuation
   Fields: property_id (string, from list above), estimate_value (number), confidence (low/medium/high), source (string), notes (string)
 
-If the user is just asking questions or seeking advice, respond normally with text only — no JSON block.
-When the user asks you to do something, ALWAYS return the appropriate action. Never tell the user to do it manually.`;
+CRITICAL RULES FOR ACTIONS:
+1. When the user asks you to add, record, recategorise, or update something, ALWAYS return the appropriate action in a \`\`\`json block. NEVER just describe what you would do in text.
+2. NEVER say "I've added it" or "Done" without a JSON action block. You cannot modify data without the JSON block — the app only executes actions from JSON blocks.
+3. If the user gives you additional info about a previous request (like a correction or clarification), include a fresh JSON action block with the updated data.
+4. If the user is just asking questions or seeking advice, respond normally with text only — no JSON block.
+5. Keep the text before the JSON block SHORT — 1-2 sentences max.`;
     }
 
     function renderWealthCoach() {
@@ -24683,8 +24701,12 @@ When the user asks you to do something, ALWAYS return the appropriate action. Ne
       renderWealthCoach();
       try {
         const snapshot = buildWealthCoachSnapshot();
-        const userPrompt = `User question:\n${question}\n\nCurrent wealth snapshot:\n${JSON.stringify(snapshot, null, 2)}`;
-        const raw = await aiCallProvider(wealthCoachSystemPrompt(), userPrompt);
+        const priorMessages = wealthCoachMessages
+          .filter(m => !m._isProposal && m.content !== "__WEALTH_PROPOSAL__")
+          .slice(-10)
+          .map(m => ({ role: m.role, content: m.content }));
+        const userPrompt = `User message:\n${question}\n\nCurrent wealth snapshot:\n${JSON.stringify(snapshot, null, 2)}`;
+        const raw = await aiCallProvider(wealthCoachSystemPrompt(), userPrompt, null, { messages: priorMessages });
         const parsed = parseCoachActionsFromResponse(String(raw || "").trim());
         if (parsed.proposal) {
           wealthCoachProposal = parsed.proposal;
@@ -25813,8 +25835,12 @@ Done — setting your weekly target:
 }
 \`\`\`
 
-If the user is just asking questions or seeking advice, respond normally with text only — no JSON block.
-When the user describes a workout, ALWAYS parse it into structured exercises and return a health.log_session action. Never tell the user to log it manually.`;
+CRITICAL RULES FOR ACTIONS:
+1. If the user describes a workout, ALWAYS return a health.log_session action in a JSON block. NEVER just describe what you would log in text — you MUST include the \`\`\`json block.
+2. NEVER say "I've logged it" or "Logged as..." without a JSON action block. You cannot log anything without the JSON block — the app only executes actions from JSON blocks.
+3. If the user gives you additional info about a previous action request (like a weight, a correction, a date), include a fresh JSON action block with the updated data.
+4. If the user is just asking questions or seeking advice, respond normally with text only — no JSON block.
+5. Keep the text before the JSON block SHORT — 1-2 sentences max. Do not write a full coaching analysis when the user asked you to log something.`;
     }
 
     function renderHealthCoach() {
@@ -26022,8 +26048,12 @@ When the user describes a workout, ALWAYS parse it into structured exercises and
       renderHealthCoach();
       try {
         const snapshot = buildHealthCoachSnapshot();
-        const userPrompt = `User question:\n${question}\n\nCurrent health snapshot:\n${JSON.stringify(snapshot, null, 2)}`;
-        const raw = await aiCallProvider(healthCoachSystemPrompt(), userPrompt, null, { temperature: 0.65 });
+        const priorMessages = healthCoachMessages
+          .filter(m => !m._isProposal && m.content !== "__HEALTH_PROPOSAL__")
+          .slice(-10)
+          .map(m => ({ role: m.role, content: m.content }));
+        const userPrompt = `User message:\n${question}\n\nCurrent health snapshot:\n${JSON.stringify(snapshot, null, 2)}`;
+        const raw = await aiCallProvider(healthCoachSystemPrompt(), userPrompt, null, { temperature: 0.65, messages: priorMessages });
         const parsed = parseCoachActionsFromResponse(String(raw || "").trim());
         if (parsed.proposal) {
           healthCoachProposal = parsed.proposal;
