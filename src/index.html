@@ -2227,6 +2227,14 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
   transform:translateX(100%);transition:transform .22s ease
 }
 .wealth-coach-drawer.open{transform:translateX(0)}
+.coach-action-card{padding:14px 16px;border:1px solid var(--accent);border-radius:14px;background:rgba(16,185,129,.06)}
+.coach-action-card.applied{border-color:var(--line);background:var(--bg);opacity:.8}
+.coach-action-summary{font-weight:700;font-size:.84rem;margin-bottom:10px}
+.coach-action-items{display:grid;gap:6px;margin-bottom:14px;font-size:.82rem}
+.coach-action-item{display:flex;align-items:center;gap:8px;cursor:pointer}
+.coach-action-item input[type="checkbox"]{accent-color:var(--accent)}
+.coach-action-buttons{display:flex;align-items:center;gap:8px}
+.coach-action-applied-label{font-size:.78rem;font-weight:600;color:var(--accent)}
 .wealth-coach-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:18px 18px 12px;border-bottom:1px solid var(--line)}
 .wealth-coach-head h4{margin:0}
 .wealth-coach-meta{font-size:.72rem;color:var(--text2);display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
@@ -8113,6 +8121,22 @@ If you do propose actions, they must exactly match the supported schema in the u
       if (action.type === "commitment.update") return `Update commitment ${resolveCommitmentTitle(action.commitment_id)}`;
       if (action.type === "commitment.set_finish_track") return `Lock finish track: ${resolveCommitmentTitle(action.commitment_id)}`;
       if (action.type === "focus.update_primary_goal") return `Update primary goal: ${action.title}`;
+      if (action.type === "health.log_session") {
+        const exerciseList = (action.exercises || [])
+          .map(ex => `${ex.name || "exercise"}${ex.sets ? ` ${ex.sets}×${ex.reps || "?"}` : ""}${ex.weight ? ` @${ex.weight}kg` : ""}`)
+          .join(", ");
+        return `Log session: ${exerciseList || "exercise"} (${action.duration_minutes || "?"}min)`;
+      }
+      if (action.type === "health.set_weekly_target") {
+        const name = resolvePracticeTitle(action.practice_id);
+        return `Set weekly target for ${name}: ${action.sessions_per_week} sessions/week`;
+      }
+      if (action.type === "health.update_profile") return `Update health profile`;
+      if (action.type === "health.create_training_block") return `Create training block: ${action.title || "Untitled"}`;
+      if (action.type === "health.log_nutrition") return `Log nutrition for ${action.date || "today"}: ${action.calories || "?"}kcal`;
+      if (action.type === "health.log_sleep") return `Log sleep for ${action.date || "today"}: ${action.hours || "?"}h`;
+      if (action.type === "health.log_vitals") return `Log vitals for ${action.date || "today"}`;
+      if (action.type === "health.log_measurement") return `Log body measurement for ${action.date || "today"}`;
       return action.type;
     }
     function humanStage(stage) {
@@ -9469,6 +9493,158 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         };
         state.focus.wig1 = action.title;
         state.focus.updated_at = nowIso;
+        return "";
+      }
+      // ── Health Coach Actions ──
+      if (action.type === "health.log_session") {
+        const practices = (state.life_practices?.practices || []).filter(isHealthPractice);
+        let practice = null;
+        if (action.practice_id) practice = practices.find(p => p.id === action.practice_id);
+        if (!practice && action.practice_title) {
+          const needle = String(action.practice_title).toLowerCase();
+          practice = practices.find(p => p.title.toLowerCase().includes(needle) || needle.includes(p.title.toLowerCase()));
+        }
+        if (!practice) practice = practices[0];
+        if (!practice) return "No health practice found to log against. Add a health practice first.";
+        const date = /^\d{4}-\d{2}-\d{2}$/.test(String(action.date || "")) ? String(action.date) : todayISO();
+        const exercises = (Array.isArray(action.exercises) ? action.exercises : []).map(ex => ({
+          name: String(ex.name || "").trim(),
+          sets: Number(ex.sets) || 0,
+          reps: Number(ex.reps) || 0,
+          weight: Number(ex.weight) || 0,
+          notes: String(ex.notes || "").trim()
+        })).filter(ex => ex.name);
+        const exerciseSummary = exercises.map(ex =>
+          `${ex.name}${ex.sets ? ` ${ex.sets}x${ex.reps}` : ""}${ex.weight ? ` @${ex.weight}kg` : ""}${ex.notes ? ` (${ex.notes})` : ""}`
+        ).join(", ");
+        const duration = Number(action.duration_minutes) || 30;
+        const energy = Number(action.energy) || null;
+        const notes = String(action.notes || "").trim();
+        const entryText = [exerciseSummary, notes].filter(Boolean).join(" — ");
+        appendPracticeEntryForDate(practice.id, {
+          at: new Date().toISOString(),
+          text: entryText,
+          minutes: duration,
+          done: true,
+          metrics: {
+            structured_exercises: exercises,
+            energy: energy && energy >= 1 && energy <= 5 ? energy : undefined
+          },
+          tags: []
+        }, date, { save: false, render: false });
+        return "";
+      }
+      if (action.type === "health.set_weekly_target") {
+        const practice = (state.life_practices?.practices || []).find(p => p.id === action.practice_id);
+        if (!practice) return `Practice not found: ${action.practice_id}`;
+        const sessions = Number(action.sessions_per_week);
+        if (!Number.isFinite(sessions) || sessions < 1) return "Invalid sessions_per_week value.";
+        practice.target_value = sessions;
+        practice.target_unit = "sessions";
+        practice.target_period = "week";
+        return "";
+      }
+      if (action.type === "health.update_profile") {
+        const health = ensureHealthStateShape();
+        const fields = action.fields || {};
+        const profile = health.profile || {};
+        if (fields.training_days_per_week != null) profile.training_days_per_week = Number(fields.training_days_per_week);
+        if (fields.max_sessions_per_week != null) profile.max_sessions_per_week = Number(fields.max_sessions_per_week);
+        if (fields.ideal_session_minutes != null) profile.ideal_session_minutes = Number(fields.ideal_session_minutes);
+        if (Array.isArray(fields.blocked_days)) profile.blocked_days = fields.blocked_days;
+        if (fields.injuries_note != null) profile.injuries_note = String(fields.injuries_note);
+        if (Array.isArray(fields.target_muscle_groups)) profile.target_muscle_groups = fields.target_muscle_groups;
+        if (Array.isArray(fields.preferred_splits)) profile.preferred_splits = fields.preferred_splits;
+        if (Array.isArray(fields.preferred_styles)) profile.preferred_styles = fields.preferred_styles;
+        health.profile = profile;
+        return "";
+      }
+      if (action.type === "health.create_training_block") {
+        const health = ensureHealthStateShape();
+        health.training_block = {
+          ...(health.training_block || {}),
+          id: health.training_block?.id || uid(),
+          title: String(action.title || "").trim() || "Training Block",
+          start_date: action.start_date || todayISO(),
+          duration_weeks: Number(action.duration_weeks) || 6,
+          sessions_per_week: Number(action.sessions_per_week) || 3,
+          deload_week: Number(action.deload_week) || 0,
+          split_focus: String(action.split_focus || "").trim(),
+          updated_at: new Date().toISOString()
+        };
+        return "";
+      }
+      if (action.type === "health.log_nutrition") {
+        const health = ensureHealthStateShape();
+        if (!Array.isArray(health.nutrition_logs)) health.nutrition_logs = [];
+        const date = /^\d{4}-\d{2}-\d{2}$/.test(String(action.date || "")) ? String(action.date) : todayISO();
+        health.nutrition_logs = health.nutrition_logs.filter(item => item.date !== date);
+        health.nutrition_logs.push({
+          id: uid(),
+          date,
+          protein_g: Number(action.protein_g) || 0,
+          carbs_g: Number(action.carbs_g) || 0,
+          fats_g: Number(action.fats_g) || 0,
+          calories: Number(action.calories) || 0,
+          weight_kg: Number(action.weight_kg) || null,
+          steps: Number(action.steps) || null,
+          training_minutes: Number(action.training_minutes) || null,
+          cardio_minutes: Number(action.cardio_minutes) || null,
+          notes: String(action.notes || "").trim(),
+          created_at: new Date().toISOString()
+        });
+        return "";
+      }
+      if (action.type === "health.log_sleep") {
+        const health = ensureHealthStateShape();
+        if (!Array.isArray(health.sleep_logs)) health.sleep_logs = [];
+        const date = /^\d{4}-\d{2}-\d{2}$/.test(String(action.date || "")) ? String(action.date) : todayISO();
+        health.sleep_logs = health.sleep_logs.filter(item => item.date !== date);
+        health.sleep_logs.push({
+          id: uid(),
+          date,
+          hours: Number(action.hours) || 0,
+          quality: Math.min(5, Math.max(1, Number(action.quality) || 3)),
+          bedtime: String(action.bedtime || "").trim(),
+          wake_time: String(action.wake_time || "").trim(),
+          notes: String(action.notes || "").trim(),
+          created_at: new Date().toISOString()
+        });
+        return "";
+      }
+      if (action.type === "health.log_vitals") {
+        const health = ensureHealthStateShape();
+        if (!Array.isArray(health.vitals_logs)) health.vitals_logs = [];
+        const date = /^\d{4}-\d{2}-\d{2}$/.test(String(action.date || "")) ? String(action.date) : todayISO();
+        health.vitals_logs.push({
+          id: uid(),
+          date,
+          weight_kg: Number(action.weight_kg) || null,
+          resting_hr: Number(action.resting_hr) || null,
+          systolic: Number(action.systolic) || null,
+          diastolic: Number(action.diastolic) || null,
+          notes: String(action.notes || "").trim(),
+          created_at: new Date().toISOString()
+        });
+        return "";
+      }
+      if (action.type === "health.log_measurement") {
+        const health = ensureHealthStateShape();
+        if (!Array.isArray(health.body_measurements)) health.body_measurements = [];
+        const date = /^\d{4}-\d{2}-\d{2}$/.test(String(action.date || "")) ? String(action.date) : todayISO();
+        health.body_measurements.push({
+          id: uid(),
+          date,
+          chest_cm: Number(action.chest_cm) || null,
+          arm_r_cm: Number(action.arm_r_cm) || null,
+          arm_l_cm: Number(action.arm_l_cm) || null,
+          waist_cm: Number(action.waist_cm) || null,
+          hips_cm: Number(action.hips_cm) || null,
+          thigh_r_cm: Number(action.thigh_r_cm) || null,
+          thigh_l_cm: Number(action.thigh_l_cm) || null,
+          notes: String(action.notes || "").trim(),
+          created_at: new Date().toISOString()
+        });
         return "";
       }
       return `Unsupported action type: ${action.type}`;
@@ -18682,6 +18858,7 @@ Data caveat`;
     let healthCoachMessages = [];
     let healthCoachFocusPracticeId = "";
     let healthCoachCloudConsent = {};
+    let healthCoachProposal = null;
     let healthNutritionCoachBusy = false;
     let healthNutritionCoachMessages = [];
     let healthNutritionCoachCloudConsent = {};
@@ -25335,6 +25512,8 @@ Data caveat`;
     }
 
     function healthCoachSystemPrompt() {
+      const practices = getHealthPractices();
+      const practiceList = practices.map(p => `  - id: "${p.id}", title: "${p.title}"`).join("\n");
       return `You are the PPP Flow Health Coach.
 
 Your job is to help the user understand and work with the health data currently in the app.
@@ -25342,6 +25521,7 @@ Your job is to help the user understand and work with the health data currently 
 You can help with:
 1. Product-use questions about how Health works in PPP Flow.
 2. Descriptive coaching questions about training adherence, recovery, nutrition drift, and body-composition signals.
+3. TAKING ACTIONS on the user's behalf when they ask you to log, record, set, create, or update something.
 
 Rules:
 - Use only the structured snapshot provided.
@@ -25351,11 +25531,85 @@ Rules:
 - If the user asks what to do next, prioritize the clearest signals: missed sessions, repeated drift, logging gaps, low recovery, or obvious nutrition mismatch.
 - If the user asks a product question, answer directly and concretely using current app behavior.
 
-Prefer this response shape:
+When giving advice only, prefer this response shape:
 Current picture
 What stands out
 Next adjustment
-Data caveat`;
+Data caveat
+
+ACTIONS — IMPORTANT:
+When the user asks you to LOG, RECORD, SET, CREATE, or UPDATE something, you MUST respond with a JSON code block containing a "summary" and "actions" array. Do NOT tell the user to do it manually. You have the ability to take actions directly.
+
+Write a brief confirmation message BEFORE the JSON block. The JSON block must be fenced with \`\`\`json and \`\`\`.
+
+Available health practices:
+${practiceList || "  (none yet)"}
+
+Available action types:
+
+health.log_session — Log a structured exercise session
+  Fields: practice_id (string, use ID from list above), practice_title (string fallback), date (YYYY-MM-DD, default today), duration_minutes (number), exercises (array of {name, sets, reps, weight, notes}), energy (1-5 or null), notes (string)
+
+health.set_weekly_target — Set weekly session target for a practice
+  Fields: practice_id (string), sessions_per_week (number)
+
+health.update_profile — Update health profile fields
+  Fields: fields (object with any of: training_days_per_week, max_sessions_per_week, ideal_session_minutes, blocked_days[], injuries_note, target_muscle_groups[], preferred_splits[], preferred_styles[])
+
+health.create_training_block — Create or update the active training block
+  Fields: title, start_date, duration_weeks, sessions_per_week, deload_week, split_focus
+
+health.log_nutrition — Log daily nutrition
+  Fields: date, protein_g, carbs_g, fats_g, calories, weight_kg, steps, training_minutes, cardio_minutes, notes
+
+health.log_sleep — Log sleep entry
+  Fields: date, hours, quality (1-5), bedtime, wake_time, notes
+
+health.log_vitals — Log vitals entry
+  Fields: date, weight_kg, resting_hr, systolic, diastolic, notes
+
+health.log_measurement — Log body measurement
+  Fields: date, chest_cm, arm_r_cm, arm_l_cm, waist_cm, hips_cm, thigh_r_cm, thigh_l_cm, notes
+
+Example — user says "I did 3x10 goblet squats at 20kg and 3x15 KB swings":
+
+Got it — here is what I will log for today:
+
+\`\`\`json
+{
+  "summary": "Kettlebell session: goblet squats and KB swings",
+  "actions": [{
+    "type": "health.log_session",
+    "practice_id": "${practices[0]?.id || "exercise_gym"}",
+    "date": "${todayISO()}",
+    "duration_minutes": 30,
+    "exercises": [
+      { "name": "Goblet Squats", "sets": 3, "reps": 10, "weight": 20 },
+      { "name": "KB Swings", "sets": 3, "reps": 15, "weight": 20 }
+    ],
+    "energy": null,
+    "notes": ""
+  }]
+}
+\`\`\`
+
+Example — user says "set my weekly target to 4 sessions":
+
+Done — setting your weekly target:
+
+\`\`\`json
+{
+  "summary": "Set Exercise / Gym weekly target to 4 sessions",
+  "actions": [{
+    "type": "health.set_weekly_target",
+    "practice_id": "${practices[0]?.id || "exercise_gym"}",
+    "sessions_per_week": 4
+  }]
+}
+\`\`\`
+
+If the user is just asking questions or seeking advice, respond normally with text only — no JSON block.
+When the user describes a workout, ALWAYS parse it into structured exercises and return a health.log_session action. Never tell the user to log it manually.`;
     }
 
     function renderHealthCoach() {
@@ -25425,9 +25679,30 @@ Data caveat`;
         </div>`;
         return;
       }
-      messagesEl.innerHTML = `${consentNotice}${healthCoachMessages.map(msg => `
-        <div class="wealth-coach-msg ${msg.role === "user" ? "user" : "assistant"}">${escapeHtml(msg.content)}</div>
-      `).join("")}`;
+      messagesEl.innerHTML = `${consentNotice}${healthCoachMessages.map(msg => {
+        if (msg._isProposal && healthCoachProposal) {
+          const p = healthCoachProposal;
+          const alreadyApplied = !!p.appliedAt;
+          const itemsHtml = p.items.map((item, idx) => `
+            <label class="coach-action-item">
+              <input type="checkbox" ${item.selected && !alreadyApplied ? "checked" : ""} ${alreadyApplied ? "disabled" : ""} data-health-proposal-idx="${idx}">
+              <span>${escapeHtml(item.label)}</span>
+            </label>
+          `).join("");
+          return `<div class="wealth-coach-msg assistant">
+            <div class="coach-action-card${alreadyApplied ? " applied" : ""}">
+              <div class="coach-action-summary">${escapeHtml(p.summary)}</div>
+              <div class="coach-action-items">${itemsHtml}</div>
+              <div class="coach-action-buttons">
+                ${alreadyApplied
+                  ? `<span class="coach-action-applied-label">Applied ${p.appliedCount} change${p.appliedCount === 1 ? "" : "s"}</span>`
+                  : `<button class="primary" type="button" data-health-coach-apply>Apply</button>`}
+              </div>
+            </div>
+          </div>`;
+        }
+        return `<div class="wealth-coach-msg ${msg.role === "user" ? "user" : "assistant"}">${escapeHtml(msg.content)}</div>`;
+      }).join("")}`;
       messagesEl.scrollTop = messagesEl.scrollHeight;
     }
 
@@ -25450,6 +25725,65 @@ Data caveat`;
 
     function closeHealthCoach() {
       healthCoachOpen = false;
+      renderHealthCoach();
+    }
+
+    function parseCoachActionsFromResponse(rawText) {
+      const jsonMatch = String(rawText || "").match(/```json\s*([\s\S]*?)```/);
+      if (!jsonMatch) return { text: rawText, proposal: null };
+      try {
+        const parsed = JSON.parse(jsonMatch[1].trim());
+        if (parsed && Array.isArray(parsed.actions) && parsed.actions.length > 0) {
+          const cleanText = String(rawText).replace(/```json[\s\S]*?```/, "").trim();
+          const items = parsed.actions.map((entry, index) => ({
+            id: uid(),
+            index,
+            selected: true,
+            valid: true,
+            error: "",
+            action: entry,
+            label: describeAiAction(entry)
+          }));
+          return {
+            text: cleanText,
+            proposal: {
+              summary: String(parsed.summary || "").trim() || "Proposed changes",
+              items,
+              createdAt: new Date().toISOString(),
+              appliedAt: null,
+              appliedCount: 0
+            }
+          };
+        }
+      } catch (e) { /* JSON parse failed — treat as text */ }
+      return { text: rawText, proposal: null };
+    }
+
+    function applyHealthCoachProposal() {
+      if (!healthCoachProposal || healthCoachProposal.appliedAt) return;
+      const selectedItems = healthCoachProposal.items.filter(item => item.selected && item.valid && item.action);
+      if (!selectedItems.length) return;
+      const snapshot = JSON.stringify(state);
+      for (const item of selectedItems) {
+        const err = applySingleAiAction(item.action);
+        if (err) {
+          state = normalizeState(JSON.parse(snapshot));
+          saveState("health_coach_apply_reverted");
+          render();
+          healthCoachMessages.push({ role: "assistant", content: `Could not apply: ${err}` });
+          renderHealthCoach();
+          return;
+        }
+      }
+      healthCoachProposal.appliedAt = new Date().toISOString();
+      healthCoachProposal.appliedCount = selectedItems.length;
+      healthCoachProposal.items.forEach(item => { item.selected = false; });
+      healthCoachMessages.push({
+        role: "assistant",
+        content: `Done — applied ${selectedItems.length} change${selectedItems.length === 1 ? "" : "s"}.`
+      });
+      saveState("health_coach_apply");
+      render();
       renderHealthCoach();
     }
 
@@ -25485,7 +25819,17 @@ Data caveat`;
         const snapshot = buildHealthCoachSnapshot();
         const userPrompt = `User question:\n${question}\n\nCurrent health snapshot:\n${JSON.stringify(snapshot, null, 2)}`;
         const raw = await aiCallProvider(healthCoachSystemPrompt(), userPrompt, null, { temperature: 0.65 });
-        healthCoachMessages.push({ role: "assistant", content: String(raw || "").trim() || "No answer returned." });
+        const parsed = parseCoachActionsFromResponse(String(raw || "").trim());
+        if (parsed.proposal) {
+          healthCoachProposal = parsed.proposal;
+          if (parsed.text) {
+            healthCoachMessages.push({ role: "assistant", content: parsed.text });
+          }
+          healthCoachMessages.push({ role: "assistant", content: "__HEALTH_PROPOSAL__", _isProposal: true });
+        } else {
+          healthCoachProposal = null;
+          healthCoachMessages.push({ role: "assistant", content: String(raw || "").trim() || "No answer returned." });
+        }
       } catch (err) {
         healthCoachMessages.push({ role: "assistant", content: `I couldn't answer that from the current health data. ${String(err?.message || err || "Unknown error")}` });
       } finally {
@@ -26469,13 +26813,24 @@ Data caveat`;
       renderHealthCoach();
     });
     document.getElementById("healthCoachMessages")?.addEventListener("click", e => {
-      const btn = e.target?.closest?.("[data-health-consent-action]");
-      if (!btn) return;
-      const action = String(btn.getAttribute("data-health-consent-action") || "");
-      if (action === "allow") {
-        allowHealthCoachCloudConsent();
-      } else if (action === "settings") {
-        openAiSettingsFromHealthCoach();
+      const consentBtn = e.target?.closest?.("[data-health-consent-action]");
+      if (consentBtn) {
+        const action = String(consentBtn.getAttribute("data-health-consent-action") || "");
+        if (action === "allow") allowHealthCoachCloudConsent();
+        else if (action === "settings") openAiSettingsFromHealthCoach();
+        return;
+      }
+      const applyBtn = e.target?.closest?.("[data-health-coach-apply]");
+      if (applyBtn) {
+        applyHealthCoachProposal();
+        return;
+      }
+      const checkbox = e.target?.closest?.("[data-health-proposal-idx]");
+      if (checkbox && healthCoachProposal && !healthCoachProposal.appliedAt) {
+        const idx = Number(checkbox.getAttribute("data-health-proposal-idx"));
+        if (healthCoachProposal.items[idx]) {
+          healthCoachProposal.items[idx].selected = checkbox.checked;
+        }
       }
     });
     document.getElementById("healthCoachSendBtn")?.addEventListener("click", () => { void requestHealthCoaching(); });
