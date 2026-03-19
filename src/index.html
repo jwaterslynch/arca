@@ -4412,6 +4412,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
     let aiInlineToastTimer = null;
     let aiHighlightClearTimer = null;
     let aiHighlightedTaskIds = new Set();
+    let activeTopLevelTab = "execute";
     let activePlanTab = "focus";
     let planCoachOpen = false;
     let todayPanelDelegated = false;
@@ -7643,7 +7644,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       };
     }
     function aiResolveInteractionMode(inputId = "aiUserInput") {
-      const activeTopTab = String(document.querySelector(".tab.active")?.getAttribute("data-tab") || "execute").trim();
+      const activeTopTab = currentTopLevelAiSurface();
       if (inputId === "aiUserInput") return "coach";
       if (inputId === "aiInlineUserInput") {
         if (activeTopTab === "execute") return "proposal";
@@ -7715,7 +7716,7 @@ If you do propose actions, they must exactly match the supported schema in the u
     function aiBuildUserPrompt(userInput, mode = "proposal") {
       const context = aiBuildContext();
       const recent = aiMessages.slice(-8).map(m => ({ role: m.role, content: m.content }));
-      const activeTopTab = String(document.querySelector(".tab.active")?.getAttribute("data-tab") || "execute").trim();
+      const activeTopTab = currentTopLevelAiSurface();
       const schemaHint = {
         action_types: [
           "task.create",
@@ -11475,6 +11476,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         if (!planTabs.includes(planTab)) planTab = "focus";
         if (planTab === "assistant" && !aiShouldShowTab()) planTab = "focus";
       }
+      activeTopLevelTab = topLevelTabs.includes(mode) ? mode : "execute";
       activePlanTab = planTab;
 
       document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
@@ -11578,6 +11580,9 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
     }
 
     function currentTopLevelAiSurface() {
+      if (activeTopLevelTab === "wealth" || activeTopLevelTab === "health" || activeTopLevelTab === "plan" || activeTopLevelTab === "execute") {
+        return activeTopLevelTab;
+      }
       if (document.getElementById("tab-wealth")?.classList.contains("active")) return "wealth";
       if (document.getElementById("tab-health")?.classList.contains("active")) return "health";
       if (document.getElementById("surface-plan")?.classList.contains("active")) return "plan";
