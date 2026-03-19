@@ -3596,79 +3596,81 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         </div>
       </div>
     </div>
-    <div id="planCoachBackdrop" class="wealth-coach-backdrop" hidden></div>
-    <aside id="planCoachDrawer" class="wealth-coach-drawer" aria-hidden="true">
-      <div class="wealth-coach-head">
-        <div>
-          <h4>Plan Coach</h4>
-          <div class="wealth-coach-meta" id="planCoachMeta"></div>
-        </div>
-        <div style="display:flex;align-items:center;gap:8px">
-          <button id="planCoachProviderPill" class="ai-provider-pill ai-switch-trigger" data-open-ai-switch="plan-coach" type="button" title="Switch AI" hidden></button>
-          <button class="ghost" id="planCloseCoachBtn" type="button" style="font-size:.75rem">Close</button>
-        </div>
-      </div>
-      <div id="planCoachMessages" class="wealth-coach-body"></div>
-      <div class="wealth-coach-foot">
-        <div id="planCoachActions" class="wealth-coach-actions">
-          <span id="planCoachStatus" class="tiny"></span>
-          <button class="ghost" id="planCoachClearBtn" type="button" style="font-size:.75rem">Clear</button>
-        </div>
-        <div class="wealth-coach-input-row">
-          <textarea id="planCoachInput" rows="1" placeholder="Ask Plan Coach..."></textarea>
-          <button id="planCoachSendBtn" class="wealth-coach-send" type="button">Ask</button>
-        </div>
-      </div>
-    </aside>
-    <div id="healthCoachBackdrop" class="wealth-coach-backdrop" hidden></div>
-    <aside id="healthCoachDrawer" class="wealth-coach-drawer" aria-hidden="true">
-      <div class="wealth-coach-head">
-        <div>
-          <h4>Health Coach</h4>
-          <div class="wealth-coach-meta" id="healthCoachMeta"></div>
-        </div>
-        <div style="display:flex;align-items:center;gap:8px">
-          <button id="healthCoachProviderPill" class="ai-provider-pill ai-switch-trigger" data-open-ai-switch="health-coach" type="button" title="Switch AI" hidden></button>
-          <button class="ghost" id="healthCloseCoachBtn" type="button" style="font-size:.75rem">Close</button>
-        </div>
-      </div>
-      <div id="healthCoachMessages" class="wealth-coach-body"></div>
-      <div class="wealth-coach-foot">
-        <div id="healthCoachActions" class="wealth-coach-actions">
-          <span id="healthCoachStatus" class="tiny"></span>
-          <button class="ghost" id="healthCoachClearBtn" type="button" style="font-size:.75rem">Clear</button>
-        </div>
-        <div class="wealth-coach-input-row">
-          <textarea id="healthCoachInput" rows="1" placeholder="Ask Health Coach..."></textarea>
-          <button id="healthCoachSendBtn" class="wealth-coach-send" type="button">Ask</button>
-        </div>
-      </div>
-    </aside>
-    <div id="wealthCoachBackdrop" class="wealth-coach-backdrop" hidden></div>
-    <aside id="wealthCoachDrawer" class="wealth-coach-drawer" aria-hidden="true">
-      <div class="wealth-coach-head">
-        <div>
-          <h4>Wealth Coach</h4>
-          <div class="wealth-coach-meta" id="wealthCoachMeta"></div>
-        </div>
-        <div style="display:flex;align-items:center;gap:8px">
-          <button id="wealthCoachProviderPill" class="ai-provider-pill ai-switch-trigger" data-open-ai-switch="wealth-coach" type="button" title="Switch AI" hidden></button>
-          <button class="ghost" id="wealthCloseCoachBtn" type="button" style="font-size:.75rem">Close</button>
-        </div>
-      </div>
-      <div id="wealthCoachMessages" class="wealth-coach-body"></div>
-      <div class="wealth-coach-foot">
-        <div id="wealthCoachActions" class="wealth-coach-actions">
-          <span id="wealthCoachStatus" class="tiny"></span>
-          <button class="ghost" id="wealthCoachClearBtn" type="button" style="font-size:.75rem">Clear</button>
-        </div>
-        <div class="wealth-coach-input-row">
-          <textarea id="wealthCoachInput" rows="1" placeholder="Ask Wealth Coach..."></textarea>
-          <button id="wealthCoachSendBtn" class="wealth-coach-send" type="button">Ask</button>
-        </div>
-      </div>
-    </aside>
   </div>
+
+  <!-- ═══════════ COACH DRAWERS (outside tab containers so they're always reachable) ═══════════ -->
+  <div id="planCoachBackdrop" class="wealth-coach-backdrop" hidden></div>
+  <aside id="planCoachDrawer" class="wealth-coach-drawer" aria-hidden="true">
+    <div class="wealth-coach-head">
+      <div>
+        <h4>Plan Coach</h4>
+        <div class="wealth-coach-meta" id="planCoachMeta"></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <button id="planCoachProviderPill" class="ai-provider-pill ai-switch-trigger" data-open-ai-switch="plan-coach" type="button" title="Switch AI" hidden></button>
+        <button class="ghost" id="planCloseCoachBtn" type="button" style="font-size:.75rem">Close</button>
+      </div>
+    </div>
+    <div id="planCoachMessages" class="wealth-coach-body"></div>
+    <div class="wealth-coach-foot">
+      <div id="planCoachActions" class="wealth-coach-actions">
+        <span id="planCoachStatus" class="tiny"></span>
+        <button class="ghost" id="planCoachClearBtn" type="button" style="font-size:.75rem">Clear</button>
+      </div>
+      <div class="wealth-coach-input-row">
+        <textarea id="planCoachInput" rows="1" placeholder="Ask Plan Coach..."></textarea>
+        <button id="planCoachSendBtn" class="wealth-coach-send" type="button">Ask</button>
+      </div>
+    </div>
+  </aside>
+  <div id="healthCoachBackdrop" class="wealth-coach-backdrop" hidden></div>
+  <aside id="healthCoachDrawer" class="wealth-coach-drawer" aria-hidden="true">
+    <div class="wealth-coach-head">
+      <div>
+        <h4>Health Coach</h4>
+        <div class="wealth-coach-meta" id="healthCoachMeta"></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <button id="healthCoachProviderPill" class="ai-provider-pill ai-switch-trigger" data-open-ai-switch="health-coach" type="button" title="Switch AI" hidden></button>
+        <button class="ghost" id="healthCloseCoachBtn" type="button" style="font-size:.75rem">Close</button>
+      </div>
+    </div>
+    <div id="healthCoachMessages" class="wealth-coach-body"></div>
+    <div class="wealth-coach-foot">
+      <div id="healthCoachActions" class="wealth-coach-actions">
+        <span id="healthCoachStatus" class="tiny"></span>
+        <button class="ghost" id="healthCoachClearBtn" type="button" style="font-size:.75rem">Clear</button>
+      </div>
+      <div class="wealth-coach-input-row">
+        <textarea id="healthCoachInput" rows="1" placeholder="Ask Health Coach..."></textarea>
+        <button id="healthCoachSendBtn" class="wealth-coach-send" type="button">Ask</button>
+      </div>
+    </div>
+  </aside>
+  <div id="wealthCoachBackdrop" class="wealth-coach-backdrop" hidden></div>
+  <aside id="wealthCoachDrawer" class="wealth-coach-drawer" aria-hidden="true">
+    <div class="wealth-coach-head">
+      <div>
+        <h4>Wealth Coach</h4>
+        <div class="wealth-coach-meta" id="wealthCoachMeta"></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <button id="wealthCoachProviderPill" class="ai-provider-pill ai-switch-trigger" data-open-ai-switch="wealth-coach" type="button" title="Switch AI" hidden></button>
+        <button class="ghost" id="wealthCloseCoachBtn" type="button" style="font-size:.75rem">Close</button>
+      </div>
+    </div>
+    <div id="wealthCoachMessages" class="wealth-coach-body"></div>
+    <div class="wealth-coach-foot">
+      <div id="wealthCoachActions" class="wealth-coach-actions">
+        <span id="wealthCoachStatus" class="tiny"></span>
+        <button class="ghost" id="wealthCoachClearBtn" type="button" style="font-size:.75rem">Clear</button>
+      </div>
+      <div class="wealth-coach-input-row">
+        <textarea id="wealthCoachInput" rows="1" placeholder="Ask Wealth Coach..."></textarea>
+        <button id="wealthCoachSendBtn" class="wealth-coach-send" type="button">Ask</button>
+      </div>
+    </div>
+  </aside>
 
   <!-- ═══════════ HIDDEN PRODUCTION ELEMENTS ═══════════ -->
   <!-- Elements the JS references but aren't in the prototype layout -->
