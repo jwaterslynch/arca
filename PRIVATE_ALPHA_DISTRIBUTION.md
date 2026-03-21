@@ -17,7 +17,7 @@ Why:
 The repo currently produces a macOS app bundle and DMG from Tauri:
 
 - Apple Silicon DMG:
-  - `src-tauri/target/release/bundle/dmg/PPP Flow Desktop_0.1.0-beta.2_aarch64.dmg`
+  - `src-tauri/target/release/bundle/dmg/PPP Flow Desktop_0.1.0-beta.3_aarch64.dmg`
 
 If you need Intel support, add an Intel build or a universal macOS build before expanding tester scope.
 

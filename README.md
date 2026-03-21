@@ -43,6 +43,7 @@ npm run build
 - `RELEASE_CHECKLIST.md`
 - `RELEASE_NOTES_v0.1.0-beta.1.md`
 - `RELEASE_NOTES_v0.1.0-beta.2.md`
+- `RELEASE_NOTES_v0.1.0-beta.3.md`
 
 ## Local data locations (macOS)
 
