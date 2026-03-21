@@ -87,12 +87,6 @@ jobs:
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
-          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         with:
           tagName: ${{ steps.meta.outputs.tag_name }}
           releaseName: ${{ steps.meta.outputs.release_name }}
@@ -107,7 +101,7 @@ jobs:
             Before sharing with testers:
             - confirm the installed bundle matches the reviewed source
             - verify backup / restore on a real profile
-            - prefer a signed + notarized build if Apple credentials are configured
+            - this workflow currently produces an unsigned macOS alpha build by default
 
             See:
             - PRIVATE_ALPHA_DISTRIBUTION.md

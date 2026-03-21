@@ -35,7 +35,11 @@ This workflow is intentionally conservative:
 
 ## Apple signing and notarization
 
-Unsigned DMGs will install with Gatekeeper friction. For a smoother tester experience, configure these GitHub secrets:
+The current GitHub workflow intentionally builds an **unsigned** macOS alpha by default.
+
+That keeps the private-alpha path simple and avoids failed release jobs when Apple secrets are not configured.
+
+If you want a smoother tester install flow later, add a second signed/notarized workflow once you have:
 
 - `APPLE_CERTIFICATE`
 - `APPLE_CERTIFICATE_PASSWORD`
@@ -44,12 +48,10 @@ Unsigned DMGs will install with Gatekeeper friction. For a smoother tester exper
 - `APPLE_PASSWORD`
 - `APPLE_TEAM_ID`
 
-If these are present, the Tauri action can sign and notarize the build automatically.
-
-If they are absent:
+Until then:
 - the workflow will still build
 - the app will still be usable
-- testers will have to use macOS override steps like `Open Anyway`
+- testers will need macOS override steps like `Open Anyway`
 
 ## Suggested alpha flow
 
