@@ -875,69 +875,7 @@ body{font-family:var(--font);color:var(--text);background:var(--bg);-webkit-font
 
     .week-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; margin:12px 0; }
 
-    #onboardingModal .modal-panel {
-      display:flex;
-      flex-direction:column;
-      gap:14px;
-    }
-
-    #onboardingModal .modal-head h3 { font-size:clamp(44px,4.4vw,68px); line-height:1.08; }
-
-    #onboardingModal .modal-head .tiny { font-size:clamp(22px,2vw,30px); }
-
-    #onboardingModal .onboard-step-pill {
-      font-size:18px;
-      padding:8px 14px;
-    }
-
-    #onboardingModal .onboard-body { flex:1; overflow:auto; padding-right:4px; }
-
-    #onboardingModal .onboard-screen { max-width:1300px; margin:0 auto; display:grid; gap:18px; align-content:start; }
-
-    #onboardingModal .onboard-screen > p:first-child { margin:0; font-size:clamp(40px,3.8vw,56px); line-height:1.15; }
-
-    #onboardingModal .onboard-body p { margin:0; font-size:clamp(26px,2.4vw,38px); line-height:1.4; }
-
-    #onboardingModal .onboard-body p.tiny { font-size:clamp(22px,2vw,32px); line-height:1.42; color:#2f4248; }
-
-    #onboardingModal .onboard-practice-grid,
-
-    #onboardingModal .onboard-task-grid,
-
-    #onboardingModal .onboard-confirm-box { padding:16px; gap:12px; border-radius:14px; }
-
-    #onboardingModal .onboard-row { grid-template-columns:1.3fr 150px 1.4fr; }
-
-    #onboardingModal .onboard-row.task { grid-template-columns:1.3fr 210px 170px auto; }
-
-    #onboardingModal input,
-
-    #onboardingModal select,
-
-    #onboardingModal textarea { font-size:22px; padding:14px 16px; border-radius:12px; }
-
-    #onboardingModal .onboard-danger { font-size:20px; padding:14px; border-radius:14px; }
-
-    #onboardingModal .onboard-confirm-box .tiny,
-
-    #onboardingModal .onboard-row label.tiny { font-size:18px; }
-
-    #onboardingModal .onboard-footnote {
-      max-width:1300px;
-      width:100%;
-      margin:0 auto;
-      padding:12px 0 8px;
-      border-top:1px solid var(--line);
-      font-size:16px;
-      line-height:1.45;
-      color:#5a6b71;
-    }
-
-    #onboardingModal .onboard-footnote a { color:var(--accent); }
-
-    #onboardingModal .onboard-foot { margin-top:0; padding-top:6px; border-top:none; }
-
-    #onboardingModal .onboard-foot button { font-size:22px; padding:12px 20px; border-radius:14px; }
+    /* Onboarding styles are consolidated later in the file. */
 
     .onboard-danger {
       border:1px solid #efc0b7;
@@ -1554,124 +1492,302 @@ button.warn {
 .task-modal-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
 .task-modal-grid .span-2 { grid-column:1 / -1; }
 
-/* Onboarding modal (full screen) */
+/* Onboarding modal */
+#onboardingModal{
+  padding:18px;
+  align-items:center;
+  justify-content:center;
+  background:rgba(241, 246, 243, .82);
+  backdrop-filter:blur(10px);
+}
 #onboardingModal .modal-panel {
-  max-width:100vw; width:100vw; max-height:100vh; height:100vh; border-radius:0;
-  display:flex; flex-direction:column; gap:12px;
+  width:min(1440px, calc(100vw - 36px));
+  height:min(940px, calc(100vh - 36px));
+  max-width:none;
+  max-height:none;
+  border-radius:24px;
+  overflow:hidden;
+  display:grid;
+  grid-template-rows:auto auto 1fr auto auto;
+  gap:0;
+  padding:0;
   background:
-    radial-gradient(circle at top right, rgba(35,150,91,.08), transparent 28%),
-    linear-gradient(180deg, #f7fbf8 0%, #ffffff 24%);
-  padding:22px 28px 16px;
+    radial-gradient(circle at top right, rgba(35,150,91,.06), transparent 22%),
+    linear-gradient(180deg, #fbfdfc 0%, #f5faf7 100%);
+  border:1px solid rgba(24,62,51,.08);
+  box-shadow:0 28px 90px rgba(15,23,42,.18), 0 6px 18px rgba(15,23,42,.08);
 }
-.modal-head { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:2px; }
-.modal-head h3 { font-size:clamp(30px,3.2vw,56px); font-weight:800; line-height:1.02; letter-spacing:-.04em; }
-.modal-head button {
-  background:rgba(255,255,255,.72); border:1px solid var(--line); font-size:1rem; cursor:pointer;
-  color:var(--text2); padding:12px 16px; border-radius:16px; font-weight:700;
+#onboardingModal .modal-head{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:18px;
+  padding:26px 28px 18px;
+  border-bottom:1px solid rgba(24,62,51,.08);
+  background:rgba(255,255,255,.78);
 }
-.onboard-steps { display:flex; gap:10px; padding:2px 0 0; overflow-x:auto; }
-.onboard-body { flex:1; overflow-y:auto; padding:4px 4px 0; }
-.onboard-screen { max-width:1220px; margin:0 auto; display:grid; gap:16px; align-content:start; }
-.onboard-foot { display:flex; align-items:center; justify-content:space-between; padding:10px 4px 0; border-top:1px solid rgba(24,62,51,.08); }
-.onboard-step-pill {
-  font-size:.92rem; font-weight:700; padding:10px 18px; border-radius:999px;
-  background:rgba(255,255,255,.78); color:var(--text2); border:1px solid rgba(24,62,51,.08);
+#onboardingModal .modal-head h3{
+  font-size:clamp(28px,2.3vw,42px);
+  font-weight:800;
+  line-height:1.02;
+  letter-spacing:-.04em;
+}
+#onboardingModal .modal-head button{
+  background:var(--surface);
+  border:1px solid var(--line);
+  color:var(--text2);
+  padding:11px 16px;
+  border-radius:16px;
+  font:700 .94rem var(--font);
+  cursor:pointer;
+  box-shadow:var(--shadow);
+}
+#onboardingModal .modal-head .tiny{
+  max-width:980px;
+  font-size:1rem;
+  line-height:1.5;
+  color:var(--text2);
+}
+.onboard-steps{
+  display:flex;
+  gap:8px;
+  padding:16px 28px 14px;
+  overflow-x:auto;
+  border-bottom:1px solid rgba(24,62,51,.08);
+  background:rgba(250,252,251,.92);
+}
+.onboard-body{
+  overflow-y:auto;
+  padding:24px 28px 8px;
+}
+.onboard-screen{
+  max-width:1280px;
+  margin:0 auto;
+  display:grid;
+  gap:18px;
+  align-content:start;
+}
+.onboard-foot{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  padding:18px 28px 22px;
+  border-top:1px solid rgba(24,62,51,.08);
+  background:rgba(250,252,251,.96);
+}
+.onboard-step-pill{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  font-size:.82rem;
+  font-weight:700;
+  padding:8px 14px;
+  border-radius:999px;
+  background:var(--surface);
+  color:var(--text2);
+  border:1px solid rgba(24,62,51,.08);
   white-space:nowrap;
 }
-.onboard-step-pill.active {
-  background:#e8f7ee; color:var(--accent); border-color:rgba(35,150,91,.28);
-  box-shadow:0 6px 16px rgba(35,150,91,.10);
+.onboard-step-pill.active{
+  background:#eef8f3;
+  color:var(--accent);
+  border-color:rgba(35,150,91,.22);
+  box-shadow:0 6px 16px rgba(35,150,91,.08);
 }
-.onboard-row { display:grid; gap:8px; grid-template-columns:1fr auto auto; align-items:center; padding:6px 0; }
-.onboard-row.task { grid-template-columns:1fr auto auto auto; }
-.onboard-practice-grid, .onboard-task-grid {
-  display:grid; gap:10px;
-  background:rgba(255,255,255,.84);
-  border:1px solid rgba(24,62,51,.08);
+.onboard-row{
+  display:grid;
+  gap:8px;
+  grid-template-columns:1fr auto auto;
+  align-items:center;
+  padding:4px 0;
+}
+.onboard-row.task{ grid-template-columns:1fr auto auto auto; }
+.onboard-practice-grid,
+.onboard-task-grid{
+  display:grid;
+  gap:10px;
+  background:var(--surface);
+  border:1px solid var(--line);
   border-radius:20px;
   padding:18px;
-  box-shadow:0 10px 30px rgba(15,23,42,.05);
+  box-shadow:var(--shadow);
 }
-.onboard-danger { background:#fef2f2; color:var(--danger); padding:10px; border-radius:var(--radius-sm); font-size:.78rem; }
-.onboard-confirm-box {
-  background:rgba(255,255,255,.84); padding:16px 18px; border-radius:20px;
-  border:1px solid rgba(24,62,51,.08); box-shadow:0 10px 30px rgba(15,23,42,.05);
+.onboard-danger{
+  background:#fff3f2;
+  color:#a93731;
+  padding:14px 16px;
+  border-radius:16px;
+  border:1px solid #f3c7c4;
+  font-size:.84rem;
 }
-.onboard-footnote { font-size:.82rem; color:var(--text2); }
-.onboard-card{
-  background:rgba(255,255,255,.88);
-  border:1px solid rgba(24,62,51,.07);
+.onboard-confirm-box{
+  background:var(--surface);
+  padding:18px;
   border-radius:20px;
+  border:1px solid var(--line);
+  box-shadow:var(--shadow);
+}
+.onboard-card{
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:22px;
   padding:22px 24px;
-  box-shadow:0 8px 32px rgba(15,23,42,.04), 0 1px 3px rgba(15,23,42,.06);
+  box-shadow:var(--shadow);
 }
 .onboard-eyebrow{
-  font-size:.72rem; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:var(--accent); margin-bottom:2px;
+  font-size:.7rem;
+  font-weight:800;
+  letter-spacing:.12em;
+  text-transform:uppercase;
+  color:var(--accent);
 }
 .onboard-section-title{
-  margin:0; font-size:clamp(22px,1.9vw,30px); line-height:1.12; letter-spacing:-.025em; color:var(--text); font-weight:700;
+  margin:0;
+  font-size:clamp(22px,1.65vw,30px);
+  line-height:1.14;
+  letter-spacing:-.025em;
+  color:var(--text);
+  font-weight:700;
 }
 .onboard-section-copy{display:grid; gap:12px;}
 .onboard-section-head{display:grid; gap:6px;}
-.onboard-welcome-screen,.onboard-ai-screen{gap:14px;}
+.onboard-welcome-screen,.onboard-ai-screen{gap:16px;}
 .onboard-hero-grid{
-  display:grid; grid-template-columns:minmax(0,1.3fr) minmax(320px,1fr);
-  gap:18px; align-items:stretch;
+  display:grid;
+  grid-template-columns:minmax(0,1.35fr) minmax(320px,.95fr);
+  gap:18px;
+  align-items:stretch;
 }
 .onboard-highlight-list{
-  display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px;
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;
 }
 .onboard-highlight-item{
-  display:grid; gap:4px; padding:14px 16px; border-radius:14px;
-  background:#f3faf6; border:1px solid rgba(35,150,91,.12);
-  transition:box-shadow .15s;
+  display:grid;
+  gap:6px;
+  padding:14px 16px;
+  border-radius:16px;
+  background:var(--bg);
+  border:1px solid rgba(24,62,51,.08);
 }
-.onboard-highlight-item:hover{box-shadow:0 4px 16px rgba(35,150,91,.10);}
 .onboard-highlight-item strong{
-  font-size:.72rem; font-weight:800; letter-spacing:.07em; text-transform:uppercase; color:var(--accent);
+  font-size:.72rem;
+  font-weight:800;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:var(--accent);
 }
 .onboard-highlight-item span{
-  font-size:.9rem; line-height:1.4; color:var(--text);
+  font-size:.88rem;
+  line-height:1.5;
+  color:var(--text);
 }
-.onboard-action-stack{display:grid; gap:14px; align-content:center;}
-.onboard-muted-note{font-size:.86rem; line-height:1.5; color:var(--text2);}
-.onboard-muted-strip{padding:10px 4px; opacity:.55;}
+.onboard-action-stack{
+  display:grid;
+  gap:14px;
+  align-content:start;
+  background:linear-gradient(180deg, #ffffff 0%, #f8fcfa 100%);
+}
+.onboard-muted-note{font-size:.86rem; line-height:1.55; color:var(--text2);}
+.onboard-muted-strip{
+  max-width:1280px;
+  width:100%;
+  margin:0 auto;
+  padding:14px 18px;
+  border-radius:18px;
+  background:rgba(255,255,255,.72);
+  border:1px solid rgba(24,62,51,.08);
+  color:var(--text2);
+  box-shadow:0 1px 2px rgba(15,23,42,.03);
+}
 .onboard-ai-grid{
-  display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; align-items:start;
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:16px;
+  align-items:start;
 }
-.onboard-provider-card{display:grid; gap:10px;}
+.onboard-provider-card{display:grid; gap:12px;}
 .onboard-ai-grid .onboard-row.task,
 .onboard-provider-row{
   grid-template-columns:minmax(0,1.05fr) minmax(220px,.95fr) auto;
 }
-.onboard-intake-card{display:grid; gap:10px;}
+.onboard-intake-card{display:grid; gap:12px;}
 .onboard-intake-card .controls{justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;}
-#onboardAiStatus{flex:1; min-height:1lh;}
-#onboardingModal .modal-head .tiny{
-  font-size:clamp(16px,1.35vw,22px); line-height:1.35; color:#50666d; max-width:1100px;
+.onboard-form-shell{
+  display:grid;
+  grid-template-columns:minmax(0,1.45fr) minmax(280px,.85fr);
+  gap:16px;
+  align-items:start;
 }
-#onboardingModal .onboard-screen > p:first-child { margin:0; font-size:clamp(26px,2.2vw,36px); line-height:1.12; }
-#onboardingModal .onboard-body p { margin:0; font-size:clamp(18px,1.45vw,24px); line-height:1.48; }
-#onboardingModal .onboard-body p.tiny { font-size:clamp(13px,1vw,16px); line-height:1.48; color:#50666d; }
+.onboard-side-card{
+  display:grid;
+  gap:12px;
+  align-content:start;
+  background:#f9fbfa;
+}
+.onboard-mini-list{
+  display:grid;
+  gap:8px;
+  margin:0;
+  padding:0;
+  list-style:none;
+}
+.onboard-mini-list li{
+  padding:10px 12px;
+  border-radius:14px;
+  background:var(--bg);
+  border:1px solid rgba(24,62,51,.08);
+  font-size:.85rem;
+  line-height:1.5;
+  color:var(--text2);
+}
+.onboard-mini-list li strong{ color:var(--text); }
+.onboard-summary-grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:12px;
+}
+#onboardAiStatus{flex:1; min-height:1lh;}
+#onboardingModal .onboard-screen > p:first-child { margin:0; font-size:clamp(24px,1.8vw,32px); line-height:1.14; }
+#onboardingModal .onboard-body p { margin:0; font-size:1rem; line-height:1.6; }
+#onboardingModal .onboard-body p.tiny { font-size:.88rem; line-height:1.55; color:var(--text2); }
 #onboardingModal input,
 #onboardingModal select,
-#onboardingModal textarea { font-size:16px; padding:12px 14px; border-radius:14px; }
-#onboardingModal textarea { min-height:108px; }
-#onboardingModal .onboard-danger { font-size:.92rem; padding:14px; border-radius:16px; }
+#onboardingModal textarea {
+  font-size:.95rem;
+  padding:12px 14px;
+  border-radius:14px;
+  border:1px solid var(--line);
+  background:#fff;
+}
+#onboardingModal textarea { min-height:120px; }
 #onboardingModal .onboard-confirm-box .tiny,
-#onboardingModal .onboard-row label.tiny { font-size:.85rem; }
-#onboardingModal .onboard-footnote {
-  max-width:1220px; width:100%; margin:0 auto; padding:10px 4px 6px;
-  border-top:1px solid rgba(24,62,51,.08); line-height:1.45; color:#5a6b71;
+#onboardingModal .onboard-row label.tiny { font-size:.84rem; }
+#onboardingModal .onboard-footnote{
+  max-width:1280px;
+  width:100%;
+  margin:0 auto;
+  padding:12px 28px 0;
+  line-height:1.45;
+  color:#5a6b71;
 }
 #onboardingModal .onboard-footnote a { color:var(--accent); }
-#onboardingModal .onboard-foot { margin-top:0; border-top:none; }
-#onboardingModal .onboard-foot button { font-size:1rem; padding:12px 22px; border-radius:16px; }
+#onboardingModal .onboard-foot button {
+  font-size:.95rem;
+  padding:12px 22px;
+  border-radius:16px;
+}
 @media (max-width: 1180px){
   .onboard-hero-grid,
   .onboard-ai-grid,
-  .onboard-highlight-list{
+  .onboard-form-shell,
+  .onboard-summary-grid{
     grid-template-columns:1fr;
+  }
+  .onboard-highlight-list{
+    grid-template-columns:repeat(2,minmax(0,1fr));
   }
   .onboard-ai-grid .onboard-row.task,
   .onboard-provider-row{
@@ -1679,13 +1795,36 @@ button.warn {
   }
 }
 @media (max-width: 780px){
-  #onboardingModal .modal-panel{padding:18px 18px 14px;}
-  #onboardingModal .modal-head h3{font-size:clamp(26px,8vw,40px);}
-  #onboardingModal .modal-head .tiny{font-size:16px;}
-  #onboardingModal .onboard-step-pill{font-size:.82rem;padding:8px 14px;}
-  #onboardingModal .onboard-body p{font-size:18px;}
-  #onboardingModal .onboard-foot{gap:10px;flex-wrap:wrap;}
-  #onboardingModal .onboard-foot button{width:100%;justify-content:center;}
+  #onboardingModal{ padding:0; }
+  #onboardingModal .modal-panel{
+    width:100vw;
+    height:100vh;
+    border-radius:0;
+  }
+  #onboardingModal .modal-head,
+  .onboard-steps,
+  .onboard-body,
+  #onboardingModal .onboard-foot,
+  #onboardingModal .onboard-footnote{
+    padding-left:18px;
+    padding-right:18px;
+  }
+  #onboardingModal .modal-head{ padding-top:18px; padding-bottom:16px; }
+  #onboardingModal .modal-head h3{ font-size:clamp(25px,8vw,36px); }
+  #onboardingModal .modal-head .tiny{ font-size:.92rem; }
+  .onboard-steps{ padding-top:12px; padding-bottom:12px; }
+  .onboard-step-pill{ font-size:.8rem; padding:8px 12px; }
+  .onboard-highlight-list{ grid-template-columns:1fr; }
+  .onboard-row,
+  .onboard-row.task{ grid-template-columns:1fr; }
+  #onboardingModal .onboard-foot{
+    gap:10px;
+    flex-wrap:wrap;
+  }
+  #onboardingModal .onboard-foot button{
+    width:100%;
+    justify-content:center;
+  }
 }
 
 /* Cloud sync config */
@@ -4097,36 +4236,40 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           <div class="onboard-hero-grid">
             <div class="onboard-card onboard-section-copy">
               <div class="onboard-eyebrow">Welcome</div>
-              <h4 class="onboard-section-title">A calmer operating system for focused work.</h4>
-              <p>PPP Flow keeps one primary goal visible, protects time for high-value work, and makes weekly review part of the system instead of an afterthought.</p>
+              <h4 class="onboard-section-title">Set up the same operating system you will use every day.</h4>
+              <p>PPP Flow keeps one primary goal visible, protects time for high-value work, and gives you structured health, wealth, and review surfaces without turning the app into a cockpit on day one.</p>
               <div class="onboard-highlight-list">
                 <div class="onboard-highlight-item">
                   <strong>Execute</strong>
-                  <span>Capture tasks, run focus blocks, and keep Today realistic.</span>
+                  <span>Capture tasks, run focus blocks, and keep Today grounded in what actually matters.</span>
                 </div>
                 <div class="onboard-highlight-item">
                   <strong>Plan</strong>
-                  <span>Turn priorities into a clean board with next actions and commitments.</span>
+                  <span>Keep goals, commitments, review signals, and coach support in one planning surface.</span>
                 </div>
                 <div class="onboard-highlight-item">
-                  <strong>Review</strong>
-                  <span>See whether the week matched your intent and where drift started.</span>
+                  <strong>Health</strong>
+                  <span>Track exercise, recovery, nutrition, and body signals only when they become relevant.</span>
+                </div>
+                <div class="onboard-highlight-item">
+                  <strong>Wealth</strong>
+                  <span>Bring cash flow, portfolio, and property data into one place with AI-ready context.</span>
                 </div>
               </div>
             </div>
             <div class="onboard-card onboard-action-stack">
               <div class="onboard-eyebrow">Choose your path</div>
-              <h4 class="onboard-section-title">Test AI only, or set up the full board.</h4>
-              <p class="tiny">Full setup walks through your goal, practices, and first tasks. AI-only mode lets you test providers or set up Ollama.</p>
+              <h4 class="onboard-section-title">Start with the full board, or just test AI.</h4>
+              <p class="tiny">Full setup walks through your goal, practices, and first tasks. AI-only mode is the safe path if you want to test providers or set up Ollama without touching the rest of your board.</p>
               <div class="controls" style="justify-content:flex-start;flex-wrap:wrap;gap:10px;">
                 <button id="onboardChooseBoardBtn" class="primary" type="button">Set Up Board</button>
                 <button id="onboardChooseAiOnlyBtn" class="ghost" type="button">Set Up AI Only</button>
               </div>
-              <p id="onboardPathHint" class="tiny" style="opacity:.6;font-size:.82rem;">Full setup walks through goal, life practices, and first tasks.</p>
+              <p id="onboardPathHint" class="tiny" style="opacity:.72;font-size:.82rem;">Full setup creates the first usable version of your board: goal, practices, and tasks.</p>
             </div>
           </div>
           <div class="onboard-muted-strip">
-            <p class="tiny"><strong>Framework:</strong> one primary goal, controllable inputs, a visible scoreboard, and weekly review so priorities stay honest.</p>
+            <p class="tiny"><strong>Framework:</strong> one primary goal, controllable inputs, a visible scoreboard, and review loops that keep drift obvious before it becomes a lost month.</p>
           </div>
         </div>
 
@@ -4214,10 +4357,20 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
             <h4 class="onboard-section-title">If you could only achieve one thing in the next 30–90 days, what would it be?</h4>
             <p class="tiny">Choose something that would make everything else easier or more meaningful. A good goal is specific, measurable, and time-bound — think <em>"From X to Y by when."</em></p>
           </div>
-          <div class="onboard-practice-grid">
-            <input id="onboardWigTitle" placeholder="Goal (required) — e.g. Submit paper revision to Nature by 15 April" />
-            <input id="onboardWigDeadline" type="date" />
-            <input id="onboardWigMeasure" placeholder="How will you measure success? — e.g. Submission confirmed" />
+          <div class="onboard-form-shell">
+            <div class="onboard-practice-grid">
+              <input id="onboardWigTitle" placeholder="Goal (required) — e.g. Submit paper revision to Nature by 15 April" />
+              <input id="onboardWigDeadline" type="date" />
+              <input id="onboardWigMeasure" placeholder="How will you measure success? — e.g. Submission confirmed" />
+            </div>
+            <div class="onboard-card onboard-side-card">
+              <div class="onboard-eyebrow">Strong goal framing</div>
+              <ul class="onboard-mini-list">
+                <li><strong>Outcome first:</strong> define the specific result you want, not the vague area of life.</li>
+                <li><strong>Time-bounded:</strong> give it a date that creates pressure without fantasy.</li>
+                <li><strong>Observable:</strong> your measure should make it obvious whether you actually got there.</li>
+              </ul>
+            </div>
           </div>
         </div>
 
@@ -4227,31 +4380,41 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
             <h4 class="onboard-section-title">The daily habits that keep you grounded.</h4>
             <p class="tiny">Not everything important is a work goal. These are recurring personal practices — meditation, exercise, reading, music. Frequency matters more than ambition. Set a minimum you can actually hit every day.</p>
           </div>
-          <div class="onboard-practice-grid">
-            <div class="onboard-row">
-              <input id="onboardPractice1" placeholder="Practice 1 (e.g. Meditation)" />
-              <input id="onboardPractice1Min" type="number" min="1" max="240" step="1" placeholder="Min" />
-              <input id="onboardPractice1Note" placeholder="Optional note" />
+          <div class="onboard-form-shell">
+            <div class="onboard-practice-grid">
+              <div class="onboard-row">
+                <input id="onboardPractice1" placeholder="Practice 1 (e.g. Meditation)" />
+                <input id="onboardPractice1Min" type="number" min="1" max="240" step="1" placeholder="Min" />
+                <input id="onboardPractice1Note" placeholder="Optional note" />
+              </div>
+              <div class="onboard-row">
+                <input id="onboardPractice2" placeholder="Practice 2" />
+                <input id="onboardPractice2Min" type="number" min="1" max="240" step="1" placeholder="Min" />
+                <input id="onboardPractice2Note" placeholder="Optional note" />
+              </div>
+              <div class="onboard-row">
+                <input id="onboardPractice3" placeholder="Practice 3" />
+                <input id="onboardPractice3Min" type="number" min="1" max="240" step="1" placeholder="Min" />
+                <input id="onboardPractice3Note" placeholder="Optional note" />
+              </div>
+              <div class="onboard-row">
+                <input id="onboardPractice4" placeholder="Practice 4 (optional)" />
+                <input id="onboardPractice4Min" type="number" min="1" max="240" step="1" placeholder="Min" />
+                <input id="onboardPractice4Note" placeholder="Optional note" />
+              </div>
+              <div class="onboard-row">
+                <input id="onboardPractice5" placeholder="Practice 5 (optional)" />
+                <input id="onboardPractice5Min" type="number" min="1" max="240" step="1" placeholder="Min" />
+                <input id="onboardPractice5Note" placeholder="Optional note" />
+              </div>
             </div>
-            <div class="onboard-row">
-              <input id="onboardPractice2" placeholder="Practice 2" />
-              <input id="onboardPractice2Min" type="number" min="1" max="240" step="1" placeholder="Min" />
-              <input id="onboardPractice2Note" placeholder="Optional note" />
-            </div>
-            <div class="onboard-row">
-              <input id="onboardPractice3" placeholder="Practice 3" />
-              <input id="onboardPractice3Min" type="number" min="1" max="240" step="1" placeholder="Min" />
-              <input id="onboardPractice3Note" placeholder="Optional note" />
-            </div>
-            <div class="onboard-row">
-              <input id="onboardPractice4" placeholder="Practice 4 (optional)" />
-              <input id="onboardPractice4Min" type="number" min="1" max="240" step="1" placeholder="Min" />
-              <input id="onboardPractice4Note" placeholder="Optional note" />
-            </div>
-            <div class="onboard-row">
-              <input id="onboardPractice5" placeholder="Practice 5 (optional)" />
-              <input id="onboardPractice5Min" type="number" min="1" max="240" step="1" placeholder="Min" />
-              <input id="onboardPractice5Note" placeholder="Optional note" />
+            <div class="onboard-card onboard-side-card">
+              <div class="onboard-eyebrow">Keep this realistic</div>
+              <ul class="onboard-mini-list">
+                <li><strong>Minimums beat ideals:</strong> pick a floor you can maintain even on compressed days.</li>
+                <li><strong>Daily is strongest:</strong> recurring practices work best when they are easy to score.</li>
+                <li><strong>Use notes sparingly:</strong> only add context that will matter in weekly review.</li>
+              </ul>
             </div>
           </div>
         </div>
@@ -4262,81 +4425,91 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
             <h4 class="onboard-section-title">Break your goal into concrete tasks for this week.</h4>
             <p class="tiny"><strong>Strategic</strong> tasks directly advance your primary goal — the work that predicts whether you'll hit the target. <strong>Maintenance</strong> is everything else: emails, admin, meetings. It needs doing, but shouldn't crowd out strategic work.</p>
           </div>
-          <div class="onboard-task-grid">
-            <div class="onboard-row task">
-              <input id="onboardTask1" placeholder="Task 1" />
-              <select id="onboardTask1Category">
-                <option>Strategic</option>
-                <option>Maintenance</option>
-                <option>Body/Mind</option>
-                <option>Travel/Admin</option>
-                <option>Revenue/Venture</option>
-              </select>
-              <select id="onboardTask1Depth">
-                <option value="Deep">Deep</option>
-                <option value="Shallow">Shallow</option>
-              </select>
-              <label class="tiny"><input id="onboardTask1Focus" type="checkbox" checked /> Add to Today</label>
+          <div class="onboard-form-shell">
+            <div class="onboard-task-grid">
+              <div class="onboard-row task">
+                <input id="onboardTask1" placeholder="Task 1" />
+                <select id="onboardTask1Category">
+                  <option>Strategic</option>
+                  <option>Maintenance</option>
+                  <option>Body/Mind</option>
+                  <option>Travel/Admin</option>
+                  <option>Revenue/Venture</option>
+                </select>
+                <select id="onboardTask1Depth">
+                  <option value="Deep">Deep</option>
+                  <option value="Shallow">Shallow</option>
+                </select>
+                <label class="tiny"><input id="onboardTask1Focus" type="checkbox" checked /> Add to Today</label>
+              </div>
+              <div class="onboard-row task">
+                <input id="onboardTask2" placeholder="Task 2" />
+                <select id="onboardTask2Category">
+                  <option>Strategic</option>
+                  <option>Maintenance</option>
+                  <option>Body/Mind</option>
+                  <option>Travel/Admin</option>
+                  <option>Revenue/Venture</option>
+                </select>
+                <select id="onboardTask2Depth">
+                  <option value="Deep">Deep</option>
+                  <option value="Shallow">Shallow</option>
+                </select>
+                <label class="tiny"><input id="onboardTask2Focus" type="checkbox" checked /> Add to Today</label>
+              </div>
+              <div class="onboard-row task">
+                <input id="onboardTask3" placeholder="Task 3" />
+                <select id="onboardTask3Category">
+                  <option>Strategic</option>
+                  <option>Maintenance</option>
+                  <option>Body/Mind</option>
+                  <option>Travel/Admin</option>
+                  <option>Revenue/Venture</option>
+                </select>
+                <select id="onboardTask3Depth">
+                  <option value="Deep">Deep</option>
+                  <option value="Shallow">Shallow</option>
+                </select>
+                <label class="tiny"><input id="onboardTask3Focus" type="checkbox" checked /> Add to Today</label>
+              </div>
+              <div class="onboard-row task">
+                <input id="onboardTask4" placeholder="Task 4 (optional)" />
+                <select id="onboardTask4Category">
+                  <option>Strategic</option>
+                  <option>Maintenance</option>
+                  <option>Body/Mind</option>
+                  <option>Travel/Admin</option>
+                  <option>Revenue/Venture</option>
+                </select>
+                <select id="onboardTask4Depth">
+                  <option value="Deep">Deep</option>
+                  <option value="Shallow">Shallow</option>
+                </select>
+                <label class="tiny"><input id="onboardTask4Focus" type="checkbox" checked /> Add to Today</label>
+              </div>
+              <div class="onboard-row task">
+                <input id="onboardTask5" placeholder="Task 5 (optional)" />
+                <select id="onboardTask5Category">
+                  <option>Strategic</option>
+                  <option>Maintenance</option>
+                  <option>Body/Mind</option>
+                  <option>Travel/Admin</option>
+                  <option>Revenue/Venture</option>
+                </select>
+                <select id="onboardTask5Depth">
+                  <option value="Deep">Deep</option>
+                  <option value="Shallow">Shallow</option>
+                </select>
+                <label class="tiny"><input id="onboardTask5Focus" type="checkbox" checked /> Add to Today</label>
+              </div>
             </div>
-            <div class="onboard-row task">
-              <input id="onboardTask2" placeholder="Task 2" />
-              <select id="onboardTask2Category">
-                <option>Strategic</option>
-                <option>Maintenance</option>
-                <option>Body/Mind</option>
-                <option>Travel/Admin</option>
-                <option>Revenue/Venture</option>
-              </select>
-              <select id="onboardTask2Depth">
-                <option value="Deep">Deep</option>
-                <option value="Shallow">Shallow</option>
-              </select>
-              <label class="tiny"><input id="onboardTask2Focus" type="checkbox" checked /> Add to Today</label>
-            </div>
-            <div class="onboard-row task">
-              <input id="onboardTask3" placeholder="Task 3" />
-              <select id="onboardTask3Category">
-                <option>Strategic</option>
-                <option>Maintenance</option>
-                <option>Body/Mind</option>
-                <option>Travel/Admin</option>
-                <option>Revenue/Venture</option>
-              </select>
-              <select id="onboardTask3Depth">
-                <option value="Deep">Deep</option>
-                <option value="Shallow">Shallow</option>
-              </select>
-              <label class="tiny"><input id="onboardTask3Focus" type="checkbox" checked /> Add to Today</label>
-            </div>
-            <div class="onboard-row task">
-              <input id="onboardTask4" placeholder="Task 4 (optional)" />
-              <select id="onboardTask4Category">
-                <option>Strategic</option>
-                <option>Maintenance</option>
-                <option>Body/Mind</option>
-                <option>Travel/Admin</option>
-                <option>Revenue/Venture</option>
-              </select>
-              <select id="onboardTask4Depth">
-                <option value="Deep">Deep</option>
-                <option value="Shallow">Shallow</option>
-              </select>
-              <label class="tiny"><input id="onboardTask4Focus" type="checkbox" checked /> Add to Today</label>
-            </div>
-            <div class="onboard-row task">
-              <input id="onboardTask5" placeholder="Task 5 (optional)" />
-              <select id="onboardTask5Category">
-                <option>Strategic</option>
-                <option>Maintenance</option>
-                <option>Body/Mind</option>
-                <option>Travel/Admin</option>
-                <option>Revenue/Venture</option>
-              </select>
-              <select id="onboardTask5Depth">
-                <option value="Deep">Deep</option>
-                <option value="Shallow">Shallow</option>
-              </select>
-              <label class="tiny"><input id="onboardTask5Focus" type="checkbox" checked /> Add to Today</label>
+            <div class="onboard-card onboard-side-card">
+              <div class="onboard-eyebrow">Good first-week mix</div>
+              <ul class="onboard-mini-list">
+                <li><strong>Start with 3 strategic tasks:</strong> enough to move the goal without overpromising the week.</li>
+                <li><strong>Use Today deliberately:</strong> only pin work that genuinely deserves attention immediately.</li>
+                <li><strong>Deep vs shallow matters:</strong> the app becomes more honest when you classify task depth well.</li>
+              </ul>
             </div>
           </div>
         </div>
@@ -4346,18 +4519,39 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
             <div class="onboard-eyebrow">Preview</div>
             <h4 class="onboard-section-title">Review your setup before launching.</h4>
           </div>
-          <div class="onboard-confirm-box">
-            <div id="onboardSummaryWig" class="tiny"></div>
-            <div id="onboardSummaryPractices" class="tiny"></div>
-            <div id="onboardSummaryTasks" class="tiny"></div>
+          <div class="onboard-summary-grid">
+            <div class="onboard-confirm-box">
+              <div class="onboard-eyebrow">Goal</div>
+              <div id="onboardSummaryWig" class="tiny"></div>
+            </div>
+            <div class="onboard-confirm-box">
+              <div class="onboard-eyebrow">Practices</div>
+              <div id="onboardSummaryPractices" class="tiny"></div>
+            </div>
+            <div class="onboard-confirm-box">
+              <div class="onboard-eyebrow">Tasks</div>
+              <div id="onboardSummaryTasks" class="tiny"></div>
+            </div>
           </div>
-          <div id="onboardResetWarning" class="onboard-danger" hidden>
-            <strong>Reset warning:</strong> this will replace tasks, sessions, notes, daily logs, weekly reviews, and streak history with a fresh board.
-          </div>
-          <div id="onboardResetConfirmBox" class="onboard-confirm-box" hidden>
-            <label class="tiny"><input id="onboardConfirmAcknowledge" type="checkbox" /> I understand this replaces my current board data.</label>
-            <input id="onboardConfirmText" placeholder="Type RESET to enable reset" />
-            <div id="onboardBackupHint" class="tiny">A JSON backup is exported automatically before reset. Restore via Import JSON File.</div>
+          <div class="onboard-form-shell">
+            <div style="display:grid;gap:16px;">
+              <div id="onboardResetWarning" class="onboard-danger" hidden>
+                <strong>Reset warning:</strong> this will replace tasks, sessions, notes, daily logs, weekly reviews, and streak history with a fresh board.
+              </div>
+              <div id="onboardResetConfirmBox" class="onboard-confirm-box" hidden>
+                <label class="tiny"><input id="onboardConfirmAcknowledge" type="checkbox" /> I understand this replaces my current board data.</label>
+                <input id="onboardConfirmText" placeholder="Type RESET to enable reset" />
+                <div id="onboardBackupHint" class="tiny">A JSON backup is exported automatically before reset. Restore via Import JSON File.</div>
+              </div>
+            </div>
+            <div class="onboard-card onboard-side-card">
+              <div class="onboard-eyebrow">What happens next</div>
+              <ul class="onboard-mini-list">
+                <li><strong>Board mode:</strong> the app creates your first goal, practices, and tasks immediately.</li>
+                <li><strong>AI-only mode:</strong> you finish with provider setup and keep the rest of your existing board untouched.</li>
+                <li><strong>Reset mode:</strong> a backup is created before replacement so you can recover if needed.</li>
+              </ul>
+            </div>
           </div>
         </div>
       </div>
