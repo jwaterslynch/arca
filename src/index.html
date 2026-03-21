@@ -2781,7 +2781,12 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       <div class="plan-sidebar">
         <!-- Primary Goal Display Card -->
         <div class="plan-card">
-          <h4>Primary Goal</h4>
+          <div class="ai-surface-head" style="margin-bottom:10px">
+            <h4>Primary Goal</h4>
+            <div class="ai-surface-actions">
+              <button class="ghost" id="planEditGoalsBtn" type="button" style="font-size:.78rem">Edit Goals</button>
+            </div>
+          </div>
           <div class="goal-display" id="goalDisplayCard">
             <div class="goal-title" id="goalDisplayTitle">No goal set</div>
             <div class="goal-deadline" id="goalDisplaySecondary"></div>
@@ -25857,27 +25862,46 @@ CRITICAL RULES FOR ACTIONS:
       const goalSecondary = document.getElementById("goalDisplaySecondary");
       const goalDeadline = document.getElementById("goalDisplayDeadline");
       const goalMeasure = document.getElementById("goalDisplayMeasure");
+      const planEditGoalsBtn = document.getElementById("planEditGoalsBtn");
       const planAiModeLabel = document.getElementById("planAiModeLabel");
+      const goalData = state.focus?.wig || {};
       const wig1Val = (document.getElementById("wig1Input") || {}).value || "";
       const wig2Val = (document.getElementById("wig2Input") || {}).value || "";
       const leadVal = (document.getElementById("leadMeasuresInput") || {}).value || "";
       if (goalTitle) goalTitle.textContent = wig1Val || "No goal set";
       if (goalSecondary) goalSecondary.textContent = wig2Val ? `PG2: ${wig2Val}` : "";
+      if (planEditGoalsBtn) planEditGoalsBtn.textContent = wig1Val ? "Edit Goals" : "Set Goals";
       if (planAiModeLabel) planAiModeLabel.textContent = aiPrefs.inlineAutoApply ? "Auto" : "Review";
       if (goalDeadline) {
-        // Try to extract a deadline from the goal text (e.g., "by 30 June 2026")
-        const deadlineMatch = wig1Val.match(/by\s+(.+)/i);
-        if (deadlineMatch) {
+        const structuredDeadline = String(goalData.deadline || "").trim();
+        if (structuredDeadline) {
           try {
-            const d = new Date(deadlineMatch[1]);
+            const d = new Date(structuredDeadline);
             if (!isNaN(d.getTime())) {
               const daysLeft = Math.ceil((d - new Date()) / (1000 * 60 * 60 * 24));
-              goalDeadline.textContent = `⏱ ${daysLeft} days remaining`;
-            } else { goalDeadline.textContent = ""; }
+              const label = d.toLocaleDateString("en-AU", { day: "numeric", month: "short", year: "numeric" });
+              goalDeadline.textContent = `Deadline: ${label} · ${daysLeft} days remaining`;
+            } else {
+              goalDeadline.textContent = `Deadline: ${structuredDeadline}`;
+            }
           } catch { goalDeadline.textContent = ""; }
-        } else { goalDeadline.textContent = ""; }
+        } else {
+          const deadlineMatch = wig1Val.match(/by\s+(.+)/i);
+          if (deadlineMatch) {
+            try {
+              const d = new Date(deadlineMatch[1]);
+              if (!isNaN(d.getTime())) {
+                const daysLeft = Math.ceil((d - new Date()) / (1000 * 60 * 60 * 24));
+                goalDeadline.textContent = `⏱ ${daysLeft} days remaining`;
+              } else { goalDeadline.textContent = ""; }
+            } catch { goalDeadline.textContent = ""; }
+          } else { goalDeadline.textContent = ""; }
+        }
       }
-      if (goalMeasure) goalMeasure.textContent = leadVal ? `Measure: ${leadVal}` : "";
+      if (goalMeasure) {
+        const successMeasure = String(goalData.measure || "").trim();
+        goalMeasure.textContent = successMeasure ? `Measure: ${successMeasure}` : (leadVal ? `Inputs: ${leadVal}` : "");
+      }
 
       // 2. Commitments mirror
       const sidebarCommits = document.getElementById("planSidebarCommitments");
@@ -26324,6 +26348,111 @@ CRITICAL RULES FOR ACTIONS:
     function closeHealthCoach() {
       healthCoachOpen = false;
       renderHealthCoach();
+    }
+
+    function showPlanGoalsModal() {
+      let overlay = document.getElementById("planGoalsModalOverlay");
+      if (!overlay) {
+        overlay = document.createElement("div");
+        overlay.id = "planGoalsModalOverlay";
+        overlay.className = "modal-backdrop";
+        overlay.hidden = true;
+        overlay.setAttribute("aria-hidden", "true");
+        document.body.appendChild(overlay);
+        overlay.addEventListener("click", event => {
+          if (event.target === overlay) closePlanGoalsModal();
+        });
+      }
+      const focus = state.focus || {};
+      const goal = focus.wig || {};
+      const primary = String(focus.wig1 || goal.title || "").trim();
+      const secondary = String(focus.wig2 || "").trim();
+      const deadline = String(goal.deadline || "").trim();
+      const measure = String(goal.measure || "").trim();
+      const inputMeasures = String(focus.lead_measures || "").trim();
+      overlay.innerHTML = `
+        <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="planGoalsModalTitle" style="max-width:640px">
+          <div class="modal-head">
+            <div>
+              <h3 id="planGoalsModalTitle">Edit Goals</h3>
+              <p class="tiny">Set the overarching goals that drive planning, commitments, and coach guidance.</p>
+            </div>
+            <button class="ghost" id="planGoalsCloseBtn" type="button">Close</button>
+          </div>
+          <div class="modal-body" style="display:grid;gap:14px">
+            <div style="display:grid;gap:6px">
+              <label class="tiny" for="planGoalsPrimaryInput">Primary Goal (PG1)</label>
+              <input id="planGoalsPrimaryInput" value="${escapeHtml(primary)}" placeholder="The main goal you are optimizing for" />
+            </div>
+            <div style="display:grid;gap:6px">
+              <label class="tiny" for="planGoalsSecondaryInput">Secondary Goal (PG2)</label>
+              <input id="planGoalsSecondaryInput" value="${escapeHtml(secondary)}" placeholder="Optional supporting goal" />
+            </div>
+            <div class="focus-grid">
+              <div style="display:grid;gap:6px">
+                <label class="tiny" for="planGoalsDeadlineInput">Deadline</label>
+                <input id="planGoalsDeadlineInput" type="date" value="${escapeHtml(deadline)}" />
+              </div>
+              <div style="display:grid;gap:6px">
+                <label class="tiny" for="planGoalsMeasureInput">Success Measure</label>
+                <input id="planGoalsMeasureInput" value="${escapeHtml(measure)}" placeholder="What counts as done?" />
+              </div>
+            </div>
+            <div style="display:grid;gap:6px">
+              <label class="tiny" for="planGoalsInputMeasuresInput">Input Measures</label>
+              <textarea id="planGoalsInputMeasuresInput" rows="4" placeholder="Weekly predictive actions">${escapeHtml(inputMeasures)}</textarea>
+            </div>
+          </div>
+          <div class="modal-foot">
+            <button class="ghost" id="planGoalsCancelBtn" type="button">Cancel</button>
+            <button class="primary" id="planGoalsSaveBtn" type="button">Save Goals</button>
+          </div>
+        </div>`;
+      overlay.hidden = false;
+      overlay.setAttribute("aria-hidden", "false");
+      const close = () => closePlanGoalsModal();
+      document.getElementById("planGoalsCloseBtn")?.addEventListener("click", close);
+      document.getElementById("planGoalsCancelBtn")?.addEventListener("click", close);
+      document.getElementById("planGoalsSaveBtn")?.addEventListener("click", () => {
+        const primaryInput = String(document.getElementById("planGoalsPrimaryInput")?.value || "").trim();
+        if (!primaryInput) {
+          alert("Primary Goal is required.");
+          return;
+        }
+        const secondaryInput = String(document.getElementById("planGoalsSecondaryInput")?.value || "").trim();
+        const deadlineInput = String(document.getElementById("planGoalsDeadlineInput")?.value || "").trim();
+        const measureInput = String(document.getElementById("planGoalsMeasureInput")?.value || "").trim();
+        const inputMeasuresInput = String(document.getElementById("planGoalsInputMeasuresInput")?.value || "").trim();
+        const nowIso = new Date().toISOString();
+        state.focus = {
+          ...(state.focus || {}),
+          wig1: primaryInput,
+          wig2: secondaryInput,
+          lead_measures: inputMeasuresInput,
+          commitments: Array.isArray(state.focus?.commitments) ? state.focus.commitments : [],
+          wig: {
+            ...(state.focus?.wig || {}),
+            title: primaryInput,
+            deadline: deadlineInput,
+            measure: measureInput,
+            created_at: state.focus?.wig?.created_at || nowIso
+          },
+          updated_at: nowIso
+        };
+        saveState("plan_goals_update");
+        closePlanGoalsModal();
+        render();
+      });
+      requestAnimationFrame(() => {
+        document.getElementById("planGoalsPrimaryInput")?.focus();
+      });
+    }
+
+    function closePlanGoalsModal() {
+      const overlay = document.getElementById("planGoalsModalOverlay");
+      if (!overlay) return;
+      overlay.hidden = true;
+      overlay.setAttribute("aria-hidden", "true");
     }
 
     function parseCoachActionsFromResponse(rawText) {
@@ -27041,6 +27170,7 @@ You cannot change app state without that JSON block. Do not say something was ad
       saveState(); render();
       alert("Focus layer saved.");
     });
+    document.getElementById("planEditGoalsBtn").addEventListener("click", showPlanGoalsModal);
 
     // AI assistant controls
     document.getElementById("appDataBtn").addEventListener("click", openAppDataModal);
@@ -27942,6 +28072,13 @@ You cannot change app state without that JSON block. Do not say something was ad
         e.preventDefault();
         e.stopPropagation();
         closeAppDataModal();
+        return;
+      }
+      const planGoalsModal = document.getElementById("planGoalsModalOverlay");
+      if (planGoalsModal && !planGoalsModal.hidden && e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        closePlanGoalsModal();
         return;
       }
       const healthProfileModal = document.getElementById("healthProfileModalOverlay");
