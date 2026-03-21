@@ -1,38 +1,75 @@
-name: Build and Release (Tauri)
+name: Build macOS Release (Tauri)
 
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
   workflow_dispatch:
+    inputs:
+      tag_name:
+        description: "Release tag to build (defaults to package.json version, e.g. v0.1.0-beta.3)"
+        required: false
+        type: string
+      release_name:
+        description: "Release title override"
+        required: false
+        type: string
+      prerelease:
+        description: "Mark as prerelease"
+        required: false
+        type: boolean
+        default: true
+      draft:
+        description: "Create as draft release"
+        required: false
+        type: boolean
+        default: true
 
 permissions:
   contents: write
 
 jobs:
-  build-and-release:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - platform: macos-latest
-            args: ""
-          - platform: ubuntu-22.04
-            args: ""
-          - platform: windows-latest
-            args: "--bundles nsis"
-
-    runs-on: ${{ matrix.platform }}
+  build-macos-release:
+    runs-on: macos-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install Linux dependencies
-        if: matrix.platform == 'ubuntu-22.04'
+      - name: Resolve release metadata
+        id: meta
+        shell: bash
         run: |
-          sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+          pkg_version=$(node -p "JSON.parse(require('fs').readFileSync('package.json','utf8')).version")
+
+          if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ] && [ -n "${{ inputs.tag_name }}" ]; then
+            tag_name="${{ inputs.tag_name }}"
+          elif [ "${GITHUB_REF_TYPE}" = "tag" ] && [ -n "${GITHUB_REF_NAME}" ]; then
+            tag_name="${GITHUB_REF_NAME}"
+          else
+            tag_name="v${pkg_version}"
+          fi
+
+          if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ] && [ -n "${{ inputs.release_name }}" ]; then
+            release_name="${{ inputs.release_name }}"
+          else
+            release_name="PPP Flow Desktop ${tag_name}"
+          fi
+
+          if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
+            prerelease="${{ inputs.prerelease }}"
+            draft="${{ inputs.draft }}"
+          else
+            prerelease="true"
+            draft="true"
+          fi
+
+          cat <<EOF >> "$GITHUB_OUTPUT"
+          tag_name=${tag_name}
+          release_name=${release_name}
+          prerelease=${prerelease}
+          draft=${draft}
+          EOF
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -46,20 +83,34 @@ jobs:
       - name: Install JS dependencies
         run: npm ci
 
-      - name: Build + publish release artifacts
+      - name: Build + publish macOS artifacts
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         with:
-          tagName: ${{ github.ref_name }}
-          releaseName: PPP Flow Desktop ${{ github.ref_name }}
+          tagName: ${{ steps.meta.outputs.tag_name }}
+          releaseName: ${{ steps.meta.outputs.release_name }}
           releaseBody: |
-            Automated build artifacts for ${{ github.ref_name }}.
+            Private alpha build for ${{ steps.meta.outputs.tag_name }}.
 
-            Highlights:
-            - Native app-managed local persistence (no manual relinking required)
-            - Interactive closure inspector in Weekly Review
-            - Productization baseline docs and release checklist
-          releaseDraft: false
-          prerelease: ${{ contains(github.ref_name, '-') }}
-          args: ${{ matrix.args }}
+            This workflow is intentionally safe by default:
+            - macOS only
+            - prerelease by default
+            - draft release by default
+
+            Before sharing with testers:
+            - confirm the installed bundle matches the reviewed source
+            - verify backup / restore on a real profile
+            - prefer a signed + notarized build if Apple credentials are configured
+
+            See:
+            - PRIVATE_ALPHA_DISTRIBUTION.md
+            - RELEASE_CHECKLIST.md
+          releaseDraft: ${{ steps.meta.outputs.draft == 'true' }}
+          prerelease: ${{ steps.meta.outputs.prerelease == 'true' }}

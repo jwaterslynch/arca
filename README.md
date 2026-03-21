@@ -39,6 +39,7 @@ npm run build
 ## Productization docs
 
 - `PRODUCTIZATION_ROADMAP.md`
+- `PRIVATE_ALPHA_DISTRIBUTION.md`
 - `RELEASE_CHECKLIST.md`
 - `RELEASE_NOTES_v0.1.0-beta.1.md`
 - `RELEASE_NOTES_v0.1.0-beta.2.md`
