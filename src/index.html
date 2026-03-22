@@ -369,9 +369,29 @@ body{font-family:var(--font);color:var(--text);background:var(--bg);-webkit-font
 }
 .ai-inline-chat-wrap[hidden]{display:none}
 .ai-bar:focus-within{border-color:var(--accent)}
-.ai-bar .ai-icon{font-size:1.2rem;flex-shrink:0;opacity:.5}
+.ai-bar .ai-icon{font-size:1.2rem;flex-shrink:0}
 .ai-bar .ai-icon svg{width:20px;height:20px;display:block;}
-.ai-bar:focus-within .ai-icon{color:var(--accent);opacity:.8}
+.ai-composer-status{
+  width:36px;height:36px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;color:#a7b0ad;background:transparent;transition:all .18s ease;align-self:end;
+}
+.ai-composer-status svg{width:18px;height:18px;display:block}
+.ai-composer-status.ready{
+  color:var(--accent);
+  background:rgba(35, 150, 91, .08);
+}
+.ai-composer-status.thinking{
+  color:var(--accent);
+  background:rgba(35, 150, 91, .12);
+  box-shadow:0 0 0 4px rgba(35, 150, 91, .08);
+  animation:aiSparklePulse 1s ease-in-out infinite;
+}
+@keyframes aiSparklePulse{
+  0%,100%{transform:scale(1);opacity:.86}
+  50%{transform:scale(1.12);opacity:1}
+}
+.ai-composer-row.ready textarea{border-color:var(--accent)}
+.ai-composer-row.thinking textarea{border-color:rgba(35, 150, 91, .45)}
 .ai-bar input,
 .ai-bar textarea{
   flex:1;border:none;outline:none;font:500 .9rem var(--font);
@@ -606,6 +626,7 @@ body{font-family:var(--font);color:var(--text);background:var(--bg);-webkit-font
 .chat-msg.user{background:var(--accent-light);align-self:flex-end;color:var(--text)}
 .chat-msg.assistant{background:var(--bg);align-self:flex-start}
 .ai-chat .chat-input-row{display:flex;gap:8px}
+.ai-chat .chat-input-row.ai-composer-row{display:grid}
 .ai-chat .chat-input{
   flex:1;border:1px solid var(--line);border-radius:var(--radius-sm);
   padding:10px 14px;font:500 .85rem var(--font);outline:none;
@@ -1470,6 +1491,11 @@ button.warn {
 .app-data-status{display:grid;gap:8px;padding:14px 16px;border:1px solid var(--line);border-radius:14px;background:var(--bg)}
 .app-data-status .label{font-size:.72rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text2)}
 .app-data-status .value{font-size:1rem;font-weight:700;color:var(--text)}
+.app-data-experimental{
+  display:grid;gap:12px;padding:16px;border:1px solid var(--line);border-radius:14px;background:#fff;
+  margin-bottom:16px;
+}
+.app-data-experimental h4{font-size:.82rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text2)}
 .app-data-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:16px}
 .app-data-card{display:grid;gap:10px;padding:16px;border:1px solid var(--line);border-radius:14px;background:#fff}
 .app-data-card h4{font-size:.82rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text2)}
@@ -2400,8 +2426,12 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
 .wealth-coach-actions{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:22px}
 .wealth-coach-actions[hidden]{display:none}
 .wealth-coach-input-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:10px}
+.wealth-coach-input-row.with-status,
+.ai-chat .chat-input-row.with-status{grid-template-columns:auto minmax(0,1fr) auto}
 .wealth-coach-input-row.with-attach,
 .ai-chat .chat-input-row.with-attach{grid-template-columns:auto minmax(0,1fr) auto}
+.wealth-coach-input-row.with-status.with-attach,
+.ai-chat .chat-input-row.with-status.with-attach{grid-template-columns:auto auto minmax(0,1fr) auto}
 .wealth-coach-input-row textarea{
   flex:1;
   min-height:44px;
@@ -2424,6 +2454,17 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
 }
 .wealth-coach-input-row textarea:focus{outline:none;border-color:var(--accent)}
 .wealth-coach-input-row textarea::placeholder{font-size:.82rem;line-height:1.15}
+.wealth-coach-send{
+  height:44px;padding:0 16px;border:0;border-radius:14px;background:var(--accent);color:#fff;font-weight:700;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+}
+.wealth-coach-send[disabled]{opacity:.6;cursor:default}
+.wealth-coach-send .ai-send-spinner{display:none}
+.wealth-coach-send.working{pointer-events:none}
+.wealth-coach-send.working .ai-send-label{display:none}
+.wealth-coach-send.working .ai-send-spinner{
+  display:block;width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite
+}
 .ai-attachment-strip{
   display:flex;
   flex-wrap:wrap;
@@ -2480,8 +2521,6 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
   font-weight:700;
   border-radius:14px;
 }
-.wealth-coach-send{height:44px;padding:0 16px;border:0;border-radius:14px;background:var(--accent);color:#fff;font-weight:700;cursor:pointer}
-.wealth-coach-send[disabled]{opacity:.6;cursor:default}
 @media (max-width: 1100px){
   .health-summary-grid{grid-template-columns:repeat(2,1fr)}
   .health-mini-stat-grid{grid-template-columns:repeat(2,1fr)}
@@ -2582,7 +2621,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       <!-- AI Bar -->
       <div class="ai-bar" id="aiInlineCard">
         <div id="aiInlineChatWrap" class="ai-inline-chat-wrap">
-          <div class="ai-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 1L14.5 8.5L22 12L14.5 15.5L12 23L9.5 15.5L2 12L9.5 8.5Z"/></svg></div>
+          <div class="ai-icon ai-composer-status" id="aiInlineStatusIcon" data-ai-status-for="aiInlineUserInput" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 1L14.5 8.5L22 12L14.5 15.5L12 23L9.5 15.5L2 12L9.5 8.5Z"/></svg></div>
           <textarea id="aiInlineUserInput" rows="1" placeholder="Add a task, brain dump, or ask anything...  ⌘K"></textarea>
           <button id="aiInlineProviderPill" class="ai-provider-pill tiny ai-switch-trigger" data-open-ai-switch="execute" type="button" title="Switch AI"></button>
           <div class="ai-mode-toggle auto" id="aiInlineAutoApplyWrap" role="switch" aria-checked="true" tabindex="0" title="Auto mode: valid AI changes apply immediately.">
@@ -2590,7 +2629,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
             <div class="toggle-dot"></div>
             <span id="aiInlineModeHint">Auto</span>
           </div>
-          <button class="ai-send" id="aiInlineSendBtn" type="button" title="Send to AI"><span class="ai-send-arrow">↑</span><span class="ai-send-spinner"></span></button>
+          <button class="ai-send" id="aiInlineSendBtn" data-ai-send-for="aiInlineUserInput" type="button" title="Send to AI"><span class="ai-send-arrow">↑</span><span class="ai-send-spinner"></span></button>
           <!-- Hidden AI elements JS needs -->
           <div id="aiInlineMessages" style="display:none"></div>
           <button id="aiInlineClearChatBtn" style="display:none" type="button">Clear</button>
@@ -2819,12 +2858,15 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
             </div>
             <div id="aiDisabledNotice" class="ai-note" hidden>AI is off. Enable above.</div>
             <div id="aiChatWrap" class="ai-chat-box" hidden>
-              <div id="aiMessages" class="ai-messages"></div>
+            <div id="aiMessages" class="ai-messages"></div>
               <div id="aiUserInputAttachments" class="ai-attachment-strip" hidden></div>
-              <textarea id="aiUserInput" placeholder="Ask AI..."></textarea>
-              <div class="controls">
+              <div class="wealth-coach-input-row with-status with-attach ai-composer-row ai-workspace-input-row" data-ai-composer-row="aiUserInput" style="margin-top:8px">
+                <div class="ai-composer-status" id="aiWorkspaceStatusIcon" data-ai-status-for="aiUserInput" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 1L14.5 8.5L22 12L14.5 15.5L12 23L9.5 15.5L2 12L9.5 8.5Z"/></svg></div>
                 <button id="aiAttachBtn" class="ghost ai-attach-btn" type="button" title="Add image or file">+</button>
-                <button id="aiSendBtn" class="primary" type="button">Send</button>
+                <textarea id="aiUserInput" placeholder="Ask AI..."></textarea>
+                <button id="aiSendBtn" class="wealth-coach-send" data-ai-send-for="aiUserInput" type="button"><span class="ai-send-label">Send</span><span class="ai-send-spinner"></span></button>
+              </div>
+              <div class="controls">
                 <button id="aiClearChatBtn" class="ghost" type="button">Clear</button>
                 <span id="aiBusyStatus" class="tiny"></span>
                 <button id="aiChatProviderPill" class="ai-provider-pill tiny ai-switch-trigger" data-open-ai-switch="assistant" type="button" title="Switch AI" style="margin-left:auto;"></button>
@@ -2944,10 +2986,11 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           </div>
           <div class="chat-messages" id="planSidebarMessages"></div>
           <div id="planSidebarChatAttachments" class="ai-attachment-strip" hidden></div>
-          <div class="chat-input-row with-attach" style="margin-top:8px">
+          <div class="chat-input-row with-attach with-status ai-composer-row" data-ai-composer-row="planSidebarChatInput" style="margin-top:8px">
+            <div class="ai-composer-status" id="planSidebarStatusIcon" data-ai-status-for="planSidebarChatInput" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 1L14.5 8.5L22 12L14.5 15.5L12 23L9.5 15.5L2 12L9.5 8.5Z"/></svg></div>
             <button class="ghost ai-attach-btn" id="planSidebarAttachBtn" type="button" title="Add image or file">+</button>
             <textarea class="chat-input" id="planSidebarChatInput" rows="1" placeholder="Ask Plan Coach..."></textarea>
-            <button class="ai-send" id="planSidebarSendBtn" type="button" style="align-self:flex-end">↑</button>
+            <button class="ai-send" id="planSidebarSendBtn" data-ai-send-for="planSidebarChatInput" type="button" style="align-self:flex-end"><span class="ai-send-arrow">↑</span><span class="ai-send-spinner"></span></button>
           </div>
         </div>
 
@@ -3363,10 +3406,11 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
             <button id="healthNutritionCoachClearBtn" class="ghost" type="button" style="font-size:.75rem">Clear</button>
           </div>
           <div id="healthNutritionCoachAttachments" class="ai-attachment-strip" hidden></div>
-          <div class="wealth-coach-input-row with-attach" style="margin-top:8px">
+          <div class="wealth-coach-input-row with-attach with-status ai-composer-row" data-ai-composer-row="healthNutritionCoachInput" style="margin-top:8px">
+            <div class="ai-composer-status" id="healthNutritionCoachStatusIcon" data-ai-status-for="healthNutritionCoachInput" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 1L14.5 8.5L22 12L14.5 15.5L12 23L9.5 15.5L2 12L9.5 8.5Z"/></svg></div>
             <button id="healthNutritionCoachAttachBtn" class="ghost ai-attach-btn" type="button" title="Add image or file">+</button>
             <textarea id="healthNutritionCoachInput" rows="1" placeholder="Ask Nutrition Coach..."></textarea>
-            <button id="healthNutritionCoachSendBtn" class="wealth-coach-send" type="button">Ask</button>
+            <button id="healthNutritionCoachSendBtn" class="wealth-coach-send" data-ai-send-for="healthNutritionCoachInput" type="button"><span class="ai-send-label">Ask</span><span class="ai-send-spinner"></span></button>
           </div>
         </div>
 
@@ -3429,10 +3473,11 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
             <button class="ghost" id="healthSleepCoachClearBtn" type="button" style="font-size:.75rem">Clear</button>
           </div>
           <div id="healthSleepCoachAttachments" class="ai-attachment-strip" hidden></div>
-          <div class="wealth-coach-input-row with-attach" style="margin-top:8px">
+          <div class="wealth-coach-input-row with-attach with-status ai-composer-row" data-ai-composer-row="healthSleepCoachInput" style="margin-top:8px">
+            <div class="ai-composer-status" id="healthSleepCoachStatusIcon" data-ai-status-for="healthSleepCoachInput" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 1L14.5 8.5L22 12L14.5 15.5L12 23L9.5 15.5L2 12L9.5 8.5Z"/></svg></div>
             <button id="healthSleepCoachAttachBtn" class="ghost ai-attach-btn" type="button" title="Add image or file">+</button>
             <textarea id="healthSleepCoachInput" rows="1" placeholder="Ask Sleep Coach..."></textarea>
-            <button id="healthSleepCoachSendBtn" class="wealth-coach-send" type="button">Ask</button>
+            <button id="healthSleepCoachSendBtn" class="wealth-coach-send" data-ai-send-for="healthSleepCoachInput" type="button"><span class="ai-send-label">Ask</span><span class="ai-send-spinner"></span></button>
           </div>
         </div>
 
@@ -3836,10 +3881,11 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         <button class="ghost" id="planCoachClearBtn" type="button" style="font-size:.75rem">Clear</button>
       </div>
       <div id="planCoachAttachments" class="ai-attachment-strip" hidden></div>
-      <div class="wealth-coach-input-row with-attach">
+      <div class="wealth-coach-input-row with-attach with-status ai-composer-row" data-ai-composer-row="planCoachInput">
+        <div class="ai-composer-status" id="planCoachStatusIcon" data-ai-status-for="planCoachInput" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 1L14.5 8.5L22 12L14.5 15.5L12 23L9.5 15.5L2 12L9.5 8.5Z"/></svg></div>
         <button id="planCoachAttachBtn" class="ghost ai-attach-btn" type="button" title="Add image or file">+</button>
         <textarea id="planCoachInput" rows="1" placeholder="Ask Plan Coach..."></textarea>
-        <button id="planCoachSendBtn" class="wealth-coach-send" type="button">Ask</button>
+        <button id="planCoachSendBtn" class="wealth-coach-send" data-ai-send-for="planCoachInput" type="button"><span class="ai-send-label">Ask</span><span class="ai-send-spinner"></span></button>
       </div>
     </div>
   </aside>
@@ -3862,10 +3908,11 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         <button class="ghost" id="healthCoachClearBtn" type="button" style="font-size:.75rem">Clear</button>
       </div>
       <div id="healthCoachAttachments" class="ai-attachment-strip" hidden></div>
-      <div class="wealth-coach-input-row with-attach">
+      <div class="wealth-coach-input-row with-attach with-status ai-composer-row" data-ai-composer-row="healthCoachInput">
+        <div class="ai-composer-status" id="healthCoachStatusIcon" data-ai-status-for="healthCoachInput" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 1L14.5 8.5L22 12L14.5 15.5L12 23L9.5 15.5L2 12L9.5 8.5Z"/></svg></div>
         <button id="healthCoachAttachBtn" class="ghost ai-attach-btn" type="button" title="Add image or file">+</button>
         <textarea id="healthCoachInput" rows="1" placeholder="Ask Health Coach..."></textarea>
-        <button id="healthCoachSendBtn" class="wealth-coach-send" type="button">Ask</button>
+        <button id="healthCoachSendBtn" class="wealth-coach-send" data-ai-send-for="healthCoachInput" type="button"><span class="ai-send-label">Ask</span><span class="ai-send-spinner"></span></button>
       </div>
     </div>
   </aside>
@@ -3888,10 +3935,11 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         <button class="ghost" id="wealthCoachClearBtn" type="button" style="font-size:.75rem">Clear</button>
       </div>
       <div id="wealthCoachAttachments" class="ai-attachment-strip" hidden></div>
-      <div class="wealth-coach-input-row with-attach">
+      <div class="wealth-coach-input-row with-attach with-status ai-composer-row" data-ai-composer-row="wealthCoachInput">
+        <div class="ai-composer-status" id="wealthCoachStatusIcon" data-ai-status-for="wealthCoachInput" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 1L14.5 8.5L22 12L14.5 15.5L12 23L9.5 15.5L2 12L9.5 8.5Z"/></svg></div>
         <button id="wealthCoachAttachBtn" class="ghost ai-attach-btn" type="button" title="Add image or file">+</button>
         <textarea id="wealthCoachInput" rows="1" placeholder="Ask Wealth Coach..."></textarea>
-        <button id="wealthCoachSendBtn" class="wealth-coach-send" type="button">Ask</button>
+        <button id="wealthCoachSendBtn" class="wealth-coach-send" data-ai-send-for="wealthCoachInput" type="button"><span class="ai-send-label">Ask</span><span class="ai-send-spinner"></span></button>
       </div>
     </div>
   </aside>
@@ -4046,6 +4094,29 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           <div class="label">Current data source</div>
           <div class="value" id="appDataSourceValue">Loading…</div>
           <div class="tiny" id="appDataSourceMeta"></div>
+        </div>
+      </div>
+      <div class="app-data-experimental">
+        <h4>Experimental Modules</h4>
+        <div class="tiny" style="line-height:1.5">
+          Health and Wealth are still in alpha. Leave them off for the simpler core Execute/Plan workflow, or enable them when you want to test those modules.
+        </div>
+        <div class="settings-toggle">
+          <div>
+            <div class="toggle-label">Health (alpha)</div>
+            <div class="tiny" id="appDataExperimentalHealthMeta">Hidden by default until enabled.</div>
+          </div>
+          <button id="appDataExperimentalHealthToggle" class="toggle-switch" type="button" role="switch" aria-checked="false" aria-label="Enable Health alpha module"></button>
+        </div>
+        <div class="settings-toggle">
+          <div>
+            <div class="toggle-label">Wealth (alpha)</div>
+            <div class="tiny" id="appDataExperimentalWealthMeta">Hidden by default until enabled.</div>
+          </div>
+          <button id="appDataExperimentalWealthToggle" class="toggle-switch" type="button" role="switch" aria-checked="false" aria-label="Enable Wealth alpha module"></button>
+        </div>
+        <div class="tiny" style="line-height:1.5">
+          Existing boards with Health or Wealth data stay recoverable. You can still turn the tabs back off later if you want a cleaner daily view.
         </div>
       </div>
       <div class="app-data-grid">
@@ -4708,6 +4779,8 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       healthNutritionCoachInput: [],
       healthSleepCoachInput: []
     };
+    let aiReadyComposerKey = "";
+    let aiBusyComposerKey = "";
     let activeTopLevelTab = "execute";
     let activePlanTab = "focus";
     let planCoachOpen = false;
@@ -4715,6 +4788,16 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
     let lifePracticesDelegated = false;
     let focusUiPrefs = loadFocusUiPrefs();
     let cloudSyncPrefs = loadCloudSyncPrefs();
+    const AI_COMPOSER_INPUT_IDS = new Set([
+      "aiInlineUserInput",
+      "aiUserInput",
+      "planSidebarChatInput",
+      "planCoachInput",
+      "healthCoachInput",
+      "wealthCoachInput",
+      "healthNutritionCoachInput",
+      "healthSleepCoachInput"
+    ]);
     const cloudSyncRuntime = {
       pendingEvents: [],
       pushTimer: null,
@@ -5685,8 +5768,20 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         },
         wealth: {
           properties: false
+        },
+        experimental: {
+          health: null,
+          wealth: null
         }
       };
+    }
+
+    function normalizeExperimentalSurfaceFlag(value) {
+      return typeof value === "boolean" ? value : null;
+    }
+
+    function resolveExperimentalSurfaceEnabled(rawValue, hasData) {
+      return typeof rawValue === "boolean" ? rawValue : !!hasData;
     }
 
     function healthProfileHasMeaningfulData(profile) {
@@ -5829,17 +5924,64 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         },
         wealth: {
           properties: !!incoming.wealth?.properties
+        },
+        experimental: {
+          health: normalizeExperimentalSurfaceFlag(incoming.experimental?.health),
+          wealth: normalizeExperimentalSurfaceFlag(incoming.experimental?.wealth)
         }
       };
       return autoEnableModulesWithData({
         health: { ...base.health, ...next.health },
-        wealth: { ...base.wealth, ...next.wealth }
+        wealth: { ...base.wealth, ...next.wealth },
+        experimental: { ...base.experimental, ...next.experimental }
       }, snapshot);
     }
 
     function ensureModulesStateShape() {
       state.modules = normalizeModulesState(state.modules, state);
       return state.modules;
+    }
+
+    function isHealthSurfaceEnabled(snapshot = state) {
+      return resolveExperimentalSurfaceEnabled(
+        snapshot?.modules?.experimental?.health,
+        snapshotHasHealthOverviewData(snapshot)
+      );
+    }
+
+    function isWealthSurfaceEnabled(snapshot = state) {
+      return resolveExperimentalSurfaceEnabled(
+        snapshot?.modules?.experimental?.wealth,
+        snapshotHasWealthOverviewData(snapshot)
+      );
+    }
+
+    function getVisibleTopLevelTabs(snapshot = state) {
+      const tabs = ["execute", "plan"];
+      if (isHealthSurfaceEnabled(snapshot)) tabs.push("health");
+      if (isWealthSurfaceEnabled(snapshot)) tabs.push("wealth");
+      return tabs;
+    }
+
+    function renderTopLevelTabs() {
+      const visibleTabs = new Set(getVisibleTopLevelTabs(state));
+      document.querySelectorAll(".mode-switcher .tab[data-tab]").forEach(btn => {
+        const tab = String(btn.getAttribute("data-tab") || "").trim();
+        const isVisible = visibleTabs.has(tab);
+        btn.hidden = !isVisible;
+        btn.setAttribute("aria-hidden", isVisible ? "false" : "true");
+      });
+    }
+
+    function setExperimentalSurfaceEnabled(surfaceKey, enabled) {
+      const modules = ensureModulesStateShape();
+      if (!modules.experimental || !Object.prototype.hasOwnProperty.call(modules.experimental, surfaceKey)) return;
+      modules.experimental[surfaceKey] = !!enabled;
+      if (!enabled && activeTopLevelTab === surfaceKey) {
+        setActiveTab("execute");
+      }
+      saveState(`toggle_alpha_${surfaceKey}_${enabled ? "on" : "off"}`);
+      render();
     }
 
     const HEALTH_TAB_LABELS = {
@@ -5986,6 +6128,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
     }
 
     function renderAppDataPanel() {
+      const modules = ensureModulesStateShape();
       const dataBtn = document.getElementById("appDataBtn");
       const versionStamp = document.getElementById("appVersionStamp");
       if (versionStamp) {
@@ -6019,12 +6162,40 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       const statePathValue = document.getElementById("appDataStatePathValue");
       const ledgerPathValue = document.getElementById("appDataLedgerPathValue");
       const backupPathValue = document.getElementById("appDataBackupPathValue");
+      const experimentalHealthToggle = document.getElementById("appDataExperimentalHealthToggle");
+      const experimentalWealthToggle = document.getElementById("appDataExperimentalWealthToggle");
+      const experimentalHealthMeta = document.getElementById("appDataExperimentalHealthMeta");
+      const experimentalWealthMeta = document.getElementById("appDataExperimentalWealthMeta");
+      const healthExplicit = modules.experimental?.health;
+      const wealthExplicit = modules.experimental?.wealth;
+      const healthEnabled = isHealthSurfaceEnabled(state);
+      const wealthEnabled = isWealthSurfaceEnabled(state);
       if (versionValue) versionValue.textContent = appRuntime.version ? `PPP Flow Desktop ${appRuntime.version}` : "Browser mode";
       if (profileValue) profileValue.textContent = appRuntime.profile || (nativeStore.available ? "desktop" : "browser");
       if (executableValue) executableValue.textContent = appRuntime.executablePath || "Unavailable";
       if (statePathValue) statePathValue.textContent = nativeStore.path || "Unavailable";
       if (ledgerPathValue) ledgerPathValue.textContent = nativeStore.ledgerPath || "Unavailable";
       if (backupPathValue) backupPathValue.textContent = nativeStore.backupPath || "Unavailable";
+      if (experimentalHealthToggle) {
+        experimentalHealthToggle.classList.toggle("on", healthEnabled);
+        experimentalHealthToggle.setAttribute("aria-checked", healthEnabled ? "true" : "false");
+        experimentalHealthToggle.title = healthEnabled ? "Disable Health alpha module" : "Enable Health alpha module";
+      }
+      if (experimentalWealthToggle) {
+        experimentalWealthToggle.classList.toggle("on", wealthEnabled);
+        experimentalWealthToggle.setAttribute("aria-checked", wealthEnabled ? "true" : "false");
+        experimentalWealthToggle.title = wealthEnabled ? "Disable Wealth alpha module" : "Enable Wealth alpha module";
+      }
+      if (experimentalHealthMeta) {
+        experimentalHealthMeta.textContent = healthExplicit === null
+          ? (healthEnabled ? "Visible automatically because this board already has Health data." : "Hidden by default until enabled.")
+          : (healthEnabled ? "Visible. Turn it off if you want a simpler daily app shell." : "Hidden. Turn it on when you want to test Health.");
+      }
+      if (experimentalWealthMeta) {
+        experimentalWealthMeta.textContent = wealthExplicit === null
+          ? (wealthEnabled ? "Visible automatically because this board already has Wealth data." : "Hidden by default until enabled.")
+          : (wealthEnabled ? "Visible. Turn it off if you want a simpler daily app shell." : "Hidden. Turn it on when you want to test Wealth.");
+      }
     }
 
     function openAppDataModal() {
@@ -8729,7 +8900,6 @@ If the original response clearly intended a board mutation, keep that action in 
       const chatVisible = aiPrefs.enabled && !keyMissing;
       const inlineSendBtn = document.getElementById("aiInlineSendBtn");
       if (inlineSendBtn) {
-        inlineSendBtn.textContent = "↑";
         inlineSendBtn.title = aiPrefs.inlineAutoApply
           ? "Auto mode: valid AI changes apply immediately."
           : "Review mode: AI proposes changes and waits for Apply.";
@@ -8788,6 +8958,8 @@ If the original response clearly intended a board mutation, keep that action in 
         renderAiMessagesInto(surface.messagesId);
         renderAiProposalInto(surface);
       });
+      renderAiComposerChrome("aiInlineUserInput");
+      renderAiComposerChrome("aiUserInput");
     }
     function aiResolveConfig(prefsLike = aiPrefs) {
       const source = prefsLike && typeof prefsLike === "object" ? prefsLike : {};
@@ -9644,6 +9816,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       aiMessages.push({ role: "user", content: userMessageText, attachments: aiCloneAttachments(attachments), at: new Date().toISOString() });
       if (restoreInput) clearAiComposer(restoreInput);
       aiClearComposerAttachments(composerKey);
+      aiBusyComposerKey = composerKey;
       aiBusy = true;
 
       /* ── Spinner state on send button ── */
@@ -9712,6 +9885,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         });
       } finally {
         aiBusy = false;
+        if (aiBusyComposerKey === composerKey) aiBusyComposerKey = "";
         if (sendBtn) sendBtn.classList.remove("working");
         renderAiAssistant();
       }
@@ -12176,7 +12350,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
     function setActiveTab(tabName) {
       const requested = String(tabName || "").trim() || "execute";
       const planTabs = ["focus", "assistant", "review"];
-      const topLevelTabs = ["execute", "plan", "health", "wealth"];
+      const topLevelTabs = getVisibleTopLevelTabs(state);
       let mode = requested === "wealth" ? "wealth" : requested === "health" ? "health" : requested === "execute" ? "execute" : "plan";
       let planTab = activePlanTab;
       if (planTabs.includes(requested)) { mode = "plan"; planTab = requested; }
@@ -12184,11 +12358,12 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         if (!planTabs.includes(planTab)) planTab = "focus";
         if (planTab === "assistant" && !aiShouldShowTab()) planTab = "focus";
       }
+      if (!topLevelTabs.includes(mode)) mode = "execute";
       activeTopLevelTab = topLevelTabs.includes(mode) ? mode : "execute";
       activePlanTab = planTab;
 
-      document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
-      const topBtn = document.querySelector(`.tab[data-tab="${mode}"]`);
+      document.querySelectorAll(".mode-switcher .tab[data-tab]").forEach(t => t.classList.remove("active"));
+      const topBtn = document.querySelector(`.mode-switcher .tab[data-tab="${mode}"]`);
       if (topBtn) topBtn.classList.add("active");
 
       const planSubtabs = document.getElementById("planSubtabs");
@@ -12249,6 +12424,48 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       const end = input.value.length;
       if (typeof input.setSelectionRange === "function") input.setSelectionRange(end, end);
       return true;
+    }
+
+    function aiComposerBusy(inputId) {
+      if (!inputId) return false;
+      if (inputId === "aiInlineUserInput" || inputId === "aiUserInput" || inputId === "planSidebarChatInput" || inputId === "planCoachInput") {
+        return aiBusy && aiBusyComposerKey === inputId;
+      }
+      if (inputId === "healthCoachInput") return !!healthCoachBusy;
+      if (inputId === "wealthCoachInput") return !!wealthCoachBusy;
+      if (inputId === "healthNutritionCoachInput") return !!healthNutritionCoachBusy;
+      if (inputId === "healthSleepCoachInput") return !!healthSleepCoachBusy;
+      return false;
+    }
+
+    function renderAiComposerChrome(inputId) {
+      if (!inputId) return;
+      const icon = document.querySelector(`[data-ai-status-for="${inputId}"]`);
+      const row = document.querySelector(`[data-ai-composer-row="${inputId}"]`);
+      const sendBtn = document.querySelector(`[data-ai-send-for="${inputId}"]`);
+      const ready = aiReadyComposerKey === inputId || document.activeElement?.id === inputId;
+      const busy = aiComposerBusy(inputId);
+      if (icon) {
+        icon.classList.toggle("ready", ready || busy);
+        icon.classList.toggle("thinking", busy);
+      }
+      if (row) {
+        row.classList.toggle("ready", ready || busy);
+        row.classList.toggle("thinking", busy);
+      }
+      if (sendBtn) {
+        sendBtn.classList.toggle("working", busy);
+        const label = sendBtn.querySelector(".ai-send-label");
+        const idleLabel = sendBtn.getAttribute("data-idle-label") || label?.textContent || "";
+        if (label) {
+          if (!sendBtn.getAttribute("data-idle-label")) sendBtn.setAttribute("data-idle-label", idleLabel);
+          label.textContent = busy ? "Thinking…" : sendBtn.getAttribute("data-idle-label") || idleLabel;
+        }
+      }
+    }
+
+    function renderAllAiComposerChrome() {
+      AI_COMPOSER_INPUT_IDS.forEach(renderAiComposerChrome);
     }
 
     function focusPlanSidebarAiInput() {
@@ -18945,6 +19162,7 @@ Data caveat`;
       clearBtn.hidden = !healthNutritionCoachMessages.length;
       actionsEl.hidden = !statusEl.textContent && !healthNutritionCoachMessages.length;
       sendBtn.disabled = healthNutritionCoachBusy || needsConsent;
+      renderAiComposerChrome("healthNutritionCoachInput");
       if (!healthNutritionCoachMessages.length) {
         const targetHint = snapshot.activeTarget ? ` Current target: ${Math.round(snapshot.activeTarget.kcal)} kcal and ${Math.round(snapshot.activeTarget.protein_g)}g protein.` : "";
         const baselineHint = snapshot.assessmentLogs.length ? " Assessment baseline is available for comparison." : "";
@@ -19294,6 +19512,7 @@ Data caveat`;
       clearBtn.hidden = !healthSleepCoachMessages.length;
       actionsEl.hidden = !statusEl.textContent && !healthSleepCoachMessages.length;
       sendBtn.disabled = healthSleepCoachBusy || needsConsent;
+      renderAiComposerChrome("healthSleepCoachInput");
       if (!healthSleepCoachMessages.length) {
         messagesEl.innerHTML = `${consentNotice}<div class="health-empty-state" style="text-align:left">
           Ask about sleep quality, bedtime drift, short nights, recovery state, or what the recent pattern suggests.
@@ -25220,6 +25439,7 @@ CRITICAL RULES FOR ACTIONS:
       if (clearBtn) clearBtn.hidden = !wealthCoachMessages.length;
       if (actionsEl) actionsEl.hidden = !statusText && !wealthCoachMessages.length;
       if (sendBtn) sendBtn.disabled = wealthCoachBusy || needsConsent;
+      renderAiComposerChrome("wealthCoachInput");
       if (!messagesEl) return;
       if (!wealthCoachMessages.length) {
         messagesEl.innerHTML = `${consentNotice}<div class="wealth-coach-empty">
@@ -26029,6 +26249,8 @@ CRITICAL RULES FOR ACTIONS:
     // ── Master Render ──
     function render() {
       initTodayState();
+      renderTopLevelTabs();
+      if (!getVisibleTopLevelTabs(state).includes(activeTopLevelTab)) setActiveTab("execute");
       document.getElementById("todayDate").textContent=new Date().toLocaleDateString("en-AU",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
       renderStats();
       renderTable();
@@ -26047,6 +26269,7 @@ CRITICAL RULES FOR ACTIONS:
       renderWealth();
       renderLocalAiWizard();
       renderAppDataPanel();
+      renderAllAiComposerChrome();
     }
 
     // ── Plan Sidebar Display ──
@@ -26130,6 +26353,7 @@ CRITICAL RULES FOR ACTIONS:
         }
       }
       renderAiAttachmentStrip("planSidebarChatAttachments", "planSidebarChatInput");
+      renderAiComposerChrome("planSidebarChatInput");
     }
 
     function activePlanSurfaceLabel() {
@@ -26486,6 +26710,7 @@ CRITICAL RULES FOR ACTIONS:
       if (clearBtn) clearBtn.hidden = !healthCoachMessages.length;
       if (actionsEl) actionsEl.hidden = !statusText && !healthCoachMessages.length;
       if (sendBtn) sendBtn.disabled = healthCoachBusy || needsConsent;
+      renderAiComposerChrome("healthCoachInput");
       if (!messagesEl) return;
       if (!healthCoachMessages.length) {
         messagesEl.innerHTML = `${consentNotice}<div class="wealth-coach-empty">
@@ -27377,6 +27602,12 @@ You cannot change app state without that JSON block. Do not say something was ad
     document.getElementById("appDataRestoreBtn").addEventListener("click", () => { void restoreLatestBackupJson(); });
     document.getElementById("appDataCloudSyncBtn").addEventListener("click", openCloudSyncModal);
     document.getElementById("appDataAiSettingsBtn").addEventListener("click", openAiSettingsPanel);
+    document.getElementById("appDataExperimentalHealthToggle")?.addEventListener("click", () => {
+      setExperimentalSurfaceEnabled("health", !isHealthSurfaceEnabled(state));
+    });
+    document.getElementById("appDataExperimentalWealthToggle")?.addEventListener("click", () => {
+      setExperimentalSurfaceEnabled("wealth", !isWealthSurfaceEnabled(state));
+    });
     document.getElementById("aiSetupBtn").addEventListener("click",()=>{
       aiPanelForcedVisible = true;
       aiConfigOpen = true;
@@ -27846,6 +28077,9 @@ You cannot change app state without that JSON block. Do not say something was ad
         void requestHealthCoaching();
       }
     });
+    autoGrowTextarea("aiUserInput");
+    autoGrowTextarea("healthNutritionCoachInput");
+    autoGrowTextarea("healthSleepCoachInput");
     autoGrowTextarea("healthCoachInput");
 
     // Wealth tab events
@@ -27917,6 +28151,28 @@ You cannot change app state without that JSON block. Do not say something was ad
         e.preventDefault();
         void requestWealthCoaching();
       }
+    });
+    autoGrowTextarea("wealthCoachInput");
+    document.addEventListener("focusin", e => {
+      const target = e.target;
+      if (!(target instanceof HTMLElement)) return;
+      const inputId = String(target.id || "").trim();
+      if (!AI_COMPOSER_INPUT_IDS.has(inputId)) return;
+      aiReadyComposerKey = inputId;
+      renderAllAiComposerChrome();
+    });
+    document.addEventListener("focusout", e => {
+      const target = e.target;
+      if (!(target instanceof HTMLElement)) return;
+      const inputId = String(target.id || "").trim();
+      if (!AI_COMPOSER_INPUT_IDS.has(inputId)) return;
+      requestAnimationFrame(() => {
+        const activeId = String(document.activeElement?.id || "").trim();
+        if (!AI_COMPOSER_INPUT_IDS.has(activeId) && aiReadyComposerKey === inputId) {
+          aiReadyComposerKey = "";
+          renderAllAiComposerChrome();
+        }
+      });
     });
     document.getElementById("wealthUndoLastImportBtn")?.addEventListener("click", () => {
       const review = state.wealth?.last_import_review;
