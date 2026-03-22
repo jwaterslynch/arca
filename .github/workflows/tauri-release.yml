@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       tag_name:
-        description: "Release tag to build (defaults to package.json version, e.g. v0.1.0-beta.3)"
+        description: "Release tag to build (defaults to package.json version, e.g. v0.1.0-beta.4)"
         required: false
         type: string
       release_name:
