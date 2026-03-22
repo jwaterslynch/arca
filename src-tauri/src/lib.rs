@@ -2,6 +2,7 @@ use std::fs;
 use std::io::ErrorKind;
 use std::path::PathBuf;
 use std::process::Command;
+use std::sync::Mutex;
 use std::time::Duration;
 
 use chrono::Local;
@@ -10,6 +11,71 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 use tauri::menu::{Menu, MenuItem, PredefinedMenuItem, Submenu};
 use tauri::{AppHandle, Emitter, Manager};
+use thiserror::Error;
+
+#[derive(Debug, Error)]
+enum AppError {
+    #[error("IO error: {0}")]
+    Io(#[from] std::io::Error),
+    #[error("Database error: {0}")]
+    Db(#[from] rusqlite::Error),
+    #[error("JSON error: {0}")]
+    Json(#[from] serde_json::Error),
+    #[error("HTTP error: {0}")]
+    Http(#[from] reqwest::Error),
+    #[error("{0}")]
+    App(String),
+}
+
+impl From<AppError> for String {
+    fn from(err: AppError) -> String {
+        err.to_string()
+    }
+}
+
+struct DbPool(Mutex<Option<Connection>>);
+
+impl DbPool {
+    fn get_or_init(&self, app: &AppHandle) -> Result<std::sync::MutexGuard<'_, Option<Connection>>, String> {
+        let mut guard = self.0.lock().map_err(|e| format!("DB lock poisoned: {e}"))?;
+        if guard.is_none() {
+            let db_path = ledger_db_path(app)?;
+            let conn = Connection::open(db_path).map_err(|e| AppError::Db(e))?;
+            conn.execute_batch(
+                "
+                PRAGMA journal_mode=WAL;
+                PRAGMA synchronous=NORMAL;
+
+                CREATE TABLE IF NOT EXISTS app_state (
+                  key TEXT PRIMARY KEY,
+                  state_json TEXT NOT NULL,
+                  updated_at TEXT NOT NULL
+                );
+
+                CREATE TABLE IF NOT EXISTS ledger_events (
+                  id INTEGER PRIMARY KEY AUTOINCREMENT,
+                  event_id TEXT NOT NULL UNIQUE,
+                  event_type TEXT NOT NULL,
+                  entity_type TEXT,
+                  entity_id TEXT,
+                  occurred_at TEXT NOT NULL,
+                  payload_json TEXT NOT NULL,
+                  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_ledger_events_type_time
+                  ON ledger_events(event_type, occurred_at);
+
+                CREATE INDEX IF NOT EXISTS idx_ledger_events_entity
+                  ON ledger_events(entity_type, entity_id, occurred_at);
+                ",
+            )
+            .map_err(|e| AppError::Db(e))?;
+            *guard = Some(conn);
+        }
+        Ok(guard)
+    }
+}
 
 const APP_STATE_FILENAME: &str = "PPP_DATA.json";
 const LEDGER_DB_FILENAME: &str = "PPP_LEDGER.sqlite3";
@@ -92,43 +158,7 @@ fn backup_dir_path(app: &AppHandle) -> Result<PathBuf, String> {
     Ok(path)
 }
 
-fn open_ledger(app: &AppHandle) -> Result<Connection, String> {
-    let db_path = ledger_db_path(app)?;
-    let conn = Connection::open(db_path).map_err(|e| e.to_string())?;
-
-    conn.execute_batch(
-        "
-        PRAGMA journal_mode=WAL;
-        PRAGMA synchronous=NORMAL;
-
-        CREATE TABLE IF NOT EXISTS app_state (
-          key TEXT PRIMARY KEY,
-          state_json TEXT NOT NULL,
-          updated_at TEXT NOT NULL
-        );
-
-        CREATE TABLE IF NOT EXISTS ledger_events (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          event_id TEXT NOT NULL UNIQUE,
-          event_type TEXT NOT NULL,
-          entity_type TEXT,
-          entity_id TEXT,
-          occurred_at TEXT NOT NULL,
-          payload_json TEXT NOT NULL,
-          created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
-        );
-
-        CREATE INDEX IF NOT EXISTS idx_ledger_events_type_time
-          ON ledger_events(event_type, occurred_at);
-
-        CREATE INDEX IF NOT EXISTS idx_ledger_events_entity
-          ON ledger_events(entity_type, entity_id, occurred_at);
-        ",
-    )
-    .map_err(|e| e.to_string())?;
-
-    Ok(conn)
-}
+// Connection pooling: see DbPool::get_or_init() above.
 
 fn ensure_daily_backup(app: &AppHandle, content: &str) -> Result<(), String> {
     let day = Local::now().format("%Y-%m-%d").to_string();
@@ -161,30 +191,35 @@ fn latest_backup_file_path(app: &AppHandle) -> Result<Option<PathBuf>, String> {
 }
 
 #[tauri::command]
-fn load_app_state(app: AppHandle) -> Result<Option<String>, String> {
-    let conn = open_ledger(&app)?;
+fn load_app_state(app: AppHandle, db: tauri::State<'_, DbPool>) -> Result<Option<String>, String> {
+    // Scope the DB access so the MutexGuard drops before file fallback
+    {
+        let guard = db.get_or_init(&app)?;
+        let conn = guard.as_ref().unwrap();
 
-    let mut stmt = conn
-        .prepare("SELECT state_json FROM app_state WHERE key = 'current' LIMIT 1")
-        .map_err(|e| e.to_string())?;
+        let mut stmt = conn
+            .prepare("SELECT state_json FROM app_state WHERE key = 'current' LIMIT 1")
+            .map_err(|e| AppError::Db(e))?;
 
-    let mut rows = stmt.query([]).map_err(|e| e.to_string())?;
-    if let Some(row) = rows.next().map_err(|e| e.to_string())? {
-        let json: String = row.get(0).map_err(|e| e.to_string())?;
-        return Ok(Some(json));
+        let mut rows = stmt.query([]).map_err(|e| AppError::Db(e))?;
+        if let Some(row) = rows.next().map_err(|e| AppError::Db(e))? {
+            let json: String = row.get(0).map_err(|e| AppError::Db(e))?;
+            return Ok(Some(json));
+        }
     }
 
     let path = app_state_file_path(&app)?;
     match fs::read_to_string(path) {
         Ok(content) => Ok(Some(content)),
         Err(err) if err.kind() == ErrorKind::NotFound => Ok(None),
-        Err(err) => Err(err.to_string()),
+        Err(err) => Err(AppError::Io(err).to_string()),
     }
 }
 
 #[tauri::command]
-fn save_app_state(app: AppHandle, content: String) -> Result<(), String> {
-    let conn = open_ledger(&app)?;
+fn save_app_state(app: AppHandle, db: tauri::State<'_, DbPool>, content: String) -> Result<(), String> {
+    let guard = db.get_or_init(&app)?;
+    let conn = guard.as_ref().unwrap();
 
     conn.execute(
         "
@@ -196,26 +231,35 @@ fn save_app_state(app: AppHandle, content: String) -> Result<(), String> {
         ",
         params![content],
     )
-    .map_err(|e| e.to_string())?;
+    .map_err(|e| AppError::Db(e))?;
+    drop(guard);
 
     let path = app_state_file_path(&app)?;
-    fs::write(path, &content).map_err(|e| e.to_string())?;
+    fs::write(path, &content).map_err(|e| AppError::Io(e))?;
     ensure_daily_backup(&app, &content)?;
 
     Ok(())
 }
 
 #[tauri::command]
-fn append_events(app: AppHandle, events: Vec<LedgerEventInput>) -> Result<usize, String> {
+fn append_events(app: AppHandle, db: tauri::State<'_, DbPool>, events: Vec<LedgerEventInput>) -> Result<usize, String> {
     if events.is_empty() {
         return Ok(0);
     }
 
-    let mut conn = open_ledger(&app)?;
-    let tx = conn.transaction().map_err(|e| e.to_string())?;
+    let mut guard = db.get_or_init(&app)?;
+    let conn = guard.as_mut().unwrap();
+    let tx = conn.transaction().map_err(|e| AppError::Db(e))?;
 
     let mut inserted: usize = 0;
     for event in events {
+        // Validate payload is valid JSON before storing
+        if serde_json::from_str::<JsonValue>(&event.payload_json).is_err() {
+            return Err(format!(
+                "Invalid JSON in payload for event_id '{}': payload must be valid JSON",
+                event.event_id
+            ));
+        }
         let affected = tx
             .execute(
                 "
@@ -243,12 +287,14 @@ fn append_events(app: AppHandle, events: Vec<LedgerEventInput>) -> Result<usize,
 #[tauri::command]
 fn list_events(
     app: AppHandle,
+    db: tauri::State<'_, DbPool>,
     event_type: Option<String>,
     start_iso: Option<String>,
     end_iso: Option<String>,
     limit: Option<i64>,
 ) -> Result<Vec<LedgerEventRecord>, String> {
-    let conn = open_ledger(&app)?;
+    let guard = db.get_or_init(&app)?;
+    let conn = guard.as_ref().unwrap();
 
     let mut sql = String::from(
         "SELECT event_id, event_type, entity_type, entity_id, occurred_at, payload_json, created_at
@@ -617,6 +663,7 @@ pub fn run() {
             }
             _ => {}
         })
+        .manage(DbPool(Mutex::new(None)))
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![
             load_app_state,

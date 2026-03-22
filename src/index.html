@@ -5030,6 +5030,25 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       return accountType === "investment" ? "wealth" : "household";
     }
 
+    function normalizeWealthCoachAccountType(value) {
+      const raw = String(value || "").trim().toLowerCase();
+      if (["checking", "savings", "credit_card", "investment", "loan", "cash", "other"].includes(raw)) return raw;
+      if (raw === "brokerage" || raw === "super") return "investment";
+      if (raw === "offset") return "checking";
+      return "checking";
+    }
+
+    function normalizeWealthCoachPropertySignalSource(value) {
+      const raw = String(value || "").trim().toLowerCase();
+      if (!raw) return "manual_external";
+      if (Object.prototype.hasOwnProperty.call(WEALTH_PROPERTY_SIGNAL_SOURCES, raw)) return raw;
+      if (raw.includes("bank") || raw.includes("lender") || raw.includes("refinance")) return "bank";
+      if (raw.includes("domain") || raw.includes("portal") || raw.includes("realestate")) return "domain";
+      if (raw.includes("agent") || raw.includes("appraisal") || raw.includes("cma")) return "agent";
+      if (raw.includes("gov") || raw.includes("registry") || raw.includes("council")) return "government";
+      return "manual_external";
+    }
+
     function inferWealthTransactionCashflowScope(txn, account = null) {
       if (["household", "wealth", "transfer"].includes(txn?.cashflow_scope)) return txn.cashflow_scope;
       if (txn?.exclude_from_cashflow) return "transfer";
@@ -6648,7 +6667,12 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       localStorage.setItem(CLOUD_SYNC_PREF_KEY, JSON.stringify(cloudSyncPrefs));
     }
     function cloudSyncConfigured() {
-      return !!(cloudSyncPrefs.enabled && cloudSyncPrefs.supabaseUrl && cloudSyncPrefs.anonKey && cloudSyncPrefs.accessToken);
+      if (!(cloudSyncPrefs.enabled && cloudSyncPrefs.supabaseUrl && cloudSyncPrefs.anonKey && cloudSyncPrefs.accessToken)) return false;
+      if (!/^https:\/\//i.test(cloudSyncPrefs.supabaseUrl)) {
+        console.warn("[CloudSync] Refusing non-HTTPS supabaseUrl:", cloudSyncPrefs.supabaseUrl);
+        return false;
+      }
+      return true;
     }
     function cloudSyncAuthHeaders() {
       return {
@@ -7786,10 +7810,9 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       }
 
       if (cfg.provider === "gemini") {
-        const separator = baseUrl.includes("?") ? "&" : "?";
-        const res = await fetch(`${baseUrl}/models${separator}key=${encodeURIComponent(cfg.apiKey)}`, {
+        const res = await fetch(`${baseUrl}/models`, {
           method: "GET",
-          headers: { "Accept": "application/json" }
+          headers: { "Accept": "application/json", "x-goog-api-key": cfg.apiKey }
         });
         if (!res.ok) throw new Error(`Gemini model list error ${res.status}: ${await res.text()}`);
         const data = await res.json();
@@ -8277,7 +8300,8 @@ If you do propose actions, they must exactly match the supported schema in the u
             account_id: "<account id or empty>",
             date: todayISO(),
             description: "Grocery shop",
-            amount: -85.50,
+            amount: 85.50,
+            tx_type: "expense",
             category: "Groceries",
             notes: ""
           }
@@ -9035,6 +9059,14 @@ If the original response clearly intended a board mutation, keep that action in 
       let model = aiNormalizeModelId(cfg.provider, cfg.model);
       if (!model) throw new Error("Model is required.");
       const baseUrl = cfg.baseUrl.replace(/\/+$/, "");
+      // Validate base URL: must be HTTPS for cloud providers, HTTP only for local Ollama
+      if (cfg.provider !== "ollama") {
+        if (!/^https:\/\//i.test(baseUrl)) {
+          throw new Error(`${aiProviderDisplayName(cfg.provider)} requires an HTTPS base URL.`);
+        }
+      } else if (baseUrl && !/^https?:\/\/(127\.0\.0\.1|localhost)(:|\/|$)/i.test(baseUrl)) {
+        throw new Error("Ollama base URL must point to localhost (127.0.0.1 or localhost).");
+      }
       const priorMessages = Array.isArray(options?.messages) ? options.messages : [];
       const attachments = aiCloneAttachments(options?.attachments || []);
       const imageAttachments = attachments.filter(item => item.kind === "image" && item.dataUrl);
@@ -10125,77 +10157,96 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       }
       // ── Wealth Coach Actions ──
       if (action.type === "wealth.add_account") {
-        if (!Array.isArray(state.wealth_accounts)) state.wealth_accounts = [];
         const name = String(action.name || "").trim();
         if (!name) return "Account name is required.";
-        const typeCode = String(action.type_code || "checking").trim();
-        const currency = String(action.currency || "AUD").trim().toUpperCase();
+        const typeCode = normalizeWealthCoachAccountType(action.type_code || "checking");
         const openingBalance = Number(action.opening_balance) || 0;
-        state.wealth_accounts.push({
-          id: uid(),
-          name,
-          type: typeCode,
-          currency,
-          opening_balance_minor: Math.round(openingBalance * 100),
-          balance: openingBalance,
-          created_at: new Date().toISOString()
-        });
+        addWealthAccount(name, typeCode, openingBalance);
         return "";
       }
       if (action.type === "wealth.add_transaction") {
-        if (!Array.isArray(state.wealth_transactions)) state.wealth_transactions = [];
         const description = String(action.description || "").trim();
         if (!description) return "Transaction description is required.";
         const date = /^\d{4}-\d{2}-\d{2}$/.test(String(action.date || "")) ? String(action.date) : todayISO();
         const amountRaw = Number(action.amount) || 0;
+        if (!amountRaw) return "Transaction amount is required.";
         const category = String(action.category || "Other").trim();
         const accountId = String(action.account_id || "").trim();
-        state.wealth_transactions.push({
-          id: uid(),
-          account_id: accountId || null,
-          date,
-          description,
-          amount_minor: Math.round(amountRaw * 100),
-          category,
-          notes: String(action.notes || "").trim(),
-          source: "coach",
-          created_at: new Date().toISOString()
-        });
+        const explicitType = String(action.tx_type || action.transaction_type || action.entry_type || "").trim().toLowerCase();
+        const txType = explicitType === "income"
+          ? "income"
+          : explicitType === "expense"
+            ? "expense"
+            : amountRaw < 0
+              ? "expense"
+              : "income";
+        const txn = addWealthTransaction(date, accountId || null, txType, Math.abs(amountRaw), category, description);
+        if (txn) txn.source = "coach";
         return "";
       }
       if (action.type === "wealth.recategorise") {
-        if (!Array.isArray(state.wealth_transactions)) return "No transactions found.";
-        const txn = state.wealth_transactions.find(t => t.id === action.transaction_id);
+        if (!state.wealth || typeof state.wealth !== "object") state.wealth = {};
+        if (!Array.isArray(state.wealth.transactions)) return "No transactions found.";
+        const txn = state.wealth.transactions.find(t => t.id === action.transaction_id);
         if (!txn) return `Transaction not found: ${action.transaction_id}`;
         txn.category = String(action.new_category || "Other").trim();
         return "";
       }
       if (action.type === "wealth.add_holding") {
-        if (!Array.isArray(state.wealth_holdings)) state.wealth_holdings = [];
         const symbol = String(action.symbol || "").trim().toUpperCase();
         if (!symbol) return "Holding symbol is required.";
-        state.wealth_holdings.push({
-          id: uid(),
+        const units = Number(action.units) || 0;
+        if (units <= 0) return "Holding units must be greater than zero.";
+        const avgCost = Number(action.avg_cost) || 0;
+        if (avgCost < 0) return "Average cost cannot be negative.";
+        addWealthHolding({
           account_id: String(action.account_id || "").trim() || null,
-          symbol,
+          asset_type: "stock",
           display_symbol: symbol,
-          units: Number(action.units) || 0,
-          avg_cost_minor: Math.round((Number(action.avg_cost) || 0) * 100),
-          currency: String(action.currency || "AUD").trim().toUpperCase(),
+          provider_symbol: symbol,
           provider: "manual",
-          created_at: new Date().toISOString()
+          name: String(action.name || symbol).trim() || symbol,
+          units,
+          cost_basis: units * avgCost,
+          quote_currency: String(action.currency || "AUD").trim().toUpperCase()
         });
         return "";
       }
       if (action.type === "wealth.update_property_estimate") {
-        if (!Array.isArray(state.wealth_properties)) return "No properties found.";
-        const prop = state.wealth_properties.find(p => p.id === action.property_id);
+        ensureWealthStateShape();
+        if (!Array.isArray(state.wealth.properties)) return "No properties found.";
+        const prop = state.wealth.properties.find(p => p.id === action.property_id);
         if (!prop) return `Property not found: ${action.property_id}`;
-        prop.current_estimate_minor = Math.round((Number(action.estimate_value) || 0) * 100);
-        prop.confidence = String(action.confidence || prop.confidence || "medium").trim();
-        prop.estimate_source = String(action.source || "coach").trim();
-        prop.estimate_notes = String(action.notes || "").trim();
-        prop.updated_at = new Date().toISOString();
+        const estimateValue = Number(action.estimate_value) || 0;
+        if (estimateValue <= 0) return "Estimate value must be greater than zero.";
+        const sourceRaw = String(action.source || "").trim();
+        const note = String(action.notes || "").trim();
+        const confidence = ["low", "medium", "high"].includes(String(action.confidence || "").trim().toLowerCase())
+          ? String(action.confidence).trim().toLowerCase()
+          : "medium";
+        const signalDate = /^\d{4}-\d{2}-\d{2}$/.test(String(action.date || "").trim()) ? String(action.date).trim() : todayISO();
+        if (sourceRaw || note) {
+          saveWealthPropertySignal(prop.id, {
+            source: normalizeWealthCoachPropertySignalSource(sourceRaw),
+            label: sourceRaw || "Coach estimate",
+            signal_date: signalDate,
+            estimated_value: estimateValue,
+            confidence,
+            note
+          });
+        } else {
+          saveWealthProperty({
+            label: prop.label,
+            address: prop.address,
+            property_type: prop.property_type,
+            bedrooms: prop.bedrooms,
+            land_sqm: prop.land_sqm,
+            purchase_price: (prop.purchase_price_minor || 0) / 100,
+            purchase_date: prop.purchase_date,
+            region_code: prop.region_code,
+            manual_estimate: estimateValue
+          }, prop.id);
+        }
         return "";
       }
       // ── Health Coach Actions ──
@@ -25328,8 +25379,9 @@ Data caveat`;
     }
 
     function wealthCoachSystemPrompt() {
-      const accounts = (state.wealth_accounts || []).map(a => `  - id: "${a.id}", name: "${a.name}", type: "${a.type}"`).join("\n");
-      const properties = (state.wealth_properties || []).map(p => `  - id: "${p.id}", name: "${p.name || p.address || "unnamed"}"`).join("\n");
+      const wealthData = state.wealth && typeof state.wealth === "object" ? state.wealth : {};
+      const accounts = (wealthData.accounts || []).map(a => `  - id: "${a.id}", name: "${a.name}", type: "${a.type}"`).join("\n");
+      const properties = (wealthData.properties || []).map(p => `  - id: "${p.id}", name: "${p.name || p.address || "unnamed"}"`).join("\n");
       return `You are the PPP Flow Wealth Coach.
 
 Your job is to help the user understand the current wealth data inside the app.
@@ -25369,19 +25421,19 @@ ${properties || "  (none yet)"}
 Available action types:
 
 wealth.add_account — Create a new account
-  Fields: name (string), type_code (checking/savings/credit_card/brokerage/super/offset/loan/other), opening_balance (number), currency (string, default AUD)
+  Fields: name (string), type_code (checking/savings/credit_card/investment/loan/cash/other), opening_balance (number)
 
 wealth.add_transaction — Add a manual transaction
-  Fields: account_id (string, from list above), date (YYYY-MM-DD), description (string), amount (number, negative for expenses), category (string), notes (string)
+  Fields: account_id (string, from list above), date (YYYY-MM-DD), description (string), amount (number, positive amount preferred), tx_type (income/expense), category (string), notes (string)
 
 wealth.recategorise — Change the category of a transaction
   Fields: transaction_id (string), new_category (string)
 
 wealth.add_holding — Add a holding to the portfolio
-  Fields: account_id (string), symbol (string), units (number), avg_cost (number per unit), currency (string)
+  Fields: account_id (string), symbol (string), units (number), avg_cost (number per unit), currency (string), name (optional string)
 
 wealth.update_property_estimate — Update a property valuation
-  Fields: property_id (string, from list above), estimate_value (number), confidence (low/medium/high), source (string), notes (string)
+  Fields: property_id (string, from list above), estimate_value (number), confidence (low/medium/high), source (optional: bank/domain/agent/government/manual_external/other), notes (optional string), date (optional YYYY-MM-DD)
 
 CRITICAL RULES FOR ACTIONS:
 1. When the user asks you to add, record, recategorise, or update something, ALWAYS return the appropriate action in a \`\`\`json block. NEVER just describe what you would do in text.
