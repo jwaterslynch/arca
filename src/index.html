@@ -1805,6 +1805,12 @@ button.warn {
   padding:12px 22px;
   border-radius:16px;
 }
+.ui-helper-cache,
+.ui-helper-cache[hidden]{
+  display:none !important;
+  visibility:hidden !important;
+  pointer-events:none !important;
+}
 @media (max-width: 1180px){
   .onboard-hero-grid,
   .onboard-ai-grid,
@@ -2779,7 +2785,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
                   <div id="pipelineToday" class="pipeline-list" data-stage="today"></div>
                 </div>
                 <div class="pipeline-col" data-stage="done">
-                  <div class="pipeline-head"><span>Done (Week)</span><span id="pipelineDoneCount">0</span></div>
+                  <div class="pipeline-head"><span>Done (Today)</span><span id="pipelineDoneCount">0</span></div>
                   <div id="pipelineDone" class="pipeline-list" data-stage="done"></div>
                 </div>
               </div>
@@ -3946,7 +3952,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
 
   <!-- ═══════════ HIDDEN PRODUCTION ELEMENTS ═══════════ -->
   <!-- Elements the JS references but aren't in the prototype layout -->
-  <div style="display:none">
+  <div id="uiHelperCache" class="ui-helper-cache" hidden aria-hidden="true">
     <!-- Add Task Form -->
     <form id="taskForm">
       <input id="titleInput" required placeholder="Task" />
@@ -10972,6 +10978,24 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       return state.tasks.filter(t => !t.completedAt && normalizePipelineStage(t.stage) === "today");
     }
 
+    function isOpenTodayTaskId(taskId) {
+      if (!taskId) return false;
+      const task = getTask(taskId);
+      return !!(task && !task.completedAt && normalizePipelineStage(task.stage) === "today");
+    }
+
+    function resolveExecuteFocusTask(preferredId = "") {
+      const todayTasks = getTodayFocusTasks();
+      if (!todayTasks.length) return null;
+      const candidates = [preferredId, pomodoro.taskId, state.activeTaskId].filter(Boolean);
+      for (const candidateId of candidates) {
+        if (!isOpenTodayTaskId(candidateId)) continue;
+        const task = getTask(candidateId);
+        if (task) return task;
+      }
+      return todayTasks[0] || null;
+    }
+
     function setTaskFocusToday(id, enabled) {
       const task = getTask(id);
       if (!task || task.completedAt) return;
@@ -12239,6 +12263,9 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       task.completedAt = completedAt;
       if(done){
         task.stage = "done";
+        if (pomodoro.taskId === id) {
+          pomodoro.taskId = null;
+        }
         if (Array.isArray(state.today_focus?.task_ids)) {
           state.today_focus.task_ids = state.today_focus.task_ids.filter(taskId => taskId !== id);
         }
@@ -12359,32 +12386,13 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
 
     // ── Pomodoro ──
     function getOpenTasks() {
-      const openAll = state.tasks.filter(t => !t.completedAt);
-      const todayOpen = openAll.filter(t => normalizePipelineStage(t.stage) === "today");
-      const baseOpen = todayOpen.length ? todayOpen : openAll;
-      const currentId = state.activeTaskId || pomodoro.taskId;
-      const currentTask = currentId ? getTask(currentId) : null;
-      const includeCurrent = !!(currentTask && !currentTask.completedAt);
-
-      const focus = getTodayFocusTasks().filter(t => normalizePipelineStage(t.stage) === "today");
-      if (focus.length) {
-        if (includeCurrent && !focus.some(t => t.id === currentTask.id)) return [currentTask, ...focus];
-        return focus;
-      }
-      const today = todayISO();
-      const todayCreated = baseOpen.filter(t => isoToLocalDateKey(t.createdAt || "") === today);
-      if (todayCreated.length) {
-        if (includeCurrent && !todayCreated.some(t => t.id === currentTask.id)) return [currentTask, ...todayCreated];
-        return todayCreated;
-      }
-      return includeCurrent ? [currentTask, ...baseOpen.filter(t => t.id !== currentTask.id)] : baseOpen;
+      return getTodayFocusTasks();
     }
 
     function refreshPomodoroTaskSelect(preferredId = null) {
       const select = document.getElementById("pomoTaskSelect");
       if (!select) return;
       const openTasks = getOpenTasks();
-      const current = preferredId || select.value || pomodoro.taskId || state.activeTaskId || "";
       select.innerHTML = openTasks.map(t => `<option value="${t.id}">${t.title}</option>`).join("");
       if (!openTasks.length) {
         select.innerHTML = '<option value="">No open tasks</option>';
@@ -12393,7 +12401,8 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         return;
       }
       select.disabled = false;
-      const valid = openTasks.some(t => t.id === current) ? current : openTasks[0].id;
+      const resolvedTask = resolveExecuteFocusTask(preferredId || select.value || pomodoro.taskId || state.activeTaskId || "");
+      const valid = resolvedTask?.id || openTasks[0].id;
       select.value = valid;
       pomodoro.taskId = valid;
     }
@@ -13486,16 +13495,25 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
     function enterFocusMode() {
       const overlay = document.getElementById("focusOverlay");
       if (!overlay) return;
+      const selectedTask = resolveExecuteFocusTask();
       const taskName = document.getElementById("focusTaskName");
-      const heroTask = document.getElementById("heroPomoTask");
-      if (taskName && heroTask) taskName.textContent = heroTask.textContent || "Focus";
+      if (taskName) taskName.textContent = selectedTask ? selectedTask.title : "No task selected";
       const focusTags = document.getElementById("focusTags");
-      const heroMeta = document.getElementById("heroTaskMeta");
-      if (focusTags && heroMeta) {
-        const parts = heroMeta.textContent.split(" · ").filter(Boolean);
+      if (focusTags) {
+        const parts = selectedTask
+          ? [selectedTask.depth || "Deep", selectedTask.category || "", selectedTask.wig && selectedTask.wig !== "None" ? selectedTask.wig : ""].filter(Boolean)
+          : [];
         focusTags.innerHTML = parts.map(p => {
-          const lower = p.toLowerCase();
-          const cls = lower === "deep" ? "deep" : lower === "shallow" ? "shallow" : lower.startsWith("pg") ? "pg1" : "";
+          const lower = String(p).toLowerCase();
+          const cls = lower === "deep"
+            ? "deep"
+            : lower === "shallow"
+              ? "shallow"
+              : lower === "pg2"
+                ? "pg2"
+                : lower === "pg1"
+                  ? "pg1"
+                  : "";
           return `<span class="tag ${cls}">${p}</span>`;
         }).join("");
       }
@@ -13614,7 +13632,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
           : (pomodoro.paused && pomodoro.phase !== "idle" ? "Resume" : "Start");
       }
 
-      const selectedTask = getTask(pomodoro.taskId) || getTask(state.activeTaskId);
+      const selectedTask = resolveExecuteFocusTask();
       if (heroTask) {
         heroTask.textContent = selectedTask ? selectedTask.title : "No task selected";
       }
@@ -13626,6 +13644,32 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
           heroMeta.textContent = parts.filter(Boolean).join(" · ");
         } else {
           heroMeta.textContent = "";
+        }
+      }
+      const focusTaskName = document.getElementById("focusTaskName");
+      if (focusTaskName) {
+        focusTaskName.textContent = selectedTask ? selectedTask.title : "No task selected";
+      }
+      const focusTags = document.getElementById("focusTags");
+      if (focusTags) {
+        if (selectedTask) {
+          const parts = [selectedTask.depth || "Deep", selectedTask.category || ""];
+          if (selectedTask.wig && selectedTask.wig !== "None") parts.push(selectedTask.wig);
+          focusTags.innerHTML = parts.filter(Boolean).map(p => {
+            const lower = String(p).toLowerCase();
+            const cls = lower === "deep"
+              ? "deep"
+              : lower === "shallow"
+                ? "shallow"
+                : lower === "pg2"
+                  ? "pg2"
+                  : lower === "pg1"
+                    ? "pg1"
+                    : "";
+            return `<span class="tag ${cls}">${p}</span>`;
+          }).join("");
+        } else {
+          focusTags.innerHTML = "";
         }
       }
       if (heroCompleteBtn) {
@@ -13667,12 +13711,13 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
 
       const select = document.getElementById("pomoTaskSelect");
       if (phase === "work") {
-        const chosen = select.value || pomodoro.taskId || state.activeTaskId;
+        const chosenTask = resolveExecuteFocusTask(select?.value || pomodoro.taskId || state.activeTaskId || "");
+        const chosen = chosenTask?.id || "";
         if (!chosen) {
           alert("Add at least one open task before starting Pomodoro.");
           return;
         }
-        const task = getTask(chosen);
+        const task = chosenTask;
         if (!task || task.completedAt) {
           alert("Selected task is completed. Pick an open task.");
           refreshPomodoroTaskSelect();
@@ -13793,7 +13838,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       pomodoro.phase = "idle";
       pomodoro.running = false;
       pomodoro.paused = false;
-      pomodoro.taskId = document.getElementById("pomoTaskSelect").value || null;
+      pomodoro.taskId = resolveExecuteFocusTask()?.id || null;
       pomodoro.remainingSec = toInt(document.getElementById("pomoWorkMin").value, 25) * 60;
       pomodoro.endsAtMs = null;
       if (pomodoro.focusMode) setFocusMode(false);
@@ -13801,7 +13846,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
     }
 
     function completeTaskFromHeroCheckbox() {
-      const task = getTask(pomodoro.taskId) || getTask(state.activeTaskId);
+      const task = resolveExecuteFocusTask();
       if (!task || task.completedAt) return;
       toggleDone(task.id, true);
       resetPomodoro();
@@ -14336,6 +14381,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       }
       if (stage === "done" && !task.completedAt) {
         if (state.activeTaskId === task.id) stopActiveTask();
+        if (pomodoro.taskId === task.id) pomodoro.taskId = null;
         const completedAt = new Date().toISOString();
         task.completedAt = completedAt;
         if (Array.isArray(state.today_focus?.task_ids)) {
@@ -14435,19 +14481,19 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         { stage: "backlog", listId: "pipelineBacklog", countId: "pipelineBacklogCount", empty: "No backlog tasks.", done: false },
         { stage: "next_up", listId: "pipelineNext", countId: "pipelineNextCount", empty: "No tasks queued up.", done: false },
         { stage: "today", listId: "pipelineToday", countId: "pipelineTodayCount", empty: "No tasks in today queue.", done: false },
-        { stage: "done", listId: "pipelineDone", countId: "pipelineDoneCount", empty: "No tasks completed this week.", done: true }
+        { stage: "done", listId: "pipelineDone", countId: "pipelineDoneCount", empty: "No tasks completed today.", done: true }
       ];
 
       colMap.forEach(col => {
         const listEl = document.getElementById(col.listId);
         const countEl = document.getElementById(col.countId);
         if (!listEl || !countEl) return;
-        const [weekStart, , , , , , weekEnd] = getWeekDates(0);
+        const today = todayISO();
         const tasks = col.done
           ? state.tasks.filter(t => {
               if (!t.completedAt || normalizePipelineStage(t.stage) !== "done") return false;
               const key = isoToLocalDateKey(t.completedAt || "");
-              return key >= weekStart && key <= weekEnd;
+              return key === today;
             })
           : openTasksByStage(col.stage);
         countEl.textContent = col.stage === "today" ? `${tasks.length} / ${TODAY_STAGE_LIMIT}` : String(tasks.length);
@@ -14476,6 +14522,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
               <div class="controls">
                 ${!col.done ? `<button type="button" class="ghost" data-pipe-order="up" data-task-id="${task.id}">↑</button>` : ""}
                 ${!col.done ? `<button type="button" class="ghost" data-pipe-order="down" data-task-id="${task.id}">↓</button>` : ""}
+                ${col.done ? `<button type="button" class="ghost" data-pipe-reopen-today="1" data-task-id="${task.id}">↺ Today</button>` : ""}
               </div>
               <div class="controls">
                 <button type="button" class="warn" data-pipe-delete="1" data-task-id="${task.id}" data-task-delete="${task.id}" onclick="window.__pppDeleteTask('${task.id}'); return false;">Delete</button>
@@ -27452,6 +27499,11 @@ You cannot change app state without that JSON block. Do not say something was ad
         moveTaskWithinStage(orderBtn.dataset.taskId, orderBtn.dataset.pipeOrder);
         return;
       }
+      const reopenBtn = e.target.closest("button[data-pipe-reopen-today]");
+      if (reopenBtn) {
+        moveTaskToStage(reopenBtn.dataset.taskId, "today");
+        return;
+      }
       const deleteBtn = e.target.closest("button[data-pipe-delete]");
       if (deleteBtn) {
         return;
@@ -28703,6 +28755,19 @@ You cannot change app state without that JSON block. Do not say something was ad
         e.preventDefault();
         e.stopPropagation();
         focusBestAiEntry();
+        return;
+      }
+      if ((e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey && e.key === "Enter") {
+        const openModal = document.querySelector(".modal-backdrop:not([hidden])");
+        if (openModal) return;
+        if (isEditableElement(e.target)) return;
+        const canReenterFocus = !pomodoro.focusMode && (pomodoro.phase === "work" || pomodoro.phase === "break");
+        if (!canReenterFocus) return;
+        e.preventDefault();
+        e.stopPropagation();
+        setFocusMode(true);
+        renderPomodoro();
+        void keepWindowMaximized();
         return;
       }
       if (e.key === "Escape") {
