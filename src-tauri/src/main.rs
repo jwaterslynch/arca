@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    ppp_flow_desktop_lib::run()
+    arca_desktop_lib::run()
 }

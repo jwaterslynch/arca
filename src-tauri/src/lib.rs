@@ -493,7 +493,7 @@ async fn http_get_text(url: String) -> Result<HttpTextResponse, String> {
 
     let client = reqwest::Client::builder()
         .timeout(Duration::from_secs(15))
-        .user_agent("PPP Flow Desktop/0.1")
+        .user_agent("Arca/0.1")
         .build()
         .map_err(|e| e.to_string())?;
 
@@ -548,7 +548,7 @@ async fn ollama_probe() -> Result<OllamaProbeResponse, String> {
 
     let client = reqwest::Client::builder()
         .timeout(Duration::from_secs(3))
-        .user_agent("PPP Flow Desktop/0.1")
+        .user_agent("Arca/0.1")
         .build()
         .map_err(|e| e.to_string())?;
 

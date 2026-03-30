@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a1a2e"/>
+      <stop offset="100%" style="stop-color:#16213e"/>
+    </linearGradient>
+    <linearGradient id="stroke" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#f0e6d8"/>
+      <stop offset="100%" style="stop-color:#d4c4b0"/>
+    </linearGradient>
+  </defs>
+  <!-- Background -->
+  <rect width="1024" height="1024" rx="216" fill="url(#bg)"/>
+  <!-- A lettermark -->
+  <g transform="translate(512,540)">
+    <!-- Left leg -->
+    <line x1="-8" y1="-300" x2="-200" y2="260" stroke="url(#stroke)" stroke-width="16" stroke-linecap="round"/>
+    <!-- Right leg -->
+    <line x1="8" y1="-300" x2="200" y2="260" stroke="url(#stroke)" stroke-width="16" stroke-linecap="round"/>
+    <!-- Crossbar -->
+    <line x1="-100" y1="50" x2="100" y2="50" stroke="url(#stroke)" stroke-width="14" stroke-linecap="round"/>
+    <!-- Apex accent -->
+    <circle cx="0" cy="-308" r="10" fill="#c9956b"/>
+  </g>
+</svg>

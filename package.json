@@ -1,6 +1,6 @@
 {
-  "name": "ppp-flow-desktop",
-  "private": false,
+  "name": "arca-desktop",
+  "private": true,
   "version": "0.1.0-beta.4",
   "type": "module",
   "scripts": {

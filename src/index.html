@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>PPP Flow Desktop</title>
+<title>Arca</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -1811,6 +1811,12 @@ button.warn {
   visibility:hidden !important;
   pointer-events:none !important;
 }
+.ui-hidden-hook,
+.ui-hidden-hook[hidden]{
+  display:none !important;
+  visibility:hidden !important;
+  pointer-events:none !important;
+}
 @media (max-width: 1180px){
   .onboard-hero-grid,
   .onboard-ai-grid,
@@ -2577,7 +2583,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
 <div class="app-shell">
   <!-- ═══════════ TOP BAR ═══════════ -->
   <div class="top-bar">
-    <div class="logo">PPP Flow <span>Desktop</span></div>
+    <div class="logo">Arca</div>
     <div class="mode-switcher">
       <button class="mode-btn tab active" data-tab="execute" type="button">Execute</button>
       <button class="mode-btn tab" data-tab="plan" type="button">Plan</button>
@@ -2606,22 +2612,22 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           <div class="task-name" id="heroPomoTask">No task selected</div>
           <div class="task-meta">
             <span id="heroTaskMeta" style="font-size:.8rem;color:var(--text2)"></span>
-            <span id="heroPomoPhase" class="pomo-pill idle" style="display:none">Idle</span>
-            <span id="heroPomoStatus" style="display:none">Ready</span>
+            <span id="heroPomoPhase" class="pomo-pill idle ui-hidden-hook" hidden aria-hidden="true">Idle</span>
+            <span id="heroPomoStatus" class="ui-hidden-hook" hidden aria-hidden="true">Ready</span>
           </div>
         </div>
         <div class="timer-display" id="heroPomoClock">25:00</div>
         <div class="timer-controls">
           <button class="timer-btn start" id="heroPomoStartBtn" type="button">Start</button>
-          <button class="timer-btn pause" id="heroPomoPauseBtn" type="button" style="display:none">Pause</button>
+          <button class="timer-btn pause ui-hidden-hook" id="heroPomoPauseBtn" type="button" hidden aria-hidden="true">Pause</button>
           <button class="timer-btn complete" id="heroCompleteBtn" type="button" disabled>✓ <span id="heroCompleteLabel">Done</span></button>
-          <button id="heroPomoSkipBtn" type="button" style="display:none">Skip</button>
-          <button id="heroPomoBreakNowBtn" type="button" style="display:none">Break</button>
-          <button id="heroPomoResetBtn" type="button" style="display:none">Reset</button>
-          <button id="focusModeBtn" type="button" style="display:none">Focus</button>
-          <div style="display:none"><label><input id="autoFocusToggle" type="checkbox" checked />Auto Focus</label></div>
+          <button id="heroPomoSkipBtn" class="ui-hidden-hook" type="button" hidden aria-hidden="true">Skip</button>
+          <button id="heroPomoBreakNowBtn" class="ui-hidden-hook" type="button" hidden aria-hidden="true">Break</button>
+          <button id="heroPomoResetBtn" class="ui-hidden-hook" type="button" hidden aria-hidden="true">Reset</button>
+          <button id="focusModeBtn" class="ui-hidden-hook" type="button" hidden aria-hidden="true">Focus</button>
+          <div class="ui-hidden-hook" hidden aria-hidden="true"><label><input id="autoFocusToggle" type="checkbox" checked />Auto Focus</label></div>
         </div>
-        <select id="pomoTaskSelect" style="display:none"></select>
+        <select id="pomoTaskSelect" class="ui-hidden-hook" hidden aria-hidden="true"></select>
       </div>
 
       <!-- AI Bar -->
@@ -2637,10 +2643,10 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           </div>
           <button class="ai-send" id="aiInlineSendBtn" data-ai-send-for="aiInlineUserInput" type="button" title="Send to AI"><span class="ai-send-arrow">↑</span><span class="ai-send-spinner"></span></button>
           <!-- Hidden AI elements JS needs -->
-          <div id="aiInlineMessages" style="display:none"></div>
-          <button id="aiInlineClearChatBtn" style="display:none" type="button">Clear</button>
-          <span id="aiInlineBusyStatus" style="display:none"></span>
-          <div id="aiInlineToast" style="display:none"></div>
+          <div id="aiInlineMessages" class="ui-hidden-hook" hidden aria-hidden="true"></div>
+          <button id="aiInlineClearChatBtn" class="ui-hidden-hook" hidden aria-hidden="true" type="button">Clear</button>
+          <span id="aiInlineBusyStatus" class="ui-hidden-hook" hidden aria-hidden="true"></span>
+          <div id="aiInlineToast" class="ui-hidden-hook" hidden aria-hidden="true"></div>
           <div id="aiInlineProposalWrap" class="ai-proposal" hidden>
             <h3 style="margin:0;">Proposed Changes</h3>
             <div id="aiInlineProposalSummary" class="tiny"></div>
@@ -2653,7 +2659,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
               <span id="aiInlineApplyStatus" class="tiny"></span>
             </div>
           </div>
-          <div id="aiInlineProviderSwitch" style="display:none">
+          <div id="aiInlineProviderSwitch" class="ui-hidden-hook" hidden aria-hidden="true">
             <button class="ai-provider-btn" data-ai-provider-btn="openai">ChatGPT</button>
             <button class="ai-provider-btn" data-ai-provider-btn="anthropic">Claude</button>
             <button class="ai-provider-btn" data-ai-provider-btn="grok">Grok</button>
@@ -2661,8 +2667,8 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
             <button class="ai-provider-btn" data-ai-provider-btn="deepseek">DeepSeek</button>
             <button class="ai-provider-btn" data-ai-provider-btn="mistral">Mistral</button>
           </div>
-          <button id="aiInlineOpenSettingsBtn" style="display:none" type="button">AI Settings</button>
-          <button id="aiInlineOpenAssistantBtn" style="display:none" type="button">Open Plan</button>
+          <button id="aiInlineOpenSettingsBtn" class="ui-hidden-hook" hidden aria-hidden="true" type="button">AI Settings</button>
+          <button id="aiInlineOpenAssistantBtn" class="ui-hidden-hook" hidden aria-hidden="true" type="button">Open Plan</button>
         </div>
         <div id="aiInlineDisabledNotice" class="ai-note" hidden></div>
         <!-- AI Receipt — floats below AI bar without shifting layout -->
@@ -2681,7 +2687,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         </div>
         <div id="todayTaskList"></div>
         <!-- Hidden elements JS needs -->
-        <div style="display:none">
+        <div class="ui-hidden-hook" hidden aria-hidden="true">
           <button id="autofillFocusBtn">Auto-fill</button>
           <button id="resetTodayFocusBtn">Clear</button>
           <span id="todayDate"></span>
@@ -2697,7 +2703,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
             <h3>Practices &amp; Domains</h3>
             <span class="count" id="lifeSummary">0/0 logged</span>
           </div>
-          <div style="display:none">
+          <div class="ui-hidden-hook" hidden aria-hidden="true">
             <button id="manageLifeBtn">Manage</button>
             <div id="lifeManager" class="life-manager" hidden>
               <div class="life-add-grid">
@@ -2754,7 +2760,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         <!-- Pipeline Panel -->
         <div class="plan-subpanel active tab-content" id="tab-focus">
           <div class="card" style="padding:0;box-shadow:none;background:transparent">
-            <div class="titlebar" style="display:none">
+            <div class="titlebar ui-hidden-hook" hidden aria-hidden="true">
               <h2>Focus Layer</h2>
               <div class="controls">
                 <span class="tiny" id="focusUpdated"></span>
@@ -2790,7 +2796,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
                 </div>
               </div>
             </div>
-            <div style="margin-top:16px;display:none">
+            <div class="ui-hidden-hook" hidden aria-hidden="true" style="margin-top:16px">
               <h3 style="font-size:.95rem;font-weight:700">Goal Scoreboard</h3>
               <div id="weekScoreCards" class="score-grid"></div>
               <div class="summary-grid" style="margin-top:10px;">
@@ -2840,7 +2846,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
                   <strong style="font-size:.82rem;">Local AI Setup</strong>
                   <button id="aiOpenOllamaWizardBtn" class="ghost" type="button">Open Setup Wizard</button>
                 </div>
-                <div id="aiOllamaSetupSummary" class="tiny">Detect Ollama, download a starter model, and configure PPP Flow to keep requests on this machine.</div>
+                <div id="aiOllamaSetupSummary" class="tiny">Detect Ollama, download a starter model, and configure Arca to keep requests on this machine.</div>
               </div>
               <details style="margin-top:8px;"><summary class="tiny">Advanced</summary>
                 <div class="ai-config-grid" style="margin-top:8px;">
@@ -3007,7 +3013,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         </div>
 
         <!-- Hidden: original planning form (keeps all IDs for JS) -->
-        <div id="focusPlanningSection" style="display:none">
+        <div id="focusPlanningSection" class="ui-hidden-hook" hidden aria-hidden="true">
           <div class="goal-display">
             <div class="focus-grid">
               <div><label class="tiny">Primary Goal</label><input id="wig1Input" placeholder="From X to Y by when" /></div>
@@ -4175,7 +4181,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       <div class="modal-head">
         <div>
           <h3 id="localAiWizardTitle">Local AI Setup</h3>
-          <div id="localAiWizardMeta" class="tiny">Detect Ollama, download a local model, and configure PPP Flow to keep requests on this machine.</div>
+          <div id="localAiWizardMeta" class="tiny">Detect Ollama, download a local model, and configure Arca to keep requests on this machine.</div>
         </div>
         <button id="localAiWizardCloseBtn" class="ghost" type="button">Close</button>
       </div>
@@ -4295,7 +4301,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
     <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="onboardingTitle">
       <div class="modal-head">
         <div>
-          <h3 id="onboardingTitle">Welcome to PPP Flow</h3>
+          <h3 id="onboardingTitle">Welcome to Arca</h3>
           <div id="onboardingMeta" class="tiny">Set up in under 5 minutes</div>
         </div>
         <button id="onboardingSkipBtn" class="ghost" type="button">Skip setup</button>
@@ -4314,7 +4320,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
             <div class="onboard-card onboard-section-copy">
               <div class="onboard-eyebrow">Welcome</div>
               <h4 class="onboard-section-title">Set up the same operating system you will use every day.</h4>
-              <p>PPP Flow keeps one primary goal visible, protects time for high-value work, and gives you structured health, wealth, and review surfaces without turning the app into a cockpit on day one.</p>
+              <p>Arca keeps one primary goal visible, protects time for high-value work, and gives you structured health, wealth, and review surfaces without turning the app into a cockpit on day one.</p>
               <div class="onboard-highlight-list">
                 <div class="onboard-highlight-item">
                   <strong>Execute</strong>
@@ -4354,7 +4360,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           <!-- Stage A: AI opt-in / opt-out -->
           <div id="onboardAiStageA" class="onboard-card onboard-section-copy">
             <div class="onboard-eyebrow">AI assist</div>
-            <h4 class="onboard-section-title">Choose whether PPP Flow should use AI coaching.</h4>
+            <h4 class="onboard-section-title">Choose whether Arca should use AI coaching.</h4>
             <p class="tiny">AI can help prioritise tasks, coach life practices, and generate a starter setup from a short brain-dump. When active, it sees your goals, open tasks, practices, and commitments. It does <strong>not</strong> see passwords, financial accounts, or data from other apps.</p>
             <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px;">
               <button id="onboardAiEnableBtn" class="primary" type="button">Enable AI coaching (recommended)</button>
@@ -4403,7 +4409,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
                 <button id="onboardOllamaSetupBtn" class="ghost" type="button">Set up Local AI</button>
                 <button id="onboardOllamaRefreshBtn" class="ghost" type="button" hidden>Check Again</button>
               </div>
-              <div id="onboardOllamaQuickStatus" class="local-ai-inline-status">The setup wizard can detect Ollama, download a starter model, and configure PPP Flow to use it locally.</div>
+              <div id="onboardOllamaQuickStatus" class="local-ai-inline-status">The setup wizard can detect Ollama, download a starter model, and configure Arca to use it locally.</div>
               <div id="onboardOllamaModelHint" class="tiny onboard-muted-note" style="margin-top:6px;">Starter model: Llama 3.2. Optional local upgrades: Qwen 7B, Mistral Small 3.1, DeepSeek R1.</div>
             </div>
             </div>
@@ -4424,7 +4430,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           </div>
 
           <div class="onboard-muted-strip">
-            <p class="tiny"><strong>How PPP Flow works:</strong> focus on one primary goal, track controllable inputs, keep a visible scoreboard, and review weekly so priorities stay honest.</p>
+            <p class="tiny"><strong>How Arca works:</strong> focus on one primary goal, track controllable inputs, keep a visible scoreboard, and review weekly so priorities stay honest.</p>
           </div>
         </div>
 
@@ -4712,6 +4718,8 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
     const NEXT_UP_SOFT_LIMIT = 10;
     const PIPELINE_STAGES = ["backlog", "next_up", "today", "done"];
     const AI_PREF_KEY = "PPP_AI_PREFS_V1";
+    const AI_MODEL_CACHE_KEY = "PPP_AI_MODEL_CACHE_V1";
+    const AI_MODEL_CACHE_MAX_AGE_MS = 1000 * 60 * 60 * 24 * 30;
     const AI_ALLOWED_PROVIDERS = ["openai", "anthropic", "gemini", "grok", "deepseek", "mistral", "ollama", "openai_compatible"];
     let aiSessionOnlyKey = ""; // runtime-only API key, never persisted
     let wealthCoachCloudConsent = {}; // runtime-only, per-provider consent for sending wealth data to cloud AI
@@ -4729,6 +4737,8 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
     const AI_ATTACHMENT_MAX_TEXT_CHARS = 12000;
     let pipelineDragTaskId = null;
     let aiPrefs = loadAiPrefs();
+    let aiModelCatalogCache = loadAiModelCatalogCache();
+    const aiModelCatalogInflight = Object.create(null);
     let aiMessages = [];
     let aiProposal = null;
     let aiUndoBatch = null;
@@ -6195,7 +6205,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       const wealthExplicit = modules.experimental?.wealth;
       const healthEnabled = isHealthSurfaceEnabled(state);
       const wealthEnabled = isWealthSurfaceEnabled(state);
-      if (versionValue) versionValue.textContent = appRuntime.version ? `PPP Flow Desktop ${appRuntime.version}` : "Browser mode";
+      if (versionValue) versionValue.textContent = appRuntime.version ? `Arca ${appRuntime.version}` : "Browser mode";
       if (profileValue) profileValue.textContent = appRuntime.profile || (nativeStore.available ? "desktop" : "browser");
       if (executableValue) executableValue.textContent = appRuntime.executablePath || "Unavailable";
       if (statePathValue) statePathValue.textContent = nativeStore.path || "Unavailable";
@@ -6562,7 +6572,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         alert("Latest-backup restore is available only in the desktop app build.");
         return;
       }
-      const confirmed = window.confirm("Restore the latest PPP Flow backup? This will overwrite the current live board state.");
+      const confirmed = window.confirm("Restore the latest Arca backup? This will overwrite the current live board state.");
       if (!confirmed) return;
       try {
         const raw = await invoke("load_latest_backup");
@@ -6969,7 +6979,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       if (provider === "deepseek") return "deepseek-chat";
       if (provider === "mistral") return "mistral-small-latest";
       if (provider === "ollama") return "llama3.2";
-      return "gpt-4.1-mini";
+      return "gpt-5.4-mini";
     }
     function aiProviderNeedsKey(provider) {
       return provider !== "ollama";
@@ -7121,23 +7131,12 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
     }
 
     function aiQuickSwitchModelOptions(provider, availableModels = [], selectedModel = "") {
-      const preferred = provider === "ollama"
-        ? LOCAL_AI_RECOMMENDED_MODELS.map(model => model.name)
-        : aiPreferredModelHints(provider);
       const normalizedAvailable = Array.from(new Set(
         (Array.isArray(availableModels) ? availableModels : [])
           .map(model => aiNormalizeModelId(provider, model))
           .filter(Boolean)
       ));
-      let options = preferred.length
-        ? preferred.filter(model => !normalizedAvailable.length || normalizedAvailable.some(available => available.toLowerCase() === model.toLowerCase()))
-        : normalizedAvailable.slice();
-      if (!options.length) options = preferred.length ? preferred.slice() : normalizedAvailable.slice();
-      const selected = aiNormalizeModelId(provider, selectedModel);
-      if (selected && !options.some(model => model.toLowerCase() === selected.toLowerCase())) {
-        options.unshift(selected);
-      }
-      return Array.from(new Set(options.filter(Boolean)));
+      return aiShortlistModelsFromAvailable(provider, normalizedAvailable, selectedModel);
     }
 
     function aiQuickSwitchSourceLabel(source = "") {
@@ -7165,12 +7164,12 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       renderAiQuickSwitch();
       const resolved = aiQuickSwitchResolvedConfig();
       try {
-        const models = await aiFetchAvailableModels(resolved);
+        const models = await aiGetAvailableModelsCached(resolved, { forceRefresh: options.forceRefresh === true });
         const fallbackModel = aiGetProviderConfig(provider).model || aiDefaultModel(provider);
         aiQuickSwitch.models = aiQuickSwitchModelOptions(provider, models, aiQuickSwitch.selectedModel || fallbackModel);
       } catch (err) {
         const fallbackModel = aiGetProviderConfig(provider).model || aiDefaultModel(provider);
-        aiQuickSwitch.models = aiQuickSwitchModelOptions(provider, [], aiQuickSwitch.selectedModel || fallbackModel);
+        aiQuickSwitch.models = aiQuickSwitchModelOptions(provider, aiGetCachedModels(provider, { includeStale: true }), aiQuickSwitch.selectedModel || fallbackModel);
         aiQuickSwitch.error = String(err?.message || err || "Could not load models");
       } finally {
         aiQuickSwitch.loading = false;
@@ -7340,10 +7339,10 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         : 0;
 
       let heading = "Check your local AI status";
-      let message = "PPP Flow will detect whether Ollama is installed, whether the local server is running, and whether a model is ready to use.";
+      let message = "Arca will detect whether Ollama is installed, whether the local server is running, and whether a model is ready to use.";
       if (localAiWizard.status === "missing") {
         heading = "Install Ollama first";
-        message = "PPP Flow could not detect Ollama on this machine. Install the macOS app, launch it once, then return here and check again.";
+        message = "Arca could not detect Ollama on this machine. Install the macOS app, launch it once, then return here and check again.";
       } else if (localAiWizard.status === "installed_not_running") {
         heading = "Ollama is installed but not running";
         message = "Open the Ollama app from Applications or start the server, then click Check Again.";
@@ -7352,13 +7351,13 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         message = "Ollama is running. Start with the recommended starter model, then optionally add stronger local models like Qwen, Mistral, or DeepSeek.";
       } else if (localAiWizard.status === "pulling") {
         heading = `Downloading ${localAiWizard.pullModel || "model"}`;
-        message = localAiWizard.pullStatus || "Keep PPP Flow open while the local model downloads.";
+        message = localAiWizard.pullStatus || "Keep Arca open while the local model downloads.";
       } else if (localAiWizard.status === "ready") {
         heading = "Local AI is ready";
-        message = "Choose which installed model PPP Flow should use, then apply it.";
+        message = "Choose which installed model Arca should use, then apply it.";
       } else if (localAiWizard.status === "checking") {
         heading = "Checking Ollama";
-        message = "PPP Flow is probing the local Ollama runtime now.";
+        message = "Arca is probing the local Ollama runtime now.";
       }
 
       body.innerHTML = `
@@ -7400,7 +7399,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
             <div class="local-ai-model-grid">${recommendedCards}</div>
           </div>` : ""}
         <div class="local-ai-wizard-note">
-          Local models keep prompts on your machine. PPP Flow uses Ollama's local API at <code>http://localhost:11434</code>. Local inference materially reduces exposure versus cloud APIs, but your privacy still depends on the runtime, downloaded weights, and what network access you allow on this machine.
+          Local models keep prompts on your machine. Arca uses Ollama's local API at <code>http://localhost:11434</code>. Local inference materially reduces exposure versus cloud APIs, but your privacy still depends on the runtime, downloaded weights, and what network access you allow on this machine.
         </div>
       `;
     }
@@ -7595,7 +7594,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       return text;
     }
     function aiPreferredModelHints(provider) {
-      if (provider === "openai" || provider === "openai_compatible") return ["gpt-5.3-chat-latest", "gpt-5.2", "gpt-5.1", "gpt-5-mini", "gpt-4.1", "gpt-4.1-mini"];
+      if (provider === "openai" || provider === "openai_compatible") return ["gpt-5.4", "gpt-5.4-mini", "gpt-4.1", "gpt-4.1-mini"];
       if (provider === "anthropic") return [
         "claude-sonnet-4-5",
         "claude-opus-4-6",
@@ -7616,6 +7615,137 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       if (provider === "mistral") return ["mistral-medium-latest", "mistral-small-latest", "mistral-large-latest", "magistral-medium-latest"];
       return [];
     }
+    function aiModelFamilyRules(provider) {
+      const excludeGeneralUtility = model => /(audio|realtime|search|transcribe|tts|image|embedding|moderation)/i.test(model);
+      if (provider === "openai" || provider === "openai_compatible") {
+        return [
+          {
+            key: "gpt-5",
+            match(model) {
+              const lower = String(model || "").toLowerCase();
+              return lower.startsWith("gpt-5") && !/mini|nano|codex/i.test(lower) && !excludeGeneralUtility(lower);
+            }
+          },
+          {
+            key: "gpt-5-mini",
+            match(model) {
+              const lower = String(model || "").toLowerCase();
+              return lower.startsWith("gpt-5") && /mini/i.test(lower) && !/codex/i.test(lower) && !excludeGeneralUtility(lower);
+            }
+          },
+          {
+            key: "gpt-4.1",
+            match(model) {
+              const lower = String(model || "").toLowerCase();
+              return lower.startsWith("gpt-4.1") && !/mini/i.test(lower) && !excludeGeneralUtility(lower);
+            }
+          },
+          {
+            key: "gpt-4.1-mini",
+            match(model) {
+              const lower = String(model || "").toLowerCase();
+              return lower.startsWith("gpt-4.1-mini") && !excludeGeneralUtility(lower);
+            }
+          }
+        ];
+      }
+      if (provider === "anthropic") {
+        return [
+          { key: "claude-sonnet", match: model => /^claude-sonnet/i.test(String(model || "")) },
+          { key: "claude-opus", match: model => /^claude-opus/i.test(String(model || "")) },
+          { key: "claude-haiku", match: model => /^claude-haiku/i.test(String(model || "")) }
+        ];
+      }
+      if (provider === "gemini") {
+        return [
+          { key: "gemini-2.5-flash", match: model => /^gemini-2\.5-flash/i.test(String(model || "")) },
+          { key: "gemini-2.5-pro", match: model => /^gemini-2\.5-pro/i.test(String(model || "")) },
+          { key: "gemini-flash-latest", match: model => /^gemini-flash-latest/i.test(String(model || "")) },
+          { key: "gemini-2.0-flash", match: model => /^gemini-2\.0-flash/i.test(String(model || "")) },
+          { key: "gemini-1.5-pro", match: model => /^gemini-1\.5-pro/i.test(String(model || "")) }
+        ];
+      }
+      if (provider === "grok") {
+        return [
+          { key: "grok-4-fast-non-reasoning", match: model => /^grok-4.*fast.*non-reasoning/i.test(String(model || "")) },
+          { key: "grok-4-fast-reasoning", match: model => /^grok-4.*fast.*reasoning/i.test(String(model || "")) },
+          { key: "grok-code-fast", match: model => /^grok-code-fast/i.test(String(model || "")) },
+          { key: "grok-3-mini", match: model => /^grok-3-mini/i.test(String(model || "")) }
+        ];
+      }
+      if (provider === "deepseek") {
+        return [
+          { key: "deepseek-chat", match: model => /^deepseek-chat/i.test(String(model || "")) },
+          { key: "deepseek-reasoner", match: model => /^deepseek-reasoner/i.test(String(model || "")) }
+        ];
+      }
+      if (provider === "mistral") {
+        return [
+          { key: "mistral-medium-latest", match: model => /^mistral-medium-latest/i.test(String(model || "")) },
+          { key: "mistral-small-latest", match: model => /^mistral-small-latest/i.test(String(model || "")) },
+          { key: "mistral-large-latest", match: model => /^mistral-large-latest/i.test(String(model || "")) },
+          { key: "magistral-medium-latest", match: model => /^magistral-medium-latest/i.test(String(model || "")) }
+        ];
+      }
+      if (provider === "ollama") {
+        return LOCAL_AI_RECOMMENDED_MODELS.map(model => ({
+          key: model.name,
+          match: value => String(value || "").trim().toLowerCase() === model.name.toLowerCase()
+        }));
+      }
+      return [];
+    }
+    function aiExtractModelNumbers(model) {
+      return Array.from(String(model || "").matchAll(/\d+/g)).map(match => Number(match[0]));
+    }
+    function aiCompareModelsByFreshness(a, b) {
+      const aText = String(a || "").toLowerCase();
+      const bText = String(b || "").toLowerCase();
+      const aNums = aiExtractModelNumbers(aText);
+      const bNums = aiExtractModelNumbers(bText);
+      const maxLen = Math.max(aNums.length, bNums.length);
+      for (let i = 0; i < maxLen; i += 1) {
+        const aVal = Number.isFinite(aNums[i]) ? aNums[i] : -1;
+        const bVal = Number.isFinite(bNums[i]) ? bNums[i] : -1;
+        if (aVal !== bVal) return bVal - aVal;
+      }
+      const aLatest = /latest/.test(aText) ? 1 : 0;
+      const bLatest = /latest/.test(bText) ? 1 : 0;
+      if (aLatest !== bLatest) return bLatest - aLatest;
+      const aStable = /(preview|beta|alpha|rc)/.test(aText) ? 0 : 1;
+      const bStable = /(preview|beta|alpha|rc)/.test(bText) ? 0 : 1;
+      if (aStable !== bStable) return bStable - aStable;
+      return aText.localeCompare(bText);
+    }
+    function aiShortlistModelsFromAvailable(provider, availableModels = [], selectedModel = "") {
+      const normalizedAvailable = Array.from(new Set(
+        (Array.isArray(availableModels) ? availableModels : [])
+          .map(model => aiNormalizeModelId(provider, model))
+          .filter(Boolean)
+      )).sort(aiCompareModelsByFreshness);
+      const selected = aiNormalizeModelId(provider, selectedModel);
+      if (!normalizedAvailable.length) {
+        const hints = aiPreferredModelHints(provider).slice();
+        if (selected && !hints.some(model => model.toLowerCase() === selected.toLowerCase())) hints.unshift(selected);
+        return Array.from(new Set(hints.filter(Boolean)));
+      }
+      const shortlisted = [];
+      const push = (model) => {
+        const normalized = aiNormalizeModelId(provider, model);
+        if (!normalized || shortlisted.some(item => item.toLowerCase() === normalized.toLowerCase())) return;
+        shortlisted.push(normalized);
+      };
+      for (const rule of aiModelFamilyRules(provider)) {
+        const match = normalizedAvailable.find(model => rule.match(model));
+        if (match) push(match);
+      }
+      if (selected) push(selected);
+      for (const model of normalizedAvailable) {
+        if (shortlisted.length >= 6) break;
+        push(model);
+      }
+      return shortlisted.length ? shortlisted : normalizedAvailable.slice(0, 6);
+    }
     function aiNormalizeModelId(provider, value) {
       const text = String(value || "").trim();
       if (!text) return "";
@@ -7631,10 +7761,8 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       ));
       if (!normalized.length) return requested || aiDefaultModel(provider);
       if (requested && normalized.includes(requested)) return requested;
-      for (const candidate of aiPreferredModelHints(provider)) {
-        const hit = normalized.find(m => m.toLowerCase() === candidate.toLowerCase());
-        if (hit) return hit;
-      }
+      const shortlist = aiShortlistModelsFromAvailable(provider, normalized, requested);
+      if (shortlist.length) return shortlist[0];
       return normalized[0];
     }
     function aiChooseAlternativeModel(provider, availableModels, blocked = []) {
@@ -7648,9 +7776,9 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           .map(v => aiNormalizeModelId(provider, v))
           .filter(Boolean)
       ));
-      for (const candidate of aiPreferredModelHints(provider)) {
-        const hit = normalized.find(m => m.toLowerCase() === candidate.toLowerCase());
-        if (hit && !blockedSet.has(hit)) return hit;
+      const shortlist = aiShortlistModelsFromAvailable(provider, normalized);
+      for (const candidate of shortlist) {
+        if (!blockedSet.has(candidate)) return candidate;
       }
       return normalized.find(m => !blockedSet.has(m)) || "";
     }
@@ -7764,7 +7892,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         if (!normalized || blockedSet.has(normalized) || candidates.includes(normalized)) return;
         candidates.push(normalized);
       };
-      for (const hint of aiPreferredModelHints(provider)) pushCandidate(hint);
+      for (const hint of aiShortlistModelsFromAvailable(provider, available, current)) pushCandidate(hint);
       for (const value of available) pushCandidate(value);
       return candidates;
     }
@@ -7853,6 +7981,76 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         .filter(Boolean);
       return models;
     }
+    function defaultAiModelCatalogCache() {
+      return AI_ALLOWED_PROVIDERS.reduce((acc, provider) => {
+        acc[provider] = { fetchedAt: 0, models: [] };
+        return acc;
+      }, {});
+    }
+    function normalizeAiModelCatalogCache(raw) {
+      const input = raw && typeof raw === "object" ? raw : {};
+      const normalized = defaultAiModelCatalogCache();
+      AI_ALLOWED_PROVIDERS.forEach(provider => {
+        const entry = input[provider] && typeof input[provider] === "object" ? input[provider] : {};
+        const models = Array.isArray(entry.models)
+          ? Array.from(new Set(entry.models.map(model => aiNormalizeModelId(provider, model)).filter(Boolean)))
+          : [];
+        const fetchedAt = Number(entry.fetchedAt || 0);
+        normalized[provider] = {
+          fetchedAt: Number.isFinite(fetchedAt) && fetchedAt > 0 ? fetchedAt : 0,
+          models
+        };
+      });
+      return normalized;
+    }
+    function loadAiModelCatalogCache() {
+      try {
+        const raw = localStorage.getItem(AI_MODEL_CACHE_KEY);
+        if (!raw) return defaultAiModelCatalogCache();
+        return normalizeAiModelCatalogCache(JSON.parse(raw));
+      } catch {
+        return defaultAiModelCatalogCache();
+      }
+    }
+    function saveAiModelCatalogCache() {
+      try {
+        localStorage.setItem(AI_MODEL_CACHE_KEY, JSON.stringify(aiModelCatalogCache));
+      } catch {}
+    }
+    function aiGetCachedModels(provider, opts = {}) {
+      const entry = aiModelCatalogCache?.[provider];
+      if (!entry || !Array.isArray(entry.models) || !entry.models.length) return [];
+      const maxAgeMs = Number.isFinite(opts.maxAgeMs) ? opts.maxAgeMs : AI_MODEL_CACHE_MAX_AGE_MS;
+      const includeStale = opts.includeStale === true;
+      const age = Date.now() - Number(entry.fetchedAt || 0);
+      if (!includeStale && (!entry.fetchedAt || age > maxAgeMs)) return [];
+      return entry.models.slice();
+    }
+    function aiSetCachedModels(provider, models = []) {
+      aiModelCatalogCache[provider] = {
+        fetchedAt: Date.now(),
+        models: Array.from(new Set((Array.isArray(models) ? models : []).map(model => aiNormalizeModelId(provider, model)).filter(Boolean)))
+      };
+      saveAiModelCatalogCache();
+    }
+    async function aiGetAvailableModelsCached(cfgLike, options = {}) {
+      const cfg = cfgLike && typeof cfgLike === "object" ? cfgLike : aiResolveConfig(aiPrefs);
+      const provider = cfg.provider;
+      const forceRefresh = options.forceRefresh === true;
+      const cachedFresh = aiGetCachedModels(provider);
+      if (!forceRefresh && cachedFresh.length) return cachedFresh;
+      if (aiModelCatalogInflight[provider]) return aiModelCatalogInflight[provider];
+      const request = aiFetchAvailableModels(cfg)
+        .then(models => {
+          aiSetCachedModels(provider, models);
+          return aiGetCachedModels(provider, { includeStale: true });
+        })
+        .finally(() => {
+          delete aiModelCatalogInflight[provider];
+        });
+      aiModelCatalogInflight[provider] = request;
+      return request;
+    }
 
     async function aiPopulateModelDropdown(opts = {}) {
       const select = document.getElementById("aiModelInput");
@@ -7871,77 +8069,52 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         const activeProvider = String(providerInput?.value || "").trim();
         return requestSeq !== aiModelDropdownRequestSeq || (activeProvider && activeProvider !== cfg.provider);
       };
-      if (aiProviderNeedsKey(cfg.provider) && !cfg.apiKey) {
-        // No key yet — show preferred hints as static options
-        if (isStaleRequest()) return;
-        const hints = aiPreferredModelHints(cfg.provider);
+      const renderModelOptions = (models = []) => {
         select.innerHTML = '<option value="">Default</option>';
-        hints.forEach(m => {
+        const seen = new Set();
+        models.forEach(m => {
+          const key = String(m || "").toLowerCase();
+          if (!m || seen.has(key)) return;
+          seen.add(key);
           const opt = document.createElement("option");
-          opt.value = m; opt.textContent = m;
+          opt.value = m;
+          opt.textContent = m;
           select.appendChild(opt);
         });
-        if (desiredValue) select.value = desiredValue;
-        if (!select.value && desiredValue) {
-          const opt = document.createElement("option");
-          opt.value = desiredValue; opt.textContent = desiredValue;
-          select.insertBefore(opt, select.children[1]);
+        if (desiredValue) {
           select.value = desiredValue;
+          if (!select.value) {
+            const opt = document.createElement("option");
+            opt.value = desiredValue;
+            opt.textContent = desiredValue;
+            select.insertBefore(opt, select.children[1]);
+            select.value = desiredValue;
+          }
         }
+      };
+      const cachedModels = aiGetCachedModels(cfg.provider, { includeStale: true });
+      if (aiProviderNeedsKey(cfg.provider) && !cfg.apiKey) {
+        // No key yet — show cached live models if we have them, otherwise fall back to hints.
+        if (isStaleRequest()) return;
+        renderModelOptions(aiShortlistModelsFromAvailable(cfg.provider, cachedModels, desiredValue));
         if (isStaleRequest()) return;
         select.dataset.provider = cfg.provider;
         return;
       }
       if (refreshBtn) { refreshBtn.textContent = "…"; refreshBtn.disabled = true; }
       try {
-        const available = await aiFetchAvailableModels(cfg);
+        const available = await aiGetAvailableModelsCached(cfg, { forceRefresh: opts.forceRefresh === true });
         if (isStaleRequest()) return;
-        const preferred = aiPreferredModelHints(cfg.provider);
-        // Only show recommended models that are actually available on this API key
-        const verified = preferred.filter(p => available.some(a => a.toLowerCase() === p.toLowerCase()));
-        // If none matched (e.g. wrong API key for this provider), show preferred hints as static list
-        const models = verified.length > 0 ? verified : preferred;
-        select.innerHTML = '<option value="">Default</option>';
-        const seen = new Set();
-        models.forEach(m => {
-          const key = m.toLowerCase();
-          if (seen.has(key)) return;
-          seen.add(key);
-          const opt = document.createElement("option");
-          opt.value = m; opt.textContent = m;
-          select.appendChild(opt);
-        });
-        // Ensure current value is preserved even if not in list
-        if (desiredValue) {
-          select.value = desiredValue;
-          if (!select.value) {
-            const opt = document.createElement("option");
-            opt.value = desiredValue; opt.textContent = desiredValue;
-            select.insertBefore(opt, select.children[1]);
-            select.value = desiredValue;
-          }
-        }
+        const models = aiShortlistModelsFromAvailable(cfg.provider, available, desiredValue);
+        renderModelOptions(models);
         if (opts.quiet !== true) {
           const statusEl = document.getElementById("aiTestStatus");
-          if (statusEl) statusEl.textContent = `${models.length} models available.`;
+          if (statusEl) statusEl.textContent = `${available.length} live models checked.`;
         }
       } catch (err) {
         if (isStaleRequest()) return;
-        // Fall back to preferred hints on error
-        const hints = aiPreferredModelHints(cfg.provider);
-        select.innerHTML = '<option value="">Default</option>';
-        hints.forEach(m => {
-          const opt = document.createElement("option");
-          opt.value = m; opt.textContent = m;
-          select.appendChild(opt);
-        });
-        if (desiredValue) select.value = desiredValue;
-        if (!select.value && desiredValue) {
-          const opt = document.createElement("option");
-          opt.value = desiredValue; opt.textContent = desiredValue;
-          select.insertBefore(opt, select.children[1]);
-          select.value = desiredValue;
-        }
+        // Fall back to cached models or static hints on error.
+        renderModelOptions(aiShortlistModelsFromAvailable(cfg.provider, cachedModels, desiredValue));
       } finally {
         if (!isStaleRequest()) {
           select.dataset.provider = cfg.provider;
@@ -8149,9 +8322,9 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       return "proposal";
     }
     function aiBuildSystemPrompt(mode = "proposal") {
-      const sharedContext = `You are the AI assistant for PPP Flow — a personal operating system built around one central truth: every day is consumed by reactive work. Emails, meetings, logistics, other people's priorities. This is the day-to-day. It has to happen — but left unchecked, it devours all the time needed for the work that actually moves the needle.
+      const sharedContext = `You are the AI assistant for Arca — a personal operating system built around one central truth: every day is consumed by reactive work. Emails, meetings, logistics, other people's priorities. This is the day-to-day. It has to happen — but left unchecked, it devours all the time needed for the work that actually moves the needle.
 
-PPP Flow — Prioritisation, Productivity & Procrastination — exists to protect that time. Your role is to help the user manage their board in service of that goal.
+Arca exists to protect that time. Your role is to help the user manage their board in service of that goal.
 
 PRODUCT PHILOSOPHY
 
@@ -9121,7 +9294,7 @@ If the original response clearly intended a board mutation, keep that action in 
         return parts;
       };
       if (imageAttachments.length && !aiProviderSupportsImageAttachments(cfg.provider, model)) {
-        throw new Error(`${aiProviderDisplayName(cfg.provider)} does not support image attachments in PPP Flow yet. Switch to OpenAI, Anthropic, Gemini, or Grok for image analysis.`);
+        throw new Error(`${aiProviderDisplayName(cfg.provider)} does not support image attachments in Arca yet. Switch to OpenAI, Anthropic, Gemini, or Grok for image analysis.`);
       }
       const runOpenAiCompatibleChat = async (modelId) => {
         const chatMessages = [{ role: "system", content: systemPrompt }];
@@ -9625,7 +9798,7 @@ Watch for: activity without follow-through, inconsistent prospecting.`
       const domain = domainGuidance[coachKey] || `DOMAIN: GENERAL PRACTICE
 Look for: consistency trends, target progress, patterns in metrics objects, quality indicators in entry text.`;
 
-      return `You are a personal coach in PPP Flow, a productivity app. You coach one practice at a time.
+      return `You are a personal coach in Arca, a personal operating system. You coach one practice at a time.
 
 ${domain}
 
@@ -13264,8 +13437,8 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         titleEl.textContent = onboardingMode === "reset"
           ? "Set Up New Board"
           : onboardingMode === "preview"
-            ? "Preview PPP Flow Onboarding"
-            : "Welcome to PPP Flow";
+            ? "Preview Arca Onboarding"
+            : "Welcome to Arca";
       }
       if (metaEl) {
         metaEl.textContent = onboardingMode === "reset"
@@ -13994,7 +14167,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       if (!("Notification" in window)) return;
       if (Notification.permission !== "granted") return;
       try {
-        new Notification("PPP Flow Timer", { body: message, tag: "ppp-pomodoro" });
+        new Notification("Arca Timer", { body: message, tag: "ppp-pomodoro" });
       } catch {}
     }
 
@@ -16526,7 +16699,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
           <div class="modal-head">
             <div>
               <h3 id="healthTrainingBlockModalTitle">Training Block</h3>
-              <div class="tiny">Set the current block basics once. PPP Flow will scaffold session templates and compare them against your real exercise logging.</div>
+              <div class="tiny">Set the current block basics once. Arca will scaffold session templates and compare them against your real exercise logging.</div>
             </div>
             <button id="healthTrainingBlockCloseBtn" class="ghost" type="button">Close</button>
           </div>
@@ -19209,12 +19382,12 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
     }
 
     function healthNutritionCoachSystemPrompt() {
-      return `You are the PPP Flow Nutrition Coach.
+      return `You are the Arca Nutrition Coach.
 
 Your job is to help the user interpret nutrition, bodyweight, activity, and assessment-baseline data inside the app.
 
 You can answer two kinds of questions:
-1. Product-use questions about what the nutrition data means inside PPP Flow.
+1. Product-use questions about what the nutrition data means inside Arca.
 2. Descriptive coaching questions about target adherence, macro consistency, bodyweight trend, food-pattern drift, and simple next adjustments.
 
 Rules:
@@ -19560,12 +19733,12 @@ Data caveat`;
     }
 
     function healthSleepCoachSystemPrompt() {
-      return `You are the PPP Flow Sleep Coach.
+      return `You are the Arca Sleep Coach.
 
 Your job is to help the user interpret their sleep and recovery data inside the app.
 
 You can answer two kinds of questions:
-1. Product-use questions about what the sleep/recovery data means inside PPP Flow.
+1. Product-use questions about what the sleep/recovery data means inside Arca.
 2. Descriptive coaching questions about sleep duration, quality, schedule consistency, recovery strain, and obvious next adjustments.
 
 Rules:
@@ -23459,7 +23632,7 @@ Data caveat`;
         <div>
           <label>Manual Estimate</label>
           <input id="wealthPropertyManualEstimateInput" type="number" step="0.01" placeholder="Optional current estimate" value="${existing?.manual_estimate_minor ? escapeHtml(((existing.manual_estimate_minor || 0) / 100).toFixed(2)) : ""}" />
-          <div class="tiny" style="margin-top:6px;color:var(--text2)">If blank, PPP Flow uses purchase price as a low-confidence baseline.</div>
+          <div class="tiny" style="margin-top:6px;color:var(--text2)">If blank, Arca uses purchase price as a low-confidence baseline.</div>
         </div>
         <div class="controls" style="justify-content:flex-end">
           <button class="ghost" id="wealthPropertyCancelBtn" type="button">Cancel</button>
@@ -25429,12 +25602,12 @@ Data caveat`;
       const wealthData = state.wealth && typeof state.wealth === "object" ? state.wealth : {};
       const accounts = (wealthData.accounts || []).map(a => `  - id: "${a.id}", name: "${a.name}", type: "${a.type}"`).join("\n");
       const properties = (wealthData.properties || []).map(p => `  - id: "${p.id}", name: "${p.name || p.address || "unnamed"}"`).join("\n");
-      return `You are the PPP Flow Wealth Coach.
+      return `You are the Arca Wealth Coach.
 
 Your job is to help the user understand the current wealth data inside the app.
 
 You can help with:
-1. Product-use questions about what the imported data means inside PPP Flow.
+1. Product-use questions about what the imported data means inside Arca.
 2. Descriptive analysis questions about spending, categories, account balances, and portfolio state.
 3. TAKING ACTIONS on the user's behalf when they ask you to add, record, recategorise, or update something.
 
@@ -26648,12 +26821,12 @@ CRITICAL RULES FOR ACTIONS:
     function healthCoachSystemPrompt() {
       const practices = getHealthPractices();
       const practiceList = practices.map(p => `  - id: "${p.id}", title: "${p.title}"`).join("\n");
-      return `You are the PPP Flow Health Coach.
+      return `You are the Arca Health Coach.
 
 Your job is to help the user understand and work with the health data currently in the app.
 
 You can help with:
-1. Product-use questions about how Health works in PPP Flow.
+1. Product-use questions about how Health works in Arca.
 2. Descriptive coaching questions about training adherence, recovery, nutrition drift, and body-composition signals.
 3. TAKING ACTIONS on the user's behalf when they ask you to log, record, set, create, or update something.
 
@@ -27380,7 +27553,7 @@ You cannot change app state without that JSON block. Do not say something was ad
       }
       if (action === "pull") {
         const recommended = localAiWizardRecommendedModel();
-        if (statusEl) statusEl.textContent = `Downloading ${recommended}. Keep PPP Flow open while the model is installed.`;
+        if (statusEl) statusEl.textContent = `Downloading ${recommended}. Keep Arca open while the model is installed.`;
         localAiWizard.source = "onboarding";
         void startLocalAiModelPull(recommended);
         return;
@@ -27834,7 +28007,7 @@ You cannot change app state without that JSON block. Do not say something was ad
       if (statusEl) { statusEl.textContent = "Saved ✓"; setTimeout(() => { if (statusEl.textContent === "Saved ✓") statusEl.textContent = ""; }, 2000); }
     });
     document.getElementById("aiTestBtn").addEventListener("click",()=>{ void testAiConnection(); });
-    document.getElementById("aiRefreshModelsBtn").addEventListener("click",()=>{ void aiPopulateModelDropdown(); });
+    document.getElementById("aiRefreshModelsBtn").addEventListener("click",()=>{ void aiPopulateModelDropdown({ forceRefresh: true }); });
     // Auto-populate model dropdown when API key field loses focus
     document.getElementById("aiApiKeyInput").addEventListener("blur",()=>{ void aiPopulateModelDropdown({ quiet: true }); });
     document.getElementById("aiAttachBtn")?.addEventListener("click", () => aiOpenAttachmentPicker("aiUserInput"));
@@ -28736,6 +28909,16 @@ You cannot change app state without that JSON block. Do not say something was ad
         e.preventDefault();
         e.stopPropagation();
         openOnboarding({ mode: "preview" });
+        return;
+      }
+      if ((e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey && e.key === ",") {
+        const appDataModal = document.getElementById("appDataModal");
+        const openModal = document.querySelector(".modal-backdrop:not([hidden])");
+        const allowFromCurrentModal = !!appDataModal && !appDataModal.hidden && (!openModal || openModal.id === "appDataModal");
+        if (openModal && !allowFromCurrentModal) return;
+        e.preventDefault();
+        e.stopPropagation();
+        openAiSettingsPanel();
         return;
       }
       const onboarding = document.getElementById("onboardingModal");

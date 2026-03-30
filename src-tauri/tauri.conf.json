@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "PPP Flow Desktop",
+  "productName": "Arca",
   "version": "0.1.0-beta.4",
-  "identifier": "com.jwaterslynch.pppflow",
+  "identifier": "com.arca.desktop",
   "build": {
     "frontendDist": "../src"
   },
@@ -10,7 +10,7 @@
     "withGlobalTauri": true,
     "windows": [
       {
-        "title": "PPP Flow Desktop",
+        "title": "Arca",
         "width": 1440,
         "height": 960,
         "resizable": true,
@@ -18,7 +18,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https: http://127.0.0.1:11434 http://localhost:11434"
+      "csp": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' http://127.0.0.1:11434 http://localhost:11434 https://api.openai.com https://api.anthropic.com https://generativelanguage.googleapis.com https://api.x.ai https://api.deepseek.com https://api.mistral.ai https://*.supabase.co"
     }
   },
   "bundle": {

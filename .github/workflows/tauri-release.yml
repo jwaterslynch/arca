@@ -53,7 +53,7 @@ jobs:
           if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ] && [ -n "${{ inputs.release_name }}" ]; then
             release_name="${{ inputs.release_name }}"
           else
-            release_name="PPP Flow Desktop ${tag_name}"
+            release_name="Arca ${tag_name}"
           fi
 
           if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
@@ -64,11 +64,19 @@ jobs:
             draft="true"
           fi
 
+          # Detect whether Apple signing secrets are available
+          if [ -n "${{ secrets.APPLE_CERTIFICATE }}" ] && [ -n "${{ secrets.APPLE_SIGNING_IDENTITY }}" ]; then
+            signing_enabled="true"
+          else
+            signing_enabled="false"
+          fi
+
           cat <<EOF >> "$GITHUB_OUTPUT"
           tag_name=${tag_name}
           release_name=${release_name}
           prerelease=${prerelease}
           draft=${draft}
+          signing_enabled=${signing_enabled}
           EOF
 
       - name: Setup Node
@@ -80,28 +88,54 @@ jobs:
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
 
+      - name: Cache Rust build artifacts
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
       - name: Install JS dependencies
         run: npm ci
 
-      - name: Build + publish macOS artifacts
-        uses: tauri-apps/tauri-action@v0
+      - name: Build + publish macOS artifacts (signed + notarized)
+        if: steps.meta.outputs.signing_enabled == 'true'
+        uses: tauri-apps/tauri-action@v0.6.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        with:
+          tagName: ${{ steps.meta.outputs.tag_name }}
+          releaseName: ${{ steps.meta.outputs.release_name }}
+          releaseBody: |
+            Signed + notarized build for ${{ steps.meta.outputs.tag_name }}.
+
+            This build is codesigned and notarized with Apple.
+            It should install and open without Gatekeeper warnings.
+
+            See:
+            - RELEASE_CHECKLIST.md
+          releaseDraft: ${{ steps.meta.outputs.draft == 'true' }}
+          prerelease: ${{ steps.meta.outputs.prerelease == 'true' }}
+
+      - name: Build + publish macOS artifacts (unsigned fallback)
+        if: steps.meta.outputs.signing_enabled != 'true'
+        uses: tauri-apps/tauri-action@v0.6.2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tagName: ${{ steps.meta.outputs.tag_name }}
           releaseName: ${{ steps.meta.outputs.release_name }}
           releaseBody: |
-            Private alpha build for ${{ steps.meta.outputs.tag_name }}.
+            ⚠️ UNSIGNED alpha build for ${{ steps.meta.outputs.tag_name }}.
 
-            This workflow is intentionally safe by default:
-            - macOS only
-            - prerelease by default
-            - draft release by default
-
-            Before sharing with testers:
-            - confirm the installed bundle matches the reviewed source
-            - verify backup / restore on a real profile
-            - this workflow currently produces an unsigned macOS alpha build by default
+            This build is NOT codesigned or notarized.
+            macOS will block it by default. Testers must:
+            1. Open System Settings → Privacy & Security → click "Open Anyway"
+            2. Or run: xattr -dr com.apple.quarantine "/Applications/Arca.app"
 
             See:
             - PRIVATE_ALPHA_DISTRIBUTION.md
