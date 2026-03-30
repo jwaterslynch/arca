@@ -3,6 +3,24 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta http-equiv="Content-Security-Policy" content="
+  default-src 'self';
+  script-src 'self' 'unsafe-inline';
+  style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+  font-src https://fonts.gstatic.com;
+  img-src 'self' data: blob:;
+  connect-src 'self'
+    https://api.anthropic.com
+    https://api.openai.com
+    https://generativelanguage.googleapis.com
+    https://api.x.ai
+    https://api.deepseek.com
+    https://api.mistral.ai
+    http://127.0.0.1:11434
+    http://localhost:11434
+    https://*.supabase.co
+    https://*.supabase.in;
+" />
 <title>Arca</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -6097,8 +6115,16 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       try {
         const raw = localStorage.getItem(STORAGE_KEY);
         if (!raw) return emptyState();
-        return normalizeState(JSON.parse(raw));
-      } catch { return emptyState(); }
+        const parsed = JSON.parse(raw);
+        if (!parsed || typeof parsed !== "object" || !parsed.schema_version) {
+          console.warn("State loaded but looks corrupted (missing schema_version). Using empty state.");
+          return emptyState();
+        }
+        return normalizeState(parsed);
+      } catch (e) {
+        console.error("Failed to parse saved state:", e);
+        return emptyState();
+      }
     }
 
     function getTauriInvoke() {
@@ -6334,19 +6360,37 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       Promise.resolve().then(flushNativePersist);
     }
 
+    let _saveStateTimer = null;
+    const SAVE_STATE_DEBOUNCE_MS = 300;
+
     function saveState(source = "dashboard") {
       if (String(source || "").startsWith("ai_") === false) {
         aiUndoBatch = null;
       }
       state.last_modified = new Date().toISOString();
       state.last_modified_by = source;
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      // Debounce localStorage write — coalesces rapid mutations (timer, batch ops)
+      if (_saveStateTimer) clearTimeout(_saveStateTimer);
+      _saveStateTimer = setTimeout(() => {
+        _saveStateTimer = null;
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+        catch (e) { console.warn("localStorage save failed:", e); }
+      }, SAVE_STATE_DEBOUNCE_MS);
       queueCloudSyncEvent(source);
       ledgerClosuresRangeKey = "";
       if (nativeStore.available) {
         queueNativePersist();
         flushLedgerEventsSoon();
       }
+    }
+
+    /** Force an immediate localStorage write (use sparingly — for shutdown/beforeunload) */
+    function saveStateImmediate(source = "shutdown") {
+      if (_saveStateTimer) { clearTimeout(_saveStateTimer); _saveStateTimer = null; }
+      state.last_modified = new Date().toISOString();
+      state.last_modified_by = source;
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+      catch (e) { console.warn("localStorage save failed:", e); }
     }
 
     function loadPomodoroPrefs() {
@@ -6462,6 +6506,20 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         const raw = await invoke("load_app_state");
         if (raw) {
           const imported = JSON.parse(raw);
+          if (!imported || typeof imported !== "object" || !imported.schema_version) {
+            console.error("Native state looks corrupted (missing schema_version). Attempting backup restore.");
+            const backupRaw = await invoke("load_latest_backup");
+            if (backupRaw) {
+              const backupParsed = JSON.parse(backupRaw);
+              if (backupParsed && typeof backupParsed === "object" && backupParsed.schema_version) {
+                await importJsonObject(backupParsed, "auto_backup_recovery", false);
+                setSyncBanner("Data source: Auto-recovered from backup", "file", "Original data was corrupted. Restored from latest backup.");
+                return true;
+              }
+            }
+            setSyncBanner("Data source: Browser cache (native data corrupted)", "local", "Could not recover from backup either.");
+            return false;
+          }
           await importJsonObject(imported, "app_auto_load", false);
           nativeStore.lastSerialized = JSON.stringify(state, null, 2);
           setSyncBanner(
@@ -6581,6 +6639,10 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           return;
         }
         const imported = JSON.parse(raw);
+        if (!imported || typeof imported !== "object" || !imported.schema_version) {
+          alert("Backup data appears corrupted (missing schema_version). Restore aborted.");
+          return;
+        }
         await importJsonObject(imported, "backup_restore", true);
         setSyncBanner("Data source: Restored latest backup", "file", `Recovered ${new Date().toLocaleString()}`);
       } catch (err) {
@@ -27153,15 +27215,34 @@ CRITICAL RULES FOR ACTIONS:
         const parsed = JSON.parse(jsonMatch[1].trim());
         if (parsed && Array.isArray(parsed.actions) && parsed.actions.length > 0) {
           const cleanText = String(rawText).replace(/```json[\s\S]*?```/, "").trim();
-          const items = parsed.actions.map((entry, index) => ({
-            id: uid(),
-            index,
-            selected: true,
-            valid: true,
-            error: "",
-            action: entry,
-            label: describeAiAction(entry)
-          }));
+          const items = parsed.actions.map((entry, index) => {
+            if (!entry || typeof entry !== "object" || !entry.type) {
+              return { id: uid(), index, selected: false, valid: false, error: "Missing action type", action: entry, label: "Invalid action" };
+            }
+            const actionType = String(entry.type || "");
+            // For action types normalizeAiAction handles, use it
+            const planTypes = /^(task|life_practice|commitment|focus)\./;
+            if (planTypes.test(actionType)) {
+              const normalized = normalizeAiAction(entry);
+              return {
+                id: uid(), index,
+                selected: !normalized.error,
+                valid: !normalized.error,
+                error: normalized.error || "",
+                action: normalized.error ? entry : normalized.action,
+                label: describeAiAction(normalized.error ? entry : normalized.action)
+              };
+            }
+            // For health/wealth types, basic structural validation
+            return {
+              id: uid(), index,
+              selected: true,
+              valid: true,
+              error: "",
+              action: entry,
+              label: describeAiAction(entry)
+            };
+          });
           return {
             text: cleanText,
             proposal: {
@@ -29178,6 +29259,9 @@ You cannot change app state without that JSON block. Do not say something was ad
       render();
       if (shouldShowOnboarding()) openOnboarding({ mode: "first_run" });
     })();
+
+    // Flush any debounced localStorage write on tab close / app quit
+    window.addEventListener("beforeunload", () => saveStateImmediate("shutdown"));
   </script>
 </body>
 </html>
