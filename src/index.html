@@ -611,34 +611,34 @@ body{font-family:var(--font);color:var(--text);background:var(--bg);-webkit-font
 
 /* Right sidebar in Plan */
 .plan-sidebar{
-  display:flex;flex-direction:column;gap:16px;
+  display:flex;flex-direction:column;gap:18px;
   overflow-y:auto;min-height:0;
 }
 .plan-card{
-  background:var(--surface);border-radius:var(--radius);padding:18px;
+  background:var(--surface);border-radius:var(--radius);padding:20px;
   box-shadow:var(--shadow);flex-shrink:0;
 }
-.plan-card h4{font-size:.85rem;font-weight:700;margin-bottom:12px}
+.plan-card h4{font-size:.85rem;font-weight:700;margin-bottom:14px;line-height:1.3}
 .plan-card.ai-chat{flex-shrink:1;flex:1;min-height:0;overflow:hidden}
 
 /* Primary Goal */
 .goal-display{
-  padding:14px;border-radius:var(--radius-sm);
+  padding:16px 18px;border-radius:var(--radius-sm);
   background:linear-gradient(135deg,var(--accent-light),#f0fdf4);
   border:1px solid #b8ddd4;
 }
-.goal-display .goal-title{font-size:.95rem;font-weight:700;color:var(--accent)}
-.goal-display .goal-deadline{font-size:.78rem;color:var(--text2);margin-top:4px}
-.goal-display .goal-measure{font-size:.78rem;color:var(--text2);margin-top:2px}
+.goal-display .goal-title{font-size:.95rem;font-weight:700;color:var(--accent);line-height:1.35}
+.goal-display .goal-deadline{font-size:.78rem;color:var(--text2);margin-top:6px;line-height:1.5}
+.goal-display .goal-measure{font-size:.78rem;color:var(--text2);margin-top:4px;line-height:1.5}
 
 /* AI Chat panel in Plan */
 .ai-chat{flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden}
 .ai-chat .chat-messages{
-  flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:8px;
-  margin-bottom:12px;padding:4px 0;
+  flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:10px;
+  margin-bottom:14px;padding:6px 0 4px;
 }
 .chat-msg{
-  padding:10px 14px;border-radius:var(--radius-sm);font-size:.84rem;line-height:1.5;
+  padding:11px 14px;border-radius:var(--radius-sm);font-size:.84rem;line-height:1.55;
   max-width:90%;
 }
 .chat-msg.user{background:var(--accent-light);align-self:flex-end;color:var(--text)}
@@ -1885,33 +1885,124 @@ button.warn {
 
 /* Cloud sync config */
 .cloud-config-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-.ai-config-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-.ai-settings-panel { padding:12px; background:var(--bg); border-radius:var(--radius-sm); margin-top:8px; }
+.ai-config-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px 18px; align-items:start; }
+.ai-settings-panel { padding:16px 18px; background:var(--bg); border-radius:14px; margin-top:10px; }
+.ai-settings-panel details { margin-top:12px; }
+.ai-settings-panel details summary { margin-bottom:10px; }
+.ai-settings-panel .tiny { line-height:1.45; }
+.ai-settings-field { display:grid; gap:6px; align-content:start; }
+.ai-settings-field > span { line-height:1.35; }
+.ai-settings-inline-toggle { display:flex; gap:8px; align-items:flex-start; line-height:1.45; }
+.ai-settings-inline-toggle input[type="checkbox"] { margin:2px 0 0; }
+.ai-settings-model-row { display:flex; gap:8px; align-items:center; }
+.ai-settings-actions { margin-top:12px; display:flex; align-items:center; gap:10px; flex-wrap:wrap; min-height:36px; }
+.ai-settings-debug { margin-top:10px; padding:10px 12px; white-space:pre-wrap; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; opacity:.78; background:var(--surface); border:1px solid var(--line); border-radius:10px; line-height:1.45; }
 .ollama-setup-card { margin-top:8px; padding:10px 12px; background:#f7fbf9; border:1px solid var(--line); border-radius:var(--radius-sm); display:grid; gap:8px; }
 .ollama-setup-card[hidden] { display:none !important; }
 .ollama-setup-card .row { display:flex; align-items:center; justify-content:space-between; gap:10px; }
 .ollama-setup-card .tiny { line-height:1.45; }
-.local-ai-modal { max-width:760px; }
-.local-ai-wizard-body { display:grid; gap:14px; }
-.local-ai-hero { padding:14px; border:1px solid var(--line); border-radius:14px; background:#f7fbf9; display:grid; gap:6px; }
-.local-ai-hero h4 { margin:0; font-size:1rem; font-weight:700; }
-.local-ai-hero p { margin:0; font-size:.84rem; color:var(--text2); line-height:1.45; }
-.local-ai-status-card { padding:14px; border:1px solid var(--line); border-radius:14px; background:var(--surface); display:grid; gap:10px; }
+.local-ai-modal { max-width:880px; }
+.local-ai-modal .modal-head {
+  padding:24px 24px 18px;
+  align-items:flex-start;
+  gap:18px;
+}
+.local-ai-modal .modal-head h3 {
+  margin:0;
+  font-size:1.9rem;
+  line-height:1.06;
+  letter-spacing:-.02em;
+}
+.local-ai-modal .modal-head .tiny {
+  margin-top:8px;
+  max-width:640px;
+  font-size:1rem;
+  line-height:1.55;
+  color:var(--text2);
+}
+.local-ai-modal .modal-head .ghost {
+  padding:12px 20px;
+  min-height:46px;
+}
+.local-ai-wizard-body {
+  display:grid;
+  gap:18px;
+  padding:0 24px 24px;
+}
+.local-ai-hero { padding:18px; border:1px solid var(--line); border-radius:16px; background:#f7fbf9; display:grid; gap:8px; }
+.local-ai-hero h4 { margin:0; font-size:1.02rem; font-weight:700; line-height:1.3; }
+.local-ai-hero p { margin:0; font-size:.86rem; color:var(--text2); line-height:1.55; }
+.local-ai-status-card { padding:18px; border:1px solid var(--line); border-radius:16px; background:var(--surface); display:grid; gap:12px; }
 .local-ai-status-card.local { border-color:#90d2c3; background:#f3fbf8; }
 .local-ai-status-card.warning { border-color:#e6d6a3; background:#fffaf0; }
 .local-ai-status-card.error { border-color:#efc7c7; background:#fff7f7; }
-.local-ai-status-line { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
-.local-ai-badge { display:inline-flex; align-items:center; gap:6px; padding:5px 10px; border-radius:999px; font-size:.72rem; font-weight:700; border:1px solid var(--line); background:#fff; color:var(--text2); }
+.local-ai-status-line { display:flex; align-items:flex-start; gap:10px; row-gap:8px; flex-wrap:wrap; line-height:1.45; }
+.local-ai-badge { display:inline-flex; align-items:center; gap:6px; padding:6px 11px; border-radius:999px; font-size:.72rem; font-weight:700; border:1px solid var(--line); background:#fff; color:var(--text2); }
 .local-ai-badge.ok { color:var(--accent); border-color:#90d2c3; background:#eef9f5; }
 .local-ai-badge.warn { color:#8a6d00; border-color:#e8c84a; background:#fdf3d7; }
 .local-ai-badge.muted { color:var(--text2); }
-.local-ai-actions { display:flex; gap:8px; flex-wrap:wrap; }
-.local-ai-model-grid { display:grid; gap:10px; }
-.local-ai-model-card { display:grid; gap:8px; padding:12px; border:1px solid var(--line); border-radius:12px; background:#fff; }
+.local-ai-actions { display:flex; gap:10px; flex-wrap:wrap; }
+.local-ai-installed-group { display:grid; gap:10px; }
+.local-ai-installed-label {
+  display:grid;
+  gap:8px;
+}
+.local-ai-installed-label > span {
+  font-size:.88rem;
+  font-weight:600;
+  line-height:1.35;
+  color:var(--text2);
+}
+.local-ai-model-grid { display:grid; gap:12px; }
+.local-ai-model-tabs {
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px 18px;
+  padding-top:2px;
+}
+.local-ai-model-tabs .tag {
+  padding:0;
+  border:none;
+  background:transparent;
+  border-radius:0;
+  font-size:.9rem;
+  font-weight:700;
+  letter-spacing:.02em;
+  color:var(--text);
+}
+.local-ai-model-card {
+  display:grid;
+  gap:14px;
+  padding:18px 18px 16px;
+  border:1px solid var(--line);
+  border-radius:14px;
+  background:#fff;
+}
 .local-ai-model-card.active { border-color:#90d2c3; background:#f3fbf8; }
-.local-ai-model-card h5 { margin:0; font-size:.88rem; font-weight:700; }
-.local-ai-model-card p { margin:0; font-size:.76rem; color:var(--text2); line-height:1.45; }
-.local-ai-model-meta { display:flex; gap:8px; flex-wrap:wrap; font-size:.7rem; color:var(--text2); }
+.local-ai-model-card-head {
+  display:flex;
+  justify-content:space-between;
+  gap:18px;
+  align-items:flex-start;
+}
+.local-ai-model-copy {
+  display:grid;
+  gap:6px;
+  min-width:0;
+}
+.local-ai-model-card h5 { margin:0; font-size:1.05rem; font-weight:700; line-height:1.28; }
+.local-ai-model-tier {
+  font-size:.84rem;
+  font-weight:700;
+  color:var(--accent);
+  line-height:1.35;
+}
+.local-ai-model-card p { margin:0; font-size:.92rem; color:var(--text2); line-height:1.58; }
+.local-ai-model-meta { display:flex; gap:8px; flex-wrap:wrap; font-size:.72rem; color:var(--text2); line-height:1.45; }
+.local-ai-model-meta code {
+  font-size:.88rem;
+  line-height:1.4;
+}
 .local-ai-progress { display:grid; gap:6px; }
 .local-ai-progress-bar { height:8px; border-radius:999px; background:var(--bg); overflow:hidden; }
 .local-ai-progress-fill { height:100%; width:0%; background:var(--accent); transition:width .2s ease; }
@@ -1920,8 +2011,15 @@ button.warn {
 .local-ai-inline-status.warn { color:#8a6d00; }
 .local-ai-inline-status.error { color:var(--danger); }
 .local-ai-wizard-note { font-size:.76rem; color:var(--text2); line-height:1.45; }
-.local-ai-installed-list { display:flex; flex-wrap:wrap; gap:6px; }
-.local-ai-installed-list .tag { font-size:.72rem; }
+.local-ai-installed-list {
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+}
+.local-ai-installed-list .tag {
+  font-size:.78rem;
+  padding:6px 10px;
+}
 
 /* Focus mode */
 body.focus-mode .app-shell > *:not(#tab-execute):not(.focus-overlay) { opacity:0; pointer-events:none; transition:opacity .3s; }
@@ -1968,7 +2066,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
 
 /* ── Plan sidebar polish: match prototype's card-based display ── */
 .plan-sidebar .goal-display {
-  padding:14px;border-radius:var(--radius-sm);
+  padding:16px 18px;border-radius:var(--radius-sm);
   background:linear-gradient(135deg,var(--accent-light),#f0fdf4);
   border:1px solid #b8ddd4;
 }
@@ -1987,15 +2085,15 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
 .plan-sidebar .commitment-add-grid select { font:.78rem var(--font); padding:6px 8px; border:1px solid var(--line); border-radius:var(--radius-sm); }
 
 /* ── Plan sidebar: goal display card ── */
-.plan-sidebar .goal-display { padding:14px; border-radius:var(--radius-sm); background:linear-gradient(135deg,var(--accent-light),#f0fdf4); border:1px solid #b8ddd4; }
-.plan-sidebar .goal-title { font-size:.95rem; font-weight:700; color:var(--accent); }
-.plan-sidebar .goal-deadline { font-size:.78rem; color:var(--text2); margin-top:4px; }
-.plan-sidebar .goal-measure { font-size:.78rem; color:var(--text2); margin-top:2px; }
+.plan-sidebar .goal-display { padding:16px 18px; border-radius:var(--radius-sm); background:linear-gradient(135deg,var(--accent-light),#f0fdf4); border:1px solid #b8ddd4; }
+.plan-sidebar .goal-title { font-size:.95rem; font-weight:700; color:var(--accent); line-height:1.35; }
+.plan-sidebar .goal-deadline { font-size:.78rem; color:var(--text2); margin-top:6px; line-height:1.5; }
+.plan-sidebar .goal-measure { font-size:.78rem; color:var(--text2); margin-top:4px; line-height:1.5; }
 
 /* ── Plan sidebar: AI chat ── */
 .plan-sidebar .ai-chat { flex:1; min-height:200px; display:flex; flex-direction:column; overflow:hidden; }
-.plan-sidebar .chat-messages { flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:8px; padding:4px 0; }
-.plan-sidebar .chat-msg { padding:10px 14px; border-radius:var(--radius-sm); font-size:.84rem; line-height:1.5; max-width:90%; }
+.plan-sidebar .chat-messages { flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:10px; padding:6px 0 4px; }
+.plan-sidebar .chat-msg { padding:11px 14px; border-radius:var(--radius-sm); font-size:.84rem; line-height:1.55; max-width:90%; }
 .plan-sidebar .chat-msg.user { background:var(--accent-light); align-self:flex-end; color:var(--text); }
 .plan-sidebar .chat-msg.assistant { background:var(--bg); align-self:flex-start; }
 
@@ -2772,7 +2870,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         <div class="plan-subtabs" id="planSubtabs">
           <div class="plan-subtab active" data-plan-tab="focus">Pipeline</div>
           <div class="plan-subtab" data-plan-tab="review">Review</div>
-          <div class="plan-subtab" data-plan-tab="assistant">AI Workspace</div>
+          <div class="plan-subtab" data-plan-tab="assistant">AI Settings</div>
         </div>
 
         <!-- Pipeline Panel -->
@@ -2828,9 +2926,9 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         <!-- AI Workspace Panel -->
         <div class="plan-subpanel tab-content" id="tab-assistant">
           <div class="card">
-            <div class="titlebar">
-              <h2 style="font-size:.95rem;font-weight:700">AI Workspace</h2>
-              <div class="controls">
+            <div class="titlebar" style="align-items:flex-start;row-gap:10px;">
+              <h2 style="font-size:.95rem;font-weight:700">AI Settings</h2>
+              <div class="controls" style="gap:8px 10px;flex-wrap:wrap;align-items:center;">
                 <span id="aiStatusBadge" class="tiny">Disabled</span>
                 <div id="aiTabProviderSwitch" class="ai-provider-switch">
                   <button class="ai-provider-btn" type="button" data-ai-provider-btn="openai">ChatGPT</button>
@@ -2846,17 +2944,17 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
             </div>
             <div id="aiConfigPanel" class="ai-settings-panel" hidden>
               <div class="ai-config-grid">
-                <label class="tiny" style="display:grid;gap:4px;"><span>Enable AI</span><input id="aiEnabledInput" type="checkbox" /></label>
-                <label class="tiny" style="display:grid;gap:4px;"><span>Hide when disabled</span><input id="aiHideDisabledInput" type="checkbox" checked /></label>
-                <label class="tiny" style="display:grid;gap:4px;"><span>Provider</span>
+                <label class="tiny ai-settings-field"><span>Enable AI</span><input id="aiEnabledInput" type="checkbox" /></label>
+                <label class="tiny ai-settings-field"><span>Hide when disabled</span><input id="aiHideDisabledInput" type="checkbox" checked /></label>
+                <label class="tiny ai-settings-field"><span>Provider</span>
                   <select id="aiProviderInput">
                     <option value="openai">OpenAI</option><option value="anthropic">Anthropic</option>
                     <option value="gemini">Google Gemini</option><option value="grok">xAI / Grok</option>
                     <option value="deepseek">DeepSeek</option><option value="mistral">Mistral</option><option value="ollama">Ollama (Local)</option><option value="openai_compatible">OpenAI-compatible</option>
                   </select>
                 </label>
-                <label class="tiny" style="display:grid;gap:4px;"><span>API Key</span><input id="aiApiKeyInput" type="password" autocomplete="off" placeholder="sk-..." /></label>
-                <label class="tiny" style="display:flex;gap:6px;align-items:center;"><input id="aiSessionOnlyKeyInput" type="checkbox" style="margin:0;" /><span>Don't save key (enter each session)</span></label>
+                <label class="tiny ai-settings-field"><span>API Key</span><input id="aiApiKeyInput" type="password" autocomplete="off" placeholder="sk-..." /></label>
+                <label class="tiny ai-settings-inline-toggle"><input id="aiSessionOnlyKeyInput" type="checkbox" /><span>Don't save key (enter each session)</span></label>
               </div>
               <div id="aiPrivacyBadge" class="tiny" style="margin-top:6px;padding:6px 10px;border-radius:6px;border:1px solid var(--line);background:var(--card);line-height:1.4;"></div>
               <div id="aiOllamaSetupCard" class="ollama-setup-card" hidden>
@@ -2868,25 +2966,26 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
               </div>
               <details style="margin-top:8px;"><summary class="tiny">Advanced</summary>
                 <div class="ai-config-grid" style="margin-top:8px;">
-                  <label class="tiny" style="display:grid;gap:4px;"><span>Model</span>
-                    <div style="display:flex;gap:4px;align-items:center;">
+                  <label class="tiny ai-settings-field"><span>Model</span>
+                    <div class="ai-settings-model-row">
                       <select id="aiModelInput" style="flex:1;min-width:0;height:32px;border-radius:6px;border:1px solid var(--line);padding:2px 6px;font-size:.85rem;background:var(--bg);color:var(--text);">
                         <option value="">Default</option>
                       </select>
                       <button id="aiRefreshModelsBtn" type="button" class="ghost" style="padding:4px 8px;font-size:.75rem;white-space:nowrap;" title="Fetch available models from API">↻</button>
                     </div>
                   </label>
-                  <label class="tiny" style="display:grid;gap:4px;"><span>Base URL</span><input id="aiBaseUrlInput" placeholder="Default" /></label>
+                  <label class="tiny ai-settings-field"><span>Base URL</span><input id="aiBaseUrlInput" placeholder="Default" /></label>
                 </div>
               </details>
-              <div class="controls" style="margin-top:8px;">
+              <div class="controls ai-settings-actions">
                 <button id="aiSaveConfigBtn" class="primary" type="button">Save</button>
                 <button id="aiTestBtn" class="ghost" type="button">Test</button>
                 <span id="aiTestStatus" class="tiny"></span>
               </div>
-              <div id="aiTestDebug" class="tiny" hidden style="margin-top:6px;white-space:pre-wrap;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;opacity:.78;"></div>
+              <div id="aiTestDebug" class="tiny ai-settings-debug" hidden></div>
             </div>
             <div id="aiDisabledNotice" class="ai-note" hidden>AI is off. Enable above.</div>
+            <div id="aiWorkspaceHelperNotice" class="ai-note" hidden>Use Arca AI in the sidebar for normal interaction. This page is for provider setup, connection testing, and reviewing structured changes.</div>
             <div id="aiChatWrap" class="ai-chat-box" hidden>
             <div id="aiMessages" class="ai-messages"></div>
               <div id="aiUserInputAttachments" class="ai-attachment-strip" hidden></div>
@@ -3006,10 +3105,10 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           </div>
         </div>
 
-        <!-- Plan Coach -->
+        <!-- Arca AI -->
         <div class="plan-card ai-chat" id="planSidebarAiChat">
           <div class="ai-surface-head">
-            <h4>Plan Coach <span style="font-size:.7rem;font-weight:600;color:var(--text2);margin-left:6px" id="planAiModeLabel">Review</span></h4>
+            <h4>Arca AI <span style="font-size:.7rem;font-weight:600;color:var(--text2);margin-left:6px" id="planAiModeLabel">Review</span></h4>
           <div class="ai-surface-actions">
               <button id="planSidebarProviderPill" class="ai-provider-pill tiny ai-switch-trigger" data-open-ai-switch="plan-sidebar" type="button" title="Switch AI"></button>
             </div>
@@ -3019,7 +3118,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           <div class="chat-input-row with-attach with-status ai-composer-row" data-ai-composer-row="planSidebarChatInput" style="margin-top:8px">
             <div class="ai-composer-status" id="planSidebarStatusIcon" data-ai-status-for="planSidebarChatInput" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 1L14.5 8.5L22 12L14.5 15.5L12 23L9.5 15.5L2 12L9.5 8.5Z"/></svg></div>
             <button class="ghost ai-attach-btn" id="planSidebarAttachBtn" type="button" title="Add image or file">+</button>
-            <textarea class="chat-input" id="planSidebarChatInput" rows="1" placeholder="Ask Plan Coach..."></textarea>
+            <textarea class="chat-input" id="planSidebarChatInput" rows="1" placeholder="Ask Arca AI..."></textarea>
             <button class="ai-send" id="planSidebarSendBtn" data-ai-send-for="planSidebarChatInput" type="button" style="align-self:flex-end"><span class="ai-send-arrow">↑</span><span class="ai-send-spinner"></span></button>
           </div>
         </div>
@@ -3896,7 +3995,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
   <aside id="planCoachDrawer" class="wealth-coach-drawer" aria-hidden="true">
     <div class="wealth-coach-head">
       <div>
-        <h4>Plan Coach</h4>
+        <h4>Arca AI</h4>
         <div class="wealth-coach-meta" id="planCoachMeta"></div>
       </div>
       <div style="display:flex;align-items:center;gap:8px">
@@ -3914,7 +4013,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       <div class="wealth-coach-input-row with-attach with-status ai-composer-row" data-ai-composer-row="planCoachInput">
         <div class="ai-composer-status" id="planCoachStatusIcon" data-ai-status-for="planCoachInput" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 1L14.5 8.5L22 12L14.5 15.5L12 23L9.5 15.5L2 12L9.5 8.5Z"/></svg></div>
         <button id="planCoachAttachBtn" class="ghost ai-attach-btn" type="button" title="Add image or file">+</button>
-        <textarea id="planCoachInput" rows="1" placeholder="Ask Plan Coach..."></textarea>
+        <textarea id="planCoachInput" rows="1" placeholder="Ask Arca AI..."></textarea>
         <button id="planCoachSendBtn" class="wealth-coach-send" data-ai-send-for="planCoachInput" type="button"><span class="ai-send-label">Ask</span><span class="ai-send-spinner"></span></button>
       </div>
     </div>
@@ -7205,9 +7304,9 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       const key = String(source || "").trim();
       const labels = {
         execute: "Execute",
-        assistant: "Plan AI Workspace",
-        "plan-sidebar": "Plan sidebar",
-        "plan-coach": "Plan Coach",
+        assistant: "Plan AI Settings",
+        "plan-sidebar": "Arca AI",
+        "plan-coach": "Arca AI",
         health: "Health",
         "health-coach": "Health Coach",
         "health-nutrition": "Nutrition Coach",
@@ -7369,7 +7468,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           : "muted";
       const selectedModel = localAiWizard.selectedModel || aiGetProviderConfig("ollama").model || localAiWizardRecommendedModel();
       const installedOptions = localAiWizard.models.length
-        ? `<label class="tiny" style="display:grid;gap:6px;">
+        ? `<label class="local-ai-installed-label">
             <span>Installed models</span>
             <select id="localAiWizardModelSelect">
               ${localAiWizard.models.map(model => `<option value="${escapeHtml(model)}" ${model === selectedModel ? "selected" : ""}>${escapeHtml(model)}</option>`).join("")}
@@ -7377,16 +7476,16 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           </label>`
         : "";
       const installedTags = localAiWizard.models.length
-        ? `<div class="local-ai-installed-list">${localAiWizard.models.map(model => `<span class="tag">${escapeHtml(model)}</span>`).join("")}</div>`
+        ? `<div class="local-ai-model-tabs">${localAiWizard.models.map(model => `<span class="tag">${escapeHtml(model)}</span>`).join("")}</div>`
         : "";
       const recommendedCards = LOCAL_AI_RECOMMENDED_MODELS.map(model => {
         const active = selectedModel === model.name;
         const downloading = localAiWizard.pulling && localAiWizard.pullModel === model.name;
         return `<div class="local-ai-model-card${active ? " active" : ""}">
-          <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start;">
-            <div>
+          <div class="local-ai-model-card-head">
+            <div class="local-ai-model-copy">
               <h5>${escapeHtml(model.label)}</h5>
-              <div class="tiny" style="font-weight:700;color:var(--accent);margin-bottom:4px;">${escapeHtml(model.tier || "Model")}</div>
+              <div class="local-ai-model-tier">${escapeHtml(model.tier || "Model")}</div>
               <p>${escapeHtml(model.note)}</p>
             </div>
             <button class="ghost" type="button" data-local-ai-action="${localAiWizard.models.includes(model.name) ? "select-model" : "pull-model"}" data-local-ai-model="${escapeHtml(model.name)}" ${localAiWizard.pulling ? "disabled" : ""}>
@@ -7456,8 +7555,10 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         </div>
         ${(localAiWizard.status === "ready" || localAiWizard.status === "running_no_models" || localAiWizard.status === "pulling") ? `
           <div class="local-ai-status-card">
-            ${installedOptions}
-            ${installedTags}
+            <div class="local-ai-installed-group">
+              ${installedOptions}
+              ${installedTags}
+            </div>
             <div class="local-ai-model-grid">${recommendedCards}</div>
           </div>` : ""}
         <div class="local-ai-wizard-note">
@@ -9159,10 +9260,10 @@ If the original response clearly intended a board mutation, keep that action in 
       renderHealthCoach();
       renderWealthCoach();
 
-      const disabledText = aiPrefs.enabled
+      const disabledText = formPrefs.enabled
         ? (keyMissing ? "AI is enabled but API key is missing. Open Settings, add a key, and save." : "")
         : "AI is off. Open Settings to enable it and add an API key.";
-      const chatVisible = aiPrefs.enabled && !keyMissing;
+      const chatVisible = formPrefs.enabled && !keyMissing;
       const inlineSendBtn = document.getElementById("aiInlineSendBtn");
       if (inlineSendBtn) {
         inlineSendBtn.title = aiPrefs.inlineAutoApply
@@ -9223,6 +9324,19 @@ If the original response clearly intended a board mutation, keep that action in 
         renderAiMessagesInto(surface.messagesId);
         renderAiProposalInto(surface);
       });
+      const workspaceHelperNotice = document.getElementById("aiWorkspaceHelperNotice");
+      const workspaceChatWrap = document.getElementById("aiChatWrap");
+      const workspaceDisabledNotice = document.getElementById("aiDisabledNotice");
+      const workspaceHasReviewContent = !!aiProposal;
+      if (workspaceHelperNotice) {
+        workspaceHelperNotice.hidden = !chatVisible || workspaceHasReviewContent;
+      }
+      if (workspaceChatWrap) {
+        workspaceChatWrap.hidden = true;
+      }
+      if (workspaceDisabledNotice) {
+        workspaceDisabledNotice.hidden = chatVisible;
+      }
       renderAiComposerChrome("aiInlineUserInput");
       renderAiComposerChrome("aiUserInput");
     }
@@ -10113,14 +10227,14 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
           const validCount = aiProposal.items.filter(item => item.valid && item.action).length;
           showAiInlineToast(
             validCount > 0
-              ? `Proposal ready in AI Workspace. Review ${validCount} change${validCount === 1 ? "" : "s"}.`
-              : "No direct changes proposed. Open AI Workspace to review the response.",
+              ? `Proposal ready in AI Settings. Review ${validCount} change${validCount === 1 ? "" : "s"}.`
+              : "No direct changes proposed. Open AI Settings to review the response.",
             "info"
           );
         } else if (autoApplyInline) {
           const validCount = aiProposal.items.filter(item => item.valid && item.selected && item.action).length;
           if (!validCount) {
-            showAiInlineToast("No direct changes applied. Open AI Workspace to review the response.", "info");
+            showAiInlineToast("No direct changes applied. Open AI Settings to review the response.", "info");
           } else {
           const result = applyAiSelectedActions({ silent: true, clearProposal: true });
           if (result.ok) {
@@ -26683,7 +26797,7 @@ CRITICAL RULES FOR ACTIONS:
             <div class="chat-msg ${msg.role === "user" ? "user" : "assistant"}">${escapeHtml(msg.content)}${renderAiMessageAttachmentsHtml(msg.attachments)}</div>
           `).join("");
         } else {
-          planMsgs.innerHTML = '<div style="font-size:.78rem;color:var(--text2);padding:8px 0">No Plan Coach messages yet. Ask for prioritization, planning, reflection, or the next best step.</div>';
+          planMsgs.innerHTML = '<div style="font-size:.78rem;color:var(--text2);padding:8px 0">No Arca AI messages yet. Ask for prioritization, planning, reflection, or the next best step.</div>';
         }
       }
       renderAiAttachmentStrip("planSidebarChatAttachments", "planSidebarChatInput");
@@ -26691,7 +26805,7 @@ CRITICAL RULES FOR ACTIONS:
     }
 
     function activePlanSurfaceLabel() {
-      if (activePlanTab === "assistant") return "Plan > AI Workspace";
+      if (activePlanTab === "assistant") return "Plan > AI Settings";
       if (activePlanTab === "review") return "Plan > Review";
       return "Plan > Pipeline";
     }
@@ -26728,13 +26842,13 @@ CRITICAL RULES FOR ACTIONS:
       const cfg = aiResolveConfig(aiPrefs);
       const activeProvider = cfg.provider || aiPrefs.provider || "openai";
       if (!aiPrefs.enabled) {
-        aiMessages.push({ role: "assistant", content: "AI is currently disabled. Enable AI in Settings to use Plan Coach." });
+        aiMessages.push({ role: "assistant", content: "AI is currently disabled. Enable AI in Settings to use Arca AI." });
         renderPlanSidebar();
         renderPlanCoach();
         return;
       }
       if (aiProviderNeedsKey(activeProvider) && !cfg.apiKey) {
-        aiMessages.push({ role: "assistant", content: `${aiProviderDisplayName(activeProvider)} needs an API key in Settings before Plan Coach can use it.` });
+        aiMessages.push({ role: "assistant", content: `${aiProviderDisplayName(activeProvider)} needs an API key in Settings before Arca AI can use it.` });
         renderPlanSidebar();
         renderPlanCoach();
         return;
@@ -28047,6 +28161,17 @@ You cannot change app state without that JSON block. Do not say something was ad
       aiResetTestFeedback();
       renderAiAssistant();
       void aiPopulateModelDropdown({ quiet: true });
+    });
+    document.getElementById("aiEnabledInput").addEventListener("change",()=>{
+      aiResetTestFeedback();
+      renderAiAssistant();
+    });
+    document.getElementById("aiHideDisabledInput").addEventListener("change",()=>{
+      renderAiAssistant();
+    });
+    document.getElementById("aiSessionOnlyKeyInput").addEventListener("change",()=>{
+      aiResetTestFeedback();
+      renderAiAssistant();
     });
     document.querySelectorAll("[data-ai-provider-btn]").forEach(btn=>{
       btn.addEventListener("click",()=>{
