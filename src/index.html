@@ -371,6 +371,7 @@ body{font-family:var(--font);color:var(--text);background:var(--bg);-webkit-font
 .stat-box{text-align:center;padding:10px 6px;background:var(--bg);border-radius:var(--radius-sm)}
 .stat-box .stat-val{font-size:1.4rem;font-weight:800;color:var(--accent)}
 .stat-box .stat-label{font-size:.68rem;color:var(--text2);font-weight:600;text-transform:uppercase;letter-spacing:.3px;margin-top:2px}
+.stats-meta{margin-top:10px;font-size:.74rem;color:var(--text2);line-height:1.45;text-align:center}
 
 /* AI Input Bar — sits right below hero timer */
 .ai-bar{
@@ -2840,6 +2841,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
             <div class="stat-box"><div class="stat-val" id="weekClosed">0</div><div class="stat-label">Closed (Wk)</div></div>
             <div class="stat-box"><div class="stat-val" id="weekTracked">0h</div><div class="stat-label">This Week</div></div>
           </div>
+          <div id="openLeakageMeta" class="stats-meta">App open 0m · Untracked 0m</div>
         </div>
       </div>
 
@@ -4831,6 +4833,11 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       focusMode: false,
       autoFocusMode: true
     };
+    const appOpenTracker = {
+      visible: document.visibilityState !== "hidden",
+      lastTickMs: Date.now(),
+      dirtySec: 0
+    };
     Object.assign(pomodoro, loadPomodoroPrefs());
     const TODAY_STAGE_LIMIT = 5;
     const NEXT_UP_SOFT_LIMIT = 10;
@@ -5815,7 +5822,18 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           ? incoming.closedTaskLog
           : [];
       normalized.streak_days = Array.isArray(incoming.streak_days) ? incoming.streak_days : [];
-      normalized.daily_logs = incoming.daily_logs && typeof incoming.daily_logs === "object" ? incoming.daily_logs : {};
+      normalized.daily_logs = incoming.daily_logs && typeof incoming.daily_logs === "object"
+        ? Object.fromEntries(Object.entries(incoming.daily_logs).map(([day, log]) => {
+            const entry = log && typeof log === "object" ? log : {};
+            return [day, {
+              total_sec: Number(entry.total_sec || 0),
+              deep_sec: Number(entry.deep_sec || 0),
+              tasks_closed: Number(entry.tasks_closed || 0),
+              sessions: Number(entry.sessions || 0),
+              open_sec: Number(entry.open_sec || 0)
+            }];
+          }))
+        : {};
       normalized.weekly_reviews = incoming.weekly_reviews && typeof incoming.weekly_reviews === "object" ? incoming.weekly_reviews : {};
       // Wealth migration
       const iw = incoming.wealth || {};
@@ -12634,10 +12652,10 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         );
         // Log to daily_logs
         const day=localDateKey(new Date(start));
-        if(!state.daily_logs[day]) state.daily_logs[day]={total_sec:0,deep_sec:0,tasks_closed:0,sessions:0};
-        state.daily_logs[day].total_sec+=deltaSec;
-        if((task.depth||"Deep")==="Deep") state.daily_logs[day].deep_sec+=deltaSec;
-        state.daily_logs[day].sessions++;
+        const dailyLog = ensureDailyLogEntry(day);
+        dailyLog.total_sec += deltaSec;
+        if((task.depth||"Deep")==="Deep") dailyLog.deep_sec += deltaSec;
+        dailyLog.sessions++;
       }
       state.activeTaskId=null;
       state.activeStartedAt=null;
@@ -12683,8 +12701,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         );
         celebrate(); updateStreak();
         const day=todayISO();
-        if(!state.daily_logs[day]) state.daily_logs[day]={total_sec:0,deep_sec:0,tasks_closed:0,sessions:0};
-        state.daily_logs[day].tasks_closed++;
+        ensureDailyLogEntry(day).tasks_closed++;
       } else {
         task.stage = "next_up";
         queueLedgerEvent(
@@ -12712,7 +12729,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       (state.sessions || []).forEach(session => {
         const day = isoToLocalDateKey(session.startAt || session.endAt || "");
         if (!day) return;
-        if (!rebuilt[day]) rebuilt[day] = { total_sec: 0, deep_sec: 0, tasks_closed: 0, sessions: 0 };
+        if (!rebuilt[day]) rebuilt[day] = { total_sec: 0, deep_sec: 0, tasks_closed: 0, sessions: 0, open_sec: Number(state.daily_logs?.[day]?.open_sec || 0) };
         const sec = Number(session.durationSec) || 0;
         rebuilt[day].total_sec += sec;
         if ((session.depth || "Deep") === "Deep") rebuilt[day].deep_sec += sec;
@@ -12722,10 +12739,71 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         if (!task?.completedAt) return;
         const day = isoToLocalDateKey(task.completedAt);
         if (!day) return;
-        if (!rebuilt[day]) rebuilt[day] = { total_sec: 0, deep_sec: 0, tasks_closed: 0, sessions: 0 };
+        if (!rebuilt[day]) rebuilt[day] = { total_sec: 0, deep_sec: 0, tasks_closed: 0, sessions: 0, open_sec: Number(state.daily_logs?.[day]?.open_sec || 0) };
         rebuilt[day].tasks_closed += 1;
       });
       state.daily_logs = rebuilt;
+    }
+
+    function ensureDailyLogEntry(day = todayISO()) {
+      const dateKey = String(day || todayISO());
+      if (!state.daily_logs || typeof state.daily_logs !== "object") state.daily_logs = {};
+      if (!state.daily_logs[dateKey] || typeof state.daily_logs[dateKey] !== "object") {
+        state.daily_logs[dateKey] = { total_sec: 0, deep_sec: 0, tasks_closed: 0, sessions: 0, open_sec: 0 };
+      } else {
+        const existing = state.daily_logs[dateKey];
+        state.daily_logs[dateKey] = {
+          total_sec: Number(existing.total_sec || 0),
+          deep_sec: Number(existing.deep_sec || 0),
+          tasks_closed: Number(existing.tasks_closed || 0),
+          sessions: Number(existing.sessions || 0),
+          open_sec: Number(existing.open_sec || 0)
+        };
+      }
+      return state.daily_logs[dateKey];
+    }
+
+    function nextLocalMidnightMs(ms) {
+      const date = new Date(ms);
+      date.setHours(24, 0, 0, 0);
+      return date.getTime();
+    }
+
+    function tickAppOpenTime(now = Date.now()) {
+      const last = Number(appOpenTracker.lastTickMs || now);
+      if (now <= last) {
+        appOpenTracker.lastTickMs = now;
+        return;
+      }
+      if (appOpenTracker.visible) {
+        let cursor = last;
+        while (cursor < now) {
+          const segmentEnd = Math.min(now, nextLocalMidnightMs(cursor));
+          const day = localDateKey(new Date(cursor));
+          const seconds = Math.floor((segmentEnd - cursor) / 1000);
+          if (seconds > 0) {
+            ensureDailyLogEntry(day).open_sec += seconds;
+            appOpenTracker.dirtySec += seconds;
+          }
+          cursor = segmentEnd;
+          if (cursor < now && segmentEnd === cursor) {
+            cursor += 1;
+          }
+        }
+      }
+      appOpenTracker.lastTickMs = now;
+      if (appOpenTracker.dirtySec >= 60) {
+        appOpenTracker.dirtySec = 0;
+        saveState("app_open_time_tick");
+      }
+    }
+
+    function flushAppOpenTime(source = "app_open_time_flush") {
+      tickAppOpenTime(Date.now());
+      if (appOpenTracker.dirtySec > 0) {
+        appOpenTracker.dirtySec = 0;
+        saveState(source);
+      }
     }
 
     function deleteTask(taskId, opts = {}) {
@@ -14577,6 +14655,12 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       document.getElementById("monthTracked").textContent=fmtHours(monthSec);
       document.getElementById("weekClosed").textContent=weekClosedCount;
       document.getElementById("deepRatio").textContent=`${deepPct}%`;
+      const todayOpenSec = Number(state.daily_logs?.[today]?.open_sec || 0);
+      const todayLeakageSec = Math.max(0, todayOpenSec - todaySec);
+      const openLeakageMeta = document.getElementById("openLeakageMeta");
+      if (openLeakageMeta) {
+        openLeakageMeta.textContent = `App open ${fmtDuration(todayOpenSec)} · Untracked ${fmtDuration(todayLeakageSec)}`;
+      }
       document.getElementById("wigRatio").textContent=`${wigPct}%`;
       const leakEl=document.getElementById("leakage");
       leakEl.textContent=`${leakagePct}%`;
@@ -29282,6 +29366,16 @@ You cannot change app state without that JSON block. Do not say something was ad
       cloudSyncSetStatus("Cloud sync offline", "offline", "Network unavailable");
     });
 
+    document.addEventListener("visibilitychange", () => {
+      tickAppOpenTime(Date.now());
+      appOpenTracker.visible = document.visibilityState !== "hidden";
+      appOpenTracker.lastTickMs = Date.now();
+      if (!appOpenTracker.visible) {
+        flushAppOpenTime("app_open_time_hidden");
+      }
+      renderStats();
+    });
+
     // Weekly review nav
     document.getElementById("prevWeekBtn").addEventListener("click",()=>{
       reviewWeekOffset--;
@@ -29420,11 +29514,13 @@ You cannot change app state without that JSON block. Do not say something was ad
 
     // Live tick
     setInterval(()=>{
+      tickAppOpenTime();
       tickPomodoro();
       if(state.activeTaskId) {
         render();
       } else {
         renderPomodoro();
+        renderStats();
       }
     },1000);
 
@@ -29463,7 +29559,10 @@ You cannot change app state without that JSON block. Do not say something was ad
     })();
 
     // Flush any debounced localStorage write on tab close / app quit
-    window.addEventListener("beforeunload", () => saveStateImmediate("shutdown"));
+    window.addEventListener("beforeunload", () => {
+      flushAppOpenTime("app_open_time_shutdown");
+      saveStateImmediate("shutdown");
+    });
   </script>
 </body>
 </html>
