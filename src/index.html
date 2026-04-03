@@ -4858,7 +4858,10 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
     const appOpenTracker = {
       visible: document.visibilityState !== "hidden",
       lastTickMs: Date.now(),
-      dirtySec: 0
+      dirtySec: 0,
+      startedAtMs: Date.now(),
+      currentVisibleSec: 0,
+      currentPomodoroSec: 0
     };
     Object.assign(pomodoro, loadPomodoroPrefs());
     const TODAY_STAGE_LIMIT = 5;
@@ -12813,6 +12816,10 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
           if (seconds > 0) {
             ensureDailyLogEntry(day).open_sec += seconds;
             appOpenTracker.dirtySec += seconds;
+            appOpenTracker.currentVisibleSec += seconds;
+            if (pomodoro.running && (pomodoro.phase === "work" || pomodoro.phase === "break")) {
+              appOpenTracker.currentPomodoroSec += seconds;
+            }
           }
           cursor = segmentEnd;
           if (cursor < now && segmentEnd === cursor) {
@@ -14690,11 +14697,12 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       document.getElementById("monthTracked").textContent=fmtHours(monthSec);
       document.getElementById("weekClosed").textContent=weekClosedCount;
       document.getElementById("deepRatio").textContent=`${deepPct}%`;
-      const todayOpenSec = Number(state.daily_logs?.[today]?.open_sec || 0);
-      const todayLeakageSec = Math.max(0, todayOpenSec - todaySec);
+      const currentAppOpenSec = Math.max(0, Number(appOpenTracker.currentVisibleSec || 0));
+      const currentPomodoroSec = Math.max(0, Number(appOpenTracker.currentPomodoroSec || 0));
+      const todayLeakageSec = Math.max(0, currentAppOpenSec - currentPomodoroSec);
       const openLeakageMeta = document.getElementById("openLeakageMeta");
       if (openLeakageMeta) {
-        openLeakageMeta.textContent = `App open ${fmtDuration(todayOpenSec)} · Untracked ${fmtDuration(todayLeakageSec)}`;
+        openLeakageMeta.textContent = `App open ${fmtDuration(currentAppOpenSec)} · Untracked ${fmtDuration(todayLeakageSec)}`;
       }
       document.getElementById("wigRatio").textContent=`${wigPct}%`;
       const leakEl=document.getElementById("leakage");
