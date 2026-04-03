@@ -103,10 +103,31 @@ body{font-family:var(--font);color:var(--text);background:var(--bg);-webkit-font
   background:var(--surface);border-radius:var(--radius);padding:20px 28px;
   box-shadow:var(--shadow);
 }
-.hero-timer .current-task{flex:1}
-.hero-timer .current-task .label{font-size:.75rem;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin-bottom:4px}
-.hero-timer .current-task .task-name{font-size:1.3rem;font-weight:700;letter-spacing:-.3px}
-.hero-timer .current-task .task-meta{font-size:.8rem;color:var(--text2);margin-top:2px}
+.hero-timer .current-task{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  min-width:0;
+}
+.hero-timer .current-task .label{
+  font-size:.75rem;color:var(--text2);text-transform:uppercase;letter-spacing:.07em;font-weight:700;
+  margin:0;
+}
+.hero-timer .current-task .task-name{
+  font-size:1.3rem;font-weight:700;letter-spacing:-.3px;line-height:1.16;
+  max-width:560px;
+}
+.hero-timer .current-task .task-meta{
+  font-size:.82rem;color:var(--text2);line-height:1.55;
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+}
+.hero-timer .current-task .hero-session{
+  font-size:.8rem;
+  color:var(--text2);
+  font-weight:600;
+  line-height:1.4;
+}
 .hero-timer .timer-display{
   font-size:3.2rem;font-weight:800;letter-spacing:1px;
   font-variant-numeric:tabular-nums;color:var(--accent);
@@ -2732,6 +2753,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
             <span id="heroPomoPhase" class="pomo-pill idle ui-hidden-hook" hidden aria-hidden="true">Idle</span>
             <span id="heroPomoStatus" class="ui-hidden-hook" hidden aria-hidden="true">Ready</span>
           </div>
+          <div class="hero-session" id="heroPomoSession"></div>
         </div>
         <div class="timer-display" id="heroPomoClock">25:00</div>
         <div class="timer-controls">
@@ -6579,6 +6601,13 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       pomodoro.completedBlocksDay = today;
       pomodoro.completedBlocks = countTodayCompletedPomodoroBlocksFallback();
       savePomodoroPrefs();
+    }
+
+    function getPomodoroSessionProgress() {
+      const totalSessions = 4;
+      const completedBlocks = Math.max(0, Number.parseInt(pomodoro.completedBlocks, 10) || 0);
+      const currentSession = (completedBlocks % totalSessions) + 1;
+      return { currentSession, totalSessions };
     }
 
     // ── File System Access: persist linked PPP_DATA.json handle ──
@@ -13987,8 +14016,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       }
       const focusTimer = document.getElementById("focusTimer");
       if (focusTimer) focusTimer.textContent = fmtClock(pomodoro.remainingSec);
-      const totalSessions = 4;
-      const currentSession = (Math.max(0, Number.parseInt(pomodoro.completedBlocks, 10) || 0) % totalSessions) + 1;
+      const { currentSession, totalSessions } = getPomodoroSessionProgress();
       const sessionEl = document.getElementById("focusSession");
       if (sessionEl) sessionEl.textContent = `Session ${currentSession} of ${totalSessions}`;
       // Render pomodoro dots
@@ -14027,6 +14055,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       const heroClock = document.getElementById("heroPomoClock");
       const heroStatus = document.getElementById("heroPomoStatus");
       const heroTask = document.getElementById("heroPomoTask");
+      const heroSession = document.getElementById("heroPomoSession");
       const heroCompleteBtn = document.getElementById("heroCompleteBtn");
       const heroCompleteLabel = document.getElementById("heroCompleteLabel");
       const heroStartBtn = document.getElementById("heroPomoStartBtn");
@@ -14058,6 +14087,9 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       if (focusTimerEl && document.getElementById("focusOverlay")?.classList.contains("active")) {
         focusTimerEl.textContent = fmtClock(pomodoro.remainingSec);
       }
+      const { currentSession, totalSessions } = getPomodoroSessionProgress();
+      const focusSessionEl = document.getElementById("focusSession");
+      if (focusSessionEl) focusSessionEl.textContent = `Session ${currentSession} of ${totalSessions}`;
 
       if (pomodoro.running) {
         status.textContent = `Running ${phaseText.toLowerCase()} block`;
@@ -14114,6 +14146,9 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         } else {
           heroMeta.textContent = "";
         }
+      }
+      if (heroSession) {
+        heroSession.textContent = selectedTask ? `Session ${currentSession} of ${totalSessions}` : "";
       }
       const focusTaskName = document.getElementById("focusTaskName");
       if (focusTaskName) {
