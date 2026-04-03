@@ -4822,6 +4822,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       remainingSec: 25 * 60,
       endsAtMs: null,
       completedBlocks: 0,
+      completedBlocksDay: "",
       soundEnabled: true,
       soundProfile: "normal", // soft | normal | loud
       alarmTone: "glass", // glass | ping | funk | hero | purr
@@ -6493,7 +6494,17 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
     }
 
     function loadPomodoroPrefs() {
-      const defaults = { soundEnabled: true, soundProfile: "normal", alarmTone: "glass", chimeLength: "short", desktopNotify: true, focusMode: false, autoFocusMode: true };
+      const defaults = {
+        soundEnabled: true,
+        soundProfile: "normal",
+        alarmTone: "glass",
+        chimeLength: "short",
+        desktopNotify: true,
+        focusMode: false,
+        autoFocusMode: true,
+        completedBlocks: 0,
+        completedBlocksDay: ""
+      };
       try {
         const raw = localStorage.getItem(POMO_PREF_KEY);
         if (!raw) return defaults;
@@ -6506,7 +6517,9 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           desktopNotify: pref.desktopNotify !== false,
           // Never restore the overlay across launches; stale persisted state can strand the UI.
           focusMode: false,
-          autoFocusMode: pref.autoFocusMode !== false
+          autoFocusMode: pref.autoFocusMode !== false,
+          completedBlocks: Math.max(0, Number.parseInt(pref.completedBlocks, 10) || 0),
+          completedBlocksDay: String(pref.completedBlocksDay || "")
         };
       } catch {
         return defaults;
@@ -6521,8 +6534,33 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         chimeLength: pomodoro.chimeLength || "short",
         desktopNotify: !!pomodoro.desktopNotify,
         focusMode: !!pomodoro.focusMode,
-        autoFocusMode: !!pomodoro.autoFocusMode
+        autoFocusMode: !!pomodoro.autoFocusMode,
+        completedBlocks: Math.max(0, Number.parseInt(pomodoro.completedBlocks, 10) || 0),
+        completedBlocksDay: String(pomodoro.completedBlocksDay || "")
       }));
+    }
+
+    function countTodayCompletedPomodoroBlocksFallback() {
+      const today = todayISO();
+      const expectedSec = Math.max(1, Number(pomodoro.workMin || 25)) * 60;
+      const minSec = Math.max(60, expectedSec - 180);
+      return (state.sessions || []).filter(session => {
+        if (isoToLocalDateKey(session.startAt || session.endAt || "") !== today) return false;
+        return Number(session.durationSec || 0) >= minSec;
+      }).length;
+    }
+
+    function syncPomodoroDailyCounter() {
+      const today = todayISO();
+      const savedDay = String(pomodoro.completedBlocksDay || "");
+      const savedCount = Math.max(0, Number.parseInt(pomodoro.completedBlocks, 10) || 0);
+      if (savedDay === today) {
+        pomodoro.completedBlocks = savedCount;
+        return;
+      }
+      pomodoro.completedBlocksDay = today;
+      pomodoro.completedBlocks = countTodayCompletedPomodoroBlocksFallback();
+      savePomodoroPrefs();
     }
 
     // ── File System Access: persist linked PPP_DATA.json handle ──
@@ -8371,7 +8409,9 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           chimeLength: pomodoro.chimeLength || "short",
           desktopNotify: !!pomodoro.desktopNotify,
           focusMode: false,
-          autoFocusMode: !!pomodoro.autoFocusMode
+          autoFocusMode: !!pomodoro.autoFocusMode,
+          completedBlocks: Math.max(0, Number.parseInt(pomodoro.completedBlocks, 10) || 0),
+          completedBlocksDay: String(pomodoro.completedBlocksDay || "")
         };
         const pomodoroRaw = JSON.stringify(normalizedPomodoroPrefs);
         if (localStorage.getItem(POMO_PREF_KEY) !== pomodoroRaw) {
@@ -13844,6 +13884,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
     function enterFocusMode() {
       const overlay = document.getElementById("focusOverlay");
       if (!overlay) return;
+      syncPomodoroDailyCounter();
       const selectedTask = resolveExecuteFocusTask();
       const taskName = document.getElementById("focusTaskName");
       if (taskName) taskName.textContent = selectedTask ? selectedTask.title : "No task selected";
@@ -13868,8 +13909,8 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       }
       const focusTimer = document.getElementById("focusTimer");
       if (focusTimer) focusTimer.textContent = fmtClock(pomodoro.remainingSec);
-      const currentSession = (pomodoro.sessionCount || 0) + 1;
       const totalSessions = 4;
+      const currentSession = (Math.max(0, Number.parseInt(pomodoro.completedBlocks, 10) || 0) % totalSessions) + 1;
       const sessionEl = document.getElementById("focusSession");
       if (sessionEl) sessionEl.textContent = `Session ${currentSession} of ${totalSessions}`;
       // Render pomodoro dots
@@ -13898,6 +13939,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
     }
 
     function renderPomodoro() {
+      syncPomodoroDailyCounter();
       const phasePill = document.getElementById("pomoPhasePill");
       const clock = document.getElementById("pomoClock");
       const status = document.getElementById("pomoStatus");
@@ -14053,6 +14095,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
     }
 
     function startPomodoroPhase(phase) {
+      syncPomodoroDailyCounter();
       pomodoro.workMin = toInt(document.getElementById("pomoWorkMin").value, 25);
       pomodoro.breakMin = toInt(document.getElementById("pomoBreakMin").value, 5);
       document.getElementById("pomoWorkMin").value = pomodoro.workMin;
@@ -14090,10 +14133,15 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
     }
 
     function completePomodoroPhase(skipped = false) {
+      syncPomodoroDailyCounter();
       const fromPhase = pomodoro.phase;
       if (pomodoro.phase === "work") {
         if (state.activeTaskId === pomodoro.taskId) stopActiveTask();
-        if (!skipped) pomodoro.completedBlocks += 1;
+        if (!skipped) {
+          pomodoro.completedBlocks += 1;
+          pomodoro.completedBlocksDay = todayISO();
+          savePomodoroPrefs();
+        }
         pomodoro.phase = "break";
         pomodoro.remainingSec = pomodoro.breakMin * 60;
         // Auto-run breaks so break-end alerts are guaranteed.
@@ -14126,6 +14174,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
     }
 
     function startPomodoro() {
+      syncPomodoroDailyCounter();
       if (pomodoro.running) return;
       void ensurePomodoroAudioReady();
       if (pomodoro.phase === "idle") {
@@ -14183,6 +14232,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
     }
 
     function resetPomodoro() {
+      syncPomodoroDailyCounter();
       if (state.activeTaskId === pomodoro.taskId) stopActiveTask();
       pomodoro.phase = "idle";
       pomodoro.running = false;
@@ -14203,6 +14253,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
     }
 
     function tickPomodoro() {
+      syncPomodoroDailyCounter();
       if (!pomodoro.running) return;
       if (!pomodoro.endsAtMs) pomodoro.endsAtMs = Date.now() + (pomodoro.remainingSec * 1000);
       pomodoro.remainingSec = Math.max(0, Math.ceil((pomodoro.endsAtMs - Date.now()) / 1000));
@@ -29146,15 +29197,41 @@ You cannot change app state without that JSON block. Do not say something was ad
         focusBestAiEntry();
         return;
       }
+      if (!e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey && (e.code === "Space" || e.key === " ")) {
+        const openModal = document.querySelector(".modal-backdrop:not([hidden])");
+        if (openModal) return;
+        if (isEditableElement(e.target)) return;
+        const canTogglePomodoro = pomodoro.phase === "work" || pomodoro.phase === "break";
+        if (!canTogglePomodoro) return;
+        e.preventDefault();
+        e.stopPropagation();
+        if (pomodoro.focusMode) {
+          toggleFocusPomodoro();
+        } else {
+          togglePomodoro();
+        }
+        return;
+      }
       if ((e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey && e.key === "Enter") {
         const openModal = document.querySelector(".modal-backdrop:not([hidden])");
         if (openModal) return;
         if (isEditableElement(e.target)) return;
-        const canReenterFocus = !pomodoro.focusMode && (pomodoro.phase === "work" || pomodoro.phase === "break");
-        if (!canReenterFocus) return;
+        const canHandleShortcut = !pomodoro.focusMode && (
+          pomodoro.running ||
+          pomodoro.phase === "work" ||
+          pomodoro.phase === "break" ||
+          pomodoro.phase === "idle"
+        );
+        if (!canHandleShortcut) return;
         e.preventDefault();
         e.stopPropagation();
-        setFocusMode(true);
+        if (!pomodoro.running) {
+          const beforePhase = pomodoro.phase;
+          startPomodoro();
+          const startedOrResumed = pomodoro.running || pomodoro.paused || pomodoro.phase === "work" || pomodoro.phase === "break";
+          if (!startedOrResumed && beforePhase === "idle") return;
+        }
+        if (!pomodoro.focusMode) setFocusMode(true);
         renderPomodoro();
         void keepWindowMaximized();
         return;
