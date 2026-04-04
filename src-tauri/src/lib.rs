@@ -408,6 +408,31 @@ fn app_runtime_info(app: AppHandle) -> Result<AppRuntimeInfo, String> {
 }
 
 #[tauri::command]
+fn toggle_main_window_fullscreen(app: AppHandle) -> Result<(), String> {
+    let Some(window) = app.get_webview_window("main") else {
+        return Err("Main window not found".to_string());
+    };
+
+    if window.is_fullscreen().unwrap_or(false) {
+        window.set_fullscreen(false).map_err(|e| e.to_string())?;
+        return Ok(());
+    }
+
+    let is_maximized = window.is_maximized().unwrap_or(false);
+    if is_maximized {
+        window.unmaximize().map_err(|e| e.to_string())?;
+        return Ok(());
+    }
+
+    if window.maximize().is_ok() {
+        return Ok(());
+    }
+
+    window.set_fullscreen(true).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
 fn play_native_chime(
     sound_profile: Option<String>,
     chime_length: Option<String>,
@@ -686,6 +711,7 @@ pub fn run() {
             backup_path,
             load_latest_backup,
             app_runtime_info,
+            toggle_main_window_fullscreen,
             play_native_chime,
             http_get_text,
             ollama_probe
