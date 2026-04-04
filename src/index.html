@@ -165,7 +165,30 @@ body{font-family:var(--font);color:var(--text);background:var(--bg);-webkit-font
   display:flex;align-items:center;gap:12px;
   padding:12px 14px;border-radius:var(--radius-sm);
   border:1px solid transparent;cursor:pointer;transition:all .12s;
-  margin-bottom:6px;
+  margin-bottom:6px;position:relative;
+}
+.task-item .drag-handle{
+  display:none;width:18px;flex-shrink:0;cursor:grab;opacity:.32;
+  text-align:center;font-size:.7rem;letter-spacing:.06em;color:var(--text2);
+  user-select:none;-webkit-user-select:none;
+}
+.task-item .drag-handle::before{content:"⋮⋮"}
+#todayTaskList .task-item .drag-handle{display:block}
+#todayTaskList .task-item:hover .drag-handle{opacity:.6}
+.task-item.today-dragging{
+  opacity:.4;background:var(--bg);border:1px dashed var(--line);
+}
+.today-drag-ghost{
+  position:fixed;pointer-events:none;z-index:9999;
+  background:var(--surface);border:1px solid var(--accent);border-radius:var(--radius-sm);
+  box-shadow:0 8px 24px rgba(15,23,42,.18);padding:12px 14px;
+  display:flex;align-items:center;gap:12px;
+  font-size:.9rem;font-weight:600;opacity:.92;
+  max-width:400px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;
+}
+.today-drop-indicator{
+  height:3px;border-radius:2px;background:var(--accent);margin:2px 0;
+  transition:opacity .1s;
 }
 .task-item:hover{background:var(--accent-light);border-color:var(--line)}
 .task-item.active-task{background:var(--accent-light);border-color:var(--accent)}
@@ -412,9 +435,10 @@ body{font-family:var(--font);color:var(--text);background:var(--bg);-webkit-font
 .ai-bar:focus-within{border-color:var(--accent)}
 .ai-bar .ai-icon{font-size:1.2rem;flex-shrink:0}
 .ai-bar .ai-icon svg{width:20px;height:20px;display:block;}
+.ai-bar .ai-composer-status{width:auto;height:auto;border-radius:0;background:transparent !important;box-shadow:none !important}
 .ai-composer-status{
-  width:36px;height:36px;border-radius:12px;display:flex;align-items:center;justify-content:center;
-  flex-shrink:0;color:#a7b0ad;background:transparent;transition:all .18s ease;align-self:end;
+  width:44px;height:44px;border-radius:14px;display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;color:#a7b0ad;background:transparent;transition:all .18s ease;
 }
 .ai-composer-status svg{width:18px;height:18px;display:block}
 .ai-composer-status.ready{
@@ -470,7 +494,7 @@ body{font-family:var(--font);color:var(--text);background:var(--bg);-webkit-font
   width:36px;height:36px;border-radius:var(--radius-sm);border:none;
   background:var(--accent);color:#fff;cursor:pointer;
   display:flex;align-items:center;justify-content:center;
-  font-size:1rem;transition:all .15s;flex-shrink:0;
+  font-size:1rem;transition:all .15s;flex-shrink:0;align-self:center;
 }
 .ai-send:hover{background:var(--accent-hover)}
 .ai-send.working{pointer-events:none;opacity:.7}
@@ -667,11 +691,12 @@ body{font-family:var(--font);color:var(--text);background:var(--bg);-webkit-font
 .chat-msg.user{background:var(--accent-light);align-self:flex-end;color:var(--text)}
 .chat-msg.assistant{background:var(--bg);align-self:flex-start}
 .ai-chat .chat-input-row{display:flex;gap:8px}
-.ai-chat .chat-input-row.ai-composer-row{display:grid}
+.ai-chat .chat-input-row.ai-composer-row{display:grid;align-items:center}
 .ai-chat .chat-input{
   flex:1;border:1px solid var(--line);border-radius:var(--radius-sm);
   padding:10px 14px;font:500 .85rem var(--font);outline:none;
-  transition:border-color .15s;resize:none;min-height:42px;max-height:160px;overflow-y:auto;line-height:1.45;
+  transition:border-color .15s;resize:none;min-height:44px;height:44px;max-height:160px;overflow-y:auto;line-height:1.45;
+  box-sizing:border-box;
 }
 .ai-chat .chat-input:focus{border-color:var(--accent)}
 
@@ -2088,11 +2113,6 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
 .week-closed-btn { cursor:pointer; background:transparent; border:none; }
 
 /* ── Plan sidebar polish: match prototype's card-based display ── */
-.plan-sidebar .goal-display {
-  padding:16px 18px;border-radius:var(--radius-sm);
-  background:linear-gradient(135deg,var(--accent-light),#f0fdf4);
-  border:1px solid #b8ddd4;
-}
 .plan-sidebar .focus-grid { display:grid; grid-template-columns:1fr; gap:12px; }
 .plan-sidebar .focus-grid label.tiny { font-size:.72rem; font-weight:600; color:var(--text2); }
 .plan-sidebar .focus-grid input,
@@ -2576,7 +2596,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
 .wealth-coach-foot{padding:12px 18px 16px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:8px;background:var(--surface)}
 .wealth-coach-actions{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:22px}
 .wealth-coach-actions[hidden]{display:none}
-.wealth-coach-input-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:10px}
+.wealth-coach-input-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px}
 .wealth-coach-input-row.with-status,
 .ai-chat .chat-input-row.with-status{grid-template-columns:auto minmax(0,1fr) auto}
 .wealth-coach-input-row.with-attach,
@@ -2600,8 +2620,6 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
   color:var(--text);
   box-sizing:border-box;
   display:block;
-  align-self:end;
-  vertical-align:top;
 }
 .wealth-coach-input-row textarea:focus{outline:none;border-color:var(--accent)}
 .wealth-coach-input-row textarea::placeholder{font-size:.82rem;line-height:1.15}
@@ -3144,7 +3162,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
             <div class="ai-composer-status" id="planSidebarStatusIcon" data-ai-status-for="planSidebarChatInput" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 1L14.5 8.5L22 12L14.5 15.5L12 23L9.5 15.5L2 12L9.5 8.5Z"/></svg></div>
             <button class="ghost ai-attach-btn" id="planSidebarAttachBtn" type="button" title="Add image or file">+</button>
             <textarea class="chat-input" id="planSidebarChatInput" rows="1" placeholder="Ask Arca AI..."></textarea>
-            <button class="ai-send" id="planSidebarSendBtn" data-ai-send-for="planSidebarChatInput" type="button" style="align-self:flex-end"><span class="ai-send-arrow">↑</span><span class="ai-send-spinner"></span></button>
+            <button class="ai-send" id="planSidebarSendBtn" data-ai-send-for="planSidebarChatInput" type="button"><span class="ai-send-arrow">↑</span><span class="ai-send-spinner"></span></button>
           </div>
         </div>
 
@@ -14046,16 +14064,71 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       requestAnimationFrame(() => { void restoreExecuteKeyboardFocus(); });
     }
 
+    function getCurrentTauriWindow() {
+      const tauri = window.__TAURI__ || {};
+      return tauri.window?.getCurrentWindow?.()
+        || tauri.window?.getCurrent?.()
+        || tauri.webviewWindow?.getCurrentWebviewWindow?.()
+        || null;
+    }
+
     async function keepWindowMaximized() {
       try {
-        const appWindow = window.__TAURI__?.window?.getCurrentWindow?.();
+        const appWindow = getCurrentTauriWindow();
         if (appWindow?.maximize) await appWindow.maximize();
       } catch {}
     }
 
+    async function toggleWindowFullscreen() {
+      // Primary path: Rust command (always works, bypasses JS capability checks)
+      const invoke = getTauriInvoke();
+      if (invoke) {
+        try {
+          await invoke("toggle_main_window_fullscreen");
+          return;
+        } catch (e) {
+          console.warn("[toggleWindowFullscreen] invoke failed:", e);
+        }
+      }
+      // Fallback: Tauri JS window API (requires capabilities permissions)
+      try {
+        const appWindow = getCurrentTauriWindow();
+        if (!appWindow) return;
+        if (appWindow.isFullscreen && appWindow.setFullscreen) {
+          const isFullscreen = await appWindow.isFullscreen();
+          await appWindow.setFullscreen(!isFullscreen);
+          return;
+        }
+        if (appWindow.isMaximized && appWindow.unmaximize && appWindow.maximize) {
+          const isMaximized = await appWindow.isMaximized();
+          if (isMaximized) {
+            await appWindow.unmaximize();
+          } else {
+            await appWindow.maximize();
+          }
+        }
+      } catch (e) {
+        console.warn("[toggleWindowFullscreen] JS API fallback failed:", e);
+      }
+    }
+
+    function handleWindowExpandShortcut(e) {
+      const isPlainF = (!e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey)
+        && (e.code === "KeyF" || String(e.key || "").toLowerCase() === "f");
+      if (!isPlainF) return false;
+      const openModal = document.querySelector(".modal-backdrop:not([hidden])");
+      if (openModal) return false;
+      if (isEditableElement(e.target)) return false;
+      e.preventDefault();
+      e.stopPropagation();
+      if (typeof e.stopImmediatePropagation === "function") e.stopImmediatePropagation();
+      void toggleWindowFullscreen();
+      return true;
+    }
+
     async function restoreExecuteKeyboardFocus() {
       try {
-        const appWindow = window.__TAURI__?.window?.getCurrentWindow?.();
+        const appWindow = getCurrentTauriWindow();
         if (appWindow?.setFocus) await appWindow.setFocus();
       } catch {}
       const target = document.getElementById("heroTimerCard") || document.getElementById("tab-execute");
@@ -14384,7 +14457,6 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
     }
 
     function tickPomodoro() {
-      syncPomodoroDailyCounter();
       if (!pomodoro.running) return;
       if (!pomodoro.endsAtMs) pomodoro.endsAtMs = Date.now() + (pomodoro.remainingSec * 1000);
       pomodoro.remainingSec = Math.max(0, Math.ceil((pomodoro.endsAtMs - Date.now()) / 1000));
@@ -14592,6 +14664,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
           ].filter(Boolean).join("");
           return `
           <div class="task-item ${isActive ? "active-task" : ""} ${isAiHighlighted ? "ai-highlight" : ""}" data-task-id="${escapeHtml(task.id)}">
+            ${isCompleted ? "" : '<div class="drag-handle"></div>'}
             <div class="task-check ${isCompleted ? "done" : ""}"></div>
             <div class="task-info">
               <div class="task-title ${isCompleted ? "done-text" : ""}">${escapeHtml(task.title)}</div>
@@ -14630,6 +14703,129 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         });
         todayPanelDelegated = true;
       }
+      initTodayDragReorder();
+    }
+
+    // ── Today Task Drag-to-Reorder ──
+    let _todayDrag = null;
+
+    function initTodayDragReorder() {
+      const listEl = document.getElementById("todayTaskList");
+      if (!listEl || listEl._todayDragInit) return;
+      listEl._todayDragInit = true;
+
+      listEl.addEventListener("pointerdown", e => {
+        const handle = e.target.closest(".drag-handle");
+        if (!handle) return;
+        const item = handle.closest(".task-item[data-task-id]");
+        if (!item) return;
+        const taskId = item.dataset.taskId;
+        const task = getTask(taskId);
+        if (!task || task.completedAt) return;
+        e.preventDefault();
+
+        const rect = item.getBoundingClientRect();
+        const ghost = document.createElement("div");
+        ghost.className = "today-drag-ghost";
+        ghost.textContent = task.title;
+        ghost.style.width = rect.width + "px";
+        ghost.style.left = rect.left + "px";
+        ghost.style.top = rect.top + "px";
+        document.body.appendChild(ghost);
+
+        item.classList.add("today-dragging");
+
+        _todayDrag = {
+          taskId,
+          item,
+          ghost,
+          listEl,
+          offsetY: e.clientY - rect.top,
+          startY: e.clientY,
+          moved: false
+        };
+
+        window.addEventListener("pointermove", onTodayDragMove);
+        window.addEventListener("pointerup", onTodayDragEnd);
+        window.addEventListener("pointercancel", onTodayDragEnd);
+      });
+    }
+
+    function onTodayDragMove(e) {
+      if (!_todayDrag) return;
+      e.preventDefault();
+      _todayDrag.moved = true;
+      _todayDrag.ghost.style.top = (e.clientY - _todayDrag.offsetY) + "px";
+
+      // Find drop position among siblings
+      const items = Array.from(_todayDrag.listEl.querySelectorAll(".task-item[data-task-id]:not(.today-dragging)"));
+      // Remove old indicator
+      const oldInd = _todayDrag.listEl.querySelector(".today-drop-indicator");
+      if (oldInd) oldInd.remove();
+
+      let insertBefore = null;
+      for (const sibling of items) {
+        const sibRect = sibling.getBoundingClientRect();
+        const midY = sibRect.top + sibRect.height / 2;
+        if (e.clientY < midY) {
+          insertBefore = sibling;
+          break;
+        }
+      }
+
+      const indicator = document.createElement("div");
+      indicator.className = "today-drop-indicator";
+      if (insertBefore) {
+        _todayDrag.listEl.insertBefore(indicator, insertBefore);
+      } else {
+        _todayDrag.listEl.appendChild(indicator);
+      }
+      _todayDrag.insertBeforeId = insertBefore ? insertBefore.dataset.taskId : null;
+    }
+
+    function onTodayDragEnd(e) {
+      window.removeEventListener("pointermove", onTodayDragMove);
+      window.removeEventListener("pointerup", onTodayDragEnd);
+      window.removeEventListener("pointercancel", onTodayDragEnd);
+      if (!_todayDrag) return;
+      const { taskId, item, ghost, listEl, moved, insertBeforeId } = _todayDrag;
+      _todayDrag = null;
+
+      ghost.remove();
+      item.classList.remove("today-dragging");
+      const indicator = listEl.querySelector(".today-drop-indicator");
+      if (indicator) indicator.remove();
+
+      if (!moved) return;
+
+      // Reorder within state.tasks: move taskId before insertBeforeId (or to end of today tasks)
+      const fromIndex = state.tasks.findIndex(t => t.id === taskId);
+      if (fromIndex < 0) return;
+      const task = state.tasks[fromIndex];
+      state.tasks.splice(fromIndex, 1);
+
+      if (insertBeforeId) {
+        const beforeIndex = state.tasks.findIndex(t => t.id === insertBeforeId);
+        if (beforeIndex >= 0) {
+          state.tasks.splice(beforeIndex, 0, task);
+        } else {
+          state.tasks.push(task);
+        }
+      } else {
+        // Insert after the last "today" task
+        const todayIndexes = state.tasks
+          .map((t, idx) => ({ t, idx }))
+          .filter(entry => !entry.t.completedAt && normalizePipelineStage(entry.t.stage) === "today")
+          .map(entry => entry.idx);
+        if (todayIndexes.length) {
+          state.tasks.splice(todayIndexes[todayIndexes.length - 1] + 1, 0, task);
+        } else {
+          state.tasks.push(task);
+        }
+      }
+
+      saveState("today_reorder");
+      render();
     }
 
     // ── Finish Track ──
@@ -29172,6 +29368,10 @@ You cannot change app state without that JSON block. Do not say something was ad
       if (e.target && e.target.id === "closureModal") closeClosureModal();
     });
 
+    window.addEventListener("keydown", e => {
+      if (handleWindowExpandShortcut(e)) return;
+    }, true);
+
     // Quick exit from focus mode
     document.addEventListener("keydown",e=>{
       const quickSwitchModal = document.getElementById("aiQuickSwitchModal");
@@ -29332,6 +29532,9 @@ You cannot change app state without that JSON block. Do not say something was ad
         e.preventDefault();
         e.stopPropagation();
         focusBestAiEntry();
+        return;
+      }
+      if (handleWindowExpandShortcut(e)) {
         return;
       }
       if (!e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey && (e.code === "Space" || e.key === " ")) {
