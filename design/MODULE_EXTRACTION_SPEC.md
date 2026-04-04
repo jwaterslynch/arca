@@ -159,6 +159,29 @@ Based on the actual file structure (line counts are approximate):
 
 ---
 
+## Smoke Test Gate
+
+Every extraction PR **must** pass this checklist before merging to `develop`. If any item fails, the PR is rejected — no exceptions.
+
+| # | Check | How to verify |
+|---|-------|---------------|
+| 1 | App launches | `cargo tauri dev` → window appears, no white screen |
+| 2 | Execute tab renders | Today tasks visible, hero timer shows |
+| 3 | Timer start / pause / resume | Click start → timer counts → pause → resume → counts again |
+| 4 | Focus mode | Start timer → focus overlay appears → Escape exits |
+| 5 | `f` key fullscreen | Press `f` → true macOS fullscreen → press `f` again → exits |
+| 6 | `Cmd+K` command palette | Opens, searches, selects an action |
+| 7 | Plan tab | Renders goals, commitments, pipeline |
+| 8 | AI settings | Open settings → change provider → no crash |
+| 9 | One AI interaction | Send a message to any coach → response renders |
+| 10 | Drag-to-reorder | Drag a Today task → order persists after release |
+| 11 | Save / load | Make a change → reload app → change persists |
+| 12 | Onboarding | Clear state → onboarding wizard appears and completes |
+
+Run this manually after every extraction. Automate individual checks as time permits, but the manual pass is the mandatory gate.
+
+---
+
 ## Extraction Order
 
 **Do NOT extract everything at once.** One module per PR, test after each.
@@ -215,6 +238,8 @@ Based on the actual file structure (line counts are approximate):
 
 29. Split CSS into per-domain files: `css/core.css`, `css/execute.css`, `css/plan.css`, `css/health.css`, `css/wealth.css`, `css/modals.css`, `css/onboarding.css`
 30. Import via Vite in `index.html`
+
+**CSS timing note:** Phase 5 is the default home for CSS extraction, but if an earlier extraction PR requires non-trivial CSS edits (e.g., extracting `domains/health.js` means touching 200+ lines of Health CSS), pull the relevant CSS slice into its own file as part of that PR rather than waiting. The rule: if a JS extraction touches more than ~20 lines of CSS, extract the CSS for that domain at the same time.
 
 ---
 
