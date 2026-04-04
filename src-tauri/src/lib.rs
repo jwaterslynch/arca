@@ -608,6 +608,8 @@ pub fn run() {
             let import_json = MenuItem::with_id(handle, "file_import_json", "Import JSON…", true, Some("CmdOrCtrl+O"))?;
             let export_json = MenuItem::with_id(handle, "file_export_json", "Export JSON Backup", true, Some("CmdOrCtrl+S"))?;
             let restore_backup = MenuItem::with_id(handle, "file_restore_latest_backup", "Restore Latest Backup", true, Some("CmdOrCtrl+Shift+R"))?;
+            let close_window = MenuItem::with_id(handle, "window_close", "Close Window", true, Some("CmdOrCtrl+W"))?;
+            let quit_app = MenuItem::with_id(handle, "app_quit", "Quit Arca", true, Some("CmdOrCtrl+Q"))?;
             let menu = Menu::with_items(
                 handle,
                 &[
@@ -620,7 +622,8 @@ pub fn run() {
                             &export_json,
                             &restore_backup,
                             &PredefinedMenuItem::separator(handle)?,
-                            &PredefinedMenuItem::close_window(handle, None)?,
+                            &close_window,
+                            &quit_app,
                         ],
                     )?,
                     &Submenu::with_items(
@@ -660,6 +663,14 @@ pub fn run() {
             }
             "file_restore_latest_backup" => {
                 let _ = app.emit("menu://restore-latest-backup", ());
+            }
+            "window_close" => {
+                if let Some(window) = app.get_webview_window("main") {
+                    let _ = window.close();
+                }
+            }
+            "app_quit" => {
+                app.exit(0);
             }
             _ => {}
         })

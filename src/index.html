@@ -103,6 +103,7 @@ body{font-family:var(--font);color:var(--text);background:var(--bg);-webkit-font
   background:var(--surface);border-radius:var(--radius);padding:20px 28px;
   box-shadow:var(--shadow);
 }
+.hero-timer:focus{outline:none}
 .hero-timer .current-task{
   flex:1;
   display:flex;
@@ -2744,7 +2745,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
     <div class="execute-grid">
 
       <!-- Hero Timer -->
-      <div class="hero-timer">
+      <div class="hero-timer" id="heroTimerCard" tabindex="-1">
         <div class="current-task">
           <div class="label">Current Focus</div>
           <div class="task-name" id="heroPomoTask">No task selected</div>
@@ -14042,6 +14043,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       if (overlay) overlay.classList.remove("active");
       document.body.classList.remove("focus-mode");
       pomodoro.focusMode = false;
+      requestAnimationFrame(() => { void restoreExecuteKeyboardFocus(); });
     }
 
     async function keepWindowMaximized() {
@@ -14049,6 +14051,15 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         const appWindow = window.__TAURI__?.window?.getCurrentWindow?.();
         if (appWindow?.maximize) await appWindow.maximize();
       } catch {}
+    }
+
+    async function restoreExecuteKeyboardFocus() {
+      try {
+        const appWindow = window.__TAURI__?.window?.getCurrentWindow?.();
+        if (appWindow?.setFocus) await appWindow.setFocus();
+      } catch {}
+      const target = document.getElementById("heroTimerCard") || document.getElementById("tab-execute");
+      target?.focus?.({ preventScroll: true });
     }
 
     function renderPomodoro() {
@@ -27781,7 +27792,6 @@ You cannot change app state without that JSON block. Do not say something was ad
     document.getElementById("focusPauseBtn").addEventListener("click",toggleFocusPomodoro);
     document.getElementById("focusDoneBtn").addEventListener("click",()=>{ completeTaskFromHeroCheckbox(); });
     document.getElementById("focusExitBtn").addEventListener("click",()=>{ exitFocusMode(); });
-    document.addEventListener("keydown",e=>{ if(e.key==="Escape" && document.getElementById("focusOverlay")?.classList.contains("active")) exitFocusMode(); });
     document.getElementById("autoFocusToggle").addEventListener("change",e=>{ pomodoro.autoFocusMode = !!e.target.checked; savePomodoroPrefs(); renderPomodoro(); });
     document.getElementById("pomoNotifyBtn").addEventListener("click",requestPomodoroNotifications);
     document.getElementById("pomoSoundToggle").addEventListener("change",e=>{
