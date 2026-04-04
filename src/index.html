@@ -206,8 +206,9 @@ body{font-family:var(--font);color:var(--text);background:var(--bg);-webkit-font
 .task-check.done{background:var(--accent);border-color:var(--accent)}
 .task-check.done::after{content:"✓";color:#fff;font-size:.7rem;font-weight:700}
 .task-item .task-info{flex:1;min-width:0;cursor:grab}
-.task-item .task-title{font-size:.9rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
-.task-item .task-title:hover{text-decoration:underline;text-decoration-color:var(--accent, #4f46e5)}
+.task-item .task-title{font-size:.9rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:grab}
+.task-item .task-title span[data-task-detail]{cursor:pointer;display:inline}
+.task-item .task-title span[data-task-detail]:hover{text-decoration:underline;text-decoration-color:var(--accent, #4f46e5)}
 .task-item .task-title.done-text{text-decoration:line-through;opacity:.5}
 .task-item .task-tags{display:flex;gap:6px;margin-top:3px}
 .task-item, .task-item .task-info, .task-item .task-tags{cursor:grab}
@@ -15001,7 +15002,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
             ${isCompleted ? "" : '<div class="drag-handle"></div>'}
             <div class="task-check ${isCompleted ? "done" : ""}"></div>
             <div class="task-info">
-              <div class="task-title ${isCompleted ? "done-text" : ""}" data-task-detail="${escapeHtml(task.id)}">${escapeHtml(task.title)}</div>
+              <div class="task-title ${isCompleted ? "done-text" : ""}"><span data-task-detail="${escapeHtml(task.id)}">${escapeHtml(task.title)}</span></div>
               <div class="task-tags">${tagParts}${notesTag}</div>
             </div>
           </div>`;
@@ -15016,7 +15017,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
             return;
           }
           // Title click → open detail panel (same as Plan)
-          const titleEl = e.target.closest(".task-title[data-task-detail]");
+          const titleEl = e.target.closest("[data-task-detail]");
           if (titleEl) {
             e.preventDefault();
             e.stopPropagation();
@@ -15068,7 +15069,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         if (!target) return;
         const item = target.closest(".task-item[data-task-id]");
         if (!item) return;
-        if (target.closest(".task-check, .task-title")) return;
+        if (target.closest(".task-check, [data-task-detail]")) return;
         const taskId = item.dataset.taskId;
         const task = getTask(taskId);
         if (!task || task.completedAt) return;
