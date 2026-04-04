@@ -14097,15 +14097,6 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         if (appWindow.isFullscreen && appWindow.setFullscreen) {
           const isFullscreen = await appWindow.isFullscreen();
           await appWindow.setFullscreen(!isFullscreen);
-          return;
-        }
-        if (appWindow.isMaximized && appWindow.unmaximize && appWindow.maximize) {
-          const isMaximized = await appWindow.isMaximized();
-          if (isMaximized) {
-            await appWindow.unmaximize();
-          } else {
-            await appWindow.maximize();
-          }
         }
       } catch (e) {
         console.warn("[toggleWindowFullscreen] JS API fallback failed:", e);

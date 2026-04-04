@@ -413,22 +413,8 @@ fn toggle_main_window_fullscreen(app: AppHandle) -> Result<(), String> {
         return Err("Main window not found".to_string());
     };
 
-    if window.is_fullscreen().unwrap_or(false) {
-        window.set_fullscreen(false).map_err(|e| e.to_string())?;
-        return Ok(());
-    }
-
-    let is_maximized = window.is_maximized().unwrap_or(false);
-    if is_maximized {
-        window.unmaximize().map_err(|e| e.to_string())?;
-        return Ok(());
-    }
-
-    if window.maximize().is_ok() {
-        return Ok(());
-    }
-
-    window.set_fullscreen(true).map_err(|e| e.to_string())?;
+    let is_fullscreen = window.is_fullscreen().unwrap_or(false);
+    window.set_fullscreen(!is_fullscreen).map_err(|e| e.to_string())?;
     Ok(())
 }
 
