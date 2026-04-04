@@ -164,7 +164,7 @@ body{font-family:var(--font);color:var(--text);background:var(--bg);-webkit-font
 .task-item{
   display:flex;align-items:center;gap:12px;
   padding:12px 14px;border-radius:var(--radius-sm);
-  border:1px solid transparent;cursor:pointer;transition:all .12s;
+  border:1px solid transparent;cursor:grab;transition:all .12s;
   margin-bottom:6px;position:relative;
 }
 .task-item .drag-handle{
@@ -205,10 +205,10 @@ body{font-family:var(--font);color:var(--text);background:var(--bg);-webkit-font
 .task-check:hover{border-color:var(--accent)}
 .task-check.done{background:var(--accent);border-color:var(--accent)}
 .task-check.done::after{content:"✓";color:#fff;font-size:.7rem;font-weight:700}
-.task-item .task-info{flex:1;min-width:0}
-.task-item .task-title{font-size:.9rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.task-item .task-info{flex:1;min-width:0;cursor:grab}
+.task-item .task-title{font-size:.9rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:text;user-select:text;-webkit-user-select:text}
 .task-item .task-title.done-text{text-decoration:line-through;opacity:.5}
-.task-item .task-tags{display:flex;gap:6px;margin-top:3px}
+.task-item .task-tags{display:flex;gap:6px;margin-top:3px;cursor:text;user-select:text;-webkit-user-select:text}
 .tag{
   font-size:.65rem;font-weight:600;padding:2px 7px;border-radius:4px;
   text-transform:uppercase;letter-spacing:.3px;
@@ -15035,6 +15035,11 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
 
       if (!todayPanelDelegated) {
         todayPanel.addEventListener("click", e => {
+          if (Date.now() < _todayDragSuppressClickUntil) {
+            e.preventDefault();
+            e.stopPropagation();
+            return;
+          }
           // Detail button (⋯)
           const detailBtn = e.target.closest("[data-task-detail]");
           if (detailBtn) {
@@ -15076,6 +15081,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
 
     // ── Today Task Drag-to-Reorder ──
     let _todayDrag = null;
+    let _todayDragSuppressClickUntil = 0;
 
     function initTodayDragReorder() {
       const listEl = document.getElementById("todayTaskList");
@@ -15083,10 +15089,12 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       listEl._todayDragInit = true;
 
       listEl.addEventListener("pointerdown", e => {
-        const handle = e.target.closest(".drag-handle");
-        if (!handle) return;
-        const item = handle.closest(".task-item[data-task-id]");
+        const target = e.target instanceof Element ? e.target : e.target?.parentElement;
+        if (!target) return;
+        const item = target.closest(".task-item[data-task-id]");
         if (!item) return;
+        if (target.closest(".task-check, .task-detail-btn")) return;
+        if (target.closest(".task-title, .task-tags")) return;
         const taskId = item.dataset.taskId;
         const task = getTask(taskId);
         if (!task || task.completedAt) return;
@@ -15165,35 +15173,9 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       if (indicator) indicator.remove();
 
       if (!moved) return;
+      _todayDragSuppressClickUntil = Date.now() + 250;
 
-      // Reorder within state.tasks: move taskId before insertBeforeId (or to end of today tasks)
-      const fromIndex = state.tasks.findIndex(t => t.id === taskId);
-      if (fromIndex < 0) return;
-      const task = state.tasks[fromIndex];
-      state.tasks.splice(fromIndex, 1);
-
-      if (insertBeforeId) {
-        const beforeIndex = state.tasks.findIndex(t => t.id === insertBeforeId);
-        if (beforeIndex >= 0) {
-          state.tasks.splice(beforeIndex, 0, task);
-        } else {
-          state.tasks.push(task);
-        }
-      } else {
-        // Insert after the last "today" task
-        const todayIndexes = state.tasks
-          .map((t, idx) => ({ t, idx }))
-          .filter(entry => !entry.t.completedAt && normalizePipelineStage(entry.t.stage) === "today")
-          .map(entry => entry.idx);
-        if (todayIndexes.length) {
-          state.tasks.splice(todayIndexes[todayIndexes.length - 1] + 1, 0, task);
-        } else {
-          state.tasks.push(task);
-        }
-      }
-
-      saveState("today_reorder");
-      render();
+      moveTaskToStage(taskId, "today", insertBeforeId || "");
     }
 
     // ── Finish Track ──
