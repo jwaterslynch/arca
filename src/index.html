@@ -206,9 +206,13 @@ body{font-family:var(--font);color:var(--text);background:var(--bg);-webkit-font
 .task-check.done{background:var(--accent);border-color:var(--accent)}
 .task-check.done::after{content:"✓";color:#fff;font-size:.7rem;font-weight:700}
 .task-item .task-info{flex:1;min-width:0;cursor:grab}
-.task-item .task-title{font-size:.9rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:text;user-select:text;-webkit-user-select:text}
+.task-item .task-title{font-size:.9rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .task-item .task-title.done-text{text-decoration:line-through;opacity:.5}
-.task-item .task-tags{display:flex;gap:6px;margin-top:3px;cursor:text;user-select:text;-webkit-user-select:text}
+.task-item .task-tags{display:flex;gap:6px;margin-top:3px}
+.task-item, .task-item .task-info, .task-item .task-title, .task-item .task-tags{cursor:grab}
+.task-item:active, .task-item:active .task-info, .task-item:active .task-title, .task-item:active .task-tags{cursor:grabbing}
+.task-item .task-check{cursor:pointer}
+.task-item .task-detail-btn{cursor:pointer}
 .tag{
   font-size:.65rem;font-weight:600;padding:2px 7px;border-radius:4px;
   text-transform:uppercase;letter-spacing:.3px;
@@ -15094,7 +15098,6 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         const item = target.closest(".task-item[data-task-id]");
         if (!item) return;
         if (target.closest(".task-check, .task-detail-btn")) return;
-        if (target.closest(".task-title, .task-tags")) return;
         const taskId = item.dataset.taskId;
         const task = getTask(taskId);
         if (!task || task.completedAt) return;
