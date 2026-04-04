@@ -1043,6 +1043,149 @@ body{font-family:var(--font);color:var(--text);background:var(--bg);-webkit-font
       flex-wrap:wrap;
     }
 
+    /* ── Task Detail Panel (right drawer) ── */
+    #taskDetailBackdrop {
+      justify-content:flex-end;
+      align-items:stretch;
+    }
+    .task-detail-panel {
+      background:var(--surface);
+      width:min(440px, 92vw);
+      max-height:100vh;
+      overflow-y:auto;
+      padding:24px;
+      box-shadow:-4px 0 24px rgba(0,0,0,.15);
+      display:flex;
+      flex-direction:column;
+      gap:0;
+      animation:taskDetailSlideIn .18s ease-out;
+    }
+    @keyframes taskDetailSlideIn {
+      from { transform:translateX(100%); opacity:0; }
+      to   { transform:translateX(0);    opacity:1; }
+    }
+    .task-detail-head {
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding-bottom:16px;
+      border-bottom:1px solid var(--line);
+    }
+    .task-detail-title-input {
+      flex:1;
+      font-size:17px;
+      font-weight:600;
+      border:none;
+      outline:none;
+      background:transparent;
+      padding:4px 0;
+      color:var(--text);
+    }
+    .task-detail-title-input:focus {
+      border-bottom:2px solid var(--accent, #4f46e5);
+    }
+    .task-detail-body {
+      flex:1;
+      overflow-y:auto;
+      padding:16px 0;
+    }
+    .task-detail-label {
+      display:block;
+      font-weight:600;
+      text-transform:uppercase;
+      letter-spacing:.04em;
+      color:var(--text2, #888);
+      margin-bottom:6px;
+    }
+    .task-detail-notes {
+      width:100%;
+      min-height:120px;
+      resize:vertical;
+      border:1px solid var(--line);
+      border-radius:8px;
+      padding:10px;
+      font-family:inherit;
+      font-size:13px;
+      line-height:1.5;
+      background:var(--surface);
+      color:var(--text);
+    }
+    .task-detail-notes:focus {
+      outline:none;
+      border-color:var(--accent, #4f46e5);
+      box-shadow:0 0 0 2px rgba(79,70,229,.15);
+    }
+    .task-detail-meta-grid {
+      display:grid;
+      grid-template-columns:repeat(2, minmax(0,1fr));
+      gap:10px;
+    }
+    .task-detail-activity {
+      margin-top:18px;
+      padding-top:14px;
+      border-top:1px solid var(--line);
+      color:var(--text2, #888);
+      line-height:1.6;
+    }
+    .task-detail-actions {
+      display:flex;
+      gap:8px;
+      padding-top:14px;
+      border-top:1px solid var(--line);
+    }
+    .task-detail-actions .warn {
+      margin-left:auto;
+    }
+    /* Pipeline title clickable */
+    .pipeline-card-title {
+      cursor:pointer;
+    }
+    .pipeline-card-title:hover {
+      text-decoration:underline;
+      text-decoration-color:var(--accent, #4f46e5);
+    }
+    /* Execute info button */
+    .task-detail-btn {
+      background:none;
+      border:none;
+      cursor:pointer;
+      padding:2px 4px;
+      font-size:14px;
+      color:var(--text2, #888);
+      border-radius:4px;
+      flex-shrink:0;
+    }
+    .task-detail-btn:hover {
+      background:var(--hover, rgba(0,0,0,.06));
+      color:var(--text);
+    }
+    .task-detail-btn.has-notes {
+      color:var(--accent, #4f46e5);
+    }
+    .task-detail-btn.has-notes::after {
+      content:"";
+      display:inline-block;
+      width:5px;
+      height:5px;
+      border-radius:50%;
+      background:var(--accent, #4f46e5);
+      margin-left:1px;
+      vertical-align:super;
+    }
+    /* Narrow width: drawer becomes centered modal */
+    @media (max-width: 600px) {
+      #taskDetailBackdrop {
+        justify-content:center;
+        align-items:center;
+      }
+      .task-detail-panel {
+        width:92%;
+        max-height:85vh;
+        border-radius:16px;
+        animation:none;
+      }
+    }
+
     .ai-config-grid {
       display:grid;
       grid-template-columns:repeat(2,minmax(260px,1fr));
@@ -4457,6 +4600,77 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
     </div>
   </div>
 
+  <!-- ── Task Detail Panel (drawer) ── -->
+  <div id="taskDetailBackdrop" class="modal-backdrop" hidden aria-hidden="true">
+    <div id="taskDetailPanel" class="task-detail-panel" role="dialog" aria-modal="true" aria-labelledby="taskDetailTitle">
+      <div class="task-detail-head">
+        <input id="taskDetailTitle" class="task-detail-title-input" type="text" placeholder="Task title" />
+        <button id="taskDetailCloseBtn" class="ghost" type="button">Close</button>
+      </div>
+      <div class="task-detail-body">
+        <label class="task-detail-label tiny">Notes</label>
+        <textarea id="taskDetailNotes" class="task-detail-notes" rows="8" placeholder="Add context, emails, links, instructions..."></textarea>
+
+        <label class="task-detail-label tiny" style="margin-top:16px;">Details</label>
+        <div class="task-detail-meta-grid">
+          <label class="tiny" style="display:grid;gap:4px;">
+            <span>Stage</span>
+            <select id="taskDetailStage">
+              <option value="backlog">Backlog</option>
+              <option value="next_up">Next Up</option>
+              <option value="today">Today</option>
+            </select>
+          </label>
+          <label class="tiny" style="display:grid;gap:4px;">
+            <span>Category</span>
+            <select id="taskDetailCategory">
+              <option value="Strategic">Strategic</option>
+              <option value="Maintenance">Maintenance</option>
+              <option value="Body/Mind">Body/Mind</option>
+              <option value="Travel/Admin">Travel/Admin</option>
+              <option value="Revenue/Venture">Revenue/Venture</option>
+            </select>
+          </label>
+          <label class="tiny" style="display:grid;gap:4px;">
+            <span>Depth</span>
+            <select id="taskDetailDepth">
+              <option value="Deep">Deep</option>
+              <option value="Shallow">Shallow</option>
+            </select>
+          </label>
+          <label class="tiny" style="display:grid;gap:4px;">
+            <span>Goal</span>
+            <select id="taskDetailGoal">
+              <option value="None">None</option>
+              <option value="PG1">PG1</option>
+              <option value="PG2">PG2</option>
+            </select>
+          </label>
+          <label class="tiny" style="display:grid;gap:4px;">
+            <span>Importance</span>
+            <select id="taskDetailImportance">
+              <option value="High">High</option>
+              <option value="Low">Low</option>
+            </select>
+          </label>
+          <label class="tiny" style="display:grid;gap:4px;">
+            <span>Urgency</span>
+            <select id="taskDetailUrgency">
+              <option value="High">High</option>
+              <option value="Low">Low</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="task-detail-activity tiny" id="taskDetailActivity"></div>
+      </div>
+      <div class="task-detail-actions">
+        <button id="taskDetailDoneBtn" class="primary" type="button">Mark Done</button>
+        <button id="taskDetailDeleteBtn" class="warn" type="button">Delete</button>
+      </div>
+    </div>
+  </div>
+
   <div id="onboardingModal" class="modal-backdrop" hidden aria-hidden="true">
     <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="onboardingTitle">
       <div class="modal-head">
@@ -5851,7 +6065,9 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
               stage: normalizePipelineStage(t.stage || t.pipeline_stage || ""),
               createdAt,
               completedAt,
-              elapsedSec: Number.isFinite(t.elapsedSec) ? t.elapsedSec : (Number.isFinite(t.elapsed_sec) ? t.elapsed_sec : 0)
+              elapsedSec: Number.isFinite(t.elapsedSec) ? t.elapsedSec : (Number.isFinite(t.elapsed_sec) ? t.elapsed_sec : 0),
+              notes: typeof t.notes === "string" ? t.notes : "",
+              updatedAt: t.updatedAt || t.updated_at || null
             };
           })
         : [];
@@ -12566,10 +12782,12 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         return;
       }
       const assignedStage = normalizePipelineStage(stageOverride) || defaultStageForNewTask();
+      const now = new Date().toISOString();
       const task = {
         id:uid(), title:title.trim(), category, importance, urgency,
         depth:depth||"Deep", wig:wig||"None", stage: assignedStage,
-        createdAt:new Date().toISOString(), completedAt:null, elapsedSec:0
+        createdAt:now, completedAt:null, elapsedSec:0,
+        notes:"", updatedAt:now
       };
       state.tasks.unshift(task);
       queueLedgerEvent(
@@ -12642,6 +12860,154 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       closePipelineTaskModal();
       const metaEl = document.getElementById("pipelineMeta");
       if (metaEl) metaEl.textContent = `Added to ${stage.replace("_", " ")}: ${cleanTitle}`;
+    }
+
+    // ══════════════════════════════════════
+    // TASK DETAIL PANEL
+    // ══════════════════════════════════════
+    let _taskDetailId = null;
+    let _taskDetailSaveTimer = null;
+
+    function openTaskDetail(taskId) {
+      const task = getTask(taskId);
+      if (!task) return;
+      _taskDetailId = taskId;
+      const backdrop = document.getElementById("taskDetailBackdrop");
+      if (!backdrop) return;
+
+      // Populate fields
+      document.getElementById("taskDetailTitle").value = task.title || "";
+      document.getElementById("taskDetailNotes").value = task.notes || "";
+      document.getElementById("taskDetailStage").value = normalizePipelineStage(task.stage) || "backlog";
+      document.getElementById("taskDetailCategory").value = task.category || "Maintenance";
+      document.getElementById("taskDetailDepth").value = task.depth || "Deep";
+      document.getElementById("taskDetailGoal").value = task.wig || "None";
+      document.getElementById("taskDetailImportance").value = task.importance || "Low";
+      document.getElementById("taskDetailUrgency").value = task.urgency || "Low";
+
+      // Done button label
+      const doneBtn = document.getElementById("taskDetailDoneBtn");
+      if (doneBtn) {
+        doneBtn.textContent = task.completedAt ? "Reopen" : "Mark Done";
+      }
+
+      // Activity info
+      const actEl = document.getElementById("taskDetailActivity");
+      if (actEl) {
+        const lines = [];
+        if (task.createdAt) lines.push(`Created: ${new Date(task.createdAt).toLocaleDateString()}`);
+        if (task.updatedAt) lines.push(`Updated: ${new Date(task.updatedAt).toLocaleDateString()}`);
+        if (task.completedAt) lines.push(`Completed: ${new Date(task.completedAt).toLocaleDateString()}`);
+        if (task.elapsedSec > 0) {
+          const mins = Math.round(task.elapsedSec / 60);
+          lines.push(`Time tracked: ${mins >= 60 ? Math.floor(mins/60) + "h " + (mins%60) + "m" : mins + "m"}`);
+        }
+        actEl.textContent = lines.join(" \u00B7 ");
+      }
+
+      backdrop.hidden = false;
+      backdrop.setAttribute("aria-hidden", "false");
+      // Focus notes if empty (user likely wants to add info), else title
+      if (!task.notes) {
+        document.getElementById("taskDetailNotes").focus();
+      } else {
+        document.getElementById("taskDetailTitle").focus();
+      }
+    }
+
+    function closeTaskDetail() {
+      // Flush any pending save
+      if (_taskDetailSaveTimer) {
+        clearTimeout(_taskDetailSaveTimer);
+        _taskDetailSaveTimer = null;
+        _flushTaskDetailSave();
+      }
+      _taskDetailId = null;
+      const backdrop = document.getElementById("taskDetailBackdrop");
+      if (backdrop) {
+        backdrop.hidden = true;
+        backdrop.setAttribute("aria-hidden", "true");
+      }
+    }
+
+    function _flushTaskDetailSave() {
+      if (!_taskDetailId) return;
+      const task = getTask(_taskDetailId);
+      if (!task) return;
+      const title = (document.getElementById("taskDetailTitle").value || "").trim();
+      if (title) task.title = title;
+      task.notes = document.getElementById("taskDetailNotes").value || "";
+      const newStage = document.getElementById("taskDetailStage").value;
+      if (newStage && newStage !== normalizePipelineStage(task.stage)) {
+        task.stage = newStage;
+        initTodayState();
+      }
+      task.category = document.getElementById("taskDetailCategory").value || task.category;
+      task.depth = document.getElementById("taskDetailDepth").value || task.depth;
+      task.wig = document.getElementById("taskDetailGoal").value || task.wig;
+      task.importance = document.getElementById("taskDetailImportance").value || task.importance;
+      task.urgency = document.getElementById("taskDetailUrgency").value || task.urgency;
+      task.updatedAt = new Date().toISOString();
+      saveState(); render();
+    }
+
+    function _scheduleTaskDetailSave() {
+      if (_taskDetailSaveTimer) clearTimeout(_taskDetailSaveTimer);
+      _taskDetailSaveTimer = setTimeout(() => {
+        _taskDetailSaveTimer = null;
+        _flushTaskDetailSave();
+      }, 600);
+    }
+
+    // ── Task Detail Panel event wiring (once) ──
+    let _taskDetailWired = false;
+    function wireTaskDetailPanel() {
+      if (_taskDetailWired) return;
+      _taskDetailWired = true;
+      const backdrop = document.getElementById("taskDetailBackdrop");
+      if (!backdrop) return;
+
+      // Close on backdrop click
+      backdrop.addEventListener("click", e => {
+        if (e.target === backdrop) closeTaskDetail();
+      });
+
+      // Close button
+      document.getElementById("taskDetailCloseBtn")?.addEventListener("click", closeTaskDetail);
+
+      // Autosave on input
+      ["taskDetailTitle", "taskDetailNotes"].forEach(id => {
+        document.getElementById(id)?.addEventListener("input", _scheduleTaskDetailSave);
+      });
+      ["taskDetailStage", "taskDetailCategory", "taskDetailDepth", "taskDetailGoal", "taskDetailImportance", "taskDetailUrgency"].forEach(id => {
+        document.getElementById(id)?.addEventListener("change", () => {
+          _flushTaskDetailSave();
+        });
+      });
+
+      // Done button
+      document.getElementById("taskDetailDoneBtn")?.addEventListener("click", () => {
+        if (!_taskDetailId) return;
+        const task = getTask(_taskDetailId);
+        if (!task) return;
+        _flushTaskDetailSave();
+        toggleDone(_taskDetailId, !task.completedAt);
+        closeTaskDetail();
+      });
+
+      // Delete button
+      document.getElementById("taskDetailDeleteBtn")?.addEventListener("click", () => {
+        if (!_taskDetailId) return;
+        if (!confirm("Delete this task?")) return;
+        const id = _taskDetailId;
+        closeTaskDetail();
+        deleteTask(id);
+      });
+
+      // Escape key
+      backdrop.addEventListener("keydown", e => {
+        if (e.key === "Escape") closeTaskDetail();
+      });
     }
 
     function startTask(id) {
@@ -14653,6 +15019,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
               ? `<span class="tag ${task.wig === "PG2" ? "pg2" : "pg1"}">${escapeHtml(task.wig)}</span>`
               : ""
           ].filter(Boolean).join("");
+          const hasNotes = task.notes ? ' has-notes' : '';
           return `
           <div class="task-item ${isActive ? "active-task" : ""} ${isAiHighlighted ? "ai-highlight" : ""}" data-task-id="${escapeHtml(task.id)}">
             ${isCompleted ? "" : '<div class="drag-handle"></div>'}
@@ -14661,12 +15028,22 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
               <div class="task-title ${isCompleted ? "done-text" : ""}">${escapeHtml(task.title)}</div>
               <div class="task-tags">${tagParts}</div>
             </div>
+            <button type="button" class="task-detail-btn${hasNotes}" data-task-detail="${escapeHtml(task.id)}" title="Task details">\u22EF</button>
           </div>`;
         }).join("");
       }
 
       if (!todayPanelDelegated) {
         todayPanel.addEventListener("click", e => {
+          // Detail button (⋯)
+          const detailBtn = e.target.closest("[data-task-detail]");
+          if (detailBtn) {
+            e.preventDefault();
+            e.stopPropagation();
+            openTaskDetail(detailBtn.dataset.taskDetail);
+            return;
+          }
+
           const checkEl = e.target.closest(".task-check");
           if (checkEl) {
             e.preventDefault();
@@ -15238,6 +15615,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
               <span class="tag ${tagClass(task.category)}">${task.category}</span>
               <span class="tag ${depth === "Deep" ? "deep" : "shallow"}">${depth}</span>
               <span class="tag ${task.wig !== "None" ? "wig" : ""}">${goalLabelShort(task.wig || "None")}</span>
+              ${task.notes ? '<span class="tag" style="opacity:.6;font-style:italic" title="Has notes">notes</span>' : ""}
             </div>
             <div class="pipeline-actions">
               <div class="controls">
@@ -28225,7 +28603,18 @@ You cannot change app state without that JSON block. Do not say something was ad
         submitPipelineTaskModal();
       }
     });
+    wireTaskDetailPanel();
     document.getElementById("pipelineBoard").addEventListener("click",e=>{
+      // Open task detail when clicking the title
+      const titleEl = e.target.closest(".pipeline-card-title");
+      if (titleEl) {
+        const card = titleEl.closest(".pipeline-card[data-task-id]");
+        if (card) {
+          e.stopPropagation();
+          openTaskDetail(card.dataset.taskId);
+          return;
+        }
+      }
       const moveBtn = e.target.closest("button[data-pipe-shift]");
       if (moveBtn) {
         const task = getTask(moveBtn.dataset.taskId);
