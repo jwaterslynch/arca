@@ -2069,6 +2069,228 @@ button.warn {
 .ollama-setup-card[hidden] { display:none !important; }
 .ollama-setup-card .row { display:flex; align-items:center; justify-content:space-between; gap:10px; }
 .ollama-setup-card .tiny { line-height:1.45; }
+.settings-shell {
+  display:grid;
+  grid-template-columns:220px minmax(0,1fr);
+  gap:18px;
+  align-items:start;
+}
+.settings-nav {
+  display:grid;
+  gap:8px;
+  padding:10px;
+  border:1px solid var(--line);
+  border-radius:14px;
+  background:var(--bg);
+}
+.settings-nav-btn {
+  display:grid;
+  gap:4px;
+  width:100%;
+  text-align:left;
+  padding:12px 14px;
+  border:1px solid transparent;
+  border-radius:12px;
+  background:transparent;
+  color:var(--text2);
+  cursor:pointer;
+  transition:all .15s ease;
+}
+.settings-nav-btn strong {
+  font-size:.86rem;
+  font-weight:700;
+  color:var(--text);
+}
+.settings-nav-btn span {
+  font-size:.76rem;
+  line-height:1.45;
+}
+.settings-nav-btn:hover {
+  background:#fff;
+  border-color:var(--line);
+}
+.settings-nav-btn.active {
+  background:#fff;
+  border-color:#b8ddd4;
+  box-shadow:var(--shadow);
+}
+.settings-nav-btn.active strong,
+.settings-nav-btn.active span {
+  color:var(--accent);
+}
+.settings-content { min-width:0; }
+.settings-pane { display:none; gap:14px; }
+.settings-pane.active { display:grid; }
+.settings-pane-card {
+  display:grid;
+  gap:16px;
+  padding:18px 20px;
+  border:1px solid var(--line);
+  border-radius:14px;
+  background:var(--bg);
+}
+.settings-pane-card h3 {
+  margin:0;
+  font-size:1.04rem;
+  font-weight:700;
+  color:var(--text);
+}
+.settings-pane-card p {
+  margin:0;
+  max-width:68ch;
+  font-size:.88rem;
+  line-height:1.65;
+  color:var(--text2);
+}
+.settings-pane-card .tiny { line-height:1.5; }
+.settings-panel-head {
+  display:grid;
+  gap:10px;
+}
+.settings-panel-head h2 {
+  margin:0;
+  font-size:2rem;
+  line-height:1.06;
+  letter-spacing:-.02em;
+}
+.settings-panel-head .tiny {
+  max-width:64ch;
+  font-size:.9rem;
+  line-height:1.62;
+}
+.settings-pane-grid {
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:14px 18px;
+}
+.settings-toggle-grid {
+  display:grid;
+  grid-template-columns:minmax(0,1.05fr) minmax(260px,.95fr);
+  gap:18px 22px;
+  align-items:start;
+}
+.settings-toggle-copy {
+  display:grid;
+  gap:12px;
+  align-content:start;
+}
+.settings-toggle-label {
+  display:flex;
+  align-items:flex-start;
+  gap:12px;
+  min-width:0;
+}
+.settings-toggle-label input[type="checkbox"] {
+  margin:4px 0 0;
+  flex:0 0 auto;
+}
+.settings-toggle-text {
+  display:grid;
+  gap:4px;
+  min-width:0;
+}
+.settings-toggle-text strong {
+  font-size:.92rem;
+  font-weight:700;
+  color:var(--text);
+}
+.settings-toggle-text span {
+  font-size:.84rem;
+  line-height:1.6;
+  color:var(--text2);
+}
+.settings-shortcuts-list {
+  display:grid;
+  gap:8px;
+}
+.settings-shortcut-row {
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:16px;
+  padding:10px 0;
+  border-bottom:1px solid #e8ede8;
+}
+.settings-shortcut-row:last-child {
+  border-bottom:none;
+  padding-bottom:0;
+}
+.settings-shortcut-copy {
+  display:grid;
+  gap:3px;
+}
+.settings-shortcut-copy strong {
+  font-size:.84rem;
+  font-weight:700;
+  color:var(--text);
+}
+.settings-shortcut-copy span {
+  font-size:.76rem;
+  line-height:1.45;
+  color:var(--text2);
+}
+.settings-shortcut-key {
+  font-size:.76rem;
+  font-weight:700;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+  color:var(--text2);
+  white-space:nowrap;
+}
+.settings-status-line {
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+  flex-wrap:wrap;
+}
+.settings-card-actions {
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+  flex-wrap:wrap;
+}
+.settings-card-actions .tiny {
+  max-width:62ch;
+}
+.settings-note {
+  padding:14px 16px;
+  border-radius:12px;
+  background:#fff;
+  border:1px solid var(--line);
+  color:var(--text2);
+  font-size:.84rem;
+  line-height:1.65;
+}
+.settings-placeholder {
+  border-style:dashed;
+}
+@media (max-width: 920px) {
+  .cloud-config-grid,
+  .ai-config-grid,
+  .settings-pane-grid,
+  .settings-toggle-grid {
+    grid-template-columns:1fr;
+  }
+}
+@media (max-width: 980px) {
+  .settings-shell {
+    grid-template-columns:1fr;
+  }
+  .settings-nav {
+    grid-template-columns:repeat(2,minmax(0,1fr));
+  }
+}
+@media (max-width: 640px) {
+  .settings-nav {
+    grid-template-columns:1fr;
+  }
+  .settings-shortcut-row {
+    flex-direction:column;
+    gap:6px;
+  }
+}
 .local-ai-modal { max-width:880px; }
 .local-ai-modal .modal-head {
   padding:24px 24px 18px;
@@ -2874,7 +3096,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         <span>Data</span>
         <span id="appVersionStamp" class="meta">Loading…</span>
       </button>
-      <button class="icon-btn" id="aiSetupBtn" title="AI Settings">⚙</button>
+      <button class="icon-btn" id="aiSetupBtn" title="Settings">⚙</button>
     </div>
   </div>
 
@@ -3033,7 +3255,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         <div class="plan-subtabs" id="planSubtabs">
           <div class="plan-subtab active" data-plan-tab="focus">Pipeline</div>
           <div class="plan-subtab" data-plan-tab="review">Review</div>
-          <div class="plan-subtab" data-plan-tab="assistant">AI Settings</div>
+          <div class="plan-subtab" data-plan-tab="assistant">Settings</div>
         </div>
 
         <!-- Pipeline Panel -->
@@ -3090,90 +3312,274 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         <div class="plan-subpanel tab-content" id="tab-assistant">
           <div class="card">
             <div class="titlebar" style="align-items:flex-start;row-gap:10px;">
-              <h2 style="font-size:.95rem;font-weight:700">AI Settings</h2>
-              <div class="controls" style="gap:8px 10px;flex-wrap:wrap;align-items:center;">
-                <span id="aiStatusBadge" class="tiny">Disabled</span>
-                <div id="aiTabProviderSwitch" class="ai-provider-switch">
-                  <button class="ai-provider-btn" type="button" data-ai-provider-btn="openai">ChatGPT</button>
-                  <button class="ai-provider-btn" type="button" data-ai-provider-btn="anthropic">Claude</button>
-                  <button class="ai-provider-btn" type="button" data-ai-provider-btn="grok">Grok</button>
-                  <button class="ai-provider-btn" type="button" data-ai-provider-btn="gemini">Gemini</button>
-                  <button class="ai-provider-btn" type="button" data-ai-provider-btn="deepseek">DeepSeek</button>
-                  <button class="ai-provider-btn" type="button" data-ai-provider-btn="mistral">Mistral</button>
-                  <button class="ai-provider-btn" type="button" data-ai-provider-btn="ollama" title="100% local — nothing leaves your machine">Ollama</button>
-                </div>
-                <button id="aiToggleConfigBtn" class="ghost" type="button">Settings</button>
+              <div class="settings-panel-head">
+                <h2>Settings</h2>
+                <div id="settingsSectionSummary" class="tiny">Tune Arca’s timer, AI, and core app behavior without touching tasks or goals.</div>
               </div>
             </div>
-            <div id="aiConfigPanel" class="ai-settings-panel" hidden>
-              <div class="ai-config-grid">
-                <label class="tiny ai-settings-field"><span>Enable AI</span><input id="aiEnabledInput" type="checkbox" /></label>
-                <label class="tiny ai-settings-field"><span>Hide when disabled</span><input id="aiHideDisabledInput" type="checkbox" checked /></label>
-                <label class="tiny ai-settings-field"><span>Provider</span>
-                  <select id="aiProviderInput">
-                    <option value="openai">OpenAI</option><option value="anthropic">Anthropic</option>
-                    <option value="gemini">Google Gemini</option><option value="grok">xAI / Grok</option>
-                    <option value="deepseek">DeepSeek</option><option value="mistral">Mistral</option><option value="ollama">Ollama (Local)</option><option value="openai_compatible">OpenAI-compatible</option>
-                  </select>
-                </label>
-                <label class="tiny ai-settings-field"><span>API Key</span><input id="aiApiKeyInput" type="password" autocomplete="off" placeholder="sk-..." /></label>
-                <label class="tiny ai-settings-inline-toggle"><input id="aiSessionOnlyKeyInput" type="checkbox" /><span>Don't save key (enter each session)</span></label>
+            <div class="settings-shell">
+              <div class="settings-nav" id="settingsNav">
+                <button class="settings-nav-btn active" type="button" data-settings-section-btn="timer">
+                  <strong>Focus Timer</strong>
+                  <span>Work lengths, sound, alerts, and focus behavior.</span>
+                </button>
+                <button class="settings-nav-btn" type="button" data-settings-section-btn="ai">
+                  <strong>AI</strong>
+                  <span>Providers, models, local AI, and connection testing.</span>
+                </button>
+                <button class="settings-nav-btn" type="button" data-settings-section-btn="general">
+                  <strong>General</strong>
+                  <span>Core modules, setup replay, and shortcut reference.</span>
+                </button>
+                <button class="settings-nav-btn" type="button" data-settings-section-btn="data">
+                  <strong>Data &amp; Sync</strong>
+                  <span>Storage status, backups, and cloud sync entry points.</span>
+                </button>
               </div>
-              <div id="aiPrivacyBadge" class="tiny" style="margin-top:6px;padding:6px 10px;border-radius:6px;border:1px solid var(--line);background:var(--card);line-height:1.4;"></div>
-              <div id="aiOllamaSetupCard" class="ollama-setup-card" hidden>
-                <div class="row">
-                  <strong style="font-size:.82rem;">Local AI Setup</strong>
-                  <button id="aiOpenOllamaWizardBtn" class="ghost" type="button">Open Setup Wizard</button>
-                </div>
-                <div id="aiOllamaSetupSummary" class="tiny">Detect Ollama, download a starter model, and configure Arca to keep requests on this machine.</div>
-              </div>
-              <details style="margin-top:8px;"><summary class="tiny">Advanced</summary>
-                <div class="ai-config-grid" style="margin-top:8px;">
-                  <label class="tiny ai-settings-field"><span>Model</span>
-                    <div class="ai-settings-model-row">
-                      <select id="aiModelInput" style="flex:1;min-width:0;height:32px;border-radius:6px;border:1px solid var(--line);padding:2px 6px;font-size:.85rem;background:var(--bg);color:var(--text);">
-                        <option value="">Default</option>
-                      </select>
-                      <button id="aiRefreshModelsBtn" type="button" class="ghost" style="padding:4px 8px;font-size:.75rem;white-space:nowrap;" title="Fetch available models from API">↻</button>
+              <div class="settings-content">
+                <section class="settings-pane active" data-settings-pane="timer">
+                  <div class="settings-pane-card">
+                    <h3>Work &amp; break lengths</h3>
+                    <p>These settings shape the default pomodoro cycle used in Execute and Focus mode. The 4-block session loop stays fixed for now.</p>
+                    <div class="settings-pane-grid">
+                      <label class="tiny ai-settings-field"><span>Work minutes</span><input id="settingsPomoWorkMin" type="number" min="1" max="120" /></label>
+                      <label class="tiny ai-settings-field"><span>Break minutes</span><input id="settingsPomoBreakMin" type="number" min="1" max="60" /></label>
                     </div>
-                  </label>
-                  <label class="tiny ai-settings-field"><span>Base URL</span><input id="aiBaseUrlInput" placeholder="Default" /></label>
-                </div>
-              </details>
-              <div class="controls ai-settings-actions">
-                <button id="aiSaveConfigBtn" class="primary" type="button">Save</button>
-                <button id="aiTestBtn" class="ghost" type="button">Test</button>
-                <span id="aiTestStatus" class="tiny"></span>
-              </div>
-              <div id="aiTestDebug" class="tiny ai-settings-debug" hidden></div>
-            </div>
-            <div id="aiDisabledNotice" class="ai-note" hidden>AI is off. Enable above.</div>
-            <div id="aiWorkspaceHelperNotice" class="ai-note" hidden>Use Arca AI in the sidebar for normal interaction. This page is for provider setup, connection testing, and reviewing structured changes.</div>
-            <div id="aiChatWrap" class="ai-chat-box" hidden>
-            <div id="aiMessages" class="ai-messages"></div>
-              <div id="aiUserInputAttachments" class="ai-attachment-strip" hidden></div>
-              <div class="wealth-coach-input-row with-status with-attach ai-composer-row ai-workspace-input-row" data-ai-composer-row="aiUserInput" style="margin-top:8px">
-                <div class="ai-composer-status" id="aiWorkspaceStatusIcon" data-ai-status-for="aiUserInput" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 1L14.5 8.5L22 12L14.5 15.5L12 23L9.5 15.5L2 12L9.5 8.5Z"/></svg></div>
-                <button id="aiAttachBtn" class="ghost ai-attach-btn" type="button" title="Add image or file">+</button>
-                <textarea id="aiUserInput" placeholder="Ask AI..."></textarea>
-                <button id="aiSendBtn" class="wealth-coach-send" data-ai-send-for="aiUserInput" type="button"><span class="ai-send-label">Send</span><span class="ai-send-spinner"></span></button>
-              </div>
-              <div class="controls">
-                <button id="aiClearChatBtn" class="ghost" type="button">Clear</button>
-                <span id="aiBusyStatus" class="tiny"></span>
-                <button id="aiChatProviderPill" class="ai-provider-pill tiny ai-switch-trigger" data-open-ai-switch="assistant" type="button" title="Switch AI" style="margin-left:auto;"></button>
-              </div>
-            </div>
-            <div id="aiProposalWrap" class="ai-proposal" hidden>
-              <h3 style="margin:0;">Proposed Changes</h3>
-              <div id="aiProposalSummary" class="tiny"></div>
-              <div id="aiProposalAssumptions" class="tiny"></div>
-              <div id="aiProposalQuestions" class="tiny"></div>
-              <div id="aiActionsList" class="ai-actions-list"></div>
-              <div class="controls">
-                <button id="aiApplyBtn" class="primary" type="button">Apply</button>
-                <button id="aiUndoBtn" class="ghost" type="button">Undo</button>
-                <span id="aiApplyStatus" class="tiny"></span>
+                  </div>
+                  <div class="settings-pane-card">
+                    <h3>Focus &amp; alerts</h3>
+                    <div class="settings-toggle-grid">
+                      <div class="settings-toggle-copy">
+                        <label class="settings-toggle-label">
+                          <input id="settingsAutoFocusToggle" type="checkbox" />
+                          <span class="settings-toggle-text">
+                            <strong>Auto-enter Focus mode</strong>
+                            <span>Jump into the fullscreen focus view whenever a work block starts.</span>
+                          </span>
+                        </label>
+                      </div>
+                      <div class="settings-note">
+                        The fullscreen focus overlay remains available with your existing keyboard flow.
+                      </div>
+                    </div>
+                    <div class="settings-card-actions">
+                      <div class="tiny" id="settingsPomoNotifyStatus">Desktop alerts follow the current browser/app permission.</div>
+                      <button id="settingsPomoNotifyBtn" class="ghost" type="button">Enable desktop alerts</button>
+                    </div>
+                  </div>
+                  <div class="settings-pane-card">
+                    <h3>Sound</h3>
+                    <div class="settings-toggle-grid">
+                      <div class="settings-toggle-copy">
+                        <label class="settings-toggle-label">
+                          <input id="settingsPomoSoundToggle" type="checkbox" />
+                          <span class="settings-toggle-text">
+                            <strong>Sound cues</strong>
+                            <span>Play end-of-block sounds and transitional chimes across Execute and Focus mode.</span>
+                          </span>
+                        </label>
+                      </div>
+                      <div class="settings-note">Use Test Sound to audition the current tone at the current profile.</div>
+                    </div>
+                    <div class="settings-pane-grid">
+                      <label class="tiny ai-settings-field"><span>Sound profile</span>
+                        <select id="settingsPomoSoundProfile">
+                          <option value="soft">Soft</option>
+                          <option value="normal">Medium</option>
+                          <option value="loud">Loud</option>
+                        </select>
+                      </label>
+                      <label class="tiny ai-settings-field"><span>Alarm tone</span>
+                        <select id="settingsPomoTone">
+                          <option value="glass">Glass</option>
+                          <option value="ping">Ping</option>
+                          <option value="funk">Funk</option>
+                          <option value="hero">Hero</option>
+                          <option value="purr">Purr</option>
+                        </select>
+                      </label>
+                      <label class="tiny ai-settings-field"><span>Chime length</span>
+                        <select id="settingsPomoChimeLength">
+                          <option value="short">Short</option>
+                          <option value="long">Long</option>
+                        </select>
+                      </label>
+                    </div>
+                    <div class="settings-card-actions">
+                      <div class="tiny">Current sound behavior applies everywhere the timer ends.</div>
+                      <button id="settingsPomoTestSoundBtn" class="ghost" type="button">Test Sound</button>
+                    </div>
+                  </div>
+                </section>
+                <section class="settings-pane" data-settings-pane="ai">
+                  <div class="settings-pane-card">
+                    <div class="titlebar" style="align-items:flex-start;row-gap:10px;margin-bottom:0;">
+                      <h3>AI</h3>
+                      <div class="controls" style="gap:8px 10px;flex-wrap:wrap;align-items:center;">
+                        <span id="aiStatusBadge" class="tiny">Disabled</span>
+                        <div id="aiTabProviderSwitch" class="ai-provider-switch">
+                          <button class="ai-provider-btn" type="button" data-ai-provider-btn="openai">ChatGPT</button>
+                          <button class="ai-provider-btn" type="button" data-ai-provider-btn="anthropic">Claude</button>
+                          <button class="ai-provider-btn" type="button" data-ai-provider-btn="grok">Grok</button>
+                          <button class="ai-provider-btn" type="button" data-ai-provider-btn="gemini">Gemini</button>
+                          <button class="ai-provider-btn" type="button" data-ai-provider-btn="deepseek">DeepSeek</button>
+                          <button class="ai-provider-btn" type="button" data-ai-provider-btn="mistral">Mistral</button>
+                          <button class="ai-provider-btn" type="button" data-ai-provider-btn="ollama" title="100% local — nothing leaves your machine">Ollama</button>
+                        </div>
+                        <button id="aiToggleConfigBtn" class="ghost" type="button">Provider Setup</button>
+                      </div>
+                    </div>
+                    <div id="aiConfigPanel" class="ai-settings-panel" hidden>
+                      <div class="ai-config-grid">
+                        <label class="tiny ai-settings-field"><span>Enable AI</span><input id="aiEnabledInput" type="checkbox" /></label>
+                        <label class="tiny ai-settings-field"><span>Hide when disabled</span><input id="aiHideDisabledInput" type="checkbox" checked /></label>
+                        <label class="tiny ai-settings-field"><span>Provider</span>
+                          <select id="aiProviderInput">
+                            <option value="openai">OpenAI</option><option value="anthropic">Anthropic</option>
+                            <option value="gemini">Google Gemini</option><option value="grok">xAI / Grok</option>
+                            <option value="deepseek">DeepSeek</option><option value="mistral">Mistral</option><option value="ollama">Ollama (Local)</option><option value="openai_compatible">OpenAI-compatible</option>
+                          </select>
+                        </label>
+                        <label class="tiny ai-settings-field"><span>API Key</span><input id="aiApiKeyInput" type="password" autocomplete="off" placeholder="sk-..." /></label>
+                        <label class="tiny ai-settings-inline-toggle"><input id="aiSessionOnlyKeyInput" type="checkbox" /><span>Don't save key (enter each session)</span></label>
+                      </div>
+                      <div id="aiPrivacyBadge" class="tiny" style="margin-top:6px;padding:6px 10px;border-radius:6px;border:1px solid var(--line);background:var(--card);line-height:1.4;"></div>
+                      <div id="aiOllamaSetupCard" class="ollama-setup-card" hidden>
+                        <div class="row">
+                          <strong style="font-size:.82rem;">Local AI Setup</strong>
+                          <button id="aiOpenOllamaWizardBtn" class="ghost" type="button">Open Setup Wizard</button>
+                        </div>
+                        <div id="aiOllamaSetupSummary" class="tiny">Detect Ollama, download a starter model, and configure Arca to keep requests on this machine.</div>
+                      </div>
+                      <details style="margin-top:8px;"><summary class="tiny">Advanced</summary>
+                        <div class="ai-config-grid" style="margin-top:8px;">
+                          <label class="tiny ai-settings-field"><span>Model</span>
+                            <div class="ai-settings-model-row">
+                              <select id="aiModelInput" style="flex:1;min-width:0;height:32px;border-radius:6px;border:1px solid var(--line);padding:2px 6px;font-size:.85rem;background:var(--bg);color:var(--text);">
+                                <option value="">Default</option>
+                              </select>
+                              <button id="aiRefreshModelsBtn" type="button" class="ghost" style="padding:4px 8px;font-size:.75rem;white-space:nowrap;" title="Fetch available models from API">↻</button>
+                            </div>
+                          </label>
+                          <label class="tiny ai-settings-field"><span>Base URL</span><input id="aiBaseUrlInput" placeholder="Default" /></label>
+                        </div>
+                      </details>
+                      <div class="controls ai-settings-actions">
+                        <button id="aiSaveConfigBtn" class="primary" type="button">Save</button>
+                        <button id="aiTestBtn" class="ghost" type="button">Test</button>
+                        <span id="aiTestStatus" class="tiny"></span>
+                      </div>
+                      <div id="aiTestDebug" class="tiny ai-settings-debug" hidden></div>
+                    </div>
+                    <div id="aiDisabledNotice" class="ai-note" hidden>AI is off. Enable above.</div>
+                    <div id="aiWorkspaceHelperNotice" class="ai-note" hidden>Use Arca AI in the sidebar for normal interaction. This section is for provider setup, connection testing, and reviewing structured changes.</div>
+                    <div id="aiChatWrap" class="ai-chat-box" hidden>
+                      <div id="aiMessages" class="ai-messages"></div>
+                      <div id="aiUserInputAttachments" class="ai-attachment-strip" hidden></div>
+                      <div class="wealth-coach-input-row with-status with-attach ai-composer-row ai-workspace-input-row" data-ai-composer-row="aiUserInput" style="margin-top:8px">
+                        <div class="ai-composer-status" id="aiWorkspaceStatusIcon" data-ai-status-for="aiUserInput" aria-hidden="true"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 1L14.5 8.5L22 12L14.5 15.5L12 23L9.5 15.5L2 12L9.5 8.5Z"/></svg></div>
+                        <button id="aiAttachBtn" class="ghost ai-attach-btn" type="button" title="Add image or file">+</button>
+                        <textarea id="aiUserInput" placeholder="Ask AI..."></textarea>
+                        <button id="aiSendBtn" class="wealth-coach-send" data-ai-send-for="aiUserInput" type="button"><span class="ai-send-label">Send</span><span class="ai-send-spinner"></span></button>
+                      </div>
+                      <div class="controls">
+                        <button id="aiClearChatBtn" class="ghost" type="button">Clear</button>
+                        <span id="aiBusyStatus" class="tiny"></span>
+                        <button id="aiChatProviderPill" class="ai-provider-pill tiny ai-switch-trigger" data-open-ai-switch="assistant" type="button" title="Switch AI" style="margin-left:auto;"></button>
+                      </div>
+                    </div>
+                    <div id="aiProposalWrap" class="ai-proposal" hidden>
+                      <h3 style="margin:0;">Proposed Changes</h3>
+                      <div id="aiProposalSummary" class="tiny"></div>
+                      <div id="aiProposalAssumptions" class="tiny"></div>
+                      <div id="aiProposalQuestions" class="tiny"></div>
+                      <div id="aiActionsList" class="ai-actions-list"></div>
+                      <div class="controls">
+                        <button id="aiApplyBtn" class="primary" type="button">Apply</button>
+                        <button id="aiUndoBtn" class="ghost" type="button">Undo</button>
+                        <span id="aiApplyStatus" class="tiny"></span>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+                <section class="settings-pane" data-settings-pane="general">
+                  <div class="settings-pane-card">
+                    <h3>Core modules</h3>
+                    <p>Keep the daily shell simple by leaving experimental modules off until you want to test them.</p>
+                    <div class="settings-toggle">
+                      <div>
+                        <div class="toggle-label">Health (alpha)</div>
+                        <div class="tiny" id="settingsExperimentalHealthMeta">Hidden by default until enabled.</div>
+                      </div>
+                      <button id="settingsExperimentalHealthToggle" class="toggle-switch" type="button" role="switch" aria-checked="false" aria-label="Enable Health alpha module"></button>
+                    </div>
+                    <div class="settings-toggle">
+                      <div>
+                        <div class="toggle-label">Wealth (alpha)</div>
+                        <div class="tiny" id="settingsExperimentalWealthMeta">Hidden by default until enabled.</div>
+                      </div>
+                      <button id="settingsExperimentalWealthToggle" class="toggle-switch" type="button" role="switch" aria-checked="false" aria-label="Enable Wealth alpha module"></button>
+                    </div>
+                  </div>
+                  <div class="settings-pane-card">
+                    <h3>Setup &amp; appearance</h3>
+                    <p>Replay the setup flow safely, and keep future structure/settings work in one place.</p>
+                    <div class="controls">
+                      <button id="settingsPreviewOnboardingBtn" class="ghost" type="button">Preview Setup Wizard</button>
+                    </div>
+                    <div class="settings-note">Dark mode and deeper structure settings belong here next, but are not live in this first pass.</div>
+                  </div>
+                  <div class="settings-pane-card">
+                    <h3>Keyboard shortcuts</h3>
+                    <div class="settings-shortcuts-list">
+                      <div class="settings-shortcut-row">
+                        <div class="settings-shortcut-copy"><strong>Open settings</strong><span>Jump to Settings &gt; AI from anywhere in the app.</span></div>
+                        <div class="settings-shortcut-key">⌘,</div>
+                      </div>
+                      <div class="settings-shortcut-row">
+                        <div class="settings-shortcut-copy"><strong>Focus AI input</strong><span>Open the most relevant AI composer for the current surface.</span></div>
+                        <div class="settings-shortcut-key">⌘K</div>
+                      </div>
+                      <div class="settings-shortcut-row">
+                        <div class="settings-shortcut-copy"><strong>Start or resume focus</strong><span>Starts the timer if idle, or resumes and enters Focus mode.</span></div>
+                        <div class="settings-shortcut-key">⌘↩</div>
+                      </div>
+                      <div class="settings-shortcut-row">
+                        <div class="settings-shortcut-copy"><strong>Pause or resume timer</strong><span>Toggles the active timer without leaving the keyboard flow.</span></div>
+                        <div class="settings-shortcut-key">Space</div>
+                      </div>
+                      <div class="settings-shortcut-row">
+                        <div class="settings-shortcut-copy"><strong>Expand window</strong><span>Toggles the same native expand action as the green window button.</span></div>
+                        <div class="settings-shortcut-key">F</div>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+                <section class="settings-pane" data-settings-pane="data">
+                  <div class="settings-pane-card">
+                    <h3>Storage status</h3>
+                    <div class="settings-status-line">
+                      <div class="settings-shortcut-copy">
+                        <strong id="settingsDataSourceValue">Native store</strong>
+                        <span id="settingsDataSourceMeta">Arca is using its current desktop data source.</span>
+                      </div>
+                      <div class="settings-shortcut-key" id="settingsRuntimeValue">Desktop</div>
+                    </div>
+                    <div class="settings-note">Backup, restore, and full storage diagnostics still live in the existing App &amp; Data panel for now.</div>
+                  </div>
+                  <div class="settings-pane-card">
+                    <h3>Open existing tools</h3>
+                    <p>This first pass keeps the mature backup and sync flows intact, and exposes them from Settings instead of making you hunt for them.</p>
+                    <div class="controls">
+                      <button id="settingsOpenAppDataBtn" class="ghost" type="button">Open App &amp; Data</button>
+                      <button id="settingsOpenCloudSyncBtn" class="ghost" type="button">Open Cloud Sync</button>
+                    </div>
+                  </div>
+                  <div class="settings-pane-card settings-placeholder">
+                    <h3>What comes next</h3>
+                    <p>Later passes should move backup, restore, storage mode, and cloud credentials directly into this section and retire the old modal.</p>
+                  </div>
+                </section>
               </div>
             </div>
           </div>
@@ -5159,6 +5565,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
     let aiBusyComposerKey = "";
     let activeTopLevelTab = "execute";
     let activePlanTab = "focus";
+    let activeSettingsSection = "timer";
     let planCoachOpen = false;
     let todayPanelDelegated = false;
     let lifePracticesDelegated = false;
@@ -5174,6 +5581,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       "healthNutritionCoachInput",
       "healthSleepCoachInput"
     ]);
+    const SETTINGS_SECTION_KEYS = new Set(["timer", "ai", "general", "data"]);
     const cloudSyncRuntime = {
       pendingEvents: [],
       pushTimer: null,
@@ -6750,6 +7158,8 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
 
     function loadPomodoroPrefs() {
       const defaults = {
+        workMin: 25,
+        breakMin: 5,
         soundEnabled: true,
         soundProfile: "normal",
         alarmTone: "glass",
@@ -6765,6 +7175,8 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         if (!raw) return defaults;
         const pref = JSON.parse(raw);
         return {
+          workMin: Math.min(120, Math.max(1, Number.parseInt(pref.workMin, 10) || 25)),
+          breakMin: Math.min(60, Math.max(1, Number.parseInt(pref.breakMin, 10) || 5)),
           soundEnabled: pref.soundEnabled !== false,
           soundProfile: ["soft","normal","loud"].includes(pref.soundProfile) ? pref.soundProfile : "normal",
           alarmTone: ["glass","ping","funk","hero","purr"].includes(pref.alarmTone) ? pref.alarmTone : "glass",
@@ -6783,6 +7195,8 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
 
     function savePomodoroPrefs() {
       localStorage.setItem(POMO_PREF_KEY, JSON.stringify({
+        workMin: Math.min(120, Math.max(1, Number.parseInt(pomodoro.workMin, 10) || 25)),
+        breakMin: Math.min(60, Math.max(1, Number.parseInt(pomodoro.breakMin, 10) || 5)),
         soundEnabled: !!pomodoro.soundEnabled,
         soundProfile: pomodoro.soundProfile || "normal",
         alarmTone: pomodoro.alarmTone || "glass",
@@ -7604,7 +8018,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       const key = String(source || "").trim();
       const labels = {
         execute: "Execute",
-        assistant: "Plan AI Settings",
+        assistant: "Plan Settings",
         "plan-sidebar": "Arca AI",
         "plan-coach": "Arca AI",
         health: "Health",
@@ -8687,8 +9101,75 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         }
       } catch {}
     }
-    function aiShouldShowTab() {
-      return aiPrefs.enabled || !aiPrefs.hideUiWhenDisabled || aiPanelForcedVisible;
+    function settingsTabVisible() {
+      return true;
+    }
+    function normalizeSettingsSection(section = "") {
+      const key = String(section || "").trim().toLowerCase();
+      return SETTINGS_SECTION_KEYS.has(key) ? key : "timer";
+    }
+    function renderSettingsShell() {
+      const section = normalizeSettingsSection(activeSettingsSection);
+      activeSettingsSection = section;
+      const summaries = {
+        timer: "Tune work blocks, chimes, notifications, and focus behavior.",
+        ai: "Configure providers, local models, and AI review behavior.",
+        general: "Control app structure, setup replay, and keyboard references.",
+        data: "Check storage state and open the mature sync and backup tools."
+      };
+      document.querySelectorAll("[data-settings-section-btn]").forEach(btn => {
+        const key = String(btn.getAttribute("data-settings-section-btn") || "");
+        btn.classList.toggle("active", key === section);
+      });
+      document.querySelectorAll("[data-settings-pane]").forEach(pane => {
+        const key = String(pane.getAttribute("data-settings-pane") || "");
+        pane.classList.toggle("active", key === section);
+      });
+      const summaryEl = document.getElementById("settingsSectionSummary");
+      if (summaryEl) summaryEl.textContent = summaries[section] || summaries.timer;
+
+      const healthEnabled = isHealthSurfaceEnabled(state);
+      const wealthEnabled = isWealthSurfaceEnabled(state);
+      const healthToggle = document.getElementById("settingsExperimentalHealthToggle");
+      const wealthToggle = document.getElementById("settingsExperimentalWealthToggle");
+      const healthMeta = document.getElementById("settingsExperimentalHealthMeta");
+      const wealthMeta = document.getElementById("settingsExperimentalWealthMeta");
+      const healthExplicit = state.modules?.experimental?.health;
+      const wealthExplicit = state.modules?.experimental?.wealth;
+      if (healthToggle) {
+        healthToggle.classList.toggle("on", healthEnabled);
+        healthToggle.setAttribute("aria-checked", healthEnabled ? "true" : "false");
+      }
+      if (wealthToggle) {
+        wealthToggle.classList.toggle("on", wealthEnabled);
+        wealthToggle.setAttribute("aria-checked", wealthEnabled ? "true" : "false");
+      }
+      if (healthMeta) {
+        healthMeta.textContent = healthExplicit === null
+          ? (healthEnabled ? "Visible automatically because this board already has Health data." : "Hidden by default until enabled.")
+          : (healthEnabled ? "Visible. Turn it off if you want a simpler daily app shell." : "Hidden. Turn it on when you want to test Health.");
+      }
+      if (wealthMeta) {
+        wealthMeta.textContent = wealthExplicit === null
+          ? (wealthEnabled ? "Visible automatically because this board already has Wealth data." : "Hidden by default until enabled.")
+          : (wealthEnabled ? "Visible. Turn it off if you want a simpler daily app shell." : "Hidden. Turn it on when you want to test Wealth.");
+      }
+
+      const source = currentDataSourceSummary();
+      const dataSourceValue = document.getElementById("settingsDataSourceValue");
+      const dataSourceMeta = document.getElementById("settingsDataSourceMeta");
+      const runtimeValue = document.getElementById("settingsRuntimeValue");
+      if (dataSourceValue) dataSourceValue.textContent = source.label;
+      if (dataSourceMeta) {
+        const parts = [source.detail];
+        if (state.last_modified) parts.push(`Last modified ${new Date(state.last_modified).toLocaleString()}`);
+        dataSourceMeta.textContent = parts.filter(Boolean).join(" · ");
+      }
+      if (runtimeValue) runtimeValue.textContent = appRuntime.version ? `v${appRuntime.version}` : (appRuntime.profile || "desktop");
+    }
+    function openSettingsPanel(section = "timer") {
+      activeSettingsSection = normalizeSettingsSection(section);
+      setActiveTab("assistant");
     }
     function aiGetProviderConfig(provider = aiPrefs.provider, sourcePrefs = aiPrefs) {
       const name = AI_ALLOWED_PROVIDERS.includes(provider) ? provider : "openai";
@@ -9432,7 +9913,7 @@ If the original response clearly intended a board mutation, keep that action in 
       if (undoBtn) undoBtn.disabled = !aiUndoBatch;
     }
     function renderAiAssistant() {
-      const showTab = aiShouldShowTab();
+      const showTab = settingsTabVisible();
       const assistantSubtabBtn = document.querySelector('.plan-subtab[data-plan-tab="assistant"]');
       if (assistantSubtabBtn) assistantSubtabBtn.style.display = showTab ? "" : "none";
       const assistantPanelActive = !!document.getElementById("tab-assistant")?.classList.contains("active");
@@ -9442,9 +9923,10 @@ If the original response clearly intended a board mutation, keep that action in 
           setActiveTab("plan");
         }
       }
+      renderSettingsShell();
 
       const setupBtn = document.getElementById("aiSetupBtn");
-      if (setupBtn) { setupBtn.textContent = "⚙"; setupBtn.title = aiPrefs.enabled ? "AI Settings" : "Enable AI"; }
+      if (setupBtn) { setupBtn.textContent = "⚙"; setupBtn.title = "Settings"; }
 
       const inlineCard = document.getElementById("aiInlineCard");
       if (inlineCard) inlineCard.hidden = (!aiPrefs.enabled && aiPrefs.hideUiWhenDisabled && !aiPanelForcedVisible);
@@ -9485,7 +9967,7 @@ If the original response clearly intended a board mutation, keep that action in 
       const configPanel = document.getElementById("aiConfigPanel");
       if (configPanel) configPanel.hidden = !aiConfigOpen;
       const toggleConfigBtn = document.getElementById("aiToggleConfigBtn");
-      if (toggleConfigBtn) toggleConfigBtn.textContent = aiConfigOpen ? "Hide Settings" : "Settings";
+      if (toggleConfigBtn) toggleConfigBtn.textContent = aiConfigOpen ? "Hide Provider Setup" : "Provider Setup";
 
       // Privacy badge
       const privacyBadge = document.getElementById("aiPrivacyBadge");
@@ -10071,7 +10553,7 @@ If the original response clearly intended a board mutation, keep that action in 
         }
         if (statusEl) {
           statusEl.textContent = isConnected
-            ? `Connected (${Date.now() - started}ms). ${finalModel && finalModel !== cfg.model ? `Model set to ${finalModel}. ` : ""}Click Save AI Settings to keep this key.`
+            ? `Connected (${Date.now() - started}ms). ${finalModel && finalModel !== cfg.model ? `Model set to ${finalModel}. ` : ""}Click Save to keep this key.`
             : "Connected, unexpected response.";
         }
         aiSetTestDiagnostics(diagnostics);
@@ -10478,7 +10960,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       }
       const cfg = aiResolveConfig(aiPrefs);
       if (aiProviderNeedsKey(cfg.provider) && !cfg.apiKey) {
-        alert("Add an API key in AI Settings first.");
+        alert("Add an API key in Settings > AI first.");
         return;
       }
       const requestOptions = typeof inputIdOrOptions === "string"
@@ -10529,14 +11011,14 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
           const validCount = aiProposal.items.filter(item => item.valid && item.action).length;
           showAiInlineToast(
             validCount > 0
-              ? `Proposal ready in AI Settings. Review ${validCount} change${validCount === 1 ? "" : "s"}.`
-              : "No direct changes proposed. Open AI Settings to review the response.",
+              ? `Proposal ready in Settings > AI. Review ${validCount} change${validCount === 1 ? "" : "s"}.`
+              : "No direct changes proposed. Open Settings > AI to review the response.",
             "info"
           );
         } else if (autoApplyInline) {
           const validCount = aiProposal.items.filter(item => item.valid && item.selected && item.action).length;
           if (!validCount) {
-            showAiInlineToast("No direct changes applied. Open AI Settings to review the response.", "info");
+            showAiInlineToast("No direct changes applied. Open Settings > AI to review the response.", "info");
           } else {
           const result = applyAiSelectedActions({ silent: true, clearProposal: true });
           if (result.ok) {
@@ -10558,7 +11040,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         /* Friendly error messages instead of raw API errors */
         let friendlyMsg = "Something went wrong — your message is still in the box, try again.";
         if (/api.?key|auth|unauthorized|401/i.test(errMsg)) {
-          friendlyMsg = "API key issue — check your key in AI Settings.";
+          friendlyMsg = "API key issue — check your key in Settings > AI.";
         } else if (/rate.?limit|429/i.test(errMsg)) {
           friendlyMsg = "Rate limited — wait a moment and try again.";
         } else if (/network|fetch|timeout|ECONNREFUSED/i.test(errMsg)) {
@@ -12867,6 +13349,10 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       if (doneBtn) {
         doneBtn.textContent = task.completedAt ? "Reopen" : "Mark Done";
       }
+      const deleteBtn = document.getElementById("taskDetailDeleteBtn");
+      if (deleteBtn) {
+        deleteBtn.dataset.taskDelete = taskId;
+      }
 
       // Activity info
       const actEl = document.getElementById("taskDetailActivity");
@@ -12892,12 +13378,12 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       }
     }
 
-    function closeTaskDetail() {
-      // Flush any pending save
+    function closeTaskDetail(options = {}) {
+      const shouldFlush = options.flush !== false;
       if (_taskDetailSaveTimer) {
         clearTimeout(_taskDetailSaveTimer);
         _taskDetailSaveTimer = null;
-        _flushTaskDetailSave();
+        if (shouldFlush) _flushTaskDetailSave();
       }
       _taskDetailId = null;
       const backdrop = document.getElementById("taskDetailBackdrop");
@@ -12977,7 +13463,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         if (!_taskDetailId) return;
         if (!confirm("Delete this task?")) return;
         const id = _taskDetailId;
-        closeTaskDetail();
+        closeTaskDetail({ flush: false });
         deleteTask(id);
       });
 
@@ -13281,7 +13767,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       if (planTabs.includes(requested)) { mode = "plan"; planTab = requested; }
       if (mode === "plan") {
         if (!planTabs.includes(planTab)) planTab = "focus";
-        if (planTab === "assistant" && !aiShouldShowTab()) planTab = "focus";
+        if (planTab === "assistant" && !settingsTabVisible()) planTab = "focus";
       }
       if (!topLevelTabs.includes(mode)) mode = "execute";
       activeTopLevelTab = topLevelTabs.includes(mode) ? mode : "execute";
@@ -13404,6 +13890,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
 
     function focusPlanAssistantAiInput() {
       aiPanelForcedVisible = true;
+      activeSettingsSection = "ai";
       setActiveTab("assistant");
       render();
       requestAnimationFrame(() => {
@@ -14492,11 +14979,22 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       const chimeLength = document.getElementById("pomoChimeLength");
       const notifyBtn = document.getElementById("pomoNotifyBtn");
       const notifyStatus = document.getElementById("pomoNotifyStatus");
+      const settingsWorkMin = document.getElementById("settingsPomoWorkMin");
+      const settingsBreakMin = document.getElementById("settingsPomoBreakMin");
+      const settingsAutoFocusToggle = document.getElementById("settingsAutoFocusToggle");
+      const settingsSoundToggle = document.getElementById("settingsPomoSoundToggle");
+      const settingsSoundProfile = document.getElementById("settingsPomoSoundProfile");
+      const settingsToneSelect = document.getElementById("settingsPomoTone");
+      const settingsChimeLength = document.getElementById("settingsPomoChimeLength");
+      const settingsNotifyBtn = document.getElementById("settingsPomoNotifyBtn");
+      const settingsNotifyStatus = document.getElementById("settingsPomoNotifyStatus");
       if (!phasePill || !clock || !status || !completed || !startBtn) return;
 
       if (pomodoro.running) {
         if (!pomodoro.endsAtMs) pomodoro.endsAtMs = Date.now() + (pomodoro.remainingSec * 1000);
         pomodoro.remainingSec = Math.max(0, Math.ceil((pomodoro.endsAtMs - Date.now()) / 1000));
+      } else if (!pomodoro.paused && pomodoro.phase === "idle") {
+        pomodoro.remainingSec = Math.max(60, (Math.max(1, Number.parseInt(pomodoro.workMin, 10) || 25) * 60));
       }
 
       const phaseText = pomodoro.phase === "work" ? "Work" : pomodoro.phase === "break" ? "Break" : "Idle";
@@ -14613,20 +15111,43 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       }
       if (focusBtn) focusBtn.textContent = pomodoro.focusMode ? "Exit Focus" : "Enter Focus";
       if (autoFocusToggle) autoFocusToggle.checked = !!pomodoro.autoFocusMode;
+      if (settingsAutoFocusToggle) settingsAutoFocusToggle.checked = !!pomodoro.autoFocusMode;
       document.body.classList.toggle("focus-mode", !!pomodoro.focusMode);
 
       completed.textContent = `Completed blocks: ${pomodoro.completedBlocks}`;
       if (soundToggle) soundToggle.checked = !!pomodoro.soundEnabled;
+      if (settingsSoundToggle) settingsSoundToggle.checked = !!pomodoro.soundEnabled;
       if (soundProfile) soundProfile.value = pomodoro.soundProfile || "normal";
+      if (settingsSoundProfile) settingsSoundProfile.value = pomodoro.soundProfile || "normal";
       if (toneSelect) toneSelect.value = pomodoro.alarmTone || "glass";
+      if (settingsToneSelect) settingsToneSelect.value = pomodoro.alarmTone || "glass";
       if (chimeLength) chimeLength.value = pomodoro.chimeLength || "short";
+      if (settingsChimeLength) settingsChimeLength.value = pomodoro.chimeLength || "short";
+      const normalizedWorkMin = Math.min(120, Math.max(1, Number.parseInt(pomodoro.workMin, 10) || 25));
+      const normalizedBreakMin = Math.min(60, Math.max(1, Number.parseInt(pomodoro.breakMin, 10) || 5));
+      const hiddenWorkInput = document.getElementById("pomoWorkMin");
+      const hiddenBreakInput = document.getElementById("pomoBreakMin");
+      if (hiddenWorkInput) hiddenWorkInput.value = normalizedWorkMin;
+      if (hiddenBreakInput) hiddenBreakInput.value = normalizedBreakMin;
+      if (settingsWorkMin) settingsWorkMin.value = normalizedWorkMin;
+      if (settingsBreakMin) settingsBreakMin.value = normalizedBreakMin;
       if (notifyBtn) {
         if (!("Notification" in window)) notifyBtn.disabled = true;
         notifyBtn.textContent = pomodoro.desktopNotify ? "Desktop alerts on" : "Enable desktop alerts";
       }
+      if (settingsNotifyBtn) {
+        if (!("Notification" in window)) settingsNotifyBtn.disabled = true;
+        settingsNotifyBtn.textContent = pomodoro.desktopNotify ? "Desktop alerts on" : "Enable desktop alerts";
+      }
       if (notifyStatus) {
         const perm = ("Notification" in window) ? Notification.permission : "unsupported";
         notifyStatus.textContent = pomodoro.desktopNotify
+          ? `Desktop alerts on (${perm})`
+          : `Desktop alerts off (${perm})`;
+      }
+      if (settingsNotifyStatus) {
+        const perm = ("Notification" in window) ? Notification.permission : "unsupported";
+        settingsNotifyStatus.textContent = pomodoro.desktopNotify
           ? `Desktop alerts on (${perm})`
           : `Desktop alerts off (${perm})`;
       }
@@ -26475,7 +26996,7 @@ Data caveat`;
       closeAppDataModal();
       aiPanelForcedVisible = true;
       aiConfigOpen = true;
-      setActiveTab("assistant");
+      openSettingsPanel("ai");
       renderAiAssistant();
     }
 
@@ -27516,7 +28037,7 @@ CRITICAL RULES FOR ACTIONS:
     }
 
     function activePlanSurfaceLabel() {
-      if (activePlanTab === "assistant") return "Plan > AI Settings";
+      if (activePlanTab === "assistant") return "Plan > Settings";
       if (activePlanTab === "review") return "Plan > Review";
       return "Plan > Pipeline";
     }
@@ -28315,8 +28836,35 @@ You cannot change app state without that JSON block. Do not say something was ad
     document.getElementById("focusDoneBtn").addEventListener("click",()=>{ completeTaskFromHeroCheckbox(); });
     document.getElementById("focusExitBtn").addEventListener("click",()=>{ exitFocusMode(); });
     document.getElementById("autoFocusToggle").addEventListener("change",e=>{ pomodoro.autoFocusMode = !!e.target.checked; savePomodoroPrefs(); renderPomodoro(); });
+    document.getElementById("settingsAutoFocusToggle")?.addEventListener("change",e=>{ pomodoro.autoFocusMode = !!e.target.checked; savePomodoroPrefs(); renderPomodoro(); });
+    document.getElementById("settingsPomoWorkMin")?.addEventListener("change", e => {
+      pomodoro.workMin = Math.min(120, Math.max(1, Number.parseInt(e.target.value, 10) || 25));
+      const hiddenInput = document.getElementById("pomoWorkMin");
+      if (hiddenInput) hiddenInput.value = pomodoro.workMin;
+      if (!pomodoro.running && !pomodoro.paused && pomodoro.phase === "idle") {
+        pomodoro.remainingSec = pomodoro.workMin * 60;
+      }
+      savePomodoroPrefs();
+      renderPomodoro();
+    });
+    document.getElementById("settingsPomoBreakMin")?.addEventListener("change", e => {
+      pomodoro.breakMin = Math.min(60, Math.max(1, Number.parseInt(e.target.value, 10) || 5));
+      const hiddenInput = document.getElementById("pomoBreakMin");
+      if (hiddenInput) hiddenInput.value = pomodoro.breakMin;
+      if (!pomodoro.running && !pomodoro.paused && pomodoro.phase === "break") {
+        pomodoro.remainingSec = pomodoro.breakMin * 60;
+      }
+      savePomodoroPrefs();
+      renderPomodoro();
+    });
     document.getElementById("pomoNotifyBtn").addEventListener("click",requestPomodoroNotifications);
+    document.getElementById("settingsPomoNotifyBtn")?.addEventListener("click",requestPomodoroNotifications);
     document.getElementById("pomoSoundToggle").addEventListener("change",e=>{
+      pomodoro.soundEnabled = !!e.target.checked;
+      savePomodoroPrefs();
+      renderPomodoro();
+    });
+    document.getElementById("settingsPomoSoundToggle")?.addEventListener("change",e=>{
       pomodoro.soundEnabled = !!e.target.checked;
       savePomodoroPrefs();
       renderPomodoro();
@@ -28326,7 +28874,17 @@ You cannot change app state without that JSON block. Do not say something was ad
       savePomodoroPrefs();
       renderPomodoro();
     });
+    document.getElementById("settingsPomoSoundProfile")?.addEventListener("change",e=>{
+      pomodoro.soundProfile = e.target.value;
+      savePomodoroPrefs();
+      renderPomodoro();
+    });
     document.getElementById("pomoTone").addEventListener("change",e=>{
+      pomodoro.alarmTone = e.target.value;
+      savePomodoroPrefs();
+      renderPomodoro();
+    });
+    document.getElementById("settingsPomoTone")?.addEventListener("change",e=>{
       pomodoro.alarmTone = e.target.value;
       savePomodoroPrefs();
       renderPomodoro();
@@ -28336,7 +28894,15 @@ You cannot change app state without that JSON block. Do not say something was ad
       savePomodoroPrefs();
       renderPomodoro();
     });
+    document.getElementById("settingsPomoChimeLength")?.addEventListener("change",e=>{
+      pomodoro.chimeLength = e.target.value;
+      savePomodoroPrefs();
+      renderPomodoro();
+    });
     document.getElementById("pomoTestSoundBtn").addEventListener("click", async ()=>{
+      await playPomodoroChime({ force: true, announceFailure: true });
+    });
+    document.getElementById("settingsPomoTestSoundBtn")?.addEventListener("click", async ()=>{
       await playPomodoroChime({ force: true, announceFailure: true });
     });
     document.getElementById("pomoTaskSelect").addEventListener("change",e=>{
@@ -28801,20 +29367,26 @@ You cannot change app state without that JSON block. Do not say something was ad
     document.getElementById("appDataExperimentalWealthToggle")?.addEventListener("click", () => {
       setExperimentalSurfaceEnabled("wealth", !isWealthSurfaceEnabled(state));
     });
+    document.getElementById("settingsExperimentalHealthToggle")?.addEventListener("click", () => {
+      setExperimentalSurfaceEnabled("health", !isHealthSurfaceEnabled(state));
+    });
+    document.getElementById("settingsExperimentalWealthToggle")?.addEventListener("click", () => {
+      setExperimentalSurfaceEnabled("wealth", !isWealthSurfaceEnabled(state));
+    });
+    document.getElementById("settingsPreviewOnboardingBtn")?.addEventListener("click", () => {
+      openOnboarding({ mode: "preview" });
+    });
+    document.getElementById("settingsOpenAppDataBtn")?.addEventListener("click", openAppDataModal);
+    document.getElementById("settingsOpenCloudSyncBtn")?.addEventListener("click", openCloudSyncModal);
     document.getElementById("aiSetupBtn").addEventListener("click",()=>{
-      aiPanelForcedVisible = true;
-      aiConfigOpen = true;
-      setActiveTab("assistant");
-      renderAiAssistant();
+      openAiSettingsPanel();
     });
     document.getElementById("aiInlineOpenSettingsBtn").addEventListener("click",()=>{
-      aiPanelForcedVisible = true;
-      aiConfigOpen = true;
-      setActiveTab("assistant");
-      renderAiAssistant();
+      openAiSettingsPanel();
     });
     document.getElementById("aiInlineOpenAssistantBtn").addEventListener("click",()=>{
       aiPanelForcedVisible = true;
+      activeSettingsSection = "ai";
       setActiveTab("assistant");
       renderAiAssistant();
     });
@@ -29030,6 +29602,12 @@ You cannot change app state without that JSON block. Do not say something was ad
         if ((tab.dataset.planTab || "focus") === "review") {
           scrollReviewPaneToTop();
         }
+      });
+    });
+    document.querySelectorAll("[data-settings-section-btn]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        activeSettingsSection = normalizeSettingsSection(btn.getAttribute("data-settings-section-btn") || "timer");
+        renderAiAssistant();
       });
     });
 
