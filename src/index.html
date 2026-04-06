@@ -5118,7 +5118,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           <div id="onboardAiStageA" class="onboard-card onboard-section-copy">
             <div class="onboard-eyebrow">AI assist</div>
             <h4 class="onboard-section-title">Choose whether Arca should use AI coaching.</h4>
-            <p class="tiny">AI can help prioritise tasks, coach life practices, and generate a starter setup from a short brain-dump. When active, it sees your goals, open tasks, practices, and commitments. It does <strong>not</strong> see passwords, financial accounts, or data from other apps.</p>
+            <p class="tiny">AI can help prioritise tasks, coach life practices, and generate a starter setup from a short brain-dump. When active, it sees your goals, board columns (including Done Today), practices, and commitments. It does <strong>not</strong> see passwords, financial accounts, or data from other apps.</p>
             <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px;">
               <button id="onboardAiEnableBtn" class="primary" type="button">Enable AI coaching (recommended)</button>
               <button id="onboardAiSkipBtn" class="ghost" type="button">Skip AI</button>
@@ -9211,19 +9211,28 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       return allowed.find(v => v.toLowerCase() === folded) || "";
     }
     function aiBuildContext() {
+      const today = todayISO();
+      const serializeTaskForAi = (task, { includeCompletedAt = false } = {}) => {
+        const entry = {
+          id: task.id,
+          title: task.title,
+          category: task.category,
+          importance: task.importance,
+          urgency: task.urgency,
+          depth: task.depth || "Deep",
+          goal: normalizeGoalCode(task.wig || "None"),
+          stage: normalizePipelineStage(task.stage) || "backlog"
+        };
+        if (includeCompletedAt) entry.completed_at = task.completedAt || null;
+        return entry;
+      };
       const openTasks = state.tasks
         .filter(t => !t.completedAt)
-        .map(t => ({
-          id: t.id,
-          title: t.title,
-          category: t.category,
-          importance: t.importance,
-          urgency: t.urgency,
-          depth: t.depth || "Deep",
-          goal: normalizeGoalCode(t.wig || "None"),
-          stage: normalizePipelineStage(t.stage) || "backlog"
-        }));
-      const today = todayISO();
+        .map(t => serializeTaskForAi(t));
+      const doneTasksToday = state.tasks
+        .filter(t => !!t.completedAt && isoToLocalDateKey(t.completedAt) === today)
+        .sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt))
+        .map(t => serializeTaskForAi(t, { includeCompletedAt: true }));
       const lifeLog = state.life_practices?.daily_log?.[today] || {};
       const practices = (state.life_practices?.practices || []).map(p => ({
         id: p.id,
@@ -9247,7 +9256,14 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           input_measures: state.focus?.lead_measures || "",
           weekly_notes: state.focus?.weekly_commitments || ""
         },
+        board: {
+          backlog: openTasks.filter(task => task.stage === "backlog"),
+          next_up: openTasks.filter(task => task.stage === "next_up"),
+          today: openTasks.filter(task => task.stage === "today"),
+          done_today: doneTasksToday
+        },
         tasks_open: openTasks,
+        tasks_done_today: doneTasksToday,
         life_practices: practices,
         weekly_commitments: commitments,
         limits: { today_limit: TODAY_STAGE_LIMIT, next_up_soft_limit: NEXT_UP_SOFT_LIMIT },
@@ -9292,7 +9308,7 @@ PRODUCT PHILOSOPHY
 
 YOUR ROLE
 
-You are a thinking partner for prioritisation, not a data-entry tool. When a user brain-dumps, help them translate it into structured board actions — but also notice what the brain-dump reveals about their priorities and energy. Ask good clarifying questions when intent is ambiguous: which stage, which goal, deep or shallow, is there a deadline? Gently push back on overload. Acknowledge trade-offs. Use the board context you are given to make grounded, specific observations — never generic productivity platitudes.
+You are a thinking partner for prioritisation, not a data-entry tool. When a user brain-dumps, help them translate it into structured board actions — but also notice what the brain-dump reveals about their priorities and energy. Ask good clarifying questions when intent is ambiguous: which stage, which goal, deep or shallow, is there a deadline? Gently push back on overload. Acknowledge trade-offs. Use the full board context you are given — including Done (Today) when present — to make grounded, specific observations, never generic productivity platitudes.
 
 OUTPUT RULES (strict)
 
