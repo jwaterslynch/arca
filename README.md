@@ -36,14 +36,28 @@ npm run build
 - `src/index.html` — dashboard UI
 - `src-tauri/` — Tauri (Rust) shell + bundling config
 
-## Productization docs
+## Code signing
 
-- `PRODUCTIZATION_ROADMAP.md`
-- `PRIVATE_ALPHA_DISTRIBUTION.md`
-- `RELEASE_CHECKLIST.md`
-- `RELEASE_NOTES_v0.1.0-beta.1.md`
-- `RELEASE_NOTES_v0.1.0-beta.2.md`
-- `RELEASE_NOTES_v0.1.0-beta.4.md`
+Releases are signed with a Developer ID Application certificate and notarized
+with Apple. The GitHub Actions workflow (`tauri-release.yml`) uses these secrets:
+
+| Secret | Purpose |
+|--------|---------|
+| `APPLE_CERTIFICATE` | Base64-encoded .p12 |
+| `APPLE_CERTIFICATE_PASSWORD` | .p12 export password |
+| `APPLE_SIGNING_IDENTITY` | `Developer ID Application: …` |
+| `APPLE_ID` | Apple ID email for notarization |
+| `APPLE_PASSWORD` | App-specific password |
+| `APPLE_TEAM_ID` | 10-char team identifier |
+
+To cut a release: push a `v*` tag or use **Actions → Build macOS Release → Run workflow**.
+
+## Docs
+
+- `RELEASE_CHECKLIST.md` — release process
+- `PRIVATE_ALPHA_DISTRIBUTION.md` — tester install guide
+- `PRODUCTIZATION_ROADMAP.md` — high-level plan
+- `design/` — specs, PRDs, and icon source files
 
 ## Local data locations (macOS)
 
