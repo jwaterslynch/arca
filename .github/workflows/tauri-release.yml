@@ -64,8 +64,13 @@ jobs:
             draft="true"
           fi
 
-          # Detect whether Apple signing secrets are available
-          if [ -n "${{ secrets.APPLE_CERTIFICATE }}" ] && [ -n "${{ secrets.APPLE_SIGNING_IDENTITY }}" ]; then
+          # Detect whether ALL Apple signing secrets are available
+          if [ -n "${{ secrets.APPLE_CERTIFICATE }}" ] && \
+             [ -n "${{ secrets.APPLE_CERTIFICATE_PASSWORD }}" ] && \
+             [ -n "${{ secrets.APPLE_SIGNING_IDENTITY }}" ] && \
+             [ -n "${{ secrets.APPLE_ID }}" ] && \
+             [ -n "${{ secrets.APPLE_PASSWORD }}" ] && \
+             [ -n "${{ secrets.APPLE_TEAM_ID }}" ]; then
             signing_enabled="true"
           else
             signing_enabled="false"
