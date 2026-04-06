@@ -1,6 +1,6 @@
 # CryptoPro Feature Audit + Crypto Asset Class Build Spec
 
-> **Purpose:** Document CryptoPro's crypto portfolio features, then spec what to build as a first-class crypto asset class inside PPP Flow's Wealth tab.
+> **Purpose:** Document CryptoPro's crypto portfolio features, then spec what to build as a first-class crypto asset class inside Arca's Wealth tab.
 >
 > **Audited:** 10 March 2026 — App Store listing, marketing screenshots, review sites
 >

@@ -1,4 +1,4 @@
-# PPP Flow Desktop vX.Y.Z
+# Arca vX.Y.Z
 
 ## Channel
 

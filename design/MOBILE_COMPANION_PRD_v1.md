@@ -1,11 +1,11 @@
-# PPP Flow Mobile Companion PRD (v1)
+# Arca Mobile Companion PRD (v1)
 
 Date: 2026-03-03  
 Status: Ready for implementation planning  
 Owner: Product + Engineering
 
 ## 1) Product Thesis
-PPP mobile is not a desktop clone. It is a companion that optimizes the highest-value loop:
+Arca mobile is not a desktop clone. It is a companion that optimizes the highest-value loop:
 
 `brain dump -> AI structures -> user approves -> board updates -> execute`
 

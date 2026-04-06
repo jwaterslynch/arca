@@ -1,4 +1,4 @@
-# PPP Flow Mobile Companion Build Checklist (v1)
+# Arca Mobile Companion Build Checklist (v1)
 
 Date: 2026-03-03  
 References:

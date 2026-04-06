@@ -1,4 +1,4 @@
-# PPP Flow Wealth Build Spec (v2)
+# Arca Wealth Build Spec (v2)
 
 Date: 2026-03-09  
 Status: Build spec - not yet implemented  
@@ -507,7 +507,7 @@ Reduce monthly import friction to near-zero. The user designates a local folder,
 
 ### 13.2 Folder Structure
 ```
-~/Documents/PPP Finance/imports/
+~/Documents/Arca Finance/imports/
   cba/          # Commonwealth Bank exports
   stgeorge/     # St George / Westpac group exports
   other/        # Generic CSV (user maps columns manually on first import)
@@ -614,9 +614,9 @@ renderImportHistory()
 ```
 
 ### 13.11 Monthly Workflow (Target UX)
-1. Log into NetBank → Export → Save CSV to `~/Documents/PPP Finance/imports/cba/`
-2. Log into St George → Export → Save CSV to `~/Documents/PPP Finance/imports/stgeorge/`
-3. Open PPP Flow → Click Wealth tab → See "2 new files found" → Review → Confirm
+1. Log into NetBank → Export → Save CSV to `~/Documents/Arca Finance/imports/cba/`
+2. Log into St George → Export → Save CSV to `~/Documents/Arca Finance/imports/stgeorge/`
+3. Open Arca → Click Wealth tab → See "2 new files found" → Review → Confirm
 4. Done. Cash flow and categories update automatically.
 
 Total friction: ~2 minutes per month (down from manual transaction entry).

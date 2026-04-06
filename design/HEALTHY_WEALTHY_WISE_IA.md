@@ -2,13 +2,13 @@
 
 > **Status:** Design proposal
 > **Date:** 13 March 2026
-> **Purpose:** Map how PPP Flow evolves from a productivity tool into an integrated life operating system with three companion domains.
+> **Purpose:** Map how Arca evolves from a productivity tool into an integrated life operating system with three companion domains.
 
 ---
 
 ## 1. The Organising Principle
 
-PPP Flow has two layers:
+Arca has two layers:
 
 **Layer 1 — The Operating System** (daily rhythm)
 Execute and Plan are where you *do things*: manage tasks, run focus sessions, track time, review the week. This is the productivity spine. It stays fast, minimal, and action-oriented.

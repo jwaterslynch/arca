@@ -1,6 +1,6 @@
 name: ppp-flow-desktop
 options:
-  bundleIdPrefix: com.jwaterslynch.pppflow
+  bundleIdPrefix: com.arca.desktop
   deploymentTarget:
     iOS: 14.0
 fileGroups: [../../src]
@@ -10,8 +10,8 @@ configs:
 settingGroups:
   app:
     base:
-      PRODUCT_NAME: PPP Flow Desktop
-      PRODUCT_BUNDLE_IDENTIFIER: com.jwaterslynch.pppflow
+      PRODUCT_NAME: Arca
+      PRODUCT_BUNDLE_IDENTIFIER: com.arca.desktop
 targetTemplates:
   app:
     type: application

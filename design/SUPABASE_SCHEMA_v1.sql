@@ -1,4 +1,4 @@
--- PPP Flow Desktop
+-- Arca
 -- Phase 1 Supabase schema (local-first + snapshot/event sync)
 -- Date: 2026-03-02
 
@@ -14,7 +14,7 @@ create extension if not exists pgcrypto;
 create table if not exists public.boards (
   id uuid primary key default gen_random_uuid(),
   owner_id uuid not null references auth.users(id) on delete cascade,
-  name text not null default 'My PPP Board',
+  name text not null default 'My Arca Board',
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   unique (owner_id)
@@ -334,7 +334,7 @@ using (
 -- ------------------------------------------------------------
 
 -- Ensure the current user has exactly one board and return its id.
-create or replace function public.ensure_user_board(p_name text default 'My PPP Board')
+create or replace function public.ensure_user_board(p_name text default 'My Arca Board')
 returns uuid
 language plpgsql
 security invoker
@@ -350,7 +350,7 @@ begin
   insert into public.boards (owner_id, name)
   values (
     v_user,
-    coalesce(nullif(trim(p_name), ''), 'My PPP Board')
+    coalesce(nullif(trim(p_name), ''), 'My Arca Board')
   )
   on conflict (owner_id) do update
     set updated_at = now()

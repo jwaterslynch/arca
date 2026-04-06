@@ -1,4 +1,4 @@
-# PPP Flow Mobile + Cloud Sync (Phase 1)
+# Arca Mobile + Cloud Sync (Phase 1)
 
 Date: 2026-03-02  
 Status: Implementation-ready MVP plan  
@@ -6,7 +6,7 @@ Target: Desktop (existing) + Mobile (iOS/Android) + Cloud sync
 
 ## 1) Goals
 
-1. Ship PPP Flow on mobile from the same codebase.
+1. Ship Arca on mobile from the same codebase.
 2. Keep desktop and mobile in sync for tasks, life practices, focus, and progress.
 3. Preserve local-first behavior: app works offline, syncs when online.
 4. Keep Phase 1 simple enough to ship quickly.
@@ -17,7 +17,7 @@ Use **Supabase** for auth + Postgres + realtime.
 Use **snapshot + event log** sync in Phase 1 (not fully normalized tables yet).
 
 Rationale:
-- PPP state is currently a single rich JSON object (`emptyState()` in `src/index.html`).
+- Arca state is currently a single rich JSON object (`emptyState()` in `src/index.html`).
 - Snapshot sync avoids a risky full schema refactor now.
 - Event log gives auditability and later migration path to normalized tables.
 
@@ -25,7 +25,7 @@ Rationale:
 
 1. Client state (existing):
 - local state in app (desktop and mobile)
-- same JSON shape already used by PPP Flow
+- same JSON shape already used by Arca
 
 2. Cloud tables:
 - `boards` (one board per user, metadata)
@@ -42,7 +42,7 @@ Rationale:
 create table if not exists public.boards (
   id uuid primary key default gen_random_uuid(),
   owner_id uuid not null references auth.users(id) on delete cascade,
-  name text not null default 'My PPP Board',
+  name text not null default 'My Arca Board',
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   unique(owner_id)
@@ -125,7 +125,7 @@ Use simple deterministic rule:
 Phase 2 upgrade:
 - per-entity conflict resolution (task-level clocks) if needed.
 
-## 6) Mapping to existing PPP state
+## 6) Mapping to existing Arca state
 
 The snapshot stores the existing state shape directly:
 - `focus`

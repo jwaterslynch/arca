@@ -1,8 +1,8 @@
-# PPP Flow Desktop Productization Roadmap
+# Arca Productization Roadmap
 
 ## Current State
 - Desktop shell: Tauri v2
-- UI: PPP Flow Dashboard v3 embedded in `src/index.html`
+- UI: Arca v3 embedded in `src/index.html`
 - Core loops working: timer, focus mode, weekly review, closure logs
 
 ## Phase 1: Ship-Ready Core (Now)

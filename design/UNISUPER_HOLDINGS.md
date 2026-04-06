@@ -76,7 +76,7 @@ These are the major individual securities held *within* the two managed options.
 
 ---
 
-## How to Track in PPP Flow Wealth Tab
+## How to Track in Arca Wealth Tab
 
 ### Option A — Track as two managed fund holdings (recommended)
 
@@ -116,7 +116,7 @@ We *could* create 20 individual holdings with estimated units (value ÷ current 
 
 ### Option C — Track via published fund returns (future enhancement)
 
-UniSuper publishes daily unit prices / cumulative returns for each option. A future PPP Flow enhancement could:
+UniSuper publishes daily unit prices / cumulative returns for each option. A future Arca enhancement could:
 1. Fetch daily unit prices from UniSuper's public performance page
 2. Track your super value as: `units_held × current_unit_price`
 3. This is how super funds actually work internally

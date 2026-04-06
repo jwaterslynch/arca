@@ -1,9 +1,9 @@
-# PPP Flow Desktop — ChatGPT Context Pack (v0.1.0-beta.2)
+# Arca — ChatGPT Context Pack (v0.1.0-beta.2)
 
 Use this file as the primary context artifact when asking for product strategy, UX critique, architecture review, or roadmap planning.
 
 ## 1) Product in one line
-PPP Flow Desktop is a local-first deep-work execution app (tasks + Pomodoro + weekly review) with an auditable event ledger and daily backups.
+Arca is a local-first deep-work execution app (tasks + Pomodoro + weekly review) with an auditable event ledger and daily backups.
 
 ## 2) Problem being solved
 - Traditional productivity tools over-index on planning and under-index on execution.
@@ -30,8 +30,8 @@ PPP Flow Desktop is a local-first deep-work execution app (tasks + Pomodoro + we
 - Frontend: single-page app in `src/index.html`.
 - Backend: Rust commands in `src-tauri/src/lib.rs`.
 - Persistence model:
-  - Source of truth: SQLite (`PPP_LEDGER.sqlite3`).
-  - Mirror/export convenience: JSON (`PPP_DATA.json`).
+  - Source of truth: SQLite (`ARCA_LEDGER.sqlite3`).
+  - Mirror/export convenience: JSON (`ARCA_DATA.json`).
   - Daily snapshot backups: auto-generated JSON in `backups/`.
 
 ## 6) Data model and reliability choices
@@ -54,11 +54,11 @@ PPP Flow Desktop is a local-first deep-work execution app (tasks + Pomodoro + we
 
 ## 7) Local paths (macOS)
 - App state mirror:
-  - `~/Library/Application Support/com.jwaterslynch.pppflow/PPP_DATA.json`
+  - `~/Library/Application Support/com.arca.desktop/ARCA_DATA.json`
 - SQLite backend:
-  - `~/Library/Application Support/com.jwaterslynch.pppflow/PPP_LEDGER.sqlite3`
+  - `~/Library/Application Support/com.arca.desktop/ARCA_LEDGER.sqlite3`
 - Daily backups:
-  - `~/Library/Application Support/com.jwaterslynch.pppflow/backups/`
+  - `~/Library/Application Support/com.arca.desktop/backups/`
 
 ## 8) Repository layout
 - `src/index.html` — dashboard UI + client logic.

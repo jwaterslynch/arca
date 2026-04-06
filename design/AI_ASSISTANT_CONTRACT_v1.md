@@ -1,7 +1,7 @@
 # AI Assistant Contract v1
 
 Date: 2026-03-01  
-Product: PPP Flow Desktop  
+Product: Arca  
 Status: Approved MVP contract
 
 Companion implementation notes:

@@ -4753,7 +4753,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         </div>
         <div>
           <label class="tiny" for="cloudSyncBoardNameInput">Board Name</label>
-          <input id="cloudSyncBoardNameInput" placeholder="My PPP Board" />
+          <input id="cloudSyncBoardNameInput" placeholder="My Arca Board" />
         </div>
         <div>
           <label class="tiny" for="cloudSyncPollInput">Pull Interval (seconds)</label>
@@ -5414,15 +5414,20 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
     // STATE MANAGEMENT — Local + App Storage + File Sync
     // ══════════════════════════════════════
     // localStorage is used for instant in-session state.
-    // In desktop (Tauri), app storage autosaves/loads PPP_DATA.json without relinking.
+    // In desktop (Tauri), app storage autosaves/loads ARCA_DATA.json without relinking.
     // File import/export remains available for explicit backups and migrations.
 
-    const STORAGE_KEY = "ppp_flow_dashboard_v3";
-    const POMO_PREF_KEY = "ppp_pomodoro_prefs_v1";
-    const RESET_BACKUP_LOG_KEY = "ppp_reset_backup_log_v1";
-    const FS_DB_NAME = "ppp_flow_dashboard_fs";
+    const STORAGE_KEY = "arca_dashboard_v3";
+    const LEGACY_STORAGE_KEYS = ["ppp_flow_dashboard_v3"];
+    const POMO_PREF_KEY = "arca_pomodoro_prefs_v1";
+    const LEGACY_POMO_PREF_KEYS = ["ppp_pomodoro_prefs_v1"];
+    const RESET_BACKUP_LOG_KEY = "arca_reset_backup_log_v1";
+    const LEGACY_RESET_BACKUP_LOG_KEYS = ["ppp_reset_backup_log_v1"];
+    const FS_DB_NAME = "arca_dashboard_fs";
+    const LEGACY_FS_DB_NAMES = ["ppp_flow_dashboard_fs"];
     const FS_DB_STORE = "handles";
-    const FS_HANDLE_KEY = "ppp_data_file_handle";
+    const FS_HANDLE_KEY = "arca_data_file_handle";
+    const LEGACY_FS_HANDLE_KEYS = ["ppp_data_file_handle"];
     const nativeStore = {
       available: false,
       saving: false,
@@ -6876,7 +6881,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
 
     function loadState() {
       try {
-        const raw = localStorage.getItem(STORAGE_KEY);
+        const raw = loadLocalStorageWithFallback(STORAGE_KEY, LEGACY_STORAGE_KEYS);
         if (!raw) return emptyState();
         const parsed = JSON.parse(raw);
         if (!parsed || typeof parsed !== "object" || !parsed.schema_version) {
@@ -6887,6 +6892,27 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       } catch (e) {
         console.error("Failed to parse saved state:", e);
         return emptyState();
+      }
+    }
+
+    function loadLocalStorageWithFallback(primaryKey, legacyKeys = []) {
+      const keys = [primaryKey, ...(Array.isArray(legacyKeys) ? legacyKeys : [])];
+      for (const key of keys) {
+        try {
+          const value = localStorage.getItem(key);
+          if (!value) continue;
+          if (key !== primaryKey) {
+            localStorage.setItem(primaryKey, value);
+          }
+          return value;
+        } catch {}
+      }
+      return null;
+    }
+
+    function clearLegacyLocalStorageKeys(legacyKeys = []) {
+      for (const key of Array.isArray(legacyKeys) ? legacyKeys : []) {
+        try { localStorage.removeItem(key); } catch {}
       }
     }
 
@@ -7136,7 +7162,10 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       if (_saveStateTimer) clearTimeout(_saveStateTimer);
       _saveStateTimer = setTimeout(() => {
         _saveStateTimer = null;
-        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+          clearLegacyLocalStorageKeys(LEGACY_STORAGE_KEYS);
+        }
         catch (e) { console.warn("localStorage save failed:", e); }
       }, SAVE_STATE_DEBOUNCE_MS);
       queueCloudSyncEvent(source);
@@ -7152,7 +7181,10 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       if (_saveStateTimer) { clearTimeout(_saveStateTimer); _saveStateTimer = null; }
       state.last_modified = new Date().toISOString();
       state.last_modified_by = source;
-      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        clearLegacyLocalStorageKeys(LEGACY_STORAGE_KEYS);
+      }
       catch (e) { console.warn("localStorage save failed:", e); }
     }
 
@@ -7171,7 +7203,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         completedBlocksDay: ""
       };
       try {
-        const raw = localStorage.getItem(POMO_PREF_KEY);
+        const raw = loadLocalStorageWithFallback(POMO_PREF_KEY, LEGACY_POMO_PREF_KEYS);
         if (!raw) return defaults;
         const pref = JSON.parse(raw);
         return {
@@ -7207,6 +7239,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         completedBlocks: Math.max(0, Number.parseInt(pomodoro.completedBlocks, 10) || 0),
         completedBlocksDay: String(pomodoro.completedBlocksDay || "")
       }));
+      clearLegacyLocalStorageKeys(LEGACY_POMO_PREF_KEYS);
     }
 
     function countTodayCompletedPomodoroBlocksFallback() {
@@ -7239,10 +7272,10 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       return { currentSession, totalSessions };
     }
 
-    // ── File System Access: persist linked PPP_DATA.json handle ──
-    function openFsDb() {
+    // ── File System Access: persist linked ARCA_DATA.json handle ──
+    function openFsDb(dbName = FS_DB_NAME) {
       return new Promise((resolve, reject) => {
-        const req = indexedDB.open(FS_DB_NAME, 1);
+        const req = indexedDB.open(dbName, 1);
         req.onupgradeneeded = () => {
           const db = req.result;
           if (!db.objectStoreNames.contains(FS_DB_STORE)) db.createObjectStore(FS_DB_STORE);
@@ -7264,15 +7297,42 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
     }
 
     async function loadLinkedHandle() {
-      const db = await openFsDb();
-      const handle = await new Promise((resolve, reject) => {
-        const tx = db.transaction(FS_DB_STORE, "readonly");
-        const req = tx.objectStore(FS_DB_STORE).get(FS_HANDLE_KEY);
-        req.onsuccess = () => resolve(req.result || null);
-        req.onerror = () => reject(req.error || new Error("Failed loading file handle"));
-      });
-      db.close();
-      return handle;
+      const candidates = [FS_DB_NAME, ...LEGACY_FS_DB_NAMES];
+      const handleKeys = [FS_HANDLE_KEY, ...LEGACY_FS_HANDLE_KEYS];
+      for (const dbName of candidates) {
+        try {
+          const db = await openFsDb(dbName);
+          const handle = await new Promise((resolve, reject) => {
+            const tx = db.transaction(FS_DB_STORE, "readonly");
+            let resolved = false;
+            const tryKey = (index = 0) => {
+              if (resolved || index >= handleKeys.length) {
+                if (!resolved) resolve(null);
+                return;
+              }
+              const req = tx.objectStore(FS_DB_STORE).get(handleKeys[index]);
+              req.onsuccess = () => {
+                if (req.result) {
+                  resolved = true;
+                  resolve(req.result);
+                  return;
+                }
+                tryKey(index + 1);
+              };
+              req.onerror = () => reject(req.error || new Error("Failed loading file handle"));
+            };
+            tryKey(0);
+          });
+          db.close();
+          if (handle) {
+            if (dbName !== FS_DB_NAME) {
+              try { await saveLinkedHandle(handle); } catch {}
+            }
+            return handle;
+          }
+        } catch {}
+      }
+      return null;
     }
 
     async function readLinkedFileJson(handle) {
@@ -7520,7 +7580,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         supabaseUrl: "",
         anonKey: "",
         accessToken: "",
-        boardName: "My PPP Board",
+        boardName: "My Arca Board",
         boardId: "",
         deviceId: uid(),
         pollSeconds: 20,
@@ -7619,7 +7679,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
     }
     async function cloudSyncEnsureBoardId() {
       if (cloudSyncPrefs.boardId) return cloudSyncPrefs.boardId;
-      const response = await cloudSyncRpc("ensure_user_board", { p_name: cloudSyncPrefs.boardName || "My PPP Board" });
+      const response = await cloudSyncRpc("ensure_user_board", { p_name: cloudSyncPrefs.boardName || "My Arca Board" });
       const boardId = String(
         response?.id ||
         response?.board_id ||
@@ -7787,7 +7847,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       document.getElementById("cloudSyncUrlInput").value = cloudSyncPrefs.supabaseUrl || "";
       document.getElementById("cloudSyncAnonKeyInput").value = cloudSyncPrefs.anonKey || "";
       document.getElementById("cloudSyncTokenInput").value = cloudSyncPrefs.accessToken || "";
-      document.getElementById("cloudSyncBoardNameInput").value = cloudSyncPrefs.boardName || "My PPP Board";
+      document.getElementById("cloudSyncBoardNameInput").value = cloudSyncPrefs.boardName || "My Arca Board";
       document.getElementById("cloudSyncPollInput").value = String(cloudSyncPrefs.pollSeconds || 20);
       document.getElementById("cloudSyncDeviceIdInput").value = cloudSyncPrefs.deviceId || "";
       document.getElementById("cloudSyncStatusText").textContent = cloudSyncRuntime.statusText || "";
@@ -14722,14 +14782,15 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       const timestamp = new Date().toISOString();
       const snapshot = JSON.stringify(state, null, 2);
       const safeStamp = timestamp.replaceAll(":", "-").replaceAll(".", "-");
-      const filename = `PPP_RESET_BACKUP_${safeStamp}.json`;
+      const filename = `ARCA_RESET_BACKUP_${safeStamp}.json`;
       download(filename, snapshot, "application/json");
       try {
-        const historyRaw = localStorage.getItem(RESET_BACKUP_LOG_KEY);
+        const historyRaw = loadLocalStorageWithFallback(RESET_BACKUP_LOG_KEY, LEGACY_RESET_BACKUP_LOG_KEYS);
         const parsed = JSON.parse(historyRaw || "[]");
         const history = Array.isArray(parsed) ? parsed : [];
         history.unshift({ at: timestamp, filename, bytes: snapshot.length });
         localStorage.setItem(RESET_BACKUP_LOG_KEY, JSON.stringify(history.slice(0, 20)));
+        clearLegacyLocalStorageKeys(LEGACY_RESET_BACKUP_LOG_KEYS);
       } catch {}
       return { timestamp, filename };
     }
@@ -15468,7 +15529,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       if (!("Notification" in window)) return;
       if (Notification.permission !== "granted") return;
       try {
-        new Notification("Arca Timer", { body: message, tag: "ppp-pomodoro" });
+        new Notification("Arca Timer", { body: message, tag: "arca-pomodoro" });
       } catch {}
     }
 
@@ -28772,7 +28833,7 @@ You cannot change app state without that JSON block. Do not say something was ad
       closeAppDataModal();
       state.last_backup=new Date().toISOString();
       saveState("dashboard_export");
-      download(`PPP_DATA.json`, JSON.stringify(state,null,2), "application/json");
+      download(`ARCA_DATA.json`, JSON.stringify(state,null,2), "application/json");
       render();
     }
 

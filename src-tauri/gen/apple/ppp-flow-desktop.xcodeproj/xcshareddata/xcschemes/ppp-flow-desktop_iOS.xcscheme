@@ -15,7 +15,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "6DE078B848D4A537F051C4CC"
-               BuildableName = "PPP Flow Desktop.app"
+               BuildableName = "Arca.app"
                BlueprintName = "ppp-flow-desktop_iOS"
                ReferencedContainer = "container:ppp-flow-desktop.xcodeproj">
             </BuildableReference>
@@ -31,7 +31,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "6DE078B848D4A537F051C4CC"
-            BuildableName = "PPP Flow Desktop.app"
+            BuildableName = "Arca.app"
             BlueprintName = "ppp-flow-desktop_iOS"
             ReferencedContainer = "container:ppp-flow-desktop.xcodeproj">
          </BuildableReference>
@@ -66,7 +66,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "6DE078B848D4A537F051C4CC"
-            BuildableName = "PPP Flow Desktop.app"
+            BuildableName = "Arca.app"
             BlueprintName = "ppp-flow-desktop_iOS"
             ReferencedContainer = "container:ppp-flow-desktop.xcodeproj">
          </BuildableReference>
@@ -95,7 +95,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "6DE078B848D4A537F051C4CC"
-            BuildableName = "PPP Flow Desktop.app"
+            BuildableName = "Arca.app"
             BlueprintName = "ppp-flow-desktop_iOS"
             ReferencedContainer = "container:ppp-flow-desktop.xcodeproj">
          </BuildableReference>

@@ -1,6 +1,6 @@
-# UniSuper UI Patterns — Ideas for PPP Flow
+# UniSuper UI Patterns — Ideas for Arca
 
-> **Purpose:** Document useful UI patterns observed in UniSuper's member portal that could enhance PPP Flow's Wealth tab.
+> **Purpose:** Document useful UI patterns observed in UniSuper's member portal that could enhance Arca's Wealth tab.
 >
 > **Source:** memberonline.unisuper.com.au (logged in as Julian Waters-Lynch, 12 March 2026)
 >
@@ -19,7 +19,7 @@ The Y-axis is percentage return (not dollar value), which makes it easy to compa
 
 **CSV download:** A "Download daily cumulative rates" button exports the raw data, which means UniSuper stores daily cumulative return data for each option.
 
-**How to adopt in PPP Flow:**
+**How to adopt in Arca:**
 
 This maps to **Phase 3b (Portfolio Snapshots)** from the Sharesight build plan. The key insight is that a percentage-based return chart is more useful than a raw dollar chart for comparing investments of different sizes.
 
@@ -52,11 +52,11 @@ The Transactions page shows a row of category summary cards at the top, each dis
 
 These give an instant high-level breakdown of what happened in the period before the user even looks at individual transactions. Negative values (fees) are visually distinct.
 
-**How to adopt in PPP Flow:**
+**How to adopt in Arca:**
 
 This maps to the **Cash Flow subtab** (already built in Phase 0). Currently the Cash Flow view shows individual transactions in a list. Adding category summary cards above the transaction list would give users an instant snapshot of their financial activity.
 
-Suggested categories for PPP Flow:
+Suggested categories for Arca:
 - **Income** — salary, dividends, interest (sum of positive non-transfer transactions)
 - **Spending** — expenses, bills, subscriptions (sum of negative non-transfer transactions)
 - **Investments** — buy/sell activity, super contributions (transfers to/from portfolio)
@@ -81,7 +81,7 @@ Transactions can be filtered by financial year using prominent tab buttons: **Th
 
 This is simpler than Sharesight's date range presets (Today, 7D, 12M, YTD, FY, All) but highly effective for Australian users because so much financial activity is organised around the 1 Jul – 30 Jun financial year.
 
-**How to adopt in PPP Flow:**
+**How to adopt in Arca:**
 
 When we build date range presets (currently deferred to after Phase 2b per the build plan), include FY-aware presets. Specifically:
 
@@ -125,7 +125,7 @@ Each donut shows the percentage split with a legend. For Jules this is 50/50 Hig
 
 The asset class breakdown also uses a pie chart: International Shares 53.97%, Australian Shares 39.02%, Infrastructure & Private Equity 5.49%, Property 1.52%.
 
-**How to adopt in PPP Flow:**
+**How to adopt in Arca:**
 
 We currently show allocation as **horizontal stacked bars** (built in Phase 1a). Donut charts are a natural complement — they work better for showing a small number of categories (3–6 slices) while bars work better for many categories.
 
@@ -167,7 +167,7 @@ function renderDonutChart(segments, size = 120) {
 **What UniSuper does:**
 The performance chart overlays multiple investment options on a single chart, making it trivial to compare their returns over the same period. You can toggle options on/off.
 
-**How to adopt in PPP Flow:**
+**How to adopt in Arca:**
 
 This is essentially the multi-line version of Pattern #1 above. Once we have cumulative return data, we can let users compare:
 - Individual holdings against each other
@@ -187,7 +187,7 @@ The comparison view doesn't need its own phase — it's a rendering option on th
 **What UniSuper does:**
 The Balance Summary page shows the split between preserved and non-preserved super benefits. This is an Australian superannuation concept — preserved funds can't be accessed until retirement conditions are met, while non-preserved funds may be accessible earlier.
 
-**How to adopt in PPP Flow:**
+**How to adopt in Arca:**
 
 This is specific to super fund tracking. If we implement **Option C** from UNISUPER_HOLDINGS.md (tracking super via published fund returns), we could show:
 - Total super balance

@@ -1,6 +1,6 @@
 # Sharesight Feature Audit
 
-> **Purpose:** Document Sharesight's portfolio tracking features and UX patterns as a reference template for PPP Flow Desktop's Wealth module.
+> **Purpose:** Document Sharesight's portfolio tracking features and UX patterns as a reference template for Arca's Wealth module.
 >
 > **Audited:** 10 March 2026 — Free tier, single ASX-only portfolio
 
@@ -20,7 +20,7 @@ Sharesight uses a **five-tab** top-level navigation:
 
 Each holding also has its own detail page with sub-tabs: Summary, Trades & income, Notes & files, News, Edit holding.
 
-**Key insight:** Sharesight separates *viewing* (Investments), *acting* (Tasks), *analysing* (Tools/Tax), and *configuring* (Settings). This is a good pattern for PPP Flow — our current single Portfolio subtab tries to do everything at once.
+**Key insight:** Sharesight separates *viewing* (Investments), *acting* (Tasks), *analysing* (Tools/Tax), and *configuring* (Settings). This is a good pattern for Arca — our current single Portfolio subtab tries to do everything at once.
 
 ---
 
@@ -146,7 +146,7 @@ Two tables:
 - Bulk "Select all" + "Confirm transactions" buttons at bottom
 - Filter by: search (investment name), registry
 
-**Why this matters for PPP Flow:** When we build CSV import, we should adopt a similar confirmation workflow. Imported transactions should be "pending" until the user confirms them.
+**Why this matters for Arca:** When we build CSV import, we should adopt a similar confirmation workflow. Imported transactions should be "pending" until the user confirms them.
 
 ---
 
@@ -184,7 +184,7 @@ Two tables:
 | **Historical cost** | Opening/closing balances at cost price with closing market value |
 | **Unrealised capital gains tax** | CGT scenario analysis as at any date |
 
-**Key insight:** Tax reporting is a major value-add. For PPP Flow's Coach subtab, we should consider surfacing simple tax-relevant summaries (total dividends received, estimated CGT liability).
+**Key insight:** Tax reporting is a major value-add. For Arca's Coach subtab, we should consider surfacing simple tax-relevant summaries (total dividends received, estimated CGT liability).
 
 ---
 
@@ -212,7 +212,7 @@ Two tables:
 
 ## 8. UX Patterns Worth Adopting
 
-### 8.1 Must-Have for PPP Flow
+### 8.1 Must-Have for Arca
 
 1. **Dual display (% p.a. + absolute $)** — every return metric shows both. Our Percentages toggle should work similarly.
 
@@ -240,7 +240,7 @@ Two tables:
 
 5. **Future income projection** — predict upcoming dividends based on historical patterns.
 
-### 8.3 Out of Scope for PPP Flow
+### 8.3 Out of Scope for Arca
 
 1. **Tax reports** — we're not an accounting tool, and tax rules are complex. Better to leave this to Sharesight.
 
@@ -254,7 +254,7 @@ Two tables:
 
 ## 9. Data Model Comparison
 
-| Concept | Sharesight | PPP Flow (current) |
+| Concept | Sharesight | Arca (current) |
 |---------|------------|-------------------|
 | Portfolio | Named portfolio entity | `state.wealth.holdings[]` array |
 | Holding | Ticker + Market + trades + dividends | `holding` object with display_symbol, provider_symbol, units, cost_basis_minor |
@@ -265,7 +265,7 @@ Two tables:
 | Performance | Annualised return decomposed into capital + income + currency | `getPortfolioSnapshot()` has unrealizedGainLossMinor |
 | Grouping | Market, Sector, Industry, Type, Country, Currency | `allocationByType` (asset_type only) |
 
-### Key Gaps in PPP Flow
+### Key Gaps in Arca
 
 1. **No trade history** — we store holdings but not individual buy/sell trades. This means we can't calculate true time-weighted returns or distinguish between lots.
 
@@ -279,7 +279,7 @@ Two tables:
 
 ---
 
-## 10. Recommended Priority for PPP Flow Wealth
+## 10. Recommended Priority for Arca Wealth
 
 Based on this audit, here's what I'd prioritise next:
 
@@ -301,4 +301,4 @@ Based on this audit, here's what I'd prioritise next:
 
 ---
 
-*This audit is a living document. Update as Sharesight evolves or as PPP Flow's wealth features mature.*
+*This audit is a living document. Update as Sharesight evolves or as Arca's wealth features mature.*

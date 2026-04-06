@@ -1,4 +1,4 @@
-# PPP Flow Desktop Changelog
+# Arca Changelog
 
 ## v0.1.0-beta.4
 
@@ -27,4 +27,4 @@
 
 ## v0.1.0-beta.1
 
-- Initial private alpha packaging of PPP Flow Desktop
+- Initial private alpha packaging of Arca

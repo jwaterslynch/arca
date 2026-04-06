@@ -1,4 +1,4 @@
-# PPP Flow Mobile Companion Strategy (v1)
+# Arca Mobile Companion Strategy (v1)
 
 Date: 2026-03-03  
 Owner: Product/Engineering

@@ -1,10 +1,10 @@
-# PPP Flow Desktop
+# Arca
 
-Desktop app shell for the PPP Flow Dashboard (`v3`) built with Tauri v2.
+Desktop app shell for the Arca (`v3`) built with Tauri v2.
 
 ## What it does
 
-- Runs the PPP dashboard as a desktop app.
+- Runs the Arca board as a desktop app.
 - Supports deep-work timer, focus mode, weekly review, and closure tracking.
 - Uses app-managed local persistence with SQLite as the source of truth.
 - Writes immutable event ledger entries (task/session lifecycle events) for auditable history.
@@ -48,8 +48,8 @@ npm run build
 ## Local data locations (macOS)
 
 - Current mirrored JSON state:
-  - `~/Library/Application Support/com.jwaterslynch.pppflow/PPP_DATA.json`
+  - `~/Library/Application Support/com.arca.desktop/ARCA_DATA.json`
 - SQLite ledger + app state:
-  - `~/Library/Application Support/com.jwaterslynch.pppflow/PPP_LEDGER.sqlite3`
+  - `~/Library/Application Support/com.arca.desktop/ARCA_LEDGER.sqlite3`
 - Daily backup snapshots:
-  - `~/Library/Application Support/com.jwaterslynch.pppflow/backups/`
+  - `~/Library/Application Support/com.arca.desktop/backups/`

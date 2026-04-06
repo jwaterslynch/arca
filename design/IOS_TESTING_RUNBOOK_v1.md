@@ -1,7 +1,7 @@
 # iOS Testing Runbook v1 (No App Store Required)
 
 Date: 2026-03-03  
-Scope: Test PPP Flow on iPhone during development
+Scope: Test Arca on iPhone during development
 
 ## What is already done
 

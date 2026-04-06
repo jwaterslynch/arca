@@ -1,4 +1,4 @@
-# PPP Flow Desktop v0.1.0-beta.2
+# Arca v0.1.0-beta.2
 
 ## Highlights
 
@@ -9,8 +9,8 @@
 
 ## Backend details
 
-- New SQLite file: `PPP_LEDGER.sqlite3` in app data directory.
-- State JSON (`PPP_DATA.json`) is still written as a mirror/export convenience.
+- New SQLite file: `ARCA_LEDGER.sqlite3` in app data directory.
+- State JSON (`ARCA_DATA.json`) is still written as a mirror/export convenience.
 - New commands:
   - `append_events`
   - `list_events`
@@ -19,9 +19,9 @@
 
 ## Data paths (macOS)
 
-- `~/Library/Application Support/com.jwaterslynch.pppflow/PPP_LEDGER.sqlite3`
-- `~/Library/Application Support/com.jwaterslynch.pppflow/PPP_DATA.json`
-- `~/Library/Application Support/com.jwaterslynch.pppflow/backups/`
+- `~/Library/Application Support/com.arca.desktop/ARCA_LEDGER.sqlite3`
+- `~/Library/Application Support/com.arca.desktop/ARCA_DATA.json`
+- `~/Library/Application Support/com.arca.desktop/backups/`
 
 ## Notes
 

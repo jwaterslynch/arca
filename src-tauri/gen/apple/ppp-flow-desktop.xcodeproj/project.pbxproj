@@ -32,7 +32,7 @@
 		689C8AD6BBD7DB59238E1FF9 /* MetalKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MetalKit.framework; path = System/Library/Frameworks/MetalKit.framework; sourceTree = SDKROOT; };
 		7F5C00136C9F8E4D17EECFA3 /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
 		868FCCA8FEE3F8D5B26906BF /* ppp-flow-desktop_iOS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "ppp-flow-desktop_iOS.entitlements"; sourceTree = "<group>"; };
-		B1D66063B7C9A7346ED340BA /* PPP Flow Desktop.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "PPP Flow Desktop.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		B1D66063B7C9A7346ED340BA /* Arca.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Arca.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		B29B160BAE35A996662D8D94 /* main.rs */ = {isa = PBXFileReference; lastKnownFileType = text; path = main.rs; sourceTree = "<group>"; };
 		C2D9F1703AB4FB8BE369332B /* bindings.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = bindings.h; sourceTree = "<group>"; };
 		C3AA28D2A58474D8698658C6 /* main.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = main.mm; sourceTree = "<group>"; };
@@ -73,7 +73,7 @@
 		0C3A2D3043CA456AE229AF42 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				B1D66063B7C9A7346ED340BA /* PPP Flow Desktop.app */,
+				B1D66063B7C9A7346ED340BA /* Arca.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -170,7 +170,7 @@
 			packageProductDependencies = (
 			);
 			productName = "ppp-flow-desktop_iOS";
-			productReference = B1D66063B7C9A7346ED340BA /* PPP Flow Desktop.app */;
+			productReference = B1D66063B7C9A7346ED340BA /* Arca.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -281,8 +281,8 @@
 					"$(TOOLCHAIN_DIR)/usr/lib/swift/$(PLATFORM_NAME)",
 					"$(TOOLCHAIN_DIR)/usr/lib/swift-5.0/$(PLATFORM_NAME)",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.jwaterslynch.pppflow;
-				PRODUCT_NAME = "PPP Flow Desktop";
+				PRODUCT_BUNDLE_IDENTIFIER = com.arca.desktop;
+				PRODUCT_NAME = "Arca";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				VALID_ARCHS = arm64;
@@ -321,8 +321,8 @@
 					"$(TOOLCHAIN_DIR)/usr/lib/swift/$(PLATFORM_NAME)",
 					"$(TOOLCHAIN_DIR)/usr/lib/swift-5.0/$(PLATFORM_NAME)",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.jwaterslynch.pppflow;
-				PRODUCT_NAME = "PPP Flow Desktop";
+				PRODUCT_BUNDLE_IDENTIFIER = com.arca.desktop;
+				PRODUCT_NAME = "Arca";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				VALID_ARCHS = arm64;

@@ -1,7 +1,7 @@
 # Wealth Module — Sharesight-Informed Build Plan
 
 > **Purpose:** Extend the existing build spec with features learned from auditing Sharesight.
-> Maps each adoptable Sharesight pattern to a concrete build phase for PPP Flow.
+> Maps each adoptable Sharesight pattern to a concrete build phase for Arca.
 >
 > **Depends on:** WEALTH_BUILD_SPEC_v2.md (the engineering spec), SHARESIGHT_FEATURE_AUDIT.md (the audit)
 >
@@ -292,7 +292,7 @@ renderHoldingDetail(holdingId)
 ### What Sharesight Does
 Stacked area chart showing how each holding contributes to total portfolio value over time.
 
-### Simplified Version for PPP Flow
+### Simplified Version for Arca
 We won't have historical daily price data (we'd need to store snapshots). Instead:
 
 **Option A — Monthly snapshots:** Each time the user opens Wealth, store a snapshot of portfolio value. Over months this builds a history.

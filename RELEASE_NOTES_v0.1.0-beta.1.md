@@ -1,4 +1,4 @@
-# PPP Flow Desktop v0.1.0-beta.1
+# Arca v0.1.0-beta.1
 
 ## What is new
 - Added native app-managed persistence in Tauri:

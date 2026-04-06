@@ -1,7 +1,7 @@
 # Supabase Provisioning Runbook v1
 
 Date: 2026-03-03  
-Scope: PPP Flow Cloud Sync Phase 1 backend setup
+Scope: Arca Cloud Sync Phase 1 backend setup
 
 ## 1) Create project
 
@@ -60,7 +60,7 @@ curl -sS "$SUPABASE_URL/rest/v1/rpc/ensure_user_board" \
   -H "apikey: $SUPABASE_ANON_KEY" \
   -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"p_name":"My PPP Board"}'
+  -d '{"p_name":"My Arca Board"}'
 ```
 
 Expected: UUID board id.

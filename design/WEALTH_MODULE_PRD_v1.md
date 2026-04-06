@@ -1,11 +1,11 @@
-# PPP Flow Wealth Module PRD (v1)
+# Arca Wealth Module PRD (v1)
 
 Date: 2026-03-09  
 Status: Design spec - not yet building  
 Owner: Product + Engineering
 
 ## 1) Product Thesis
-PPP Flow currently covers execution, review, and coaching for work and practices. The missing strategic layer is household finance.
+Arca currently covers execution, review, and coaching for work and practices. The missing strategic layer is household finance.
 
 The `Wealth` module should be a separate top-level tab, not an extension of `Execute` or a cluttered add-on to `Review`.
 
@@ -22,7 +22,7 @@ The module should support reflection and decision support, not payments, trading
 2. Show cash flow and spending patterns in a way that supports better decisions.
 3. Show portfolio allocation, concentration, liquidity, and runway.
 4. Let the user discuss their financial state with an AI coach grounded in current data.
-5. Keep the rest of PPP Flow clean by isolating finance into its own module.
+5. Keep the rest of Arca clean by isolating finance into its own module.
 
 ## 3) Non-Goals (v1)
 1. No trade execution.
@@ -223,7 +223,7 @@ Primary elements:
 3. Risks / imbalances
 4. Scenarios
 5. Recommended next actions
-6. Proposal actions back into PPP Flow
+6. Proposal actions back into Arca
 
 Questions it should answer:
 1. What matters most right now?
@@ -232,7 +232,7 @@ Questions it should answer:
 4. What should I review, save, or allocate next?
 
 ## 9) Visual Design Direction
-The module should use the same visual language as PPP Flow:
+The module should use the same visual language as Arca:
 1. calm
 2. spacious
 3. analytical
@@ -441,7 +441,7 @@ Example suggestions:
 3. set a board task to audit subscriptions
 4. create a monthly commitment to review spending drift
 
-### 12.4 Allowed PPP Actions
+### 12.4 Allowed Arca Actions
 The coach can propose:
 1. `task.create`
 2. `task.update`
@@ -470,7 +470,7 @@ Useful decision outputs:
 5. capital deployment options with assumptions
 
 ## 14) Security and Privacy Rules
-This module carries higher sensitivity than the rest of PPP Flow.
+This module carries higher sensitivity than the rest of Arca.
 
 Rules:
 1. use read-only integrations wherever possible
@@ -540,7 +540,7 @@ Design rule:
 2. User can import at least one CSV statement and see categorized cash flow.
 3. User can define a target allocation and compare it to current allocation.
 4. User can ask the AI coach what stands out and receive grounded, source-aware observations.
-5. User can turn at least one AI suggestion into a PPP task or commitment.
+5. User can turn at least one AI suggestion into a Arca task or commitment.
 6. `Execute` remains visually and functionally unaffected.
 
 ## 18) Open Questions
@@ -554,7 +554,7 @@ Design rule:
 Build `Wealth` as a separate, read-only, decision-support module.
 
 Do not:
-1. turn PPP Flow into a trading app
+1. turn Arca into a trading app
 2. overload `Review`
 3. widen scope before the current execution/practice loop is stable
 

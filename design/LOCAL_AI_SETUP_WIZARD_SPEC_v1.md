@@ -1,13 +1,13 @@
 # Local AI Setup Wizard Spec v1
 
 Date: 2026-03-13  
-Product: PPP Flow Desktop  
+Product: Arca  
 Status: Proposed  
 Scope: Upgrade the current manual Ollama setup flow into a guided in-app setup wizard.
 
 ## 1. Why this exists
 
-PPP Flow already supports Ollama as a first-class AI provider and includes:
+Arca already supports Ollama as a first-class AI provider and includes:
 
 - an Ollama provider option
 - a manual setup panel in onboarding
@@ -24,7 +24,7 @@ The next UX step is a `Local AI Setup Wizard` that:
 - lists installed local models
 - lets the user pull a recommended model from inside the app
 - shows pull/download progress
-- finishes by configuring PPP Flow to use the selected local model
+- finishes by configuring Arca to use the selected local model
 
 This should make local/private AI feel like a first-class product path, not an expert-only side route.
 
@@ -34,7 +34,7 @@ Primary goals:
 
 - Make local AI setup understandable for non-technical users
 - Reduce terminal usage to an optional fallback, not the default path
-- Preserve PPP Flow's privacy posture by making the local path explicit and easy
+- Preserve Arca's privacy posture by making the local path explicit and easy
 - Reuse the existing AI provider model and settings flow, not replace it
 
 Non-goals for v1:
@@ -115,7 +115,7 @@ When at least one model is available:
 
 - show installed models
 - let the user choose the default model
-- configure PPP Flow automatically:
+- configure Arca automatically:
   - `provider = ollama`
   - `baseUrl = http://localhost:11434/v1`
   - `model = selected model`
@@ -253,7 +253,7 @@ If needed later:
 
 These are not required for v1.
 
-## 7. PPP Flow implementation shape
+## 7. Arca implementation shape
 
 ### Frontend additions
 
@@ -380,7 +380,7 @@ The wizard should say only what the product can actually stand behind.
 
 Good:
 
-- `When Ollama is active, PPP Flow sends requests to a local server on this machine.`
+- `When Ollama is active, Arca sends requests to a local server on this machine.`
 - `No cloud provider is used while Ollama is the active provider.`
 
 Avoid:
@@ -408,7 +408,7 @@ Avoid:
 
 ### Ready
 
-`Local AI is ready. PPP Flow will use Ollama on this machine.`
+`Local AI is ready. Arca will use Ollama on this machine.`
 
 ## 12. Acceptance criteria
 
@@ -418,7 +418,7 @@ The feature is done when:
 2. If Ollama is missing, the app opens the official download page.
 3. If Ollama is running but empty, the app can pull a recommended model in-app.
 4. Pull progress is visible.
-5. When the model is ready, PPP Flow auto-configures Ollama as the active provider.
+5. When the model is ready, Arca auto-configures Ollama as the active provider.
 6. The user can send a successful test request without manually editing base URL or model.
 7. The flow works without needing Terminal for the common path.
 

@@ -1,7 +1,7 @@
 # AI Provider Implementation Notes v1
 
 Date: 2026-03-02  
-Product: PPP Flow Desktop  
+Product: Arca  
 Purpose: Operational notes for engineers/AI agents implementing and debugging provider integrations.
 
 ## Scope

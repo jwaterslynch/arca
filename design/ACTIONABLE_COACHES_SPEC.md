@@ -9,7 +9,7 @@ Real interaction that triggered this spec:
 ```
 User: "Log these exercises"
 Coach: "I can't directly log the workout for you, but I'll walk you
-        through how to do it in PPP Flow..."
+        through how to do it in Arca..."
 User: (asks again)
 Coach: (deflects again)
 User: (asks a third time)

@@ -77,9 +77,13 @@ impl DbPool {
     }
 }
 
-const APP_STATE_FILENAME: &str = "PPP_DATA.json";
-const LEDGER_DB_FILENAME: &str = "PPP_LEDGER.sqlite3";
+const APP_STATE_FILENAME: &str = "ARCA_DATA.json";
+const LEGACY_APP_STATE_FILENAME: &str = "PPP_DATA.json";
+const LEDGER_DB_FILENAME: &str = "ARCA_LEDGER.sqlite3";
+const LEGACY_LEDGER_DB_FILENAME: &str = "PPP_LEDGER.sqlite3";
 const BACKUP_DIRNAME: &str = "backups";
+const BACKUP_SNAPSHOT_SUFFIX: &str = "_ARCA_DATA_snapshot.json";
+const LEGACY_BACKUP_SNAPSHOT_SUFFIX: &str = "_PPP_DATA_snapshot.json";
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -139,14 +143,38 @@ fn app_data_dir(app: &AppHandle) -> Result<PathBuf, String> {
     Ok(dir)
 }
 
+fn migrate_legacy_named_file(dir: &PathBuf, legacy_name: &str, current_name: &str) -> Result<(), String> {
+    let mut current_path = dir.clone();
+    current_path.push(current_name);
+    if current_path.exists() {
+        return Ok(());
+    }
+
+    let mut legacy_path = dir.clone();
+    legacy_path.push(legacy_name);
+    if !legacy_path.exists() {
+        return Ok(());
+    }
+
+    fs::rename(&legacy_path, &current_path).map_err(|e| {
+        format!(
+            "Failed migrating legacy file '{}' to '{}': {}",
+            legacy_name, current_name, e
+        )
+    })?;
+    Ok(())
+}
+
 fn app_state_file_path(app: &AppHandle) -> Result<PathBuf, String> {
     let mut path = app_data_dir(app)?;
+    migrate_legacy_named_file(&path, LEGACY_APP_STATE_FILENAME, APP_STATE_FILENAME)?;
     path.push(APP_STATE_FILENAME);
     Ok(path)
 }
 
 fn ledger_db_path(app: &AppHandle) -> Result<PathBuf, String> {
     let mut path = app_data_dir(app)?;
+    migrate_legacy_named_file(&path, LEGACY_LEDGER_DB_FILENAME, LEDGER_DB_FILENAME)?;
     path.push(LEDGER_DB_FILENAME);
     Ok(path)
 }
@@ -163,9 +191,12 @@ fn backup_dir_path(app: &AppHandle) -> Result<PathBuf, String> {
 fn ensure_daily_backup(app: &AppHandle, content: &str) -> Result<(), String> {
     let day = Local::now().format("%Y-%m-%d").to_string();
     let mut backup_path = backup_dir_path(app)?;
-    backup_path.push(format!("{}_PPP_DATA_snapshot.json", day));
+    backup_path.push(format!("{}{}", day, BACKUP_SNAPSHOT_SUFFIX));
 
-    if backup_path.exists() {
+    let mut legacy_backup_path = backup_dir_path(app)?;
+    legacy_backup_path.push(format!("{}{}", day, LEGACY_BACKUP_SNAPSHOT_SUFFIX));
+
+    if backup_path.exists() || legacy_backup_path.exists() {
         return Ok(());
     }
 
@@ -182,7 +213,10 @@ fn latest_backup_file_path(app: &AppHandle) -> Result<Option<PathBuf>, String> {
                 && path
                     .file_name()
                     .and_then(|name| name.to_str())
-                    .map(|name| name.ends_with("_PPP_DATA_snapshot.json"))
+                    .map(|name| {
+                        name.ends_with(BACKUP_SNAPSHOT_SUFFIX)
+                            || name.ends_with(LEGACY_BACKUP_SNAPSHOT_SUFFIX)
+                    })
                     .unwrap_or(false)
         })
         .collect::<Vec<_>>();
