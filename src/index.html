@@ -6955,6 +6955,41 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       }
     }
 
+    async function checkForAppUpdate() {
+      const invoke = getTauriInvoke();
+      if (!invoke || !appRuntime.version) return;
+      try {
+        const res = await invoke("http_get_text", { url: "https://api.github.com/repos/jwaterslynch/arca/releases/latest" });
+        if (!res || res.status !== 200) return;
+        const release = JSON.parse(res.body);
+        const latestTag = String(release.tag_name || "").replace(/^v/, "");
+        const currentVer = appRuntime.version;
+        if (!latestTag || latestTag === currentVer) return;
+        // Simple comparison: if tags differ, latest is probably newer
+        const dmgAsset = (release.assets || []).find(a => a.name?.endsWith(".dmg"));
+        const downloadUrl = dmgAsset?.browser_download_url || release.html_url || "https://github.com/jwaterslynch/arca/releases/latest";
+        showUpdateBanner(latestTag, downloadUrl);
+      } catch (err) {
+        // Silently ignore — update check is best-effort
+        console.log("[update-check] Failed:", err);
+      }
+    }
+
+    function showUpdateBanner(version, downloadUrl) {
+      // Remove existing banner if any
+      document.getElementById("appUpdateBanner")?.remove();
+      const banner = document.createElement("div");
+      banner.id = "appUpdateBanner";
+      banner.style.cssText = "position:fixed;top:0;left:0;right:0;z-index:99999;background:var(--accent,#2d6a4f);color:#fff;padding:8px 16px;display:flex;align-items:center;justify-content:center;gap:12px;font-size:13px;font-weight:500;";
+      banner.innerHTML = `
+        <span>Arca v${version} is available (you're on v${appRuntime.version})</span>
+        <a href="${downloadUrl}" target="_blank" rel="noopener" style="color:#fff;text-decoration:underline;font-weight:700;">Download update</a>
+        <button id="dismissUpdateBanner" style="background:none;border:none;color:#fff;cursor:pointer;font-size:18px;margin-left:8px;padding:0 4px;" title="Dismiss">&times;</button>
+      `;
+      document.body.prepend(banner);
+      document.getElementById("dismissUpdateBanner").addEventListener("click", () => banner.remove());
+    }
+
     async function detectNativeStore() {
       const invoke = getTauriInvoke();
       nativeStore.available = !!invoke;
@@ -30836,6 +30871,8 @@ You cannot change app state without that JSON block. Do not say something was ad
       persistNormalizedClientPrefs();
       render();
       if (shouldShowOnboarding()) openOnboarding({ mode: "first_run" });
+      // Non-blocking update check after app is fully loaded
+      checkForAppUpdate();
     })();
 
     // Flush any debounced localStorage write on tab close / app quit

@@ -522,6 +522,7 @@ async fn http_get_text(url: String) -> Result<HttpTextResponse, String> {
         "query1.finance.yahoo.com",
         "api.frankfurter.app",
         "open.er-api.com",
+        "api.github.com",
     ];
     let allowed_domain_suffixes = [
         "domain.com.au",
