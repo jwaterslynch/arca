@@ -3532,7 +3532,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
                     <h3>Setup &amp; appearance</h3>
                     <p>Replay the setup flow safely, and keep future structure/settings work in one place.</p>
                     <div class="controls">
-                      <button id="settingsPreviewOnboardingBtn" class="ghost" type="button">Preview Setup Wizard</button>
+                      <button id="settingsPreviewOnboardingBtn" class="ghost" type="button">Run Guided Setup</button>
                     </div>
                     <div class="settings-note">Dark mode and deeper structure settings belong here next, but are not live in this first pass.</div>
                   </div>
@@ -5111,8 +5111,9 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
               <div class="controls" style="justify-content:flex-start;flex-wrap:wrap;gap:10px;">
                 <button id="onboardChooseBoardBtn" class="primary" type="button">Set Up Board</button>
                 <button id="onboardChooseAiOnlyBtn" class="ghost" type="button">Set Up AI Only</button>
+                <button id="onboardJustExploreBtn" class="ghost" type="button" style="opacity:.85;">Skip — let me explore</button>
               </div>
-              <p id="onboardPathHint" class="tiny" style="opacity:.72;font-size:.82rem;">Full setup creates the first usable version of your board: goal, practices, and tasks.</p>
+              <p id="onboardPathHint" class="tiny" style="opacity:.72;font-size:.82rem;">Full setup creates the first usable version of your board: goal, practices, and tasks. Or skip and explore freely — you can run setup any time from Settings.</p>
             </div>
           </div>
           <div class="onboard-muted-strip">
@@ -14885,11 +14886,6 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       }
 
       const wig = collectOnboardingWig();
-      if (!wig.title || !wig.deadline || !wig.measure) {
-        alert("Please complete the primary goal fields before creating the board.");
-        setOnboardingStep(3);
-        return;
-      }
 
       if (onboardingMode === "reset") {
         const finalConfirm = window.confirm("Final confirmation: reset board and apply this new setup? A JSON backup will be exported first.");
@@ -28058,6 +28054,37 @@ CRITICAL RULES FOR ACTIONS:
     window.closeWealthModal = closeWealthModal;
 
     // ── Master Render ──
+    function renderSetupNudge() {
+      const existing = document.getElementById("setupNudgeBanner");
+      const skipped = state.onboarding?.skipped_at;
+      const dismissed = state.onboarding?.nudge_dismissed;
+      const boardHasGoal = !!(state.focus?.wig?.title);
+      // Show nudge only if they skipped onboarding, haven't dismissed, and have no goal set
+      if (!skipped || dismissed || boardHasGoal) {
+        if (existing) existing.remove();
+        return;
+      }
+      if (existing) return; // already showing
+      const bar = document.createElement("div");
+      bar.id = "setupNudgeBanner";
+      bar.style.cssText = "position:fixed;bottom:0;left:0;right:0;z-index:9998;background:var(--surface,#f8f9fa);border-top:1px solid var(--border,#e0e0e0);padding:10px 20px;display:flex;align-items:center;justify-content:center;gap:12px;font-size:13px;";
+      bar.innerHTML = `
+        <span style="opacity:.8;">Ready to set up your board?</span>
+        <button id="nudgeRunSetupBtn" class="primary" type="button" style="font-size:12px;padding:4px 14px;">Run guided setup</button>
+        <button id="nudgeDismissBtn" class="ghost" type="button" style="font-size:12px;padding:4px 10px;opacity:.6;">Dismiss</button>
+      `;
+      document.body.appendChild(bar);
+      document.getElementById("nudgeRunSetupBtn").addEventListener("click", () => {
+        bar.remove();
+        openOnboarding({ mode: "first_run" });
+      });
+      document.getElementById("nudgeDismissBtn").addEventListener("click", () => {
+        bar.remove();
+        state.onboarding.nudge_dismissed = true;
+        saveState("nudge_dismiss");
+      });
+    }
+
     function render() {
       initTodayState();
       renderTopLevelTabs();
@@ -28081,6 +28108,7 @@ CRITICAL RULES FOR ACTIONS:
       renderLocalAiWizard();
       renderAppDataPanel();
       renderAllAiComposerChrome();
+      renderSetupNudge();
     }
 
     // ── Plan Sidebar Display ──
@@ -29122,6 +29150,9 @@ You cannot change app state without that JSON block. Do not say something was ad
       setOnboardingPath("ai_only");
       setOnboardingStep(2);
     });
+    document.getElementById("onboardJustExploreBtn")?.addEventListener("click", () => {
+      completeOnboarding(true);
+    });
     document.getElementById("onboardConfirmAcknowledge").addEventListener("change", updateOnboardingResetConfirmState);
     document.getElementById("onboardConfirmText").addEventListener("input", updateOnboardingResetConfirmState);
     document.getElementById("onboardWigTitle").addEventListener("input", refreshOnboardingSummary);
@@ -29518,7 +29549,8 @@ You cannot change app state without that JSON block. Do not say something was ad
       setExperimentalSurfaceEnabled("wealth", !isWealthSurfaceEnabled(state));
     });
     document.getElementById("settingsPreviewOnboardingBtn")?.addEventListener("click", () => {
-      openOnboarding({ mode: "preview" });
+      const wasSkipped = state.onboarding?.skipped_at && !state.focus?.wig?.title;
+      openOnboarding({ mode: wasSkipped ? "first_run" : "preview" });
     });
     document.getElementById("settingsOpenAppDataBtn")?.addEventListener("click", openAppDataModal);
     document.getElementById("settingsOpenCloudSyncBtn")?.addEventListener("click", openCloudSyncModal);
