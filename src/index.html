@@ -5206,9 +5206,10 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           </div>
           <div class="onboard-form-shell">
             <div class="onboard-practice-grid">
-              <input id="onboardWigTitle" placeholder="Goal (required) — e.g. Submit paper revision to Nature by 15 April" />
+              <input id="onboardWigTitle" placeholder="Goal — e.g. Submit paper revision to Nature by 15 April" />
               <input id="onboardWigDeadline" type="date" />
               <input id="onboardWigMeasure" placeholder="How will you measure success? — e.g. Submission confirmed" />
+              <p id="onboardWigValidationHint" class="tiny" style="color:var(--danger,#c0392b);margin:0;display:none;"></p>
             </div>
             <div class="onboard-card onboard-side-card">
               <div class="onboard-eyebrow">Strong goal framing</div>
@@ -5219,6 +5220,9 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
               </ul>
             </div>
           </div>
+          <p class="tiny onboard-muted-note" style="margin-top:8px;">
+            <a href="#" id="onboardSkipGoalLink" style="color:var(--muted,#888);text-decoration:underline;">I'll set my primary goal later</a>
+          </p>
         </div>
 
         <div id="onboardStep4" class="onboard-screen" hidden>
@@ -14596,19 +14600,26 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
 
     function validateOnboardingStep(step) {
       if (Number(step) !== 3) return true;
+      const hint = document.getElementById("onboardWigValidationHint");
       const wig = collectOnboardingWig();
-      if (!wig.title) {
-        alert("Please enter your primary goal.");
+      // All empty — user is skipping, that's fine
+      if (!wig.title && !wig.deadline && !wig.measure) {
+        if (hint) hint.style.display = "none";
+        return true;
+      }
+      // Partial input — nudge them to complete it
+      const missing = [];
+      if (!wig.title) missing.push("goal");
+      if (!wig.deadline) missing.push("deadline");
+      if (!wig.measure) missing.push("success measure");
+      if (missing.length) {
+        if (hint) {
+          hint.textContent = `Almost there — add a ${missing.join(" and ")} to continue, or clear all fields to skip.`;
+          hint.style.display = "block";
+        }
         return false;
       }
-      if (!wig.deadline) {
-        alert("Please choose a deadline for your goal.");
-        return false;
-      }
-      if (!wig.measure) {
-        alert("Please describe how you will measure success.");
-        return false;
-      }
+      if (hint) hint.style.display = "none";
       return true;
     }
 
@@ -15588,9 +15599,10 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       if (!allTasks.length) {
         listEl.innerHTML = '<p class="tiny" style="padding:8px 2px;color:var(--text2)">No tasks in Today yet.</p>';
       } else {
+        const resolvedExecuteTaskId = resolveExecuteFocusTask()?.id || "";
         listEl.innerHTML = allTasks.map(task => {
           const isCompleted = !!task.completedAt;
-          const isActive = state.activeTaskId === task.id || pomodoro.taskId === task.id;
+          const isActive = resolvedExecuteTaskId === task.id;
           const isAiHighlighted = aiHighlightedTaskIds.has(task.id);
           const depth = String(task.depth || "Deep");
           const depthClass = depth.toLowerCase() === "shallow" ? "shallow" : "deep";
@@ -29054,6 +29066,19 @@ You cannot change app state without that JSON block. Do not say something was ad
     });
     document.getElementById("onboardingFinishBtn").addEventListener("click",()=>completeOnboarding(false));
     document.getElementById("onboardingSkipBtn").addEventListener("click",()=>completeOnboarding(true));
+    document.getElementById("onboardSkipGoalLink")?.addEventListener("click", (e) => {
+      e.preventDefault();
+      // Clear any partial input so validation passes
+      const t = document.getElementById("onboardWigTitle");
+      const d = document.getElementById("onboardWigDeadline");
+      const m = document.getElementById("onboardWigMeasure");
+      if (t) t.value = "";
+      if (d) d.value = "";
+      if (m) m.value = "";
+      const hint = document.getElementById("onboardWigValidationHint");
+      if (hint) hint.style.display = "none";
+      setOnboardingStep(onboardingStep + 1);
+    });
     document.getElementById("onboardChooseBoardBtn")?.addEventListener("click", () => {
       setOnboardingPath("full");
       setOnboardingStep(2);
