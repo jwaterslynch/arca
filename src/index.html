@@ -4738,49 +4738,62 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
     <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="cloudSyncTitle">
       <div class="modal-head">
         <div>
-          <h3 id="cloudSyncTitle">Cloud Sync (Phase 1)</h3>
-          <div class="tiny">Optional and off by default. Local-first remains active.</div>
+          <h3 id="cloudSyncTitle">Arca Cloud Sync</h3>
+          <div class="tiny">Sign in to sync across devices. Your data stays local-first.</div>
         </div>
         <button id="cloudSyncCloseBtn" class="ghost" type="button">Close</button>
       </div>
 
-      <div class="cloud-config-grid">
-        <label class="span-2 tiny"><input id="cloudSyncEnabledInput" type="checkbox" /> Enable cloud sync</label>
-        <div>
-          <label class="tiny" for="cloudSyncUrlInput">Supabase Project URL</label>
-          <input id="cloudSyncUrlInput" placeholder="https://your-project.supabase.co" />
+      <!-- Signed-out state: sign in / sign up form -->
+      <div id="cloudSyncAuthForm">
+        <div class="cloud-config-grid">
+          <div>
+            <label class="tiny" for="cloudSyncEmailInput">Email</label>
+            <input id="cloudSyncEmailInput" type="email" placeholder="you@example.com" autocomplete="email" />
+          </div>
+          <div>
+            <label class="tiny" for="cloudSyncPasswordInput">Password</label>
+            <input id="cloudSyncPasswordInput" type="password" placeholder="Password" autocomplete="current-password" />
+          </div>
         </div>
-        <div>
-          <label class="tiny" for="cloudSyncAnonKeyInput">Supabase Anon Key</label>
-          <input id="cloudSyncAnonKeyInput" type="password" autocomplete="off" placeholder="eyJ..." />
-        </div>
-        <div>
-          <label class="tiny" for="cloudSyncTokenInput">Access Token (temporary; auth UI comes next)</label>
-          <input id="cloudSyncTokenInput" type="password" autocomplete="off" placeholder="eyJ..." />
-        </div>
-        <div>
-          <label class="tiny" for="cloudSyncBoardNameInput">Board Name</label>
-          <input id="cloudSyncBoardNameInput" placeholder="My Arca Board" />
-        </div>
-        <div>
-          <label class="tiny" for="cloudSyncPollInput">Pull Interval (seconds)</label>
-          <input id="cloudSyncPollInput" type="number" min="5" max="300" step="1" />
-        </div>
-        <div>
-          <label class="tiny" for="cloudSyncDeviceIdInput">Device ID</label>
-          <input id="cloudSyncDeviceIdInput" disabled />
+        <div class="controls" style="margin-top:10px;">
+          <button id="cloudSyncSignInBtn" class="primary" type="button">Sign In</button>
+          <button id="cloudSyncSignUpBtn" class="ghost" type="button">Create Account</button>
+          <span id="cloudSyncAuthStatus" class="tiny"></span>
         </div>
       </div>
 
-      <div class="controls" style="margin-top:10px;">
-        <button id="cloudSyncSaveBtn" class="primary" type="button">Save Cloud Settings</button>
-        <button id="cloudSyncTestBtn" class="ghost" type="button">Test Connection</button>
-        <button id="cloudSyncNowBtn" class="ghost" type="button">Sync Now</button>
-        <span id="cloudSyncStatusText" class="tiny"></span>
+      <!-- Signed-in state: sync status and controls -->
+      <div id="cloudSyncSignedInPane" hidden>
+        <div class="cloud-config-grid">
+          <div>
+            <label class="tiny">Signed in as</label>
+            <div id="cloudSyncUserEmail" style="font-weight:600;"></div>
+          </div>
+          <div>
+            <label class="tiny">Sync status</label>
+            <div id="cloudSyncStatusText" class="tiny"></div>
+          </div>
+          <div>
+            <label class="tiny">Device ID</label>
+            <div id="cloudSyncDeviceIdDisplay" class="tiny" style="opacity:.6;"></div>
+          </div>
+        </div>
+        <div class="controls" style="margin-top:10px;">
+          <button id="cloudSyncNowBtn" class="primary" type="button">Sync Now</button>
+          <button id="cloudSyncSignOutBtn" class="ghost" type="button">Sign Out</button>
+        </div>
       </div>
-      <div class="cloud-note">
-        Phase 1 uses snapshot + event sync over Supabase RPC functions from
-        <code>design/SUPABASE_SCHEMA_v1.sql</code>. Auth UI is the next workstream; for now this accepts an existing user access token.
+
+      <!-- Hidden fields for backward compat with existing sync code -->
+      <div hidden aria-hidden="true">
+        <input id="cloudSyncEnabledInput" type="checkbox" />
+        <input id="cloudSyncUrlInput" />
+        <input id="cloudSyncAnonKeyInput" />
+        <input id="cloudSyncTokenInput" />
+        <input id="cloudSyncBoardNameInput" value="My Arca Board" />
+        <input id="cloudSyncPollInput" type="number" value="20" />
+        <input id="cloudSyncDeviceIdInput" />
       </div>
     </div>
   </div>
@@ -7621,12 +7634,117 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
     function saveFocusUiPrefs() {
       localStorage.setItem(FOCUS_UI_PREF_KEY, JSON.stringify(focusUiPrefs));
     }
+    // ── Arca Cloud Constants ──
+    const ARCA_SUPABASE_URL = "https://fncixgbeiqtschzdvhgk.supabase.co";
+    const ARCA_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZuY2l4Z2JlaXF0c2NoemR2aGdrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU4ODc1ODMsImV4cCI6MjA5MTQ2MzU4M30.xWhLy8gWdBVznHLXAi5I8YXk1Jk--Kl4DxX7vnPwkak";
+
+    async function cloudAuthRequest(endpoint, body) {
+      const res = await fetch(`${ARCA_SUPABASE_URL}/auth/v1/${endpoint}`, {
+        method: "POST",
+        headers: { apikey: ARCA_SUPABASE_ANON_KEY, "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.msg || data.error_description || data.error || `Auth error ${res.status}`);
+      return data;
+    }
+
+    async function cloudSyncSignIn(email, password) {
+      const data = await cloudAuthRequest("token?grant_type=password", { email, password });
+      if (!data.access_token) throw new Error("No access token returned");
+      applyCloudAuthSession(data);
+      return data;
+    }
+
+    async function cloudSyncSignUp(email, password) {
+      const data = await cloudAuthRequest("signup", { email, password });
+      if (data.access_token) {
+        applyCloudAuthSession(data);
+      }
+      return data;
+    }
+
+    function applyCloudAuthSession(data) {
+      const email = data.user?.email || data.email || "";
+      const accessToken = data.access_token || "";
+      const refreshToken = data.refresh_token || "";
+      cloudSyncPrefs.supabaseUrl = ARCA_SUPABASE_URL;
+      cloudSyncPrefs.anonKey = ARCA_SUPABASE_ANON_KEY;
+      cloudSyncPrefs.accessToken = accessToken;
+      cloudSyncPrefs.enabled = true;
+      cloudSyncPrefs.userEmail = email;
+      cloudSyncPrefs.refreshToken = refreshToken;
+      cloudSyncEnsureDeviceId();
+      saveCloudSyncPrefs();
+      // Auto-populate hidden compat fields
+      document.getElementById("cloudSyncUrlInput").value = ARCA_SUPABASE_URL;
+      document.getElementById("cloudSyncAnonKeyInput").value = ARCA_SUPABASE_ANON_KEY;
+      document.getElementById("cloudSyncTokenInput").value = accessToken;
+      document.getElementById("cloudSyncEnabledInput").checked = true;
+    }
+
+    function cloudSyncSignOut() {
+      cloudSyncStopPolling();
+      cloudSyncPrefs.enabled = false;
+      cloudSyncPrefs.accessToken = "";
+      cloudSyncPrefs.refreshToken = "";
+      cloudSyncPrefs.userEmail = "";
+      cloudSyncPrefs.boardId = "";
+      cloudSyncPrefs.lastServerVersion = 0;
+      cloudSyncRuntime.pendingEvents = [];
+      saveCloudSyncPrefs();
+      if (!state.sync || typeof state.sync !== "object") state.sync = {};
+      state.sync.cloud_enabled = false;
+      saveState("cloud_signout");
+      setSyncBanner("Data source: App local storage (autosave)", "file", nativeStore.path || "Cloud sync disabled");
+    }
+
+    async function cloudSyncRefreshSession() {
+      if (!cloudSyncPrefs.refreshToken) return false;
+      try {
+        const data = await cloudAuthRequest("token?grant_type=refresh_token", {
+          refresh_token: cloudSyncPrefs.refreshToken
+        });
+        if (data.access_token) {
+          cloudSyncPrefs.accessToken = data.access_token;
+          cloudSyncPrefs.refreshToken = data.refresh_token || cloudSyncPrefs.refreshToken;
+          saveCloudSyncPrefs();
+          return true;
+        }
+      } catch (err) {
+        console.warn("[CloudSync] Session refresh failed:", err);
+      }
+      return false;
+    }
+
+    function renderCloudSyncModal() {
+      const authForm = document.getElementById("cloudSyncAuthForm");
+      const signedInPane = document.getElementById("cloudSyncSignedInPane");
+      const isSignedIn = !!(cloudSyncPrefs.enabled && cloudSyncPrefs.accessToken && cloudSyncPrefs.userEmail);
+      if (authForm) authForm.hidden = isSignedIn;
+      if (signedInPane) signedInPane.hidden = !isSignedIn;
+      if (isSignedIn) {
+        const emailEl = document.getElementById("cloudSyncUserEmail");
+        const deviceEl = document.getElementById("cloudSyncDeviceIdDisplay");
+        const statusEl = document.getElementById("cloudSyncStatusText");
+        if (emailEl) emailEl.textContent = cloudSyncPrefs.userEmail;
+        if (deviceEl) deviceEl.textContent = cloudSyncPrefs.deviceId || "";
+        if (statusEl) {
+          statusEl.textContent = cloudSyncPrefs.lastSyncedAt
+            ? `Last sync: ${new Date(cloudSyncPrefs.lastSyncedAt).toLocaleString()}`
+            : "Not yet synced";
+        }
+      }
+    }
+
     function defaultCloudSyncPrefs() {
       return {
         enabled: false,
         supabaseUrl: "",
         anonKey: "",
         accessToken: "",
+        refreshToken: "",
+        userEmail: "",
         boardName: "My Arca Board",
         boardId: "",
         deviceId: uid(),
@@ -7643,6 +7761,8 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         supabaseUrl: String(input.supabaseUrl || "").trim().replace(/\/+$/, ""),
         anonKey: String(input.anonKey || "").trim(),
         accessToken: String(input.accessToken || "").trim(),
+        refreshToken: String(input.refreshToken || "").trim(),
+        userEmail: String(input.userEmail || "").trim(),
         boardName: String(input.boardName || "").trim() || base.boardName,
         boardId: String(input.boardId || "").trim(),
         deviceId: String(input.deviceId || "").trim() || base.deviceId,
@@ -7890,14 +8010,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       const modal = document.getElementById("cloudSyncModal");
       if (!modal) return;
       cloudSyncEnsureDeviceId();
-      document.getElementById("cloudSyncEnabledInput").checked = !!cloudSyncPrefs.enabled;
-      document.getElementById("cloudSyncUrlInput").value = cloudSyncPrefs.supabaseUrl || "";
-      document.getElementById("cloudSyncAnonKeyInput").value = cloudSyncPrefs.anonKey || "";
-      document.getElementById("cloudSyncTokenInput").value = cloudSyncPrefs.accessToken || "";
-      document.getElementById("cloudSyncBoardNameInput").value = cloudSyncPrefs.boardName || "My Arca Board";
-      document.getElementById("cloudSyncPollInput").value = String(cloudSyncPrefs.pollSeconds || 20);
-      document.getElementById("cloudSyncDeviceIdInput").value = cloudSyncPrefs.deviceId || "";
-      document.getElementById("cloudSyncStatusText").textContent = cloudSyncRuntime.statusText || "";
+      renderCloudSyncModal();
       modal.hidden = false;
       modal.setAttribute("aria-hidden", "false");
     }
@@ -7908,21 +8021,6 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       modal.setAttribute("aria-hidden", "true");
     }
     function applyCloudSyncForm() {
-      const previousUrl = cloudSyncPrefs.supabaseUrl;
-      cloudSyncPrefs = normalizeCloudSyncPrefs({
-        ...cloudSyncPrefs,
-        enabled: document.getElementById("cloudSyncEnabledInput").checked,
-        supabaseUrl: document.getElementById("cloudSyncUrlInput").value,
-        anonKey: document.getElementById("cloudSyncAnonKeyInput").value,
-        accessToken: document.getElementById("cloudSyncTokenInput").value,
-        boardName: document.getElementById("cloudSyncBoardNameInput").value,
-        pollSeconds: document.getElementById("cloudSyncPollInput").value,
-        deviceId: cloudSyncPrefs.deviceId
-      });
-      if (cloudSyncPrefs.supabaseUrl !== previousUrl) {
-        cloudSyncPrefs.boardId = "";
-        cloudSyncPrefs.lastServerVersion = 0;
-      }
       cloudSyncEnsureDeviceId();
       saveCloudSyncPrefs();
       if (!state.sync || typeof state.sync !== "object") state.sync = {};
@@ -7936,7 +8034,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           scheduleCloudSyncPush(150);
           void cloudSyncPullLatest("settings_save");
         } else {
-          cloudSyncSetStatus("Cloud sync enabled but incomplete credentials.", "offline", "Open Cloud Sync and complete all fields.");
+          cloudSyncSetStatus("Cloud sync enabled but incomplete credentials.", "offline", "Sign in to enable sync.");
           cloudSyncStopPolling();
         }
       } else {
@@ -29438,30 +29536,57 @@ You cannot change app state without that JSON block. Do not say something was ad
     document.getElementById("cloudSyncModal").addEventListener("click",e=>{
       if (e.target && e.target.id === "cloudSyncModal") closeCloudSyncModal();
     });
-    document.getElementById("cloudSyncSaveBtn").addEventListener("click",()=>{
-      applyCloudSyncForm();
-      const status = document.getElementById("cloudSyncStatusText");
-      if (status) status.textContent = "Cloud settings saved.";
-    });
-    document.getElementById("cloudSyncTestBtn").addEventListener("click",async ()=>{
-      const status = document.getElementById("cloudSyncStatusText");
+    document.getElementById("cloudSyncSignInBtn").addEventListener("click", async () => {
+      const email = (document.getElementById("cloudSyncEmailInput")?.value || "").trim();
+      const password = (document.getElementById("cloudSyncPasswordInput")?.value || "").trim();
+      const status = document.getElementById("cloudSyncAuthStatus");
+      if (!email || !password) { if (status) status.textContent = "Enter email and password."; return; }
       try {
+        if (status) status.textContent = "Signing in…";
+        await cloudSyncSignIn(email, password);
         applyCloudSyncForm();
-        if (status) status.textContent = "Testing connection…";
-        const test = await cloudSyncTestConnection();
-        if (status) status.textContent = `Connected. Board ${test.boardId.slice(0, 8)}… · v${test.serverVersion}`;
+        await cloudSyncEnsureBoardId();
+        await cloudSyncFlushPush();
+        await cloudSyncPullLatest("signin");
+        renderCloudSyncModal();
+        if (status) status.textContent = "";
       } catch (err) {
-        if (status) status.textContent = `Failed: ${String(err?.message || err)}`;
+        if (status) status.textContent = String(err?.message || err);
       }
     });
-    document.getElementById("cloudSyncNowBtn").addEventListener("click",async ()=>{
+    document.getElementById("cloudSyncSignUpBtn").addEventListener("click", async () => {
+      const email = (document.getElementById("cloudSyncEmailInput")?.value || "").trim();
+      const password = (document.getElementById("cloudSyncPasswordInput")?.value || "").trim();
+      const status = document.getElementById("cloudSyncAuthStatus");
+      if (!email || !password) { if (status) status.textContent = "Enter email and password."; return; }
+      if (password.length < 6) { if (status) status.textContent = "Password must be at least 6 characters."; return; }
+      try {
+        if (status) status.textContent = "Creating account…";
+        const data = await cloudSyncSignUp(email, password);
+        if (data.access_token) {
+          applyCloudSyncForm();
+          await cloudSyncEnsureBoardId();
+          await cloudSyncFlushPush();
+          renderCloudSyncModal();
+          if (status) status.textContent = "";
+        } else {
+          if (status) status.textContent = "Account created. Check your email to confirm, then sign in.";
+        }
+      } catch (err) {
+        if (status) status.textContent = String(err?.message || err);
+      }
+    });
+    document.getElementById("cloudSyncSignOutBtn").addEventListener("click", () => {
+      cloudSyncSignOut();
+      renderCloudSyncModal();
+    });
+    document.getElementById("cloudSyncNowBtn").addEventListener("click", async () => {
       const status = document.getElementById("cloudSyncStatusText");
       try {
-        applyCloudSyncForm();
         if (status) status.textContent = "Syncing now…";
         await cloudSyncFlushPush();
         await cloudSyncPullLatest("manual");
-        if (status) status.textContent = "Sync complete.";
+        if (status) status.textContent = `Synced at ${new Date().toLocaleTimeString()}`;
       } catch (err) {
         if (status) status.textContent = `Sync failed: ${String(err?.message || err)}`;
       }
@@ -30891,13 +31016,17 @@ You cannot change app state without that JSON block. Do not say something was ad
       state.sync.device_id = cloudSyncPrefs.deviceId;
       state.sync.cloud_enabled = cloudSyncPrefs.enabled;
       if (cloudSyncPrefs.enabled) {
+        // Refresh session token on startup if we have a refresh token
+        if (cloudSyncPrefs.refreshToken && !cloudSyncConfigured()) {
+          await cloudSyncRefreshSession();
+        }
         if (cloudSyncConfigured()) {
           cloudSyncSetStatus("Cloud sync enabled", "cloud", "Initial sync in progress");
           cloudSyncStartPolling();
           await cloudSyncPullLatest("startup");
           await cloudSyncFlushPush();
         } else {
-          cloudSyncSetStatus("Cloud sync enabled but incomplete credentials.", "offline", "Open Cloud Sync and complete credentials.");
+          cloudSyncSetStatus("Sign in to enable cloud sync.", "offline", "Open Cloud Sync to sign in.");
         }
       }
       persistNormalizedClientPrefs();
