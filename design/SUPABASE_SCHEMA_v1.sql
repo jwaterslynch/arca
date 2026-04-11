@@ -72,7 +72,7 @@ create index if not exists idx_device_checkpoints_board_id
 -- Updated-at trigger helper
 -- ------------------------------------------------------------
 
-create or replace function public.ppp_set_updated_at()
+create or replace function public.arca_set_updated_at()
 returns trigger
 language plpgsql
 as $$
@@ -85,17 +85,17 @@ $$;
 drop trigger if exists trg_boards_set_updated_at on public.boards;
 create trigger trg_boards_set_updated_at
 before update on public.boards
-for each row execute function public.ppp_set_updated_at();
+for each row execute function public.arca_set_updated_at();
 
 drop trigger if exists trg_board_snapshots_set_updated_at on public.board_snapshots;
 create trigger trg_board_snapshots_set_updated_at
 before update on public.board_snapshots
-for each row execute function public.ppp_set_updated_at();
+for each row execute function public.arca_set_updated_at();
 
 drop trigger if exists trg_device_checkpoints_set_updated_at on public.device_checkpoints;
 create trigger trg_device_checkpoints_set_updated_at
 before update on public.device_checkpoints
-for each row execute function public.ppp_set_updated_at();
+for each row execute function public.arca_set_updated_at();
 
 -- ------------------------------------------------------------
 -- Row Level Security (RLS)

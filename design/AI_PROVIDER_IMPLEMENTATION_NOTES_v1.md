@@ -135,7 +135,7 @@ Expected:
 ## Build and reinstall app for local testing
 
 ```bash
-cd '/Users/julianwaterslynch/Workspace/PPP Operating System/09_Productization/ppp-flow-desktop'
+cd '/Users/julianwaterslynch/Workspace/Arca/09_Productization/arca'
 npm run build
 ```
 

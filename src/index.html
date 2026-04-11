@@ -4745,41 +4745,41 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       </div>
 
       <!-- Signed-out state: sign in / sign up form -->
-      <div id="cloudSyncAuthForm">
-        <div class="cloud-config-grid">
+      <div id="cloudSyncAuthForm" style="padding:16px 0;">
+        <div class="cloud-config-grid" style="gap:16px;">
           <div>
-            <label class="tiny" for="cloudSyncEmailInput">Email</label>
+            <label class="tiny" for="cloudSyncEmailInput" style="margin-bottom:4px;display:block;">Email</label>
             <input id="cloudSyncEmailInput" type="email" placeholder="you@example.com" autocomplete="email" />
           </div>
           <div>
-            <label class="tiny" for="cloudSyncPasswordInput">Password</label>
+            <label class="tiny" for="cloudSyncPasswordInput" style="margin-bottom:4px;display:block;">Password</label>
             <input id="cloudSyncPasswordInput" type="password" placeholder="Password" autocomplete="current-password" />
           </div>
         </div>
-        <div class="controls" style="margin-top:10px;">
+        <div class="controls" style="margin-top:16px;gap:10px;">
           <button id="cloudSyncSignInBtn" class="primary" type="button">Sign In</button>
           <button id="cloudSyncSignUpBtn" class="ghost" type="button">Create Account</button>
-          <span id="cloudSyncAuthStatus" class="tiny"></span>
         </div>
+        <div id="cloudSyncAuthStatus" class="tiny" style="margin-top:10px;min-height:1.2em;"></div>
       </div>
 
       <!-- Signed-in state: sync status and controls -->
-      <div id="cloudSyncSignedInPane" hidden>
-        <div class="cloud-config-grid">
+      <div id="cloudSyncSignedInPane" hidden style="padding:20px 0;">
+        <div style="display:flex;flex-direction:column;gap:18px;">
           <div>
-            <label class="tiny">Signed in as</label>
-            <div id="cloudSyncUserEmail" style="font-weight:600;"></div>
+            <div class="tiny" style="opacity:.6;margin-bottom:2px;">Signed in as</div>
+            <div id="cloudSyncUserEmail" style="font-weight:600;font-size:15px;"></div>
           </div>
           <div>
-            <label class="tiny">Sync status</label>
-            <div id="cloudSyncStatusText" class="tiny"></div>
+            <div class="tiny" style="opacity:.6;margin-bottom:2px;">Sync status</div>
+            <div id="cloudSyncStatusText" style="font-size:13px;"></div>
           </div>
           <div>
-            <label class="tiny">Device ID</label>
-            <div id="cloudSyncDeviceIdDisplay" class="tiny" style="opacity:.6;"></div>
+            <div class="tiny" style="opacity:.6;margin-bottom:2px;">Device ID</div>
+            <div id="cloudSyncDeviceIdDisplay" class="tiny" style="opacity:.5;font-family:monospace;"></div>
           </div>
         </div>
-        <div class="controls" style="margin-top:10px;">
+        <div class="controls" style="margin-top:20px;gap:10px;">
           <button id="cloudSyncNowBtn" class="primary" type="button">Sync Now</button>
           <button id="cloudSyncSignOutBtn" class="ghost" type="button">Sign Out</button>
         </div>
@@ -5513,14 +5513,18 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
     const TODAY_STAGE_LIMIT = 5;
     const NEXT_UP_SOFT_LIMIT = 10;
     const PIPELINE_STAGES = ["backlog", "next_up", "today", "done"];
-    const AI_PREF_KEY = "PPP_AI_PREFS_V1";
-    const AI_MODEL_CACHE_KEY = "PPP_AI_MODEL_CACHE_V1";
+    const AI_PREF_KEY = "ARCA_AI_PREFS_V1";
+    const LEGACY_AI_PREF_KEYS = ["PPP_AI_PREFS_V1"];
+    const AI_MODEL_CACHE_KEY = "ARCA_AI_MODEL_CACHE_V1";
+    const LEGACY_AI_MODEL_CACHE_KEYS = ["PPP_AI_MODEL_CACHE_V1"];
     const AI_MODEL_CACHE_MAX_AGE_MS = 1000 * 60 * 60 * 24 * 30;
     const AI_ALLOWED_PROVIDERS = ["openai", "anthropic", "gemini", "grok", "deepseek", "mistral", "ollama", "openai_compatible"];
     let aiSessionOnlyKey = ""; // runtime-only API key, never persisted
     let wealthCoachCloudConsent = {}; // runtime-only, per-provider consent for sending wealth data to cloud AI
-    const CLOUD_SYNC_PREF_KEY = "PPP_CLOUD_SYNC_PREFS_V1";
-    const FOCUS_UI_PREF_KEY = "PPP_FOCUS_UI_PREFS_V3";
+    const CLOUD_SYNC_PREF_KEY = "ARCA_CLOUD_SYNC_PREFS_V1";
+    const LEGACY_CLOUD_SYNC_PREF_KEYS = ["PPP_CLOUD_SYNC_PREFS_V1"];
+    const FOCUS_UI_PREF_KEY = "ARCA_FOCUS_UI_PREFS_V3";
+    const LEGACY_FOCUS_UI_PREF_KEYS = ["PPP_FOCUS_UI_PREFS_V3"];
     const AI_ALLOWED_STAGES = ["backlog", "next_up", "today"];
     const AI_ALLOWED_GOALS = ["None", "PG1", "PG2"];
     const AI_ALLOWED_IMPORTANCE = ["High", "Low"];
@@ -7624,7 +7628,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
     }
     function loadFocusUiPrefs() {
       try {
-        const raw = localStorage.getItem(FOCUS_UI_PREF_KEY);
+        const raw = loadLocalStorageWithFallback(FOCUS_UI_PREF_KEY, LEGACY_FOCUS_UI_PREF_KEYS);
         if (!raw) return defaultFocusUiPrefs();
         return normalizeFocusUiPrefs(JSON.parse(raw));
       } catch {
@@ -7633,6 +7637,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
     }
     function saveFocusUiPrefs() {
       localStorage.setItem(FOCUS_UI_PREF_KEY, JSON.stringify(focusUiPrefs));
+      clearLegacyLocalStorageKeys(LEGACY_FOCUS_UI_PREF_KEYS);
     }
     // ── Arca Cloud Constants ──
     const ARCA_SUPABASE_URL = "https://fncixgbeiqtschzdvhgk.supabase.co";
@@ -7774,7 +7779,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
     }
     function loadCloudSyncPrefs() {
       try {
-        const raw = localStorage.getItem(CLOUD_SYNC_PREF_KEY);
+        const raw = loadLocalStorageWithFallback(CLOUD_SYNC_PREF_KEY, LEGACY_CLOUD_SYNC_PREF_KEYS);
         if (!raw) return defaultCloudSyncPrefs();
         return normalizeCloudSyncPrefs(JSON.parse(raw));
       } catch {
@@ -7783,6 +7788,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
     }
     function saveCloudSyncPrefs() {
       localStorage.setItem(CLOUD_SYNC_PREF_KEY, JSON.stringify(cloudSyncPrefs));
+      clearLegacyLocalStorageKeys(LEGACY_CLOUD_SYNC_PREF_KEYS);
     }
     function cloudSyncConfigured() {
       if (!(cloudSyncPrefs.enabled && cloudSyncPrefs.supabaseUrl && cloudSyncPrefs.anonKey && cloudSyncPrefs.accessToken)) return false;
@@ -9087,7 +9093,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
     }
     function loadAiModelCatalogCache() {
       try {
-        const raw = localStorage.getItem(AI_MODEL_CACHE_KEY);
+        const raw = loadLocalStorageWithFallback(AI_MODEL_CACHE_KEY, LEGACY_AI_MODEL_CACHE_KEYS);
         if (!raw) return defaultAiModelCatalogCache();
         return normalizeAiModelCatalogCache(JSON.parse(raw));
       } catch {
@@ -9097,6 +9103,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
     function saveAiModelCatalogCache() {
       try {
         localStorage.setItem(AI_MODEL_CACHE_KEY, JSON.stringify(aiModelCatalogCache));
+        clearLegacyLocalStorageKeys(LEGACY_AI_MODEL_CACHE_KEYS);
       } catch {}
     }
     function aiGetCachedModels(provider, opts = {}) {
@@ -9271,7 +9278,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
     }
     function loadAiPrefs() {
       try {
-        const raw = localStorage.getItem(AI_PREF_KEY);
+        const raw = loadLocalStorageWithFallback(AI_PREF_KEY, LEGACY_AI_PREF_KEYS);
         if (!raw) return defaultAiPrefs();
         return normalizeAiPrefs(JSON.parse(raw));
       } catch {
@@ -9280,6 +9287,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
     }
     function saveAiPrefs() {
       localStorage.setItem(AI_PREF_KEY, JSON.stringify(aiPrefs));
+      clearLegacyLocalStorageKeys(LEGACY_AI_PREF_KEYS);
     }
     function persistNormalizedClientPrefs() {
       try {
@@ -9301,8 +9309,9 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       } catch {}
       try {
         const aiRaw = JSON.stringify(aiPrefs);
-        if (localStorage.getItem(AI_PREF_KEY) !== aiRaw) {
+        if (loadLocalStorageWithFallback(AI_PREF_KEY, LEGACY_AI_PREF_KEYS) !== aiRaw) {
           localStorage.setItem(AI_PREF_KEY, aiRaw);
+          clearLegacyLocalStorageKeys(LEGACY_AI_PREF_KEYS);
         }
       } catch {}
     }
@@ -13952,7 +13961,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       if (opts.announce !== false && metaEl) metaEl.textContent = `Deleted: ${task.title}`;
       if (opts.render !== false) render();
     }
-    window.__pppDeleteTask = (taskId) => {
+    window.__arcaDeleteTask = (taskId) => {
       deleteTask(String(taskId || "").trim());
     };
 
@@ -14808,10 +14817,10 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       if (backupHint) {
         const stamp = new Date().toISOString().replaceAll(":", "-").replaceAll(".", "-");
         backupHint.textContent = onboardingMode === "reset"
-          ? `A JSON backup will be exported first (e.g. PPP_RESET_BACKUP_${stamp}.json). Restore via Import JSON File.`
+          ? `A JSON backup will be exported first (e.g. ARCA_RESET_BACKUP_${stamp}.json). Restore via Import JSON File.`
           : onboardingPath === "ai_only"
             ? "AI-only setup will save your AI configuration and leave goal/practice/task data untouched."
-          : onboardingMode === "preview"
+            : onboardingMode === "preview"
             ? "Preview mode is safe: testing the onboarding flow here will not change your current board."
             : "A JSON backup is exported automatically before reset. Restore via Import JSON File.";
       }
@@ -16331,7 +16340,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
                 ${col.done ? `<button type="button" class="ghost" data-pipe-reopen-today="1" data-task-id="${task.id}">↺ Today</button>` : ""}
               </div>
               <div class="controls">
-                <button type="button" class="warn" data-pipe-delete="1" data-task-id="${task.id}" data-task-delete="${task.id}" onclick="window.__pppDeleteTask('${task.id}'); return false;">Delete</button>
+                <button type="button" class="warn" data-pipe-delete="1" data-task-id="${task.id}" data-task-delete="${task.id}" onclick="window.__arcaDeleteTask('${task.id}'); return false;">Delete</button>
               </div>
             </div>
           </div>`;
@@ -16382,7 +16391,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
           <td><div class="controls">
             <button type="button" data-act="start" data-id="${task.id}" ${isRunning?"disabled":""}>Start</button>
             <button type="button" data-act="stop" data-id="${task.id}" ${isRunning?"":"disabled"}>Stop</button>
-            <button type="button" class="warn" data-act="delete" data-id="${task.id}" data-task-delete="${task.id}" onclick="window.__pppDeleteTask('${task.id}'); return false;">Delete</button>
+            <button type="button" class="warn" data-act="delete" data-id="${task.id}" data-task-delete="${task.id}" onclick="window.__arcaDeleteTask('${task.id}'); return false;">Delete</button>
           </div></td>
         </tr>`;
       }).join("");
@@ -29006,7 +29015,7 @@ You cannot change app state without that JSON block. Do not say something was ad
       state.sessions.forEach(s=>{
         rows.push([s.id,s.taskId,s.title,s.category,s.importance,s.urgency,s.depth||"Deep",s.wig||"None",s.startAt,s.endAt,s.durationSec,(s.durationSec/60).toFixed(2)]);
       });
-      download(`ppp_sessions_${todayISO()}.csv`, rows.map(r=>r.map(v=>`"${String(v).replaceAll('"','""')}"`).join(",")).join("\n"), "text/csv");
+      download(`arca_sessions_${todayISO()}.csv`, rows.map(r=>r.map(v=>`"${String(v).replaceAll('"','""')}"`).join(",")).join("\n"), "text/csv");
     }
 
     function exportJson() {

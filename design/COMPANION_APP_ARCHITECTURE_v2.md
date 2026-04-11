@@ -497,7 +497,7 @@ arca/                          ← existing desktop repo
 
 The desktop currently uses:
 - `localStorage` for state
-- SQLite (`PPP_LEDGER.sqlite3`) for ledger events
+- SQLite (`ARCA_LEDGER.sqlite3`) for ledger events
 - Optional JSON file for backup
 
 With sync enabled:

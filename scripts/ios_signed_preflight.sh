@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -u
 
-echo "== PPP iOS Signed Install Preflight =="
+echo "== Arca iOS Signed Install Preflight =="
 
 echo "\n[1/6] Xcode app"
 if [ -d /Applications/Xcode.app ]; then
@@ -12,11 +12,11 @@ fi
 
 echo "\n[2/6] xcodebuild"
 if command -v xcodebuild >/dev/null 2>&1; then
-  if xcodebuild -version >/tmp/ppp_xcodebuild_version.txt 2>/tmp/ppp_xcodebuild_err.txt; then
-    sed 's/^/  /' /tmp/ppp_xcodebuild_version.txt
+  if xcodebuild -version >/tmp/arca_xcodebuild_version.txt 2>/tmp/arca_xcodebuild_err.txt; then
+    sed 's/^/  /' /tmp/arca_xcodebuild_version.txt
   else
     echo "MISSING: xcodebuild not usable"
-    sed 's/^/  /' /tmp/ppp_xcodebuild_err.txt
+    sed 's/^/  /' /tmp/arca_xcodebuild_err.txt
   fi
 else
   echo "MISSING: xcodebuild not found"
@@ -41,11 +41,11 @@ else
 fi
 
 echo "\n[6/6] iOS simulator list"
-if xcrun simctl list --json devices available >/dev/null 2>/tmp/ppp_simctl_err.txt; then
+if xcrun simctl list --json devices available >/dev/null 2>/tmp/arca_simctl_err.txt; then
   echo "OK: simctl available"
 else
   echo "MISSING: simctl unavailable (usually means full Xcode not installed)"
-  sed 's/^/  /' /tmp/ppp_simctl_err.txt
+  sed 's/^/  /' /tmp/arca_simctl_err.txt
 fi
 
 echo "\nDone."

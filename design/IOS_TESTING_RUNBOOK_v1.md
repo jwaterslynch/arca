@@ -6,7 +6,7 @@ Scope: Test Arca on iPhone during development
 ## What is already done
 
 - iOS target initialized via Tauri:
-  - `src-tauri/gen/apple/ppp-flow-desktop.xcodeproj`
+  - `src-tauri/gen/apple/ppp-flow-desktop.xcodeproj` (legacy generated name)
 - iOS config scaffolded in Tauri:
   - `src-tauri/tauri.conf.json -> bundle.iOS.developmentTeam`
 - Apple build dependencies installed:
@@ -25,7 +25,7 @@ App Store review is **not** required for this.
 
 1. Connect iPhone by cable (or trusted wireless debugging).
 2. Open project in Xcode:
-   - `src-tauri/gen/apple/ppp-flow-desktop.xcodeproj`
+   - `src-tauri/gen/apple/ppp-flow-desktop.xcodeproj` (legacy generated name)
 3. In Xcode:
    - Select iPhone as target device.
    - Set your Apple Team in **Signing & Capabilities**.
@@ -85,7 +85,7 @@ This checks:
   - `Command PhaseScriptExecution failed with a nonzero exit code`
   - and log line `Sandbox: cargo(...) deny file-read-data .../.gitignore`
   - Fix: disable user script sandboxing in the iOS Xcode project build settings.
-    - File: `src-tauri/gen/apple/ppp-flow-desktop.xcodeproj/project.pbxproj`
+    - File: `src-tauri/gen/apple/ppp-flow-desktop.xcodeproj/project.pbxproj` (legacy generated name)
     - Ensure both debug and release project configs include:
       - `ENABLE_USER_SCRIPT_SANDBOXING = NO;`
 - `APPLE_DEVELOPMENT_TEAM` env var is optional for Xcode UI builds but recommended for CLI flows:
