@@ -1688,6 +1688,9 @@ button.warn {
 .modal-backdrop { position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:200; display:flex; align-items:center; justify-content:center; }
 .modal-backdrop[hidden] { display:none !important; }
 .modal-panel { background:var(--surface); border-radius:16px; max-width:680px; width:92%; max-height:85vh; overflow-y:auto; padding:28px; box-shadow:var(--shadow-lg); }
+.modal-head { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:8px; }
+.modal-head h3 { margin:0; }
+.modal-head .tiny { margin-top:6px; line-height:1.5; color:var(--text2); }
 .app-data-modal{max-width:760px}
 .app-data-summary{display:grid;gap:12px;margin-bottom:16px}
 .app-data-status{display:grid;gap:8px;padding:14px 16px;border:1px solid var(--line);border-radius:14px;background:var(--bg)}
@@ -4780,8 +4783,8 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       </div>
 
       <!-- Signed-in state: sync status and controls -->
-      <div id="cloudSyncSignedInPane" hidden style="padding:20px 0;">
-        <div style="display:flex;flex-direction:column;gap:18px;">
+      <div id="cloudSyncSignedInPane" hidden style="padding:24px 0;">
+        <div style="display:flex;flex-direction:column;gap:24px;">
           <div>
             <div class="tiny" style="opacity:.6;margin-bottom:2px;">Signed in as</div>
             <div id="cloudSyncUserEmail" style="font-weight:600;font-size:15px;"></div>
