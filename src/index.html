@@ -7696,6 +7696,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       cloudSyncPrefs.userEmail = "";
       cloudSyncPrefs.boardId = "";
       cloudSyncPrefs.lastServerVersion = 0;
+      cloudSyncPrefs.lastSeenEventId = 0;
       cloudSyncRuntime.pendingEvents = [];
       saveCloudSyncPrefs();
       if (!state.sync || typeof state.sync !== "object") state.sync = {};
@@ -7755,7 +7756,8 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         deviceId: uid(),
         pollSeconds: 20,
         lastServerVersion: 0,
-        lastSyncedAt: null
+        lastSyncedAt: null,
+        lastSeenEventId: 0
       };
     }
     function normalizeCloudSyncPrefs(raw) {
@@ -7773,7 +7775,8 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         deviceId: String(input.deviceId || "").trim() || base.deviceId,
         pollSeconds: Math.max(5, Math.min(300, Number(input.pollSeconds) || base.pollSeconds)),
         lastServerVersion: Math.max(0, Number(input.lastServerVersion) || 0),
-        lastSyncedAt: input.lastSyncedAt || null
+        lastSyncedAt: input.lastSyncedAt || null,
+        lastSeenEventId: Math.max(0, Number(input.lastSeenEventId) || 0)
       };
       return normalized;
     }
@@ -7878,6 +7881,22 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       });
       scheduleCloudSyncPush(900);
     }
+    // ── Task-level sync events (Phase 1b-lite) ──
+    // These structured events enable granular task sync without full-state overwrites.
+    // They are pushed alongside snapshots (dual-write). On pull, task events are applied
+    // individually rather than replacing the entire state blob.
+    function queueTaskSyncEvent(eventType, entityId, payload, clientEventId) {
+      if (!cloudSyncPrefs.enabled) return;
+      if (cloudSyncRuntime.syncingNow) return;
+      const evtId = clientEventId || `${eventType}_${entityId || "bulk"}_${Date.now()}`;
+      cloudSyncRuntime.pendingEvents.push({
+        clientEventId: evtId,
+        eventType,
+        payload: Object.assign({ entity_type: "task", entity_id: entityId || null }, payload || {})
+      });
+      // Don't schedule push here — the subsequent saveState() call will
+      // trigger queueCloudSyncEvent() which schedules the push.
+    }
     function scheduleCloudSyncPush(delayMs = 900) {
       if (!cloudSyncPrefs.enabled) return;
       if (cloudSyncRuntime.pushTimer) clearTimeout(cloudSyncRuntime.pushTimer);
@@ -7926,6 +7945,10 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
             p_device_id: cloudSyncPrefs.deviceId,
             p_last_seen_event_id: maxEventId
           });
+          // Advance local cursor so we don't re-apply our own events on pull
+          if (maxEventId > (cloudSyncPrefs.lastSeenEventId || 0)) {
+            cloudSyncPrefs.lastSeenEventId = maxEventId;
+          }
         }
         cloudSyncRuntime.pendingEvents.splice(0, queued.length);
         cloudSyncPrefs.lastServerVersion = serverVersion;
@@ -7944,6 +7967,183 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         cloudSyncRuntime.pushing = false;
       }
     }
+    // ── Task event pull + apply (Phase 1b-lite) ──
+    async function cloudSyncFetchTaskEvents(afterEventId) {
+      if (!cloudSyncPrefs.boardId) return [];
+      const query = new URLSearchParams({
+        select: "id,board_id,device_id,client_event_id,event_type,payload,created_at",
+        board_id: `eq.${cloudSyncPrefs.boardId}`,
+        id: `gt.${afterEventId}`,
+        order: "id.asc",
+        limit: "500"
+      });
+      const url = `${cloudSyncPrefs.supabaseUrl}/rest/v1/board_events?${query.toString()}`;
+      const res = await fetch(url, { headers: cloudSyncAuthHeaders() });
+      if (!res.ok) {
+        const body = await res.text();
+        throw new Error(`Fetch task events failed ${res.status}: ${body}`);
+      }
+      const rows = await res.json();
+      return Array.isArray(rows) ? rows : [];
+    }
+
+    function applyRemoteTaskEvent(evt) {
+      const payload = evt.payload || {};
+      const entityId = payload.entity_id;
+      const eventType = evt.event_type;
+
+      // Skip non-task events
+      if (payload.entity_type !== "task") return false;
+
+      switch (eventType) {
+        case "task_created": {
+          if (!entityId) return false;
+          // Idempotent: skip if task already exists
+          if (state.tasks.some(t => t.id === entityId)) return false;
+          const task = {
+            id: entityId,
+            title: payload.title || "Untitled",
+            category: payload.category || "Maintenance",
+            importance: payload.importance || "Low",
+            urgency: payload.urgency || "Low",
+            depth: payload.depth || "Deep",
+            wig: payload.wig || "None",
+            stage: payload.stage || "backlog",
+            createdAt: payload.createdAt || evt.created_at,
+            completedAt: null,
+            elapsedSec: 0,
+            notes: payload.notes || "",
+            updatedAt: payload.createdAt || evt.created_at
+          };
+          state.tasks.unshift(task);
+          return true;
+        }
+        case "task_updated": {
+          if (!entityId) return false;
+          const task = state.tasks.find(t => t.id === entityId);
+          if (!task) return false;
+          const fields = payload.fields || {};
+          if (fields.title !== undefined) task.title = fields.title;
+          if (fields.notes !== undefined) task.notes = fields.notes;
+          if (fields.category !== undefined) task.category = fields.category;
+          if (fields.depth !== undefined) task.depth = fields.depth;
+          if (fields.wig !== undefined) task.wig = fields.wig;
+          if (fields.importance !== undefined) task.importance = fields.importance;
+          if (fields.urgency !== undefined) task.urgency = fields.urgency;
+          task.updatedAt = payload.updatedAt || evt.created_at;
+          return true;
+        }
+        case "task_moved": {
+          if (!entityId) return false;
+          const task = state.tasks.find(t => t.id === entityId);
+          if (!task) return false;
+          const toStage = payload.to_stage;
+          if (!toStage || task.stage === toStage) return false;
+          task.stage = toStage;
+          task.updatedAt = evt.created_at;
+          return true;
+        }
+        case "task_completed": {
+          if (!entityId) return false;
+          const task = state.tasks.find(t => t.id === entityId);
+          if (!task) return false;
+          if (task.completedAt) return false; // already done
+          task.completedAt = payload.completed_at || evt.created_at;
+          task.stage = "done";
+          if (!Array.isArray(state.closed_task_log)) state.closed_task_log = [];
+          state.closed_task_log.unshift({
+            id: uid(),
+            taskId: task.id,
+            title: task.title,
+            completedAt: task.completedAt
+          });
+          if (state.closed_task_log.length > 2000) state.closed_task_log = state.closed_task_log.slice(0, 2000);
+          return true;
+        }
+        case "task_reopened": {
+          if (!entityId) return false;
+          const task = state.tasks.find(t => t.id === entityId);
+          if (!task) return false;
+          if (!task.completedAt) return false; // already open
+          task.completedAt = null;
+          task.stage = payload.to_stage || "next_up";
+          task.updatedAt = evt.created_at;
+          return true;
+        }
+        case "task_deleted": {
+          if (!entityId) return false;
+          const idx = state.tasks.findIndex(t => t.id === entityId);
+          if (idx < 0) return false; // already gone — idempotent
+          state.tasks.splice(idx, 1);
+          state.sessions = state.sessions.filter(s => s.taskId !== entityId);
+          if (Array.isArray(state.closed_task_log)) {
+            state.closed_task_log = state.closed_task_log.filter(e => e.taskId !== entityId);
+          }
+          if (Array.isArray(state.today_focus?.task_ids)) {
+            state.today_focus.task_ids = state.today_focus.task_ids.filter(id => id !== entityId);
+          }
+          return true;
+        }
+        case "task_reordered": {
+          const stage = payload.stage;
+          const orderedIds = payload.ordered_ids;
+          if (!stage || !Array.isArray(orderedIds) || !orderedIds.length) return false;
+          // Reorder tasks within the given stage to match ordered_ids
+          const inStage = state.tasks.filter(t => !t.completedAt && normalizePipelineStage(t.stage) === stage);
+          const otherTasks = state.tasks.filter(t => t.completedAt || normalizePipelineStage(t.stage) !== stage);
+          const byId = new Map(inStage.map(t => [t.id, t]));
+          const reordered = [];
+          for (const id of orderedIds) {
+            const t = byId.get(id);
+            if (t) { reordered.push(t); byId.delete(id); }
+          }
+          // Append any tasks not in ordered_ids (new tasks from this device)
+          for (const t of byId.values()) reordered.push(t);
+          // Rebuild state.tasks preserving relative position of other stages
+          const result = [];
+          let reorderIdx = 0;
+          let insertedStage = false;
+          for (const t of state.tasks) {
+            if (!t.completedAt && normalizePipelineStage(t.stage) === stage) {
+              if (!insertedStage) {
+                result.push(...reordered);
+                insertedStage = true;
+              }
+            } else {
+              result.push(t);
+            }
+          }
+          if (!insertedStage) result.push(...reordered);
+          state.tasks = result;
+          return true;
+        }
+        default:
+          return false;
+      }
+    }
+
+    async function cloudSyncPullTaskEvents() {
+      if (!cloudSyncPrefs.enabled || !cloudSyncConfigured()) return { applied: 0, maxEventId: 0 };
+      if (!cloudSyncPrefs.boardId) return { applied: 0, maxEventId: 0 };
+      const afterId = cloudSyncPrefs.lastSeenEventId || 0;
+      const events = await cloudSyncFetchTaskEvents(afterId);
+      if (!events.length) return { applied: 0, maxEventId: afterId };
+      let applied = 0;
+      let maxEventId = afterId;
+      for (const evt of events) {
+        const numId = Number(evt.id || 0);
+        if (numId > maxEventId) maxEventId = numId;
+        // Skip events from this device
+        if (evt.device_id === cloudSyncPrefs.deviceId) continue;
+        if (applyRemoteTaskEvent(evt)) applied++;
+      }
+      if (maxEventId > afterId) {
+        cloudSyncPrefs.lastSeenEventId = maxEventId;
+        saveCloudSyncPrefs();
+      }
+      return { applied, maxEventId };
+    }
+
     async function cloudSyncPullLatest(reason = "poll") {
       if (!cloudSyncPrefs.enabled || !cloudSyncConfigured()) return false;
       if (cloudSyncRuntime.syncingNow) return false;
@@ -7951,6 +8151,28 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       try {
         cloudSyncEnsureDeviceId();
         await cloudSyncEnsureBoardId();
+
+        // Phase 1b-lite: try event-based pull first
+        const hasSeenEvents = cloudSyncPrefs.lastSeenEventId > 0;
+        if (hasSeenEvents) {
+          const { applied } = await cloudSyncPullTaskEvents();
+          if (applied > 0) {
+            if (!state.sync || typeof state.sync !== "object") state.sync = {};
+            state.sync.device_id = cloudSyncPrefs.deviceId;
+            state.sync.last_synced_at = new Date().toISOString();
+            cloudSyncRuntime.syncingNow = true; // keep flag to prevent re-queue
+            saveState("cloud_event_pull");
+            cloudSyncPrefs.lastSyncedAt = state.sync.last_synced_at;
+            saveCloudSyncPrefs();
+            render();
+            cloudSyncSetStatus("Data source: Supabase cloud sync", "cloud",
+              `Applied ${applied} remote event${applied > 1 ? "s" : ""} · ${new Date().toLocaleTimeString()}`);
+            return true;
+          }
+          // No new events from other devices — check snapshot version as a fallback
+        }
+
+        // Snapshot fallback: used for initial bootstrap or non-task state changes
         const row = await cloudSyncFetchLatestSnapshot();
         if (!row || !row.state_json) return false;
         const serverVersion = Number(row.server_version || 0);
@@ -7973,6 +8195,13 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         if (pendingLocalEvents.length) scheduleCloudSyncPush(300);
         cloudSyncPrefs.lastServerVersion = serverVersion;
         cloudSyncPrefs.lastSyncedAt = state.sync.last_synced_at;
+        // After snapshot bootstrap, catch up on event cursor so we don't replay old events
+        if (!hasSeenEvents) {
+          try {
+            const { maxEventId } = await cloudSyncPullTaskEvents();
+            // Just advances the cursor — events are from our own device or already in snapshot
+          } catch {}
+        }
         saveCloudSyncPrefs();
         render();
         cloudSyncSetStatus("Data source: Supabase cloud sync", "cloud", `Pulled remote update · v${serverVersion}`);
@@ -13495,6 +13724,11 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         },
         `task_created_${task.id}`
       );
+      queueTaskSyncEvent("task_created", task.id, {
+        title: task.title, category: task.category, importance: task.importance,
+        urgency: task.urgency, depth: task.depth, wig: task.wig,
+        stage: task.stage, notes: task.notes || "", createdAt: task.createdAt
+      }, `task_created_${task.id}`);
       initTodayState();
       // Do not auto-add new tasks into today's focus.
       // Capture tasks should not displace an active deep-work task.
@@ -13627,11 +13861,15 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       if (!_taskDetailId) return;
       const task = getTask(_taskDetailId);
       if (!task) return;
+      const before = { title: task.title, notes: task.notes, stage: normalizePipelineStage(task.stage),
+        category: task.category, depth: task.depth, wig: task.wig,
+        importance: task.importance, urgency: task.urgency };
       const title = (document.getElementById("taskDetailTitle").value || "").trim();
       if (title) task.title = title;
       task.notes = document.getElementById("taskDetailNotes").value || "";
       const newStage = document.getElementById("taskDetailStage").value;
-      if (newStage && newStage !== normalizePipelineStage(task.stage)) {
+      const stageChanged = newStage && newStage !== before.stage;
+      if (stageChanged) {
         task.stage = newStage;
         initTodayState();
       }
@@ -13641,6 +13879,25 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       task.importance = document.getElementById("taskDetailImportance").value || task.importance;
       task.urgency = document.getElementById("taskDetailUrgency").value || task.urgency;
       task.updatedAt = new Date().toISOString();
+      // Emit task_updated sync event with only changed fields
+      const changedFields = {};
+      if (task.title !== before.title) changedFields.title = task.title;
+      if (task.notes !== before.notes) changedFields.notes = task.notes;
+      if (task.category !== before.category) changedFields.category = task.category;
+      if (task.depth !== before.depth) changedFields.depth = task.depth;
+      if (task.wig !== before.wig) changedFields.wig = task.wig;
+      if (task.importance !== before.importance) changedFields.importance = task.importance;
+      if (task.urgency !== before.urgency) changedFields.urgency = task.urgency;
+      if (Object.keys(changedFields).length > 0) {
+        queueTaskSyncEvent("task_updated", task.id, {
+          fields: changedFields, updatedAt: task.updatedAt
+        }, `task_updated_${task.id}_${task.updatedAt}`);
+      }
+      if (stageChanged) {
+        queueTaskSyncEvent("task_moved", task.id, {
+          from_stage: before.stage, to_stage: newStage, before_task_id: null
+        }, `task_moved_${task.id}_${Date.now()}`);
+      }
       saveState(); render();
     }
 
@@ -13809,6 +14066,9 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
           },
           `task_completed_${task.id}_${completedAt}`
         );
+        queueTaskSyncEvent("task_completed", task.id, {
+          completed_at: completedAt
+        }, `task_completed_${task.id}_${completedAt}`);
         celebrate(); updateStreak();
         const day=todayISO();
         ensureDailyLogEntry(day).tasks_closed++;
@@ -13824,6 +14084,9 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
             title: task.title
           }
         );
+        queueTaskSyncEvent("task_reopened", task.id, {
+          to_stage: "next_up"
+        }, `task_reopened_${task.id}_${Date.now()}`);
       }
       saveState(); render();
     }
@@ -13956,6 +14219,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
           hadHistory: hasHistory
         }
       );
+      queueTaskSyncEvent("task_deleted", taskId, {}, `task_deleted_${taskId}_${Date.now()}`);
       if (opts.save !== false) saveState("task_delete");
       const metaEl = document.getElementById("pipelineMeta");
       if (opts.announce !== false && metaEl) metaEl.textContent = `Deleted: ${task.title}`;
@@ -16224,6 +16488,9 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
           },
           `task_completed_${task.id}_${completedAt}`
         );
+        queueTaskSyncEvent("task_completed", task.id, {
+          completed_at: completedAt
+        }, `task_completed_${task.id}_${completedAt}`);
         celebrate();
         updateStreak();
       } else if (wasCompleted && stage !== "done") {
@@ -16237,7 +16504,15 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
             title: task.title
           }
         );
+        queueTaskSyncEvent("task_reopened", task.id, {
+          to_stage: stage
+        }, `task_reopened_${task.id}_${Date.now()}`);
       }
+
+      // Emit task_moved for all stage transitions (including to/from done)
+      queueTaskSyncEvent("task_moved", task.id, {
+        from_stage: currentStage, to_stage: stage, before_task_id: beforeTaskId || null
+      }, `task_moved_${task.id}_${Date.now()}`);
 
       state.tasks.splice(fromIndex, 1);
       task.stage = stage;
@@ -16286,6 +16561,12 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       const temp = state.tasks[index];
       state.tasks[index] = state.tasks[swapIndex];
       state.tasks[swapIndex] = temp;
+      const orderedIds = state.tasks
+        .filter(t => !t.completedAt && normalizePipelineStage(t.stage) === stage)
+        .map(t => t.id);
+      queueTaskSyncEvent("task_reordered", null, {
+        stage, ordered_ids: orderedIds
+      }, `task_reordered_${stage}_${Date.now()}`);
       saveState("pipeline_reorder");
       render();
     }
