@@ -651,6 +651,7 @@ async fn ollama_probe() -> Result<OllamaProbeResponse, String> {
 pub fn run() {
     tauri::Builder::default()
         .menu(|handle| {
+            let check_updates = MenuItem::with_id(handle, "app_check_updates", "Check for Updates…", true, None::<&str>)?;
             let import_json = MenuItem::with_id(handle, "file_import_json", "Import JSON…", true, Some("CmdOrCtrl+O"))?;
             let export_json = MenuItem::with_id(handle, "file_export_json", "Export JSON Backup", true, Some("CmdOrCtrl+S"))?;
             let restore_backup = MenuItem::with_id(handle, "file_restore_latest_backup", "Restore Latest Backup", true, Some("CmdOrCtrl+Shift+R"))?;
@@ -664,6 +665,8 @@ pub fn run() {
                         "File",
                         true,
                         &[
+                            &check_updates,
+                            &PredefinedMenuItem::separator(handle)?,
                             &import_json,
                             &export_json,
                             &restore_backup,
@@ -701,6 +704,9 @@ pub fn run() {
             Ok(menu)
         })
         .on_menu_event(|app, event| match event.id().0.as_str() {
+            "app_check_updates" => {
+                let _ = app.emit("menu://check-updates", ());
+            }
             "file_import_json" => {
                 let _ = app.emit("menu://import-json", ());
             }

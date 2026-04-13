@@ -6976,23 +6976,34 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       }
     }
 
-    async function checkForAppUpdate() {
+    async function checkForAppUpdate(manual = false) {
       const invoke = getTauriInvoke();
-      if (!invoke || !appRuntime.version) return;
+      if (!invoke || !appRuntime.version) {
+        if (manual) alert("Update check is only available in the desktop app.");
+        return;
+      }
       try {
         const res = await invoke("http_get_text", { url: "https://api.github.com/repos/jwaterslynch/arca/releases/latest" });
-        if (!res || res.status !== 200) return;
+        if (!res || res.status !== 200) {
+          if (manual) alert("Could not reach GitHub to check for updates.");
+          return;
+        }
         const release = JSON.parse(res.body);
         const latestTag = String(release.tag_name || "").replace(/^v/, "");
         const currentVer = appRuntime.version;
-        if (!latestTag || latestTag === currentVer) return;
-        // Don't show if user already dismissed this specific version
-        try { if (localStorage.getItem("arca_dismissed_update") === latestTag) return; } catch {}
+        if (!latestTag || latestTag === currentVer) {
+          if (manual) alert(`You're on the latest version (v${currentVer}).`);
+          return;
+        }
+        // Don't auto-show if user already dismissed this specific version
+        if (!manual) {
+          try { if (localStorage.getItem("arca_dismissed_update") === latestTag) return; } catch {}
+        }
         const dmgAsset = (release.assets || []).find(a => a.name?.endsWith(".dmg"));
         const downloadUrl = dmgAsset?.browser_download_url || release.html_url || "https://github.com/jwaterslynch/arca/releases/latest";
         showUpdateBanner(latestTag, downloadUrl);
       } catch (err) {
-        // Silently ignore — update check is best-effort
+        if (manual) alert("Update check failed: " + (err?.message || err));
         console.log("[update-check] Failed:", err);
       }
     }
@@ -7002,7 +7013,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       const banner = document.createElement("div");
       banner.id = "appUpdateBanner";
       banner.style.cssText = `
-        position:fixed; bottom:20px; right:20px; z-index:99999;
+        position:fixed; bottom:20px; left:20px; z-index:99999;
         background:#fff; border:1px solid var(--line,#e0e0e0);
         border-radius:14px; padding:10px 14px 10px 16px;
         display:flex; align-items:center; gap:10px;
@@ -7615,6 +7626,9 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       const events = getTauriEventApi();
       if (!events?.listen) return;
       try {
+        await events.listen("menu://check-updates", () => {
+          checkForAppUpdate(true);
+        });
         await events.listen("menu://import-json", () => {
           pickAndLinkJsonFile();
         });
