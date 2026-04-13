@@ -6986,7 +6986,8 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         const latestTag = String(release.tag_name || "").replace(/^v/, "");
         const currentVer = appRuntime.version;
         if (!latestTag || latestTag === currentVer) return;
-        // Simple comparison: if tags differ, latest is probably newer
+        // Don't show if user already dismissed this specific version
+        try { if (localStorage.getItem("arca_dismissed_update") === latestTag) return; } catch {}
         const dmgAsset = (release.assets || []).find(a => a.name?.endsWith(".dmg"));
         const downloadUrl = dmgAsset?.browser_download_url || release.html_url || "https://github.com/jwaterslynch/arca/releases/latest";
         showUpdateBanner(latestTag, downloadUrl);
@@ -6997,18 +6998,38 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
     }
 
     function showUpdateBanner(version, downloadUrl) {
-      // Remove existing banner if any
       document.getElementById("appUpdateBanner")?.remove();
       const banner = document.createElement("div");
       banner.id = "appUpdateBanner";
-      banner.style.cssText = "position:fixed;top:0;left:0;right:0;z-index:99999;background:var(--accent,#2d6a4f);color:#fff;padding:8px 16px;display:flex;align-items:center;justify-content:center;gap:12px;font-size:13px;font-weight:500;";
-      banner.innerHTML = `
-        <span>Arca v${version} is available (you're on v${appRuntime.version})</span>
-        <a href="${downloadUrl}" target="_blank" rel="noopener" style="color:#fff;text-decoration:underline;font-weight:700;">Download update</a>
-        <button id="dismissUpdateBanner" style="background:none;border:none;color:#fff;cursor:pointer;font-size:18px;margin-left:8px;padding:0 4px;" title="Dismiss">&times;</button>
+      banner.style.cssText = `
+        position:fixed; bottom:20px; right:20px; z-index:99999;
+        background:#fff; border:1px solid var(--line,#e0e0e0);
+        border-radius:14px; padding:10px 14px 10px 16px;
+        display:flex; align-items:center; gap:10px;
+        font-size:12px; color:var(--text2,#666);
+        box-shadow:0 4px 20px rgba(0,0,0,.08), 0 1px 3px rgba(0,0,0,.04);
+        opacity:0; transform:translateY(8px);
+        transition:opacity .3s ease, transform .3s ease;
+        max-width:calc(100vw - 40px);
       `;
-      document.body.prepend(banner);
-      document.getElementById("dismissUpdateBanner").addEventListener("click", () => banner.remove());
+      banner.innerHTML = `
+        <div style="width:6px;height:6px;border-radius:50%;background:var(--accent,#2d6a4f);flex-shrink:0"></div>
+        <span>v${escapeHtml(version)} available</span>
+        <a href="${escapeHtml(downloadUrl)}" target="_blank" rel="noopener"
+           style="color:var(--accent,#2d6a4f);text-decoration:none;font-weight:600;white-space:nowrap;
+                  padding:6px 12px;border-radius:8px;background:rgba(45,106,79,.08);">Update</a>
+        <button id="dismissUpdateBanner"
+           style="background:none;border:none;color:var(--text2,#999);cursor:pointer;font-size:16px;
+                  padding:4px 6px;line-height:1;opacity:.4;border-radius:6px;"
+           title="Dismiss">&times;</button>
+      `;
+      document.body.appendChild(banner);
+      requestAnimationFrame(() => { banner.style.opacity = "1"; banner.style.transform = "translateY(0)"; });
+      document.getElementById("dismissUpdateBanner").addEventListener("click", () => {
+        try { localStorage.setItem("arca_dismissed_update", version); } catch {}
+        banner.style.opacity = "0"; banner.style.transform = "translateY(8px)";
+        setTimeout(() => banner.remove(), 300);
+      });
     }
 
     async function detectNativeStore() {
@@ -8180,7 +8201,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         if (!row || !row.state_json) return false;
         const serverVersion = Number(row.server_version || 0);
         const localVersion = Number(cloudSyncPrefs.lastServerVersion || 0);
-        if (serverVersion <= localVersion) {
+        if (serverVersion <= localVersion && reason !== "signin" && reason !== "manual") {
           if (reason !== "poll") {
             cloudSyncSetStatus("Data source: Supabase cloud sync", "cloud", `Already current · v${localVersion}`);
           }
@@ -29839,8 +29860,9 @@ You cannot change app state without that JSON block. Do not say something was ad
         await cloudSyncSignIn(email, password);
         applyCloudSyncForm();
         await cloudSyncEnsureBoardId();
-        await cloudSyncFlushPush();
-        await cloudSyncPullLatest("signin");
+        // Pull first so we don't overwrite remote data with an empty local state
+        const pulled = await cloudSyncPullLatest("signin");
+        if (!pulled) await cloudSyncFlushPush();
         renderCloudSyncModal();
         if (status) status.textContent = "";
       } catch (err) {
