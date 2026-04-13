@@ -243,6 +243,22 @@ body{font-family:var(--font);color:var(--text);background:var(--bg);-webkit-font
   cursor:pointer;
 }
 .practice-item:last-child{border-bottom:none}
+.practice-block{position:relative}
+.practice-block.dragging{opacity:.45}
+.practice-block.drag-over-top .practice-item{
+  border-top:2px solid var(--accent);
+  padding-top:6px;
+}
+.practice-block.drag-over-bottom .practice-item{
+  border-bottom:2px solid var(--accent);
+  padding-bottom:6px;
+}
+.practice-drag-handle{
+  width:14px;align-self:stretch;display:flex;align-items:center;justify-content:center;
+  color:var(--text2);opacity:.32;cursor:grab;flex-shrink:0;user-select:none;
+}
+.practice-drag-handle::before{content:"⋮⋮";font-size:.8rem;line-height:1}
+.practice-item:hover .practice-drag-handle{opacity:.65;color:var(--accent)}
 .practice-check{
   width:20px;height:20px;border-radius:6px;border:2px solid var(--line);
   flex-shrink:0;cursor:pointer;transition:all .15s;
@@ -5603,6 +5619,8 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
     let planCoachOpen = false;
     let todayPanelDelegated = false;
     let lifePracticesDelegated = false;
+    let lifePracticeDragId = "";
+    let lifePracticeDragKind = "";
     let focusUiPrefs = loadFocusUiPrefs();
     let cloudSyncPrefs = loadCloudSyncPrefs();
     const AI_COMPOSER_INPUT_IDS = new Set([
@@ -12251,14 +12269,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
     }
 
     function sortPracticesForDisplay(practices) {
-      return (Array.isArray(practices) ? practices : [])
-        .slice()
-        .sort((a, b) => {
-          const kindA = a.kind === "work_domain" ? 1 : 0;
-          const kindB = b.kind === "work_domain" ? 1 : 0;
-          if (kindA !== kindB) return kindA - kindB;
-          return String(a.title || "").localeCompare(String(b.title || ""));
-        });
+      return (Array.isArray(practices) ? practices : []).slice();
     }
 
     function practiceKindLabel(practice) {
@@ -13153,23 +13164,26 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
           : '<p class="tiny" style="padding:4px 0">No entries yet — log your first one below.</p>';
 
         return `
-        <div class="practice-item" data-practice-id="${escapeHtml(p.id)}">
-          <div class="practice-check ${doneClass}"></div>
-          <div class="practice-info">
-            <div class="practice-kind">${escapeHtml(practiceKindLabel(p))}</div>
-            <div class="practice-name">${escapeHtml(p.title)}</div>
-            <div class="practice-meta">${status}</div>
+        <div class="practice-block" data-practice-id="${escapeHtml(p.id)}" data-practice-kind="${escapeHtml(p.kind === "work_domain" ? "work_domain" : "life_practice")}">
+          <div class="practice-item" data-practice-id="${escapeHtml(p.id)}" draggable="true">
+            <div class="practice-drag-handle" title="Drag to reorder"></div>
+            <div class="practice-check ${doneClass}"></div>
+            <div class="practice-info">
+              <div class="practice-kind">${escapeHtml(practiceKindLabel(p))}</div>
+              <div class="practice-name">${escapeHtml(p.title)}</div>
+              <div class="practice-meta">${status}</div>
+            </div>
+            <div class="practice-expand" style="${isOpen ? "transform:rotate(90deg)" : ""}">\u203A</div>
           </div>
-          <div class="practice-expand" style="${isOpen ? "transform:rotate(90deg)" : ""}">\u203A</div>
-        </div>
-        <div class="practice-drawer${isOpen ? " open" : ""}" data-practice-id="${escapeHtml(p.id)}">
-          <div class="practice-entries">${entriesHtml}</div>
-          ${templates.length ? `<div class="practice-templates">${templates.map((label, index) => `<button type="button" class="practice-template" data-practice-template="${escapeHtml(p.id)}" data-practice-template-idx="${index}">${escapeHtml(label)}</button>`).join("")}</div>` : ""}
-          ${renderStructuredPracticeForm(p)}
-          <div class="practice-log-confirm" id="practiceLogConfirm_${escapeHtml(p.id)}" hidden></div>
-          <div class="practice-ai-input">
-            <textarea rows="1" placeholder="${escapeHtml(p.logging_hint || defaultPracticeLoggingHint(p))}" data-practice-id="${escapeHtml(p.id)}"></textarea>
-            <button type="button" data-log-practice="${escapeHtml(p.id)}">Log</button>
+          <div class="practice-drawer${isOpen ? " open" : ""}" data-practice-id="${escapeHtml(p.id)}">
+            <div class="practice-entries">${entriesHtml}</div>
+            ${templates.length ? `<div class="practice-templates">${templates.map((label, index) => `<button type="button" class="practice-template" data-practice-template="${escapeHtml(p.id)}" data-practice-template-idx="${index}">${escapeHtml(label)}</button>`).join("")}</div>` : ""}
+            ${renderStructuredPracticeForm(p)}
+            <div class="practice-log-confirm" id="practiceLogConfirm_${escapeHtml(p.id)}" hidden></div>
+            <div class="practice-ai-input">
+              <textarea rows="1" placeholder="${escapeHtml(p.logging_hint || defaultPracticeLoggingHint(p))}" data-practice-id="${escapeHtml(p.id)}"></textarea>
+              <button type="button" data-log-practice="${escapeHtml(p.id)}">Log</button>
+            </div>
           </div>
         </div>`;
       }).join("")}`; }).join("");
@@ -13258,6 +13272,56 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
           const practiceId = ta.dataset.practiceId;
           if (practiceId) logPracticeEntry(practiceId, ta);
         });
+        listEl.addEventListener("dragstart", e => {
+          const item = e.target.closest(".practice-item[data-practice-id]");
+          if (!item) return;
+          const block = item.closest(".practice-block[data-practice-id]");
+          if (!block) return;
+          lifePracticeDragId = block.dataset.practiceId || "";
+          lifePracticeDragKind = block.dataset.practiceKind || "";
+          block.classList.add("dragging");
+          if (e.dataTransfer) {
+            e.dataTransfer.effectAllowed = "move";
+            e.dataTransfer.setData("text/plain", lifePracticeDragId);
+          }
+        });
+        listEl.addEventListener("dragend", () => {
+          lifePracticeDragId = "";
+          lifePracticeDragKind = "";
+          clearLifePracticeDragClasses(listEl);
+        });
+        listEl.addEventListener("dragover", e => {
+          const block = e.target.closest(".practice-block[data-practice-id]");
+          if (!block || !lifePracticeDragId) return;
+          if (block.dataset.practiceId === lifePracticeDragId) return;
+          if ((block.dataset.practiceKind || "") !== lifePracticeDragKind) return;
+          e.preventDefault();
+          clearLifePracticeDragClasses(listEl);
+          const source = listEl.querySelector(`.practice-block[data-practice-id="${lifePracticeDragId}"]`);
+          source?.classList.add("dragging");
+          const rect = block.getBoundingClientRect();
+          const placeAfter = e.clientY > rect.top + rect.height / 2;
+          block.classList.add(placeAfter ? "drag-over-bottom" : "drag-over-top");
+        });
+        listEl.addEventListener("dragleave", e => {
+          const block = e.target.closest(".practice-block[data-practice-id]");
+          if (!block) return;
+          if (block.contains(e.relatedTarget)) return;
+          block.classList.remove("drag-over-top", "drag-over-bottom");
+        });
+        listEl.addEventListener("drop", e => {
+          const block = e.target.closest(".practice-block[data-practice-id]");
+          if (!block || !lifePracticeDragId) return;
+          if (block.dataset.practiceId === lifePracticeDragId) return;
+          if ((block.dataset.practiceKind || "") !== lifePracticeDragKind) return;
+          e.preventDefault();
+          const rect = block.getBoundingClientRect();
+          const placeAfter = e.clientY > rect.top + rect.height / 2;
+          reorderLifePractice(lifePracticeDragId, block.dataset.practiceId || "", placeAfter ? "after" : "before");
+          lifePracticeDragId = "";
+          lifePracticeDragKind = "";
+          clearLifePracticeDragClasses(listEl);
+        });
         lifePracticesDelegated = true;
       }
 
@@ -13321,6 +13385,40 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       state.life_practices.daily_log[today][id] = normalizePracticeDayRecord(practice, next, today);
       if (options.save !== false) saveState();
       if (options.render !== false) renderLifePractices();
+    }
+
+    function clearLifePracticeDragClasses(listEl = document.getElementById("lifePracticesList")) {
+      if (!listEl) return;
+      listEl.querySelectorAll(".practice-block.dragging,.practice-block.drag-over-top,.practice-block.drag-over-bottom")
+        .forEach(el => el.classList.remove("dragging", "drag-over-top", "drag-over-bottom"));
+    }
+
+    function reorderLifePractice(practiceId, targetPracticeId, placement = "before") {
+      initTodayState();
+      const practices = Array.isArray(state.life_practices?.practices) ? state.life_practices.practices.slice() : [];
+      if (!practiceId || !targetPracticeId || practiceId === targetPracticeId || !practices.length) return false;
+
+      const kindOf = practice => practice?.kind === "work_domain" ? "work_domain" : "life_practice";
+      const moving = practices.find(practice => practice.id === practiceId);
+      const target = practices.find(practice => practice.id === targetPracticeId);
+      if (!moving || !target) return false;
+      if (kindOf(moving) !== kindOf(target)) return false;
+
+      const groupKind = kindOf(moving);
+      const group = practices.filter(practice => kindOf(practice) === groupKind);
+      const nextGroup = group.filter(practice => practice.id !== practiceId);
+      const targetIndex = nextGroup.findIndex(practice => practice.id === targetPracticeId);
+      if (targetIndex < 0) return false;
+      const insertIndex = placement === "after" ? targetIndex + 1 : targetIndex;
+      nextGroup.splice(insertIndex, 0, moving);
+
+      const replacement = nextGroup.slice();
+      state.life_practices.practices = practices.map(practice =>
+        kindOf(practice) === groupKind ? replacement.shift() : practice
+      );
+      saveState("life_practice_reorder");
+      renderLifePractices();
+      return true;
     }
 
     function renderLifePracticeConfigList() {
