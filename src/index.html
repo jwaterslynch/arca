@@ -14179,6 +14179,20 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       if (planPanel) planPanel.classList.add("active");
     }
 
+    function resolveTopLevelTabShortcut(event, snapshot = state) {
+      if (!(event.metaKey || event.ctrlKey) || event.altKey || event.shiftKey) return "";
+      const key = String(event.key || "").trim();
+      const tabByKey = {
+        "1": "execute",
+        "2": "plan",
+        "3": "health",
+        "4": "wealth"
+      };
+      const targetTab = tabByKey[key] || "";
+      if (!targetTab) return "";
+      return getVisibleTopLevelTabs(snapshot).includes(targetTab) ? targetTab : "";
+    }
+
     function isEditableElement(target) {
       const el = target instanceof Element ? target : null;
       if (!el) return false;
@@ -30875,6 +30889,16 @@ You cannot change app state without that JSON block. Do not say something was ad
         e.preventDefault();
         e.stopPropagation();
         openAiSettingsPanel();
+        return;
+      }
+      const topLevelShortcutTab = resolveTopLevelTabShortcut(e);
+      if (topLevelShortcutTab) {
+        const openModal = document.querySelector(".modal-backdrop:not([hidden])");
+        if (openModal) return;
+        e.preventDefault();
+        e.stopPropagation();
+        setActiveTab(topLevelShortcutTab);
+        render();
         return;
       }
       const onboarding = document.getElementById("onboardingModal");
