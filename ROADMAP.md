@@ -35,29 +35,30 @@ Single source of truth for what's next, in what order. Replaces the older `PRODU
 - **Tag:** 🔥 core pain
 - **Brief:** [`design/IOS_HEALTH_CAPTURE_PHASE_A_BRIEF.md`](design/IOS_HEALTH_CAPTURE_PHASE_A_BRIEF.md)
 - **Repo:** `jwaterslynch/arca-ios-capture` (separate from this one)
-- **Status:** Scaffold committed (`3c20214`). Blocked on user's Xcode step (File → New Project). After that, next slice is Vision OCR + fixture-set benchmarking.
+- **Implementation checklist:** `arca-ios-capture/design/PHASE_A_IMPLEMENTATION_CHECKLIST.md`
+- **Status:** Scaffold committed (`3c20214`). Blocked on the one-time Xcode project creation step. After that, the next slice is fixture collection → PhotosPicker import → Vision OCR benchmarking.
 - **Why:** Validates the capture-first pattern that unlocks Health v2 later. Desktop Health redesign cannot start until capture data exists.
+
+### Track A recovery — companion sync stabilization
+- **Tag:** 🔥 core pain
+- **Brief:** [`design/SYNC_RECOVERY_PROTOCOL_v1.md`](design/SYNC_RECOVERY_PROTOCOL_v1.md)
+- **Status:** Active recovery track. Writable companion work remains blocked until single-user sync is proven against a secondary account/board.
+- **Why:** Companion PWA is only worth building once desktop auth + event sync are safe. Shipping on top of unproven sync would create avoidable data-loss risk.
 
 ---
 
 ## Next
 
-### Audit uncommitted design docs
-- **Tag:** procedural
-- **Where:** `design/` has three untracked docs from Codex (`DESKTOP_AUTH_REVIEW_v1.md`, `SYNC_RECOVERY_PROTOCOL_v1.md`, `FIELD_WORK_TRANSFER_BRIEF_v1.md`)
-- **Status:** Unreviewed. May contain proposed briefs for near-term work.
-- **Action:** Read them, decide whether any feeds into Now/Next, commit or archive.
-
-### Track A decision — test or abandon
-- **Tag:** 🔥 core pain (eventually)
-- **Where:** Quarantined on branch `claude/task-event-sync`
-- **Status:** Event sync code written, unvalidated for two weeks. Leaving it to rot silently is the worst option.
-- **Action:** Either (a) schedule a test window against a second Supabase account/device, or (b) formally abandon and accept it'll be rewritten when companion sync actually becomes critical. Document the decision in `productization-library/decisions/`.
+### Companion PWA shell — Execute + Plan only
+- **Tag:** 🔥 core pain
+- **Blocked on:** Track A recovery passing its single-user sync test matrix.
+- **Shape:** browser-based PWA, phone-first, no Health/Wealth, no browser-side AI keys, no writable rollout until event sync is safe.
+- **Related specs:** `design/COMPANION_APP_ARCHITECTURE_v2.md`, `design/MOBILE_COMPANION_PRD_v1.md`, `design/MOBILE_COMPANION_STRATEGY_v1.md`, `design/MOBILE_CLOUD_PHASE1_PLAN.md`
 
 ### Dogfood week → gap list
 - **Tag:** procedural
 - **Status:** Not scheduled.
-- **Action:** 5 days using Arca exclusively. Log every moment you reach for another tool. Output: concrete list of what's actually broken for you. Drives what moves into Next after.
+- **Action:** 5 days using Arca as-is, logging every moment you reach for another tool. Output: concrete list of real friction, not speculative feature ideas.
 
 ---
 
@@ -76,7 +77,7 @@ Single source of truth for what's next, in what order. Replaces the older `PRODU
 
 ### Companion sync + PWA (Track A proper)
 - **Tag:** 🔥 core pain
-- **Blocked on:** Track A decision above (test or abandon the current event-sync implementation).
+- **Blocked on:** Track A recovery passing the single-user safety gates in `design/SYNC_RECOVERY_PROTOCOL_v1.md`.
 - **Order when unblocked:** second test user/board → desktop auth + sync correctness → PWA shell for Execute/Plan → realtime polish later.
 - **Related specs:** `design/COMPANION_APP_ARCHITECTURE_v2.md`, `design/MOBILE_COMPANION_PRD_v1.md`, `design/MOBILE_COMPANION_STRATEGY_v1.md`, `design/MOBILE_CLOUD_PHASE1_PLAN.md`
 
