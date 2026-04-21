@@ -7421,6 +7421,12 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       return { currentSession, totalSessions };
     }
 
+    function hasCompletedPomodoroSession(completedBlocks = pomodoro.completedBlocks) {
+      const totalSessions = Math.min(8, Math.max(1, Number.parseInt(pomodoro.blocksPerSession, 10) || 4));
+      const safeCompletedBlocks = Math.max(0, Number.parseInt(completedBlocks, 10) || 0);
+      return safeCompletedBlocks > 0 && (safeCompletedBlocks % totalSessions) === 0;
+    }
+
     // ── File System Access: persist linked ARCA_DATA.json handle ──
     function openFsDb(dbName = FS_DB_NAME) {
       return new Promise((resolve, reject) => {
@@ -9380,6 +9386,9 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
     function persistNormalizedClientPrefs() {
       try {
         const normalizedPomodoroPrefs = {
+          workMin: Math.min(120, Math.max(1, Number.parseInt(pomodoro.workMin, 10) || 25)),
+          breakMin: Math.min(60, Math.max(1, Number.parseInt(pomodoro.breakMin, 10) || 5)),
+          blocksPerSession: Math.min(8, Math.max(1, Number.parseInt(pomodoro.blocksPerSession, 10) || 4)),
           soundEnabled: !!pomodoro.soundEnabled,
           soundProfile: pomodoro.soundProfile || "normal",
           alarmTone: pomodoro.alarmTone || "glass",
@@ -9388,11 +9397,16 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           focusMode: false,
           autoFocusMode: !!pomodoro.autoFocusMode,
           completedBlocks: Math.max(0, Number.parseInt(pomodoro.completedBlocks, 10) || 0),
-          completedBlocksDay: String(pomodoro.completedBlocksDay || "")
+          completedBlocksDay: String(pomodoro.completedBlocksDay || ""),
+          focusMusicEnabled: !!pomodoro.focusMusicEnabled,
+          focusMusicUrl: typeof pomodoro.focusMusicUrl === "string" && pomodoro.focusMusicUrl.trim()
+            ? pomodoro.focusMusicUrl.trim()
+            : "https://open.spotify.com/playlist/37i9dQZF1E4v7RvD2voKpl"
         };
         const pomodoroRaw = JSON.stringify(normalizedPomodoroPrefs);
-        if (localStorage.getItem(POMO_PREF_KEY) !== pomodoroRaw) {
+        if (loadLocalStorageWithFallback(POMO_PREF_KEY, LEGACY_POMO_PREF_KEYS) !== pomodoroRaw) {
           localStorage.setItem(POMO_PREF_KEY, pomodoroRaw);
+          clearLegacyLocalStorageKeys(LEGACY_POMO_PREF_KEYS);
         }
       } catch {}
       try {
@@ -15587,13 +15601,13 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         const chosen = chosenTask?.id || "";
         if (!chosen) {
           alert("Add at least one open task before starting Pomodoro.");
-          return;
+          return false;
         }
         const task = chosenTask;
         if (!task || task.completedAt) {
           alert("Selected task is completed. Pick an open task.");
           refreshPomodoroTaskSelect();
-          return;
+          return false;
         }
         pomodoro.taskId = chosen;
         if (state.activeTaskId !== chosen) startTask(chosen);
@@ -15610,24 +15624,35 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       pomodoro.endsAtMs = Date.now() + (pomodoro.remainingSec * 1000);
       if (phase === "work" || phase === "break") setFocusMode(true);
       renderPomodoro();
+      return true;
     }
 
     function completePomodoroPhase(skipped = false) {
       syncPomodoroDailyCounter();
       const fromPhase = pomodoro.phase;
+      let sessionCompleted = false;
       if (pomodoro.phase === "work") {
         if (state.activeTaskId === pomodoro.taskId) stopActiveTask();
         if (!skipped) {
           pomodoro.completedBlocks += 1;
           pomodoro.completedBlocksDay = todayISO();
           savePomodoroPrefs();
+          sessionCompleted = hasCompletedPomodoroSession(pomodoro.completedBlocks);
         }
-        pomodoro.phase = "break";
-        pomodoro.remainingSec = pomodoro.breakMin * 60;
-        // Auto-run breaks so break-end alerts are guaranteed.
-        pomodoro.running = true;
-        pomodoro.paused = false;
-        pomodoro.endsAtMs = Date.now() + (pomodoro.remainingSec * 1000);
+        if (sessionCompleted) {
+          pomodoro.phase = "idle";
+          pomodoro.remainingSec = pomodoro.workMin * 60;
+          pomodoro.running = false;
+          pomodoro.paused = false;
+          pomodoro.endsAtMs = null;
+        } else {
+          pomodoro.phase = "break";
+          pomodoro.remainingSec = pomodoro.breakMin * 60;
+          // Auto-run breaks so break-end alerts are guaranteed.
+          pomodoro.running = true;
+          pomodoro.paused = false;
+          pomodoro.endsAtMs = Date.now() + (pomodoro.remainingSec * 1000);
+        }
       } else if (pomodoro.phase === "break") {
         pomodoro.phase = "work";
         pomodoro.remainingSec = pomodoro.workMin * 60;
@@ -15641,7 +15666,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         pomodoro.endsAtMs = null;
       }
       if (!skipped) {
-        const message = getPhaseTransitionMessage(fromPhase);
+        const message = getPhaseTransitionMessage(fromPhase, { sessionCompleted });
         void playPomodoroChime();
         sendPomodoroNotification(message);
       }
@@ -15659,11 +15684,11 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       void ensurePomodoroAudioReady();
       if (pomodoro.phase === "idle") {
         pomodoro.remainingSec = toInt(document.getElementById("pomoWorkMin").value, 25) * 60;
+        const started = startPomodoroPhase("work");
         // Open focus music on fresh session start only — not every subsequent work block.
-        if (pomodoro.focusMusicEnabled && pomodoro.focusMusicUrl) {
+        if (started && pomodoro.focusMusicEnabled && pomodoro.focusMusicUrl) {
           try { openExternalUrl(pomodoro.focusMusicUrl); } catch (err) { console.warn("[focus-music] open failed", err); }
         }
-        startPomodoroPhase("work");
       } else {
         startPomodoroPhase(pomodoro.phase);
       }
@@ -15866,7 +15891,11 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       return true;
     }
 
-    function getPhaseTransitionMessage(fromPhase) {
+    function getPhaseTransitionMessage(fromPhase, options = {}) {
+      if (fromPhase === "work" && options.sessionCompleted) {
+        const totalSessions = Math.min(8, Math.max(1, Number.parseInt(pomodoro.blocksPerSession, 10) || 4));
+        return `Session complete. ${totalSessions} work block${totalSessions === 1 ? "" : "s"} finished.`;
+      }
       if (fromPhase === "work") return `Work block complete. Break ready (${pomodoro.breakMin} min).`;
       if (fromPhase === "break") return `Break complete. Work block ready (${pomodoro.workMin} min).`;
       return "Pomodoro block complete.";
