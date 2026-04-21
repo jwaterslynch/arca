@@ -97,7 +97,13 @@ Single source of truth for what's next, in what order. Replaces the older `PRODU
 
 Aspirational, unscheduled. Each should have its own `IDEA_*.md` in `design/` if it's substantive enough to preserve research.
 
-*(Add items here as they arrive. Move to Next when they earn it.)*
+### Shared team task board
+- **Tag:** 🌠 future ambition
+- **Blocked on:** Track A proven solid (30+ days of single-user sync without issues)
+- **Use case:** Collaborating with Brendan on FatooraFi + research. Near-real-time shared tasks.
+- **Complexity:** high. Multi-user transforms most layers (data model, concurrency, realtime, auth, UX, privacy). Estimated 3-6 months post-Track-A.
+- **Interim:** use Linear / Notion / Todoist for collaboration now; don't let this pull scope into unfinished sync work.
+- **Brief:** [`design/IDEA_SHARED_TEAM_BOARD.md`](design/IDEA_SHARED_TEAM_BOARD.md)
 
 ---
 
