@@ -1,4 +1,8 @@
-# Arca Productization Roadmap
+# Arca Productization Roadmap (HISTORICAL)
+
+> **Superseded by [`ROADMAP.md`](ROADMAP.md)** as of 2026-04-20.
+> Most of this file has shipped (Phase 1 core, Phase 2 distribution, Phase 3 partial).
+> Kept for historical reference. For current priorities, read `ROADMAP.md`.
 
 ## Current State
 - Desktop shell: Tauri v2
