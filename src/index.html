@@ -3366,10 +3366,28 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
                 <section class="settings-pane active" data-settings-pane="timer">
                   <div class="settings-pane-card">
                     <h3>Work &amp; break lengths</h3>
-                    <p>These settings shape the default pomodoro cycle used in Execute and Focus mode. The 4-block session loop stays fixed for now.</p>
+                    <p>These settings shape the default pomodoro cycle used in Execute and Focus mode.</p>
                     <div class="settings-pane-grid">
                       <label class="tiny ai-settings-field"><span>Work minutes</span><input id="settingsPomoWorkMin" type="number" min="1" max="120" /></label>
                       <label class="tiny ai-settings-field"><span>Break minutes</span><input id="settingsPomoBreakMin" type="number" min="1" max="60" /></label>
+                      <label class="tiny ai-settings-field"><span>Blocks per session</span><input id="settingsPomoBlocksPerSession" type="number" min="1" max="8" /></label>
+                    </div>
+                  </div>
+                  <div class="settings-pane-card">
+                    <h3>Focus music</h3>
+                    <div class="settings-toggle-grid">
+                      <div class="settings-toggle-copy">
+                        <label class="settings-toggle-label">
+                          <input id="settingsFocusMusicToggle" type="checkbox" />
+                          <span class="settings-toggle-text">
+                            <strong>Play focus music when timer starts</strong>
+                            <span>Opens a playlist URL in your browser or Spotify when a new session begins. You control playback there.</span>
+                          </span>
+                        </label>
+                      </div>
+                    </div>
+                    <div class="settings-pane-grid">
+                      <label class="tiny ai-settings-field" style="grid-column:1/-1"><span>Playlist URL</span><input id="settingsFocusMusicUrl" type="url" placeholder="https://open.spotify.com/playlist/…" /></label>
                     </div>
                   </div>
                   <div class="settings-pane-card">
@@ -5508,6 +5526,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       taskId: null,
       workMin: 25,
       breakMin: 5,
+      blocksPerSession: 4,
       remainingSec: 25 * 60,
       endsAtMs: null,
       completedBlocks: 0,
@@ -5518,7 +5537,9 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       chimeLength: "short", // short | long
       desktopNotify: false,
       focusMode: false,
-      autoFocusMode: true
+      autoFocusMode: true,
+      focusMusicEnabled: false,
+      focusMusicUrl: "https://open.spotify.com/playlist/37i9dQZF1E4v7RvD2voKpl"
     };
     const appOpenTracker = {
       visible: document.visibilityState !== "hidden",
@@ -7309,6 +7330,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       const defaults = {
         workMin: 25,
         breakMin: 5,
+        blocksPerSession: 4,
         soundEnabled: true,
         soundProfile: "normal",
         alarmTone: "glass",
@@ -7317,7 +7339,9 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         focusMode: false,
         autoFocusMode: true,
         completedBlocks: 0,
-        completedBlocksDay: ""
+        completedBlocksDay: "",
+        focusMusicEnabled: false,
+        focusMusicUrl: "https://open.spotify.com/playlist/37i9dQZF1E4v7RvD2voKpl"
       };
       try {
         const raw = loadLocalStorageWithFallback(POMO_PREF_KEY, LEGACY_POMO_PREF_KEYS);
@@ -7326,6 +7350,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         return {
           workMin: Math.min(120, Math.max(1, Number.parseInt(pref.workMin, 10) || 25)),
           breakMin: Math.min(60, Math.max(1, Number.parseInt(pref.breakMin, 10) || 5)),
+          blocksPerSession: Math.min(8, Math.max(1, Number.parseInt(pref.blocksPerSession, 10) || 4)),
           soundEnabled: pref.soundEnabled !== false,
           soundProfile: ["soft","normal","loud"].includes(pref.soundProfile) ? pref.soundProfile : "normal",
           alarmTone: ["glass","ping","funk","hero","purr"].includes(pref.alarmTone) ? pref.alarmTone : "glass",
@@ -7335,7 +7360,11 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           focusMode: false,
           autoFocusMode: pref.autoFocusMode !== false,
           completedBlocks: Math.max(0, Number.parseInt(pref.completedBlocks, 10) || 0),
-          completedBlocksDay: String(pref.completedBlocksDay || "")
+          completedBlocksDay: String(pref.completedBlocksDay || ""),
+          focusMusicEnabled: pref.focusMusicEnabled === true,
+          focusMusicUrl: typeof pref.focusMusicUrl === "string" && pref.focusMusicUrl.trim()
+            ? pref.focusMusicUrl.trim()
+            : defaults.focusMusicUrl
         };
       } catch {
         return defaults;
@@ -7346,6 +7375,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       localStorage.setItem(POMO_PREF_KEY, JSON.stringify({
         workMin: Math.min(120, Math.max(1, Number.parseInt(pomodoro.workMin, 10) || 25)),
         breakMin: Math.min(60, Math.max(1, Number.parseInt(pomodoro.breakMin, 10) || 5)),
+        blocksPerSession: Math.min(8, Math.max(1, Number.parseInt(pomodoro.blocksPerSession, 10) || 4)),
         soundEnabled: !!pomodoro.soundEnabled,
         soundProfile: pomodoro.soundProfile || "normal",
         alarmTone: pomodoro.alarmTone || "glass",
@@ -7354,7 +7384,9 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         focusMode: !!pomodoro.focusMode,
         autoFocusMode: !!pomodoro.autoFocusMode,
         completedBlocks: Math.max(0, Number.parseInt(pomodoro.completedBlocks, 10) || 0),
-        completedBlocksDay: String(pomodoro.completedBlocksDay || "")
+        completedBlocksDay: String(pomodoro.completedBlocksDay || ""),
+        focusMusicEnabled: !!pomodoro.focusMusicEnabled,
+        focusMusicUrl: typeof pomodoro.focusMusicUrl === "string" ? pomodoro.focusMusicUrl : ""
       }));
       clearLegacyLocalStorageKeys(LEGACY_POMO_PREF_KEYS);
     }
@@ -7383,7 +7415,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
     }
 
     function getPomodoroSessionProgress() {
-      const totalSessions = 4;
+      const totalSessions = Math.min(8, Math.max(1, Number.parseInt(pomodoro.blocksPerSession, 10) || 4));
       const completedBlocks = Math.max(0, Number.parseInt(pomodoro.completedBlocks, 10) || 0);
       const currentSession = (completedBlocks % totalSessions) + 1;
       return { currentSession, totalSessions };
@@ -15364,6 +15396,9 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       const notifyStatus = document.getElementById("pomoNotifyStatus");
       const settingsWorkMin = document.getElementById("settingsPomoWorkMin");
       const settingsBreakMin = document.getElementById("settingsPomoBreakMin");
+      const settingsBlocksPerSession = document.getElementById("settingsPomoBlocksPerSession");
+      const settingsFocusMusicToggle = document.getElementById("settingsFocusMusicToggle");
+      const settingsFocusMusicUrl = document.getElementById("settingsFocusMusicUrl");
       const settingsAutoFocusToggle = document.getElementById("settingsAutoFocusToggle");
       const settingsSoundToggle = document.getElementById("settingsPomoSoundToggle");
       const settingsSoundProfile = document.getElementById("settingsPomoSoundProfile");
@@ -15514,6 +15549,9 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       if (hiddenBreakInput) hiddenBreakInput.value = normalizedBreakMin;
       if (settingsWorkMin) settingsWorkMin.value = normalizedWorkMin;
       if (settingsBreakMin) settingsBreakMin.value = normalizedBreakMin;
+      if (settingsBlocksPerSession) settingsBlocksPerSession.value = Math.min(8, Math.max(1, Number.parseInt(pomodoro.blocksPerSession, 10) || 4));
+      if (settingsFocusMusicToggle) settingsFocusMusicToggle.checked = !!pomodoro.focusMusicEnabled;
+      if (settingsFocusMusicUrl) settingsFocusMusicUrl.value = pomodoro.focusMusicUrl || "";
       if (notifyBtn) {
         if (!("Notification" in window)) notifyBtn.disabled = true;
         notifyBtn.textContent = pomodoro.desktopNotify ? "Desktop alerts on" : "Enable desktop alerts";
@@ -15621,6 +15659,10 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       void ensurePomodoroAudioReady();
       if (pomodoro.phase === "idle") {
         pomodoro.remainingSec = toInt(document.getElementById("pomoWorkMin").value, 25) * 60;
+        // Open focus music on fresh session start only — not every subsequent work block.
+        if (pomodoro.focusMusicEnabled && pomodoro.focusMusicUrl) {
+          try { openExternalUrl(pomodoro.focusMusicUrl); } catch (err) { console.warn("[focus-music] open failed", err); }
+        }
         startPomodoroPhase("work");
       } else {
         startPomodoroPhase(pomodoro.phase);
@@ -29272,6 +29314,19 @@ You cannot change app state without that JSON block. Do not say something was ad
       }
       savePomodoroPrefs();
       renderPomodoro();
+    });
+    document.getElementById("settingsPomoBlocksPerSession")?.addEventListener("change", e => {
+      pomodoro.blocksPerSession = Math.min(8, Math.max(1, Number.parseInt(e.target.value, 10) || 4));
+      savePomodoroPrefs();
+      renderPomodoro();
+    });
+    document.getElementById("settingsFocusMusicToggle")?.addEventListener("change", e => {
+      pomodoro.focusMusicEnabled = !!e.target.checked;
+      savePomodoroPrefs();
+    });
+    document.getElementById("settingsFocusMusicUrl")?.addEventListener("change", e => {
+      pomodoro.focusMusicUrl = (e.target.value || "").trim();
+      savePomodoroPrefs();
     });
     document.getElementById("pomoNotifyBtn").addEventListener("click",requestPomodoroNotifications);
     document.getElementById("settingsPomoNotifyBtn")?.addEventListener("click",requestPomodoroNotifications);
