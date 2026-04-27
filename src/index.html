@@ -7567,10 +7567,18 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
     // Track whether play() has resolved so we can call pause() defensively
     // without hitting AbortError-on-pending-play in Chromium/WebKit.
     let focusMusicPlayPromise = null;
+    // Generation counter: every play() call bumps this. A deferred pause()
+    // waiting on a pending promise checks the generation hasn't changed before
+    // actually pausing — otherwise a quick pause→resume would let an old
+    // deferred pause stop the freshly-resumed track.
+    let focusMusicPlayGeneration = 0;
 
     function pauseFocusMusicPlayback() {
       if (!focusMusicAudio) return;
+      const generationAtRequest = focusMusicPlayGeneration;
       const doPause = () => {
+        // If a newer play() has started since we queued this pause, drop it.
+        if (focusMusicPlayGeneration !== generationAtRequest) return;
         try { focusMusicAudio.pause(); } catch (err) {
           console.warn("[focus-music] pause failed", err);
         }
@@ -7596,6 +7604,9 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       audio.volume = clampedFocusMusicVolume();
       const nextUrl = builtInFocusMusicUrl(track);
       if (!nextUrl) return false;
+      // Bump the generation so any pending deferred pause() targeting an
+      // earlier play() invocation gets invalidated.
+      focusMusicPlayGeneration += 1;
       if (focusMusicCurrentTrackId === track.id && audio.src) {
         try {
           focusMusicPlayPromise = audio.play();
@@ -9694,7 +9705,9 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           focusMusicSource: pomodoro.focusMusicSource === "external_url" ? "external_url" : "built_in",
           focusMusicUrl: typeof pomodoro.focusMusicUrl === "string" && pomodoro.focusMusicUrl.trim()
             ? pomodoro.focusMusicUrl.trim()
-            : "https://open.spotify.com/playlist/37i9dQZF1E4v7RvD2voKpl"
+            : "https://open.spotify.com/playlist/37i9dQZF1E4v7RvD2voKpl",
+          focusMusicVolume: Math.min(1, Math.max(0, Number.isFinite(Number(pomodoro.focusMusicVolume)) ? Number(pomodoro.focusMusicVolume) : 0.4)),
+          pauseMusicWithTimer: pomodoro.pauseMusicWithTimer !== false
         };
         const pomodoroRaw = JSON.stringify(normalizedPomodoroPrefs);
         if (loadLocalStorageWithFallback(POMO_PREF_KEY, LEGACY_POMO_PREF_KEYS) !== pomodoroRaw) {
@@ -15884,6 +15897,14 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       if (settingsFocusMusicVolume) settingsFocusMusicVolume.value = volumePct;
       if (settingsFocusMusicVolumeReadout) settingsFocusMusicVolumeReadout.textContent = `${volumePct}%`;
       if (settingsPauseMusicWithTimer) settingsPauseMusicWithTimer.checked = pomodoro.pauseMusicWithTimer !== false;
+      // Volume slider and pause-with-timer toggle only affect built-in audio.
+      // External URLs (Spotify/etc.) are user-managed; hide controls that
+      // can't actually do anything when source=external_url.
+      const settingsFocusMusicVolumeField = document.getElementById("settingsFocusMusicVolumeField");
+      const settingsPauseMusicWithTimerRow = document.getElementById("settingsPauseMusicWithTimer")?.closest(".settings-toggle-grid");
+      const showBuiltInOnlyControls = !!pomodoro.focusMusicEnabled && normalizedFocusMusicSource === "built_in";
+      if (settingsFocusMusicVolumeField) settingsFocusMusicVolumeField.hidden = !showBuiltInOnlyControls;
+      if (settingsPauseMusicWithTimerRow) settingsPauseMusicWithTimerRow.hidden = !showBuiltInOnlyControls;
       const builtInTrack = currentBuiltInFocusMusicTrack();
       const showBuiltInMusicMeta = !!pomodoro.focusMusicEnabled
         && normalizedFocusMusicSource === "built_in"
@@ -16014,21 +16035,16 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       syncPomodoroDailyCounter();
       if (pomodoro.running) return;
       void ensurePomodoroAudioReady();
-      const wasResumingFromPause = pomodoro.paused && pomodoro.phase !== "idle";
+      // Resume music: handled by startPomodoroPhase → setFocusMode(true) →
+      // syncFocusMusicForFocusMode, which calls playBuiltInFocusMusicTrack
+      // and resumes from the same trackId if it was previously paused. No
+      // explicit resume call needed here; an explicit one races the deferred
+      // pause from pausePomodoro.
       if (pomodoro.phase === "idle") {
         pomodoro.remainingSec = toInt(document.getElementById("pomoWorkMin").value, 25) * 60;
         startPomodoroPhase("work");
       } else {
         startPomodoroPhase(pomodoro.phase);
-      }
-      // Resume built-in focus music if it was paused with the timer.
-      if (wasResumingFromPause
-          && pomodoro.pauseMusicWithTimer !== false
-          && pomodoro.focusMusicEnabled
-          && pomodoro.focusMode
-          && pomodoro.focusMusicSource === "built_in"
-          && !focusMusicMutedForSession) {
-        void playBuiltInFocusMusicTrack(focusMusicTrackIndex);
       }
     }
 
