@@ -791,6 +791,49 @@ body{font-family:var(--font);color:var(--text);background:var(--bg);-webkit-font
   font-variant-numeric:tabular-nums;letter-spacing:2px;line-height:1;
 }
 .focus-overlay .focus-session{font-size:.9rem;color:rgba(255,255,255,.4);font-weight:500}
+.focus-audio-meta{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-top:10px;
+}
+.focus-audio-meta[hidden]{
+  display:none;
+}
+.focus-audio-track{
+  font-size:.82rem;
+  color:rgba(255,255,255,.55);
+  max-width:340px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.focus-audio-next{
+  background:transparent;
+  color:rgba(255,255,255,.6);
+  border:1px solid rgba(255,255,255,.15);
+  border-radius:999px;
+  padding:6px 12px;
+  font:600 .76rem var(--font);
+  cursor:pointer;
+}
+.focus-audio-next:hover{
+  color:rgba(255,255,255,.85);
+  border-color:rgba(255,255,255,.28);
+}
+.focus-audio-toggle{
+  background:transparent;
+  color:rgba(255,255,255,.6);
+  border:1px solid rgba(255,255,255,.15);
+  border-radius:999px;
+  padding:6px 12px;
+  font:600 .76rem var(--font);
+  cursor:pointer;
+}
+.focus-audio-toggle:hover{
+  color:rgba(255,255,255,.85);
+  border-color:rgba(255,255,255,.28);
+}
 .focus-controls{display:flex;gap:12px;margin-top:16px}
 .focus-controls button{
   padding:12px 32px;border-radius:var(--radius);border:none;
@@ -3266,6 +3309,11 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
     <div class="focus-timer" id="focusTimer">25:00</div>
     <div class="focus-session" id="focusSession">Session 1 of 4</div>
     <div class="pomo-dots" id="pomoDots"></div>
+    <div class="focus-audio-meta" id="focusMusicMeta" hidden>
+      <span class="focus-audio-track" id="focusMusicTrackLabel">Arca Focus Music #1</span>
+      <button class="focus-audio-next" id="focusMusicNextBtn" type="button">Next track</button>
+      <button class="focus-audio-toggle" id="focusMusicToggleBtn" type="button">Music off</button>
+    </div>
     <div class="focus-controls">
       <button class="focus-pause" id="focusPauseBtn">Pause</button>
       <button class="focus-done" id="focusDoneBtn">✓ Done</button>
@@ -3380,14 +3428,23 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
                         <label class="settings-toggle-label">
                           <input id="settingsFocusMusicToggle" type="checkbox" />
                           <span class="settings-toggle-text">
-                            <strong>Play focus music when timer starts</strong>
-                            <span>Opens a playlist URL in your browser or Spotify when a new session begins. You control playback there.</span>
+                            <strong>Play focus music while Focus mode is active</strong>
+                            <span>Use the built-in Arca themes or fall back to your own playlist URL. Playback starts when Focus mode turns on and pauses when Focus mode turns off.</span>
                           </span>
                         </label>
                       </div>
                     </div>
                     <div class="settings-pane-grid">
-                      <label class="tiny ai-settings-field" style="grid-column:1/-1"><span>Playlist URL</span><input id="settingsFocusMusicUrl" type="url" placeholder="https://open.spotify.com/playlist/…" /></label>
+                      <label class="tiny ai-settings-field"><span>Source</span>
+                        <select id="settingsFocusMusicSource">
+                          <option value="built_in">Built-in Arca themes</option>
+                          <option value="external_url">External playlist URL</option>
+                        </select>
+                      </label>
+                      <div id="settingsFocusMusicBuiltInNote" class="settings-note" style="grid-column:1/-1">
+                        Arca rotates through the built-in focus themes automatically. Use “Next track” inside Focus mode if you want to skip ahead.
+                      </div>
+                      <label id="settingsFocusMusicUrlField" class="tiny ai-settings-field" style="grid-column:1/-1"><span>Playlist URL</span><input id="settingsFocusMusicUrl" type="url" placeholder="https://open.spotify.com/playlist/…" /></label>
                     </div>
                   </div>
                   <div class="settings-pane-card">
@@ -5518,6 +5575,11 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
     let onboardingPath = "full"; // full | ai_only
     let onboardingLocalAiSelected = false;
     let pomoAudioContext = null;
+    let focusMusicAudio = null;
+    let focusMusicCurrentTrackId = "";
+    let focusMusicTrackIndex = 0;
+    let focusMusicExternalOpenLatch = false;
+    let focusMusicMutedForSession = false;
     let linkedDataFileHandle = null;
     const pomodoro = {
       phase: "idle", // idle | work | break
@@ -5538,9 +5600,17 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       desktopNotify: false,
       focusMode: false,
       autoFocusMode: true,
-      focusMusicEnabled: false,
+      focusMusicEnabled: true,
+      focusMusicSource: "built_in",
       focusMusicUrl: "https://open.spotify.com/playlist/37i9dQZF1E4v7RvD2voKpl"
     };
+    const BUILT_IN_FOCUS_MUSIC_TRACKS = [
+      { id: "arca-focus-1", title: "Arca Focus Music #1", src: "assets/focus-music/arca-focus-music-1.mp3" },
+      { id: "arca-focus-2", title: "Arca Focus Music #2", src: "assets/focus-music/arca-focus-music-2.mp3" },
+      { id: "arca-focus-3", title: "Arca Focus Music #3", src: "assets/focus-music/arca-focus-music-3.mp3" },
+      { id: "arca-focus-4", title: "Arca Focus Music #4", src: "assets/focus-music/arca-focus-music-4.mp3" },
+      { id: "arca-focus-5", title: "Arca Focus Music #5", src: "assets/focus-music/arca-focus-music-5.mp3" }
+    ];
     const appOpenTracker = {
       visible: document.visibilityState !== "hidden",
       lastTickMs: Date.now(),
@@ -7340,7 +7410,8 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         autoFocusMode: true,
         completedBlocks: 0,
         completedBlocksDay: "",
-        focusMusicEnabled: false,
+        focusMusicEnabled: true,
+        focusMusicSource: "built_in",
         focusMusicUrl: "https://open.spotify.com/playlist/37i9dQZF1E4v7RvD2voKpl"
       };
       try {
@@ -7361,7 +7432,10 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           autoFocusMode: pref.autoFocusMode !== false,
           completedBlocks: Math.max(0, Number.parseInt(pref.completedBlocks, 10) || 0),
           completedBlocksDay: String(pref.completedBlocksDay || ""),
-          focusMusicEnabled: pref.focusMusicEnabled === true,
+          focusMusicEnabled: Object.prototype.hasOwnProperty.call(pref, "focusMusicSource")
+            ? pref.focusMusicEnabled !== false
+            : true,
+          focusMusicSource: pref.focusMusicSource === "external_url" ? "external_url" : "built_in",
           focusMusicUrl: typeof pref.focusMusicUrl === "string" && pref.focusMusicUrl.trim()
             ? pref.focusMusicUrl.trim()
             : defaults.focusMusicUrl
@@ -7386,9 +7460,144 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         completedBlocks: Math.max(0, Number.parseInt(pomodoro.completedBlocks, 10) || 0),
         completedBlocksDay: String(pomodoro.completedBlocksDay || ""),
         focusMusicEnabled: !!pomodoro.focusMusicEnabled,
+        focusMusicSource: pomodoro.focusMusicSource === "external_url" ? "external_url" : "built_in",
         focusMusicUrl: typeof pomodoro.focusMusicUrl === "string" ? pomodoro.focusMusicUrl : ""
       }));
       clearLegacyLocalStorageKeys(LEGACY_POMO_PREF_KEYS);
+    }
+
+    function builtInFocusMusicTracks() {
+      return BUILT_IN_FOCUS_MUSIC_TRACKS;
+    }
+
+    function currentBuiltInFocusMusicTrack() {
+      const tracks = builtInFocusMusicTracks();
+      if (!tracks.length) return null;
+      const normalizedIndex = ((focusMusicTrackIndex % tracks.length) + tracks.length) % tracks.length;
+      return tracks[normalizedIndex] || tracks[0] || null;
+    }
+
+    function builtInFocusMusicUrl(track) {
+      if (!track?.src) return "";
+      return new URL(track.src, window.location.href).toString();
+    }
+
+    function ensureFocusMusicAudio() {
+      if (focusMusicAudio) return focusMusicAudio;
+      focusMusicAudio = new Audio();
+      focusMusicAudio.preload = "auto";
+      focusMusicAudio.addEventListener("ended", () => {
+        if (!pomodoro.focusMode || pomodoro.focusMusicSource !== "built_in") return;
+        const tracks = builtInFocusMusicTracks();
+        if (!tracks.length) return;
+        focusMusicTrackIndex = (focusMusicTrackIndex + 1) % tracks.length;
+        void playBuiltInFocusMusicTrack(focusMusicTrackIndex);
+      });
+      focusMusicAudio.addEventListener("error", () => {
+        console.warn("[focus-music] playback error", focusMusicAudio?.error);
+      });
+      return focusMusicAudio;
+    }
+
+    function pauseFocusMusicPlayback() {
+      if (!focusMusicAudio) return;
+      try {
+        focusMusicAudio.pause();
+      } catch {}
+    }
+
+    async function playBuiltInFocusMusicTrack(index = 0) {
+      if (!pomodoro.focusMusicEnabled || !pomodoro.focusMode || pomodoro.focusMusicSource !== "built_in") return false;
+      const tracks = builtInFocusMusicTracks();
+      if (!tracks.length) return false;
+      const normalizedIndex = ((index % tracks.length) + tracks.length) % tracks.length;
+      const track = tracks[normalizedIndex];
+      focusMusicTrackIndex = normalizedIndex;
+      const focusMusicTrackLabel = document.getElementById("focusMusicTrackLabel");
+      if (focusMusicTrackLabel) focusMusicTrackLabel.textContent = track.title;
+
+      const audio = ensureFocusMusicAudio();
+      const nextUrl = builtInFocusMusicUrl(track);
+      if (!nextUrl) return false;
+      if (focusMusicCurrentTrackId === track.id && audio.src) {
+        try {
+          await audio.play();
+          return true;
+        } catch (err) {
+          console.warn("[focus-music] resume failed", err);
+        }
+      }
+
+      try {
+        audio.src = nextUrl;
+        focusMusicCurrentTrackId = track.id;
+        await audio.play();
+        return true;
+      } catch (err) {
+        console.warn("[focus-music] built-in playback failed", track.id, err);
+        focusMusicCurrentTrackId = "";
+        return false;
+      }
+    }
+
+    function nextFocusMusicTrack() {
+      const tracks = builtInFocusMusicTracks();
+      if (tracks.length < 2) return;
+      focusMusicTrackIndex = (focusMusicTrackIndex + 1) % tracks.length;
+      focusMusicCurrentTrackId = "";
+      if (!focusMusicMutedForSession && pomodoro.focusMode && pomodoro.focusMusicEnabled && pomodoro.focusMusicSource === "built_in") {
+        void playBuiltInFocusMusicTrack(focusMusicTrackIndex);
+      } else {
+        renderPomodoro();
+      }
+    }
+
+    async function syncFocusMusicForFocusMode(options = {}) {
+      if (!pomodoro.focusMusicEnabled) {
+        focusMusicExternalOpenLatch = false;
+        pauseFocusMusicPlayback();
+        return false;
+      }
+      if (!pomodoro.focusMode) {
+        focusMusicExternalOpenLatch = false;
+        pauseFocusMusicPlayback();
+        return false;
+      }
+      if (focusMusicMutedForSession) {
+        focusMusicExternalOpenLatch = false;
+        pauseFocusMusicPlayback();
+        return false;
+      }
+
+      if (pomodoro.focusMusicSource === "built_in") {
+        focusMusicExternalOpenLatch = false;
+        return playBuiltInFocusMusicTrack(focusMusicTrackIndex);
+      }
+
+      pauseFocusMusicPlayback();
+      const url = typeof pomodoro.focusMusicUrl === "string" ? pomodoro.focusMusicUrl.trim() : "";
+      if (!url) return false;
+      if (options.forceExternalOpen || !focusMusicExternalOpenLatch) {
+        try {
+          openExternalUrl(url);
+          focusMusicExternalOpenLatch = true;
+          return true;
+        } catch (err) {
+          console.warn("[focus-music] external open failed", err);
+          return false;
+        }
+      }
+      return true;
+    }
+
+    function toggleFocusMusicForSession() {
+      focusMusicMutedForSession = !focusMusicMutedForSession;
+      if (focusMusicMutedForSession) {
+        pauseFocusMusicPlayback();
+      } else {
+        void syncFocusMusicForFocusMode({ forceExternalOpen: true });
+      }
+      renderPomodoro();
     }
 
     function countTodayCompletedPomodoroBlocksFallback() {
@@ -9399,6 +9608,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           completedBlocks: Math.max(0, Number.parseInt(pomodoro.completedBlocks, 10) || 0),
           completedBlocksDay: String(pomodoro.completedBlocksDay || ""),
           focusMusicEnabled: !!pomodoro.focusMusicEnabled,
+          focusMusicSource: pomodoro.focusMusicSource === "external_url" ? "external_url" : "built_in",
           focusMusicUrl: typeof pomodoro.focusMusicUrl === "string" && pomodoro.focusMusicUrl.trim()
             ? pomodoro.focusMusicUrl.trim()
             : "https://open.spotify.com/playlist/37i9dQZF1E4v7RvD2voKpl"
@@ -15262,6 +15472,10 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
     }
 
     function setFocusMode(enabled) {
+      const nextFocusMode = !!enabled;
+      if (nextFocusMode && !pomodoro.focusMode) {
+        focusMusicMutedForSession = false;
+      }
       pomodoro.focusMode = !!enabled;
       document.body.classList.toggle("focus-mode", pomodoro.focusMode);
       if (pomodoro.focusMode) {
@@ -15271,6 +15485,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         exitFocusMode();
       }
       savePomodoroPrefs();
+      void syncFocusMusicForFocusMode();
     }
 
     function enterFocusMode() {
@@ -15412,6 +15627,9 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       const settingsBreakMin = document.getElementById("settingsPomoBreakMin");
       const settingsBlocksPerSession = document.getElementById("settingsPomoBlocksPerSession");
       const settingsFocusMusicToggle = document.getElementById("settingsFocusMusicToggle");
+      const settingsFocusMusicSource = document.getElementById("settingsFocusMusicSource");
+      const settingsFocusMusicBuiltInNote = document.getElementById("settingsFocusMusicBuiltInNote");
+      const settingsFocusMusicUrlField = document.getElementById("settingsFocusMusicUrlField");
       const settingsFocusMusicUrl = document.getElementById("settingsFocusMusicUrl");
       const settingsAutoFocusToggle = document.getElementById("settingsAutoFocusToggle");
       const settingsSoundToggle = document.getElementById("settingsPomoSoundToggle");
@@ -15420,6 +15638,10 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       const settingsChimeLength = document.getElementById("settingsPomoChimeLength");
       const settingsNotifyBtn = document.getElementById("settingsPomoNotifyBtn");
       const settingsNotifyStatus = document.getElementById("settingsPomoNotifyStatus");
+      const focusMusicMeta = document.getElementById("focusMusicMeta");
+      const focusMusicTrackLabel = document.getElementById("focusMusicTrackLabel");
+      const focusMusicNextBtn = document.getElementById("focusMusicNextBtn");
+      const focusMusicToggleBtn = document.getElementById("focusMusicToggleBtn");
       if (!phasePill || !clock || !status || !completed || !startBtn) return;
 
       if (pomodoro.running) {
@@ -15565,7 +15787,23 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       if (settingsBreakMin) settingsBreakMin.value = normalizedBreakMin;
       if (settingsBlocksPerSession) settingsBlocksPerSession.value = Math.min(8, Math.max(1, Number.parseInt(pomodoro.blocksPerSession, 10) || 4));
       if (settingsFocusMusicToggle) settingsFocusMusicToggle.checked = !!pomodoro.focusMusicEnabled;
+      const normalizedFocusMusicSource = pomodoro.focusMusicSource === "external_url" ? "external_url" : "built_in";
+      if (settingsFocusMusicSource) settingsFocusMusicSource.value = normalizedFocusMusicSource;
       if (settingsFocusMusicUrl) settingsFocusMusicUrl.value = pomodoro.focusMusicUrl || "";
+      if (settingsFocusMusicBuiltInNote) settingsFocusMusicBuiltInNote.hidden = normalizedFocusMusicSource !== "built_in";
+      if (settingsFocusMusicUrlField) settingsFocusMusicUrlField.hidden = normalizedFocusMusicSource !== "external_url";
+      const builtInTrack = currentBuiltInFocusMusicTrack();
+      const showBuiltInMusicMeta = !!pomodoro.focusMusicEnabled
+        && normalizedFocusMusicSource === "built_in"
+        && builtInFocusMusicTracks().length > 0;
+      if (focusMusicMeta) focusMusicMeta.hidden = !showBuiltInMusicMeta;
+      if (focusMusicTrackLabel) focusMusicTrackLabel.textContent = builtInTrack?.title || "Arca Focus Music";
+      if (focusMusicNextBtn) {
+        focusMusicNextBtn.disabled = builtInFocusMusicTracks().length < 2;
+      }
+      if (focusMusicToggleBtn) {
+        focusMusicToggleBtn.textContent = focusMusicMutedForSession ? "Music on" : "Music off";
+      }
       if (notifyBtn) {
         if (!("Notification" in window)) notifyBtn.disabled = true;
         notifyBtn.textContent = pomodoro.desktopNotify ? "Desktop alerts on" : "Enable desktop alerts";
@@ -15684,11 +15922,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       void ensurePomodoroAudioReady();
       if (pomodoro.phase === "idle") {
         pomodoro.remainingSec = toInt(document.getElementById("pomoWorkMin").value, 25) * 60;
-        const started = startPomodoroPhase("work");
-        // Open focus music on fresh session start only — not every subsequent work block.
-        if (started && pomodoro.focusMusicEnabled && pomodoro.focusMusicUrl) {
-          try { openExternalUrl(pomodoro.focusMusicUrl); } catch (err) { console.warn("[focus-music] open failed", err); }
-        }
+        startPomodoroPhase("work");
       } else {
         startPomodoroPhase(pomodoro.phase);
       }
@@ -29319,9 +29553,11 @@ You cannot change app state without that JSON block. Do not say something was ad
       completeTaskFromHeroCheckbox();
     });
     document.getElementById("focusModeBtn").addEventListener("click",()=>{ setFocusMode(!pomodoro.focusMode); renderPomodoro(); });
+    document.getElementById("focusMusicNextBtn")?.addEventListener("click", nextFocusMusicTrack);
+    document.getElementById("focusMusicToggleBtn")?.addEventListener("click", toggleFocusMusicForSession);
     document.getElementById("focusPauseBtn").addEventListener("click",toggleFocusPomodoro);
     document.getElementById("focusDoneBtn").addEventListener("click",()=>{ completeTaskFromHeroCheckbox(); });
-    document.getElementById("focusExitBtn").addEventListener("click",()=>{ exitFocusMode(); });
+    document.getElementById("focusExitBtn").addEventListener("click",()=>{ setFocusMode(false); renderPomodoro(); });
     document.getElementById("autoFocusToggle").addEventListener("change",e=>{ pomodoro.autoFocusMode = !!e.target.checked; savePomodoroPrefs(); renderPomodoro(); });
     document.getElementById("settingsAutoFocusToggle")?.addEventListener("change",e=>{ pomodoro.autoFocusMode = !!e.target.checked; savePomodoroPrefs(); renderPomodoro(); });
     document.getElementById("settingsPomoWorkMin")?.addEventListener("change", e => {
@@ -29351,11 +29587,28 @@ You cannot change app state without that JSON block. Do not say something was ad
     });
     document.getElementById("settingsFocusMusicToggle")?.addEventListener("change", e => {
       pomodoro.focusMusicEnabled = !!e.target.checked;
+      if (pomodoro.focusMusicEnabled) focusMusicMutedForSession = false;
       savePomodoroPrefs();
+      renderPomodoro();
+      void syncFocusMusicForFocusMode();
+    });
+    document.getElementById("settingsFocusMusicSource")?.addEventListener("change", e => {
+      pomodoro.focusMusicSource = e.target.value === "external_url" ? "external_url" : "built_in";
+      focusMusicTrackIndex = 0;
+      focusMusicCurrentTrackId = "";
+      focusMusicExternalOpenLatch = false;
+      focusMusicMutedForSession = false;
+      savePomodoroPrefs();
+      renderPomodoro();
+      void syncFocusMusicForFocusMode({ forceExternalOpen: true });
     });
     document.getElementById("settingsFocusMusicUrl")?.addEventListener("change", e => {
       pomodoro.focusMusicUrl = (e.target.value || "").trim();
       savePomodoroPrefs();
+      if (pomodoro.focusMusicSource === "external_url") {
+        focusMusicExternalOpenLatch = false;
+        void syncFocusMusicForFocusMode({ forceExternalOpen: true });
+      }
     });
     document.getElementById("pomoNotifyBtn").addEventListener("click",requestPomodoroNotifications);
     document.getElementById("settingsPomoNotifyBtn")?.addEventListener("click",requestPomodoroNotifications);
