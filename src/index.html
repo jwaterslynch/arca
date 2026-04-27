@@ -791,48 +791,65 @@ body{font-family:var(--font);color:var(--text);background:var(--bg);-webkit-font
   font-variant-numeric:tabular-nums;letter-spacing:2px;line-height:1;
 }
 .focus-overlay .focus-session{font-size:.9rem;color:rgba(255,255,255,.4);font-weight:500}
-.focus-audio-meta{
+/* ─── Ghost pill: floating focus-music control ───
+   Top-right of the focus overlay. Translucent capsule with track name + two
+   ghost buttons (next, mute). Auto-fades to ~40% opacity after 2.5s; brightens
+   on hover. Pointer-events stays auto so clicks always land regardless of
+   opacity transitions. */
+.focus-music-pill{
+  position:absolute;
+  top:24px;
+  right:24px;
   display:flex;
   align-items:center;
   gap:10px;
-  margin-top:10px;
+  padding:8px 12px 8px 16px;
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.1);
+  border-radius:999px;
+  backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
+  pointer-events:auto;
+  opacity:1;
+  transition:opacity .8s ease;
+  z-index:10;
 }
-.focus-audio-meta[hidden]{
-  display:none;
-}
-.focus-audio-track{
-  font-size:.82rem;
-  color:rgba(255,255,255,.55);
-  max-width:340px;
+.focus-music-pill[hidden]{ display:none; }
+.focus-music-pill.idle{ opacity:.4; }
+.focus-music-pill:hover,
+.focus-music-pill:focus-within{ opacity:1 !important; }
+.focus-music-track{
+  font-size:.78rem;
+  color:rgba(255,255,255,.7);
+  max-width:200px;
   overflow:hidden;
   text-overflow:ellipsis;
   white-space:nowrap;
+  font-weight:500;
+  letter-spacing:.01em;
 }
-.focus-audio-next{
+.focus-music-btn{
   background:transparent;
   color:rgba(255,255,255,.6);
-  border:1px solid rgba(255,255,255,.15);
+  border:1px solid rgba(255,255,255,.18);
   border-radius:999px;
-  padding:6px 12px;
-  font:600 .76rem var(--font);
+  padding:5px 11px;
+  font:600 .72rem var(--font);
   cursor:pointer;
+  pointer-events:auto;
+  touch-action:manipulation;
+  user-select:none;
+  -webkit-user-select:none;
+  transition:color .15s ease, border-color .15s ease, background .15s ease;
 }
-.focus-audio-next:hover{
-  color:rgba(255,255,255,.85);
-  border-color:rgba(255,255,255,.28);
+.focus-music-btn:hover,
+.focus-music-btn:focus-visible{
+  color:rgba(255,255,255,.95);
+  border-color:rgba(255,255,255,.36);
+  background:rgba(255,255,255,.06);
 }
-.focus-audio-toggle{
-  background:transparent;
-  color:rgba(255,255,255,.6);
-  border:1px solid rgba(255,255,255,.15);
-  border-radius:999px;
-  padding:6px 12px;
-  font:600 .76rem var(--font);
-  cursor:pointer;
-}
-.focus-audio-toggle:hover{
-  color:rgba(255,255,255,.85);
-  border-color:rgba(255,255,255,.28);
+.focus-music-btn:active{
+  background:rgba(255,255,255,.12);
 }
 .focus-controls{display:flex;gap:12px;margin-top:16px}
 .focus-controls button{
@@ -3302,6 +3319,14 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
 
   <!-- Focus Mode Overlay -->
   <div class="focus-overlay" id="focusOverlay">
+    <!-- Ghost pill: floating music control, top-right of focus screen.
+         Auto-fades when idle; brightens on hover. Visible only when built-in
+         focus music is enabled. -->
+    <div class="focus-music-pill" id="focusMusicMeta" hidden>
+      <span class="focus-music-track" id="focusMusicTrackLabel">Arca Focus #1</span>
+      <button class="focus-music-btn" id="focusMusicNextBtn" type="button" title="Next track" aria-label="Next track">↷</button>
+      <button class="focus-music-btn" id="focusMusicToggleBtn" type="button" title="Mute" aria-label="Mute">Mute</button>
+    </div>
     <div class="focus-task">
       <span id="focusTaskName">No task selected</span>
       <div class="focus-tags" id="focusTags"></div>
@@ -3309,11 +3334,6 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
     <div class="focus-timer" id="focusTimer">25:00</div>
     <div class="focus-session" id="focusSession">Session 1 of 4</div>
     <div class="pomo-dots" id="pomoDots"></div>
-    <div class="focus-audio-meta" id="focusMusicMeta" hidden>
-      <span class="focus-audio-track" id="focusMusicTrackLabel">Arca Focus Music #1</span>
-      <button class="focus-audio-next" id="focusMusicNextBtn" type="button">Next track</button>
-      <button class="focus-audio-toggle" id="focusMusicToggleBtn" type="button">Music off</button>
-    </div>
     <div class="focus-controls">
       <button class="focus-pause" id="focusPauseBtn">Pause</button>
       <button class="focus-done" id="focusDoneBtn">✓ Done</button>
@@ -3445,6 +3465,21 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
                         Arca rotates through the built-in focus themes automatically. Use “Next track” inside Focus mode if you want to skip ahead.
                       </div>
                       <label id="settingsFocusMusicUrlField" class="tiny ai-settings-field" style="grid-column:1/-1"><span>Playlist URL</span><input id="settingsFocusMusicUrl" type="url" placeholder="https://open.spotify.com/playlist/…" /></label>
+                      <label id="settingsFocusMusicVolumeField" class="tiny ai-settings-field" style="grid-column:1/-1">
+                        <span>Music level <span id="settingsFocusMusicVolumeReadout" style="opacity:.6;font-weight:500">40%</span></span>
+                        <input id="settingsFocusMusicVolume" type="range" min="0" max="100" step="5" value="40" />
+                      </label>
+                    </div>
+                    <div class="settings-toggle-grid" style="margin-top:14px">
+                      <div class="settings-toggle-copy">
+                        <label class="settings-toggle-label">
+                          <input id="settingsPauseMusicWithTimer" type="checkbox" />
+                          <span class="settings-toggle-text">
+                            <strong>Pause music when timer is paused</strong>
+                            <span>Built-in audio stops with the timer and resumes when you press play. Turn off if you want music to keep going while you step away.</span>
+                          </span>
+                        </label>
+                      </div>
                     </div>
                   </div>
                   <div class="settings-pane-card">
@@ -5602,8 +5637,18 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       autoFocusMode: true,
       focusMusicEnabled: true,
       focusMusicSource: "built_in",
-      focusMusicUrl: "https://open.spotify.com/playlist/37i9dQZF1E4v7RvD2voKpl"
+      focusMusicUrl: "https://open.spotify.com/playlist/37i9dQZF1E4v7RvD2voKpl",
+      focusMusicVolume: 0.4,
+      pauseMusicWithTimer: true
     };
+    // ─── Built-in focus music tracks ───
+    // To add a new track:
+    //   1. Drop the .mp3 file into assets/focus-music/
+    //   2. Add a new entry to this array with a unique id and the relative src path
+    //   3. Reload the app — it will appear in rotation
+    // Bundled MP3s are not yet normalized to a streaming-loudness target.
+    // Until they are re-bounced at -16 LUFS, the default focusMusicVolume is 0.4
+    // so first-run audio is consonant with Spotify/Apple Music levels.
     const BUILT_IN_FOCUS_MUSIC_TRACKS = [
       { id: "arca-focus-1", title: "Arca Focus Music #1", src: "assets/focus-music/arca-focus-music-1.mp3" },
       { id: "arca-focus-2", title: "Arca Focus Music #2", src: "assets/focus-music/arca-focus-music-2.mp3" },
@@ -7412,7 +7457,9 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         completedBlocksDay: "",
         focusMusicEnabled: true,
         focusMusicSource: "built_in",
-        focusMusicUrl: "https://open.spotify.com/playlist/37i9dQZF1E4v7RvD2voKpl"
+        focusMusicUrl: "https://open.spotify.com/playlist/37i9dQZF1E4v7RvD2voKpl",
+        focusMusicVolume: 0.4,
+        pauseMusicWithTimer: true
       };
       try {
         const raw = loadLocalStorageWithFallback(POMO_PREF_KEY, LEGACY_POMO_PREF_KEYS);
@@ -7438,7 +7485,11 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           focusMusicSource: pref.focusMusicSource === "external_url" ? "external_url" : "built_in",
           focusMusicUrl: typeof pref.focusMusicUrl === "string" && pref.focusMusicUrl.trim()
             ? pref.focusMusicUrl.trim()
-            : defaults.focusMusicUrl
+            : defaults.focusMusicUrl,
+          focusMusicVolume: Math.min(1, Math.max(0, Number.isFinite(Number(pref.focusMusicVolume))
+            ? Number(pref.focusMusicVolume)
+            : defaults.focusMusicVolume)),
+          pauseMusicWithTimer: pref.pauseMusicWithTimer !== false
         };
       } catch {
         return defaults;
@@ -7461,7 +7512,9 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         completedBlocksDay: String(pomodoro.completedBlocksDay || ""),
         focusMusicEnabled: !!pomodoro.focusMusicEnabled,
         focusMusicSource: pomodoro.focusMusicSource === "external_url" ? "external_url" : "built_in",
-        focusMusicUrl: typeof pomodoro.focusMusicUrl === "string" ? pomodoro.focusMusicUrl : ""
+        focusMusicUrl: typeof pomodoro.focusMusicUrl === "string" ? pomodoro.focusMusicUrl : "",
+        focusMusicVolume: Math.min(1, Math.max(0, Number.isFinite(Number(pomodoro.focusMusicVolume)) ? Number(pomodoro.focusMusicVolume) : 0.4)),
+        pauseMusicWithTimer: pomodoro.pauseMusicWithTimer !== false
       }));
       clearLegacyLocalStorageKeys(LEGACY_POMO_PREF_KEYS);
     }
@@ -7486,6 +7539,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       if (focusMusicAudio) return focusMusicAudio;
       focusMusicAudio = new Audio();
       focusMusicAudio.preload = "auto";
+      focusMusicAudio.volume = clampedFocusMusicVolume();
       focusMusicAudio.addEventListener("ended", () => {
         if (!pomodoro.focusMode || pomodoro.focusMusicSource !== "built_in") return;
         const tracks = builtInFocusMusicTracks();
@@ -7499,11 +7553,33 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       return focusMusicAudio;
     }
 
+    function clampedFocusMusicVolume() {
+      const v = Number(pomodoro.focusMusicVolume);
+      if (!Number.isFinite(v)) return 0.4;
+      return Math.min(1, Math.max(0, v));
+    }
+
+    function applyFocusMusicVolume() {
+      if (!focusMusicAudio) return;
+      try { focusMusicAudio.volume = clampedFocusMusicVolume(); } catch {}
+    }
+
+    // Track whether play() has resolved so we can call pause() defensively
+    // without hitting AbortError-on-pending-play in Chromium/WebKit.
+    let focusMusicPlayPromise = null;
+
     function pauseFocusMusicPlayback() {
       if (!focusMusicAudio) return;
-      try {
-        focusMusicAudio.pause();
-      } catch {}
+      const doPause = () => {
+        try { focusMusicAudio.pause(); } catch (err) {
+          console.warn("[focus-music] pause failed", err);
+        }
+      };
+      if (focusMusicPlayPromise && typeof focusMusicPlayPromise.then === "function") {
+        focusMusicPlayPromise.then(doPause).catch(doPause);
+      } else {
+        doPause();
+      }
     }
 
     async function playBuiltInFocusMusicTrack(index = 0) {
@@ -7517,13 +7593,17 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       if (focusMusicTrackLabel) focusMusicTrackLabel.textContent = track.title;
 
       const audio = ensureFocusMusicAudio();
+      audio.volume = clampedFocusMusicVolume();
       const nextUrl = builtInFocusMusicUrl(track);
       if (!nextUrl) return false;
       if (focusMusicCurrentTrackId === track.id && audio.src) {
         try {
-          await audio.play();
+          focusMusicPlayPromise = audio.play();
+          await focusMusicPlayPromise;
+          focusMusicPlayPromise = null;
           return true;
         } catch (err) {
+          focusMusicPlayPromise = null;
           console.warn("[focus-music] resume failed", err);
         }
       }
@@ -7531,9 +7611,12 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       try {
         audio.src = nextUrl;
         focusMusicCurrentTrackId = track.id;
-        await audio.play();
+        focusMusicPlayPromise = audio.play();
+        await focusMusicPlayPromise;
+        focusMusicPlayPromise = null;
         return true;
       } catch (err) {
+        focusMusicPlayPromise = null;
         console.warn("[focus-music] built-in playback failed", track.id, err);
         focusMusicCurrentTrackId = "";
         return false;
@@ -15528,6 +15611,8 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         }).join("");
       }
       overlay.classList.add("active");
+      // Show the music pill at full opacity, then auto-fade after a few seconds.
+      if (typeof bumpFocusMusicPillActivity === "function") bumpFocusMusicPillActivity();
     }
 
     function exitFocusMode() {
@@ -15631,6 +15716,9 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       const settingsFocusMusicBuiltInNote = document.getElementById("settingsFocusMusicBuiltInNote");
       const settingsFocusMusicUrlField = document.getElementById("settingsFocusMusicUrlField");
       const settingsFocusMusicUrl = document.getElementById("settingsFocusMusicUrl");
+      const settingsFocusMusicVolume = document.getElementById("settingsFocusMusicVolume");
+      const settingsFocusMusicVolumeReadout = document.getElementById("settingsFocusMusicVolumeReadout");
+      const settingsPauseMusicWithTimer = document.getElementById("settingsPauseMusicWithTimer");
       const settingsAutoFocusToggle = document.getElementById("settingsAutoFocusToggle");
       const settingsSoundToggle = document.getElementById("settingsPomoSoundToggle");
       const settingsSoundProfile = document.getElementById("settingsPomoSoundProfile");
@@ -15792,6 +15880,10 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       if (settingsFocusMusicUrl) settingsFocusMusicUrl.value = pomodoro.focusMusicUrl || "";
       if (settingsFocusMusicBuiltInNote) settingsFocusMusicBuiltInNote.hidden = normalizedFocusMusicSource !== "built_in";
       if (settingsFocusMusicUrlField) settingsFocusMusicUrlField.hidden = normalizedFocusMusicSource !== "external_url";
+      const volumePct = Math.round(clampedFocusMusicVolume() * 100);
+      if (settingsFocusMusicVolume) settingsFocusMusicVolume.value = volumePct;
+      if (settingsFocusMusicVolumeReadout) settingsFocusMusicVolumeReadout.textContent = `${volumePct}%`;
+      if (settingsPauseMusicWithTimer) settingsPauseMusicWithTimer.checked = pomodoro.pauseMusicWithTimer !== false;
       const builtInTrack = currentBuiltInFocusMusicTrack();
       const showBuiltInMusicMeta = !!pomodoro.focusMusicEnabled
         && normalizedFocusMusicSource === "built_in"
@@ -15802,7 +15894,9 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         focusMusicNextBtn.disabled = builtInFocusMusicTracks().length < 2;
       }
       if (focusMusicToggleBtn) {
-        focusMusicToggleBtn.textContent = focusMusicMutedForSession ? "Music on" : "Music off";
+        focusMusicToggleBtn.textContent = focusMusicMutedForSession ? "Unmute" : "Mute";
+        focusMusicToggleBtn.setAttribute("aria-label", focusMusicMutedForSession ? "Unmute" : "Mute");
+        focusMusicToggleBtn.setAttribute("title", focusMusicMutedForSession ? "Unmute" : "Mute");
       }
       if (notifyBtn) {
         if (!("Notification" in window)) notifyBtn.disabled = true;
@@ -15920,11 +16014,21 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       syncPomodoroDailyCounter();
       if (pomodoro.running) return;
       void ensurePomodoroAudioReady();
+      const wasResumingFromPause = pomodoro.paused && pomodoro.phase !== "idle";
       if (pomodoro.phase === "idle") {
         pomodoro.remainingSec = toInt(document.getElementById("pomoWorkMin").value, 25) * 60;
         startPomodoroPhase("work");
       } else {
         startPomodoroPhase(pomodoro.phase);
+      }
+      // Resume built-in focus music if it was paused with the timer.
+      if (wasResumingFromPause
+          && pomodoro.pauseMusicWithTimer !== false
+          && pomodoro.focusMusicEnabled
+          && pomodoro.focusMode
+          && pomodoro.focusMusicSource === "built_in"
+          && !focusMusicMutedForSession) {
+        void playBuiltInFocusMusicTrack(focusMusicTrackIndex);
       }
     }
 
@@ -15946,6 +16050,11 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       pomodoro.paused = true;
       pomodoro.endsAtMs = null;
       if (pomodoro.phase === "work" && state.activeTaskId === pomodoro.taskId) stopActiveTask();
+      // Pause built-in focus music with the timer unless the user opted out.
+      // (Spotify/external URLs are out of our control — user manages those.)
+      if (pomodoro.pauseMusicWithTimer !== false && pomodoro.focusMusicSource === "built_in") {
+        pauseFocusMusicPlayback();
+      }
       if (pomodoro.focusMode) {
         if (keepFocusMode) {
           enterFocusMode();
@@ -29553,8 +29662,48 @@ You cannot change app state without that JSON block. Do not say something was ad
       completeTaskFromHeroCheckbox();
     });
     document.getElementById("focusModeBtn").addEventListener("click",()=>{ setFocusMode(!pomodoro.focusMode); renderPomodoro(); });
-    document.getElementById("focusMusicNextBtn")?.addEventListener("click", nextFocusMusicTrack);
-    document.getElementById("focusMusicToggleBtn")?.addEventListener("click", toggleFocusMusicForSession);
+    // Use both pointerdown and click for the ghost-pill buttons.
+    // pointerdown fires earlier than click and survives some focus-overlay
+    // transition edge cases that were eating early click events. We dedupe
+    // via a short cooldown to avoid double-firing.
+    (function wireFocusMusicPillButtons() {
+      const nextBtn = document.getElementById("focusMusicNextBtn");
+      const toggleBtn = document.getElementById("focusMusicToggleBtn");
+      const fired = { next: 0, toggle: 0 };
+      const COOLDOWN_MS = 250;
+      const guard = (key, fn) => (e) => {
+        const now = Date.now();
+        if (now - fired[key] < COOLDOWN_MS) return;
+        fired[key] = now;
+        e.preventDefault();
+        e.stopPropagation();
+        fn();
+        bumpFocusMusicPillActivity();
+      };
+      if (nextBtn) {
+        nextBtn.addEventListener("pointerdown", guard("next", nextFocusMusicTrack));
+        nextBtn.addEventListener("click", guard("next", nextFocusMusicTrack));
+      }
+      if (toggleBtn) {
+        toggleBtn.addEventListener("pointerdown", guard("toggle", toggleFocusMusicForSession));
+        toggleBtn.addEventListener("click", guard("toggle", toggleFocusMusicForSession));
+      }
+    })();
+    // Auto-fade: pill drops to .idle opacity after IDLE_MS of no interaction.
+    let focusMusicPillIdleTimer = null;
+    const FOCUS_MUSIC_PILL_IDLE_MS = 2500;
+    function bumpFocusMusicPillActivity() {
+      const pill = document.getElementById("focusMusicMeta");
+      if (!pill || pill.hidden) return;
+      pill.classList.remove("idle");
+      if (focusMusicPillIdleTimer) clearTimeout(focusMusicPillIdleTimer);
+      focusMusicPillIdleTimer = setTimeout(() => {
+        const live = document.getElementById("focusMusicMeta");
+        if (live && !live.hidden) live.classList.add("idle");
+      }, FOCUS_MUSIC_PILL_IDLE_MS);
+    }
+    // Mouse movement anywhere over the pill brings it back to full opacity.
+    document.getElementById("focusMusicMeta")?.addEventListener("pointerenter", bumpFocusMusicPillActivity);
     document.getElementById("focusPauseBtn").addEventListener("click",toggleFocusPomodoro);
     document.getElementById("focusDoneBtn").addEventListener("click",()=>{ completeTaskFromHeroCheckbox(); });
     document.getElementById("focusExitBtn").addEventListener("click",()=>{ setFocusMode(false); renderPomodoro(); });
@@ -29609,6 +29758,24 @@ You cannot change app state without that JSON block. Do not say something was ad
         focusMusicExternalOpenLatch = false;
         void syncFocusMusicForFocusMode({ forceExternalOpen: true });
       }
+    });
+    // Volume slider — apply live as the user drags, persist on change.
+    const _focusMusicVolumeInput = document.getElementById("settingsFocusMusicVolume");
+    if (_focusMusicVolumeInput) {
+      const handleVolume = (persist) => (e) => {
+        const pct = Math.min(100, Math.max(0, Number.parseInt(e.target.value, 10) || 0));
+        pomodoro.focusMusicVolume = pct / 100;
+        applyFocusMusicVolume();
+        const readout = document.getElementById("settingsFocusMusicVolumeReadout");
+        if (readout) readout.textContent = `${pct}%`;
+        if (persist) savePomodoroPrefs();
+      };
+      _focusMusicVolumeInput.addEventListener("input", handleVolume(false));
+      _focusMusicVolumeInput.addEventListener("change", handleVolume(true));
+    }
+    document.getElementById("settingsPauseMusicWithTimer")?.addEventListener("change", e => {
+      pomodoro.pauseMusicWithTimer = !!e.target.checked;
+      savePomodoroPrefs();
     });
     document.getElementById("pomoNotifyBtn").addEventListener("click",requestPomodoroNotifications);
     document.getElementById("settingsPomoNotifyBtn")?.addEventListener("click",requestPomodoroNotifications);
