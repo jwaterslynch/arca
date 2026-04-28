@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "tauri dev",
     "build": "tauri build",
+    "test:health-sync": "node scripts/test_health_sync_contracts.mjs",
     "validate:health-sync-schema": "node scripts/validate_health_sync_schema.mjs",
     "test:health-sync-client": "node scripts/test_health_sync_client.mjs",
     "test:health-sync-read-model": "node scripts/test_health_sync_read_model.mjs",

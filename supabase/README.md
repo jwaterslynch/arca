@@ -69,6 +69,12 @@ It is not wired into the desktop app or iOS app yet. It exists so the backend RP
 Run:
 
 ```bash
+npm run test:health-sync
+```
+
+Individual checks:
+
+```bash
 npm run test:health-sync-client
 npm run test:health-sync-read-model
 npm run test:health-sync-repository
