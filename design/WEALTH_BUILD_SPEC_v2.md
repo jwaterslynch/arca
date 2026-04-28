@@ -23,7 +23,7 @@ This v2 spec tightens the next phases by:
 5. reducing false precision in property estimates
 
 High-level product intent still lives in:
-- [WEALTH_MODULE_PRD_v1.md](/Users/julianwaterslynch/Workspace/Arca/09_Productization/arca/design/WEALTH_MODULE_PRD_v1.md)
+- [WEALTH_MODULE_PRD_v1.md](/Users/julianwaterslynch/Workspace/Products/Arca/arca/design/WEALTH_MODULE_PRD_v1.md)
 
 ## 2) Scope of This Spec
 This spec covers:

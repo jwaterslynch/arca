@@ -4,7 +4,7 @@
 
 Add the first real `Health` module to the product without introducing a new backend or state model.
 
-This is `H1` from [HEALTHY_WEALTHY_WISE_IA.md](/Users/julianwaterslynch/Workspace/Arca/09_Productization/arca/design/HEALTHY_WEALTHY_WISE_IA.md):
+This is `H1` from [HEALTHY_WEALTHY_WISE_IA.md](/Users/julianwaterslynch/Workspace/Products/Arca/arca/design/HEALTHY_WEALTHY_WISE_IA.md):
 
 - top-level `Health` tab
 - `Overview` subtab
