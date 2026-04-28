@@ -9,6 +9,7 @@
     "validate:health-sync-schema": "node scripts/validate_health_sync_schema.mjs",
     "test:health-sync-client": "node scripts/test_health_sync_client.mjs",
     "test:health-sync-read-model": "node scripts/test_health_sync_read_model.mjs",
+    "test:health-sync-repository": "node scripts/test_health_sync_repository.mjs",
     "smoke:health-sync": "node scripts/smoke_health_sync_backend.mjs",
     "tauri": "tauri"
   },

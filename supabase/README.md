@@ -71,4 +71,5 @@ Run:
 ```bash
 npm run test:health-sync-client
 npm run test:health-sync-read-model
+npm run test:health-sync-repository
 ```
