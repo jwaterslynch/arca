@@ -114,6 +114,20 @@ Aspirational, unscheduled. Each should have its own `IDEA_*.md` in `design/` if 
 - **Approach:** read-only first (weight → sleep → heart rate → workouts). Write-back optional, much later.
 - **Brief:** [`design/IDEA_APPLE_HEALTHKIT_INTEGRATION.md`](design/IDEA_APPLE_HEALTHKIT_INTEGRATION.md)
 
+### Phone Tasks tab — Execute + Plan companion
+- **Tag:** 🌠 future ambition
+- **Blocked on:** Track A health sync foundation activating, then proving 30+ days of stable iOS-to-desktop data flow.
+- **Use case:** Walking + idea + add to backlog → card appears on desktop. Same low-friction-capture thesis as Arboleaf/Morpheus, applied to tasks.
+- **Why not now:** A phone Tasks tab without sync is just a worse Notes app — the unique pull is sync to desktop. Designing the iOS Task model before backend schema lands risks two rounds of rework.
+- **Sequence (when picked up):** read-only tasks tab → tap-to-complete → add task → polish.
+- **Brief:** [`design/IDEA_PHONE_TASKS_TAB.md`](design/IDEA_PHONE_TASKS_TAB.md)
+
+### Morpheus Workout Stats capture
+- **Tag:** 🎨 idiosyncratic / extension
+- **Blocked on:** Phase A dogfood revealing whether the workout-impact delta from the home screen is sufficient signal, or if RPE / time-in-zones / max+avg HR are genuinely needed.
+- **Use case:** Capture the post-workout summary screen (duration, RPE, performance score, calories, max/avg HR, time in Recovery/Conditioning/Overload zones). Different screen layout than the Morpheus home view, so requires `WorkoutEntry` model + `MorpheusWorkoutParser`.
+- **Why not now:** Home-screen post-workout capture already gives the recovery delta — the primary workout-intensity signal. Detailed stats are nice-to-have until dogfood reveals they're must-have.
+
 ### Distinct focus shortcut / customizable shortcuts
 - **Tag:** 🎨 idiosyncratic
 - **Blocked on:** not urgent. Revisit only if the current shortcut model keeps creating daily friction.
