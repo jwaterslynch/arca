@@ -32,6 +32,7 @@ const requiredFragments = [
   "create or replace function public.upsert_body_measurement_from_capture",
   "create or replace function public.tombstone_health_capture_record",
   "create or replace function public.upsert_health_device_checkpoint",
+  "client_event_id already used for a different health event",
   "grant select, insert on table public.health_capture_events to authenticated"
 ];
 

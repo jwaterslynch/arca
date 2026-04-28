@@ -87,9 +87,32 @@ curl -sS "$SUPABASE_URL/rest/v1/rpc/ensure_user_board" \
 
 Expected: UUID board id.
 
+## 5.1) Health sync smoke test
+
+After applying `supabase/migrations/20260428180000_health_sync_foundation.sql`, run the automated health smoke test against a test user:
+
+```bash
+SUPABASE_URL=https://project.supabase.co \
+SUPABASE_ANON_KEY=... \
+SUPABASE_TEST_EMAIL=test@example.com \
+SUPABASE_TEST_PASSWORD=... \
+npm run smoke:health-sync
+```
+
+Expected:
+
+- device registration succeeds
+- recovery and body records upsert
+- duplicate `client_event_id` retries do not mutate existing records
+- reusing a `client_event_id` for a different entity fails
+- tombstones set `deleted_at`
+- exactly four health events persist for the test records
+- device checkpoint advances
+
 ## 6) Operational notes
 
 - Do not ship service-role keys in client builds.
 - Keep RLS enabled on all sync tables.
 - `board_events` inserts are idempotent per `(board_id, device_id, client_event_id)`.
+- `health_capture_events` inserts are idempotent per `(owner_id, source_device_id, client_event_id)`.
 - `upsert_board_snapshot` is the canonical write path for snapshot sync and increments `server_version`.

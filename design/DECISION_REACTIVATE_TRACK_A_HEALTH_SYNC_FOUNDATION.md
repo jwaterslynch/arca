@@ -66,6 +66,7 @@ Before real phone upload is enabled:
 - fresh phone install cannot overwrite desktop state
 - logout/sign-in does not drop unsynced local entries
 - screenshots remain local-only unless cloud media upload is explicitly enabled
+- the remote health sync smoke test passes against a non-primary Supabase project
 
 ## Build Order
 

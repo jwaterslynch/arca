@@ -41,3 +41,17 @@ npm run validate:health-sync-schema
 ```
 
 This is a lightweight static contract check, not a substitute for applying the migration to a test Supabase project.
+
+## Remote Smoke Test
+
+After applying the health migration to a test Supabase project and creating a test user, run:
+
+```bash
+SUPABASE_URL=https://project.supabase.co \
+SUPABASE_ANON_KEY=... \
+SUPABASE_TEST_EMAIL=test@example.com \
+SUPABASE_TEST_PASSWORD=... \
+npm run smoke:health-sync
+```
+
+The smoke test signs in as the test user, registers a device, upserts one recovery snapshot and one body measurement, verifies duplicate `client_event_id` retries are true no-ops, tombstones both records, and advances a checkpoint.

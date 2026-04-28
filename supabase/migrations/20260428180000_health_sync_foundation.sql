@@ -460,9 +460,38 @@ as $$
 declare
   v_user uuid := auth.uid();
   v_id uuid;
+  v_existing_event_type text;
+  v_existing_entity_type text;
+  v_existing_source_record_id text;
 begin
   if v_user is null then
     raise exception 'Not authenticated' using errcode = '42501';
+  end if;
+
+  select hce.event_type, hce.entity_type, hce.source_record_id
+    into v_existing_event_type, v_existing_entity_type, v_existing_source_record_id
+  from public.health_capture_events hce
+  where hce.owner_id = v_user
+    and hce.source_device_id = trim(p_source_device_id)
+    and hce.client_event_id = trim(p_client_event_id)
+  limit 1;
+
+  if v_existing_event_type is not null then
+    if v_existing_event_type <> 'recovery_snapshot_upserted'
+       or v_existing_entity_type <> 'recovery_snapshot'
+       or v_existing_source_record_id <> trim(p_source_record_id) then
+      raise exception 'client_event_id already used for a different health event';
+    end if;
+
+    select rs.id
+      into v_id
+    from public.recovery_snapshots rs
+    where rs.owner_id = v_user
+      and rs.source_type = 'morpheus_screenshot'
+      and rs.source_record_id = trim(p_source_record_id)
+    limit 1;
+
+    return v_id;
   end if;
 
   perform public.append_health_capture_event(
@@ -581,9 +610,38 @@ as $$
 declare
   v_user uuid := auth.uid();
   v_id uuid;
+  v_existing_event_type text;
+  v_existing_entity_type text;
+  v_existing_source_record_id text;
 begin
   if v_user is null then
     raise exception 'Not authenticated' using errcode = '42501';
+  end if;
+
+  select hce.event_type, hce.entity_type, hce.source_record_id
+    into v_existing_event_type, v_existing_entity_type, v_existing_source_record_id
+  from public.health_capture_events hce
+  where hce.owner_id = v_user
+    and hce.source_device_id = trim(p_source_device_id)
+    and hce.client_event_id = trim(p_client_event_id)
+  limit 1;
+
+  if v_existing_event_type is not null then
+    if v_existing_event_type <> 'body_measurement_upserted'
+       or v_existing_entity_type <> 'body_measurement'
+       or v_existing_source_record_id <> trim(p_source_record_id) then
+      raise exception 'client_event_id already used for a different health event';
+    end if;
+
+    select bm.id
+      into v_id
+    from public.body_measurements bm
+    where bm.owner_id = v_user
+      and bm.source_type = 'arboleaf_screenshot'
+      and bm.source_record_id = trim(p_source_record_id)
+    limit 1;
+
+    return v_id;
   end if;
 
   perform public.append_health_capture_event(
@@ -713,9 +771,37 @@ declare
   v_user uuid := auth.uid();
   v_entity_type text := trim(coalesce(p_entity_type, ''));
   v_deleted_at timestamptz := coalesce(p_deleted_at, now());
+  v_existing_event_type text;
+  v_existing_entity_type text;
+  v_existing_source_record_id text;
 begin
   if v_user is null then
     raise exception 'Not authenticated' using errcode = '42501';
+  end if;
+
+  select hce.event_type, hce.entity_type, hce.source_record_id
+    into v_existing_event_type, v_existing_entity_type, v_existing_source_record_id
+  from public.health_capture_events hce
+  where hce.owner_id = v_user
+    and hce.source_device_id = trim(p_source_device_id)
+    and hce.client_event_id = trim(p_client_event_id)
+  limit 1;
+
+  if v_existing_event_type is not null then
+    if v_existing_entity_type <> v_entity_type
+       or v_existing_source_record_id <> trim(p_source_record_id)
+       or (
+         v_entity_type = 'recovery_snapshot'
+         and v_existing_event_type <> 'recovery_snapshot_deleted'
+       )
+       or (
+         v_entity_type = 'body_measurement'
+         and v_existing_event_type <> 'body_measurement_deleted'
+       ) then
+      raise exception 'client_event_id already used for a different health event';
+    end if;
+
+    return;
   end if;
 
   if v_entity_type = 'recovery_snapshot' then
