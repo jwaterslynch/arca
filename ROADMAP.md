@@ -114,6 +114,13 @@ Aspirational, unscheduled. Each should have its own `IDEA_*.md` in `design/` if 
 - **Approach:** read-only first (weight → sleep → heart rate → workouts). Write-back optional, much later.
 - **Brief:** [`design/IDEA_APPLE_HEALTHKIT_INTEGRATION.md`](design/IDEA_APPLE_HEALTHKIT_INTEGRATION.md)
 
+### Distinct focus shortcut / customizable shortcuts
+- **Tag:** 🎨 idiosyncratic
+- **Blocked on:** not urgent. Revisit only if the current shortcut model keeps creating daily friction.
+- **Use case:** prevent `Cmd+Enter` conflict between AI composer submit and Focus mode entry, while optionally allowing user-level shortcut customization later.
+- **Recommendation:** distinct Focus shortcut first; user-configurable shortcuts only after the simpler default model is proven insufficient.
+- **Brief:** [`design/IDEA_CUSTOMIZABLE_SHORTCUTS.md`](design/IDEA_CUSTOMIZABLE_SHORTCUTS.md)
+
 ---
 
 ## Retired
