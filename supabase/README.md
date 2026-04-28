@@ -54,7 +54,7 @@ SUPABASE_TEST_PASSWORD=... \
 npm run smoke:health-sync
 ```
 
-The smoke test signs in as the test user, registers a device, upserts one recovery snapshot and one body measurement, verifies duplicate `client_event_id` retries are true no-ops, tombstones both records, and advances a checkpoint.
+The smoke test signs in as the test user, uses the dark-launched JS health sync client, registers a device, upserts one recovery snapshot and one body measurement, verifies duplicate `client_event_id` retries are true no-ops, loads the repository/read-model/coach snapshot path, tombstones both records, and advances a checkpoint.
 
 ## Client Contract
 

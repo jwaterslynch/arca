@@ -1,5 +1,14 @@
 #!/usr/bin/env node
 
+import {
+  createHealthSyncClient,
+  HealthSyncError
+} from "../src/lib/healthSyncClient.js";
+import {
+  loadHealthCoachSyncSnapshot,
+  loadHealthSyncReadModel
+} from "../src/lib/healthSyncRepository.js";
+
 const requiredEnv = [
   "SUPABASE_URL",
   "SUPABASE_ANON_KEY",
@@ -48,7 +57,7 @@ async function readJsonOrText(response) {
   }
 }
 
-async function authHeaders() {
+async function authSession() {
   const response = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=password`, {
     method: "POST",
     headers: {
@@ -63,38 +72,13 @@ async function authHeaders() {
   }
   assert(body?.access_token, "auth response returned an access token");
   return {
-    apikey: anonKey,
-    Authorization: `Bearer ${body.access_token}`,
-    "Content-Type": "application/json"
+    accessToken: body.access_token,
+    headers: {
+      apikey: anonKey,
+      Authorization: `Bearer ${body.access_token}`,
+      "Content-Type": "application/json"
+    }
   };
-}
-
-async function rpc(headers, name, payload) {
-  const response = await fetch(`${supabaseUrl}/rest/v1/rpc/${name}`, {
-    method: "POST",
-    headers,
-    body: JSON.stringify(payload)
-  });
-  const body = await readJsonOrText(response);
-  if (!response.ok) {
-    throw new Error(`RPC ${name} failed (${response.status}): ${JSON.stringify(body)}`);
-  }
-  return body;
-}
-
-async function expectRpcFailure(headers, name, payload, expectedMessagePart) {
-  const response = await fetch(`${supabaseUrl}/rest/v1/rpc/${name}`, {
-    method: "POST",
-    headers,
-    body: JSON.stringify(payload)
-  });
-  const body = await readJsonOrText(response);
-  assert(!response.ok, `${name} should have failed`);
-  const message = JSON.stringify(body);
-  assert(
-    message.includes(expectedMessagePart),
-    `${name} failure should mention "${expectedMessagePart}", got ${message}`
-  );
 }
 
 async function selectRows(headers, table, params) {
@@ -115,16 +99,37 @@ function numeric(value) {
   return Number(value);
 }
 
+async function expectClientFailure(operation, expectedMessagePart) {
+  try {
+    await operation();
+  } catch (error) {
+    assert(error instanceof HealthSyncError, "failure came from HealthSyncError");
+    const message = JSON.stringify(error.body ?? error.message);
+    assert(
+      message.includes(expectedMessagePart),
+      `failure should mention "${expectedMessagePart}", got ${message}`
+    );
+    return;
+  }
+  throw new Error(`Expected client operation to fail with "${expectedMessagePart}"`);
+}
+
 async function main() {
   console.log(`Health sync smoke test run: ${runId}`);
-  const headers = await authHeaders();
+  const session = await authSession();
+  const headers = session.headers;
+  const client = createHealthSyncClient({
+    supabaseUrl,
+    anonKey,
+    accessToken: session.accessToken
+  });
 
   console.log("Registering device...");
-  await rpc(headers, "register_health_device", {
-    p_device_id: deviceId,
-    p_platform: "smoke-test",
-    p_app_version: "smoke",
-    p_display_name: "Health Sync Smoke Test"
+  await client.registerDevice({
+    deviceId,
+    platform: "smoke-test",
+    appVersion: "smoke",
+    displayName: "Health Sync Smoke Test"
   });
 
   const now = new Date().toISOString();
@@ -132,40 +137,40 @@ async function main() {
   const bodyEventId = `${runId}-body-upsert`;
 
   console.log("Upserting recovery snapshot...");
-  const recoveryUuid = await rpc(headers, "upsert_recovery_snapshot_from_capture", {
-    p_source_device_id: deviceId,
-    p_client_event_id: recoveryEventId,
-    p_source_record_id: recoveryRecordId,
-    p_measurement_at: now,
-    p_captured_at: now,
-    p_recovery_percent: 76,
-    p_recovery_delta: -11,
-    p_hrv: 70,
-    p_activity: 5921,
-    p_sleep_minutes: 502,
-    p_sleep_duration_display: "08:22",
-    p_parse_confidence: 1,
-    p_needs_review: false,
-    p_metadata: { smoke_test: true, run_id: runId }
+  const recoveryUuid = await client.upsertRecoverySnapshot({
+    deviceId,
+    clientEventId: recoveryEventId,
+    sourceRecordId: recoveryRecordId,
+    measurementAt: now,
+    capturedAt: now,
+    recoveryPercent: 76,
+    recoveryDelta: -11,
+    hrv: 70,
+    activity: 5921,
+    sleepMinutes: 502,
+    sleepDurationDisplay: "08:22",
+    parseConfidence: 1,
+    needsReview: false,
+    metadata: { smoke_test: true, run_id: runId }
   });
   assert(typeof recoveryUuid === "string" && recoveryUuid.length > 10, "recovery upsert returned uuid");
 
   console.log("Retrying same recovery event with changed payload; should be a no-op...");
-  const retryRecoveryUuid = await rpc(headers, "upsert_recovery_snapshot_from_capture", {
-    p_source_device_id: deviceId,
-    p_client_event_id: recoveryEventId,
-    p_source_record_id: recoveryRecordId,
-    p_measurement_at: now,
-    p_captured_at: now,
-    p_recovery_percent: 55,
-    p_recovery_delta: -2,
-    p_hrv: 1,
-    p_activity: 1,
-    p_sleep_minutes: 1,
-    p_sleep_duration_display: "00:01",
-    p_parse_confidence: 0.1,
-    p_needs_review: true,
-    p_metadata: { smoke_test: true, run_id: runId, attempted_duplicate_mutation: true }
+  const retryRecoveryUuid = await client.upsertRecoverySnapshot({
+    deviceId,
+    clientEventId: recoveryEventId,
+    sourceRecordId: recoveryRecordId,
+    measurementAt: now,
+    capturedAt: now,
+    recoveryPercent: 55,
+    recoveryDelta: -2,
+    hrv: 1,
+    activity: 1,
+    sleepMinutes: 1,
+    sleepDurationDisplay: "00:01",
+    parseConfidence: 0.1,
+    needsReview: true,
+    metadata: { smoke_test: true, run_id: runId, attempted_duplicate_mutation: true }
   });
   assert(retryRecoveryUuid === recoveryUuid, "duplicate recovery event returned same uuid");
 
@@ -179,36 +184,34 @@ async function main() {
   assert(numeric(recoveryRows[0].hrv) === 70, "duplicate retry did not mutate hrv");
 
   console.log("Checking duplicate event id cannot be reused for a different entity...");
-  await expectRpcFailure(
-    headers,
-    "upsert_body_measurement_from_capture",
-    {
-      p_source_device_id: deviceId,
-      p_client_event_id: recoveryEventId,
-      p_source_record_id: bodyRecordId,
-      p_measurement_at: now,
-      p_captured_at: now,
-      p_weight_kg: 76.45
-    },
+  await expectClientFailure(
+    () => client.upsertBodyMeasurement({
+      deviceId,
+      clientEventId: recoveryEventId,
+      sourceRecordId: bodyRecordId,
+      measurementAt: now,
+      capturedAt: now,
+      weightKg: 76.45
+    }),
     "client_event_id already used"
   );
 
   console.log("Upserting body measurement...");
-  const bodyUuid = await rpc(headers, "upsert_body_measurement_from_capture", {
-    p_source_device_id: deviceId,
-    p_client_event_id: bodyEventId,
-    p_source_record_id: bodyRecordId,
-    p_measurement_at: now,
-    p_captured_at: now,
-    p_weight_kg: 76.45,
-    p_source_weight_value: 76.45,
-    p_source_weight_unit: "kg",
-    p_body_fat_percent: 17.6,
-    p_skeletal_muscle_percent: 48.2,
-    p_muscle_mass_kg: 58.1,
-    p_parse_confidence: 1,
-    p_needs_review: false,
-    p_metadata: { smoke_test: true, run_id: runId }
+  const bodyUuid = await client.upsertBodyMeasurement({
+    deviceId,
+    clientEventId: bodyEventId,
+    sourceRecordId: bodyRecordId,
+    measurementAt: now,
+    capturedAt: now,
+    weightKg: 76.45,
+    sourceWeightValue: 76.45,
+    sourceWeightUnit: "kg",
+    bodyFatPercent: 17.6,
+    skeletalMusclePercent: 48.2,
+    muscleMassKg: 58.1,
+    parseConfidence: 1,
+    needsReview: false,
+    metadata: { smoke_test: true, run_id: runId }
   });
   assert(typeof bodyUuid === "string" && bodyUuid.length > 10, "body upsert returned uuid");
 
@@ -219,33 +222,55 @@ async function main() {
   assert(bodyRows.length === 1, "one body measurement row exists");
   assert(numeric(bodyRows[0].weight_kg) === 76.45, "body weight persisted");
 
+  console.log("Loading repository read model...");
+  const readModel = await loadHealthSyncReadModel(client, {
+    includeDeleted: true,
+    limit: 5000,
+    anchorDate: now,
+    timeZone: "UTC"
+  });
+  const modelRecovery = readModel.recoverySnapshots.find((row) => row.sourceRecordId === recoveryRecordId);
+  const modelBody = readModel.bodyMeasurements.find((row) => row.sourceRecordId === bodyRecordId);
+  assert(modelRecovery?.recoveryDelta === -11, "repository read model normalized recovery delta");
+  assert(modelRecovery?.sleepHours === 502 / 60, "repository read model normalized sleep hours");
+  assert(modelBody?.weightKg === 76.45, "repository read model normalized body weight");
+
+  const coachSnapshot = await loadHealthCoachSyncSnapshot(client, {
+    includeDeleted: true,
+    limit: 5000,
+    anchorDate: now,
+    timeZone: "UTC"
+  });
+  assert(coachSnapshot.sync.recoveryRowCount >= 1, "coach sync snapshot loaded recovery rows");
+  assert(coachSnapshot.sync.bodyMeasurementRowCount >= 1, "coach sync snapshot loaded body measurement rows");
+
   console.log("Tombstoning records...");
   const recoveryDeleteEventId = `${runId}-recovery-delete`;
   const bodyDeleteEventId = `${runId}-body-delete`;
 
-  await rpc(headers, "tombstone_health_capture_record", {
-    p_source_device_id: deviceId,
-    p_client_event_id: recoveryDeleteEventId,
-    p_entity_type: "recovery_snapshot",
-    p_source_record_id: recoveryRecordId,
-    p_deleted_at: new Date().toISOString(),
-    p_payload: { smoke_test: true, run_id: runId }
+  await client.tombstoneRecord({
+    deviceId,
+    clientEventId: recoveryDeleteEventId,
+    entityType: "recovery_snapshot",
+    sourceRecordId: recoveryRecordId,
+    deletedAt: new Date(),
+    payload: { smoke_test: true, run_id: runId }
   });
-  await rpc(headers, "tombstone_health_capture_record", {
-    p_source_device_id: deviceId,
-    p_client_event_id: recoveryDeleteEventId,
-    p_entity_type: "recovery_snapshot",
-    p_source_record_id: recoveryRecordId,
-    p_deleted_at: new Date(Date.now() + 60_000).toISOString(),
-    p_payload: { smoke_test: true, run_id: runId, attempted_duplicate_delete: true }
+  await client.tombstoneRecord({
+    deviceId,
+    clientEventId: recoveryDeleteEventId,
+    entityType: "recovery_snapshot",
+    sourceRecordId: recoveryRecordId,
+    deletedAt: new Date(Date.now() + 60_000),
+    payload: { smoke_test: true, run_id: runId, attempted_duplicate_delete: true }
   });
-  await rpc(headers, "tombstone_health_capture_record", {
-    p_source_device_id: deviceId,
-    p_client_event_id: bodyDeleteEventId,
-    p_entity_type: "body_measurement",
-    p_source_record_id: bodyRecordId,
-    p_deleted_at: new Date().toISOString(),
-    p_payload: { smoke_test: true, run_id: runId }
+  await client.tombstoneRecord({
+    deviceId,
+    clientEventId: bodyDeleteEventId,
+    entityType: "body_measurement",
+    sourceRecordId: bodyRecordId,
+    deletedAt: new Date(),
+    payload: { smoke_test: true, run_id: runId }
   });
 
   const tombstonedRecovery = await selectRows(headers, "recovery_snapshots", {
@@ -269,10 +294,7 @@ async function main() {
   assert(eventRows.length === 4, "exactly four events persisted: recovery upsert/delete + body upsert/delete");
 
   const maxEventId = Math.max(...eventRows.map((row) => Number(row.id)));
-  await rpc(headers, "upsert_health_device_checkpoint", {
-    p_device_id: deviceId,
-    p_last_seen_event_id: maxEventId
-  });
+  await client.upsertCheckpoint(deviceId, maxEventId);
   const checkpointRows = await selectRows(headers, "health_device_checkpoints", {
     select: "device_id,last_seen_event_id",
     device_id: `eq.${deviceId}`
