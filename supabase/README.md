@@ -29,6 +29,7 @@ supabase/migrations/20260428180000_health_sync_foundation.sql
 - Do not put Supabase service-role keys in any client.
 - Keep RLS enabled on every table.
 - Use RPC calls for writes from iOS/desktop clients.
+- Client table grants are read-only; authenticated writes go through the health sync RPCs.
 - Treat `health_capture_events` as append-only.
 - Store screenshots locally by default. Cloud media upload requires a separate opt-in design.
 

@@ -327,7 +327,8 @@ create or replace function public.register_health_device(
 )
 returns void
 language plpgsql
-security invoker
+security definer
+set search_path = public, pg_catalog
 as $$
 declare
   v_user uuid := auth.uid();
@@ -371,7 +372,8 @@ create or replace function public.append_health_capture_event(
 )
 returns bigint
 language plpgsql
-security invoker
+security definer
+set search_path = public, pg_catalog
 as $$
 declare
   v_user uuid := auth.uid();
@@ -455,7 +457,8 @@ create or replace function public.upsert_recovery_snapshot_from_capture(
 )
 returns uuid
 language plpgsql
-security invoker
+security definer
+set search_path = public, pg_catalog
 as $$
 declare
   v_user uuid := auth.uid();
@@ -605,7 +608,8 @@ create or replace function public.upsert_body_measurement_from_capture(
 )
 returns uuid
 language plpgsql
-security invoker
+security definer
+set search_path = public, pg_catalog
 as $$
 declare
   v_user uuid := auth.uid();
@@ -765,7 +769,8 @@ create or replace function public.tombstone_health_capture_record(
 )
 returns void
 language plpgsql
-security invoker
+security definer
+set search_path = public, pg_catalog
 as $$
 declare
   v_user uuid := auth.uid();
@@ -848,7 +853,8 @@ create or replace function public.upsert_health_device_checkpoint(
 )
 returns void
 language plpgsql
-security invoker
+security definer
+set search_path = public, pg_catalog
 as $$
 declare
   v_user uuid := auth.uid();
@@ -882,16 +888,28 @@ $$;
 
 grant usage on schema public to authenticated;
 
-grant select, insert, update, delete on table public.arca_devices to authenticated;
-grant select, insert on table public.health_capture_events to authenticated;
-grant select, insert, update on table public.health_device_checkpoints to authenticated;
-grant select, insert, update on table public.recovery_snapshots to authenticated;
-grant select, insert, update on table public.body_measurements to authenticated;
+revoke insert, update, delete on table public.arca_devices from authenticated;
+revoke insert, update, delete on table public.health_capture_events from authenticated;
+revoke insert, update, delete on table public.health_device_checkpoints from authenticated;
+revoke insert, update, delete on table public.recovery_snapshots from authenticated;
+revoke insert, update, delete on table public.body_measurements from authenticated;
 
-grant usage, select on sequence public.health_capture_events_id_seq to authenticated;
+grant select on table public.arca_devices to authenticated;
+grant select on table public.health_capture_events to authenticated;
+grant select on table public.health_device_checkpoints to authenticated;
+grant select on table public.recovery_snapshots to authenticated;
+grant select on table public.body_measurements to authenticated;
+
+revoke usage, select on sequence public.health_capture_events_id_seq from authenticated;
+
+revoke all on function public.register_health_device(text, text, text, text) from public, authenticated;
+revoke all on function public.append_health_capture_event(text, text, text, text, text, jsonb, timestamptz) from public, authenticated;
+revoke all on function public.upsert_recovery_snapshot_from_capture(text, text, text, timestamptz, timestamptz, numeric, numeric, integer, integer, integer, text, numeric, boolean, text, text, jsonb) from public, authenticated;
+revoke all on function public.upsert_body_measurement_from_capture(text, text, text, timestamptz, timestamptz, numeric, numeric, text, numeric, numeric, numeric, numeric, numeric, numeric, numeric, integer, numeric, numeric, integer, numeric, text, numeric, boolean, text, text, jsonb) from public, authenticated;
+revoke all on function public.tombstone_health_capture_record(text, text, text, text, timestamptz, jsonb) from public, authenticated;
+revoke all on function public.upsert_health_device_checkpoint(text, bigint) from public, authenticated;
 
 grant execute on function public.register_health_device(text, text, text, text) to authenticated;
-grant execute on function public.append_health_capture_event(text, text, text, text, text, jsonb, timestamptz) to authenticated;
 grant execute on function public.upsert_recovery_snapshot_from_capture(text, text, text, timestamptz, timestamptz, numeric, numeric, integer, integer, integer, text, numeric, boolean, text, text, jsonb) to authenticated;
 grant execute on function public.upsert_body_measurement_from_capture(text, text, text, timestamptz, timestamptz, numeric, numeric, text, numeric, numeric, numeric, numeric, numeric, numeric, numeric, integer, numeric, numeric, integer, numeric, text, numeric, boolean, text, text, jsonb) to authenticated;
 grant execute on function public.tombstone_health_capture_record(text, text, text, text, timestamptz, jsonb) to authenticated;

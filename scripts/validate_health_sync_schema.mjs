@@ -32,8 +32,10 @@ const requiredFragments = [
   "create or replace function public.upsert_body_measurement_from_capture",
   "create or replace function public.tombstone_health_capture_record",
   "create or replace function public.upsert_health_device_checkpoint",
+  "security definer",
+  "set search_path = public, pg_catalog",
   "client_event_id already used for a different health event",
-  "grant select, insert on table public.health_capture_events to authenticated"
+  "grant select on table public.health_capture_events to authenticated"
 ];
 
 const failures = [];
@@ -44,25 +46,27 @@ for (const fragment of requiredFragments) {
   }
 }
 
-const hasUpdateGrantOnEvents = /grant\s+[^;]*\bupdate\b[^;]*on\s+table\s+public\.health_capture_events\b/i.test(sql);
-const hasDeleteGrantOnEvents = /grant\s+[^;]*\bdelete\b[^;]*on\s+table\s+public\.health_capture_events\b/i.test(sql);
-const hasDeleteGrantOnRecovery = /grant\s+[^;]*\bdelete\b[^;]*on\s+table\s+public\.recovery_snapshots\b/i.test(sql);
-const hasDeleteGrantOnBody = /grant\s+[^;]*\bdelete\b[^;]*on\s+table\s+public\.body_measurements\b/i.test(sql);
+const clientReadableTables = [
+  "arca_devices",
+  "health_capture_events",
+  "health_device_checkpoints",
+  "recovery_snapshots",
+  "body_measurements"
+];
 
-if (hasUpdateGrantOnEvents) {
-  failures.push("health_capture_events must not grant UPDATE; events are append-only.");
+for (const tableName of clientReadableTables) {
+  const directWriteGrantPattern = new RegExp(
+    `grant\\s+[^;]*\\b(insert|update|delete)\\b[^;]*on\\s+table\\s+public\\.${tableName}\\b`,
+    "i"
+  );
+  if (directWriteGrantPattern.test(sql)) {
+    failures.push(`${tableName} must not grant INSERT, UPDATE, or DELETE directly; use health sync RPCs.`);
+  }
 }
 
-if (hasDeleteGrantOnEvents) {
-  failures.push("health_capture_events must not grant DELETE; events are append-only.");
-}
-
-if (hasDeleteGrantOnRecovery) {
-  failures.push("recovery_snapshots must not grant DELETE; use tombstone_health_capture_record.");
-}
-
-if (hasDeleteGrantOnBody) {
-  failures.push("body_measurements must not grant DELETE; use tombstone_health_capture_record.");
+const grantsInternalAppendRpc = /grant\s+execute\s+on\s+function\s+public\.append_health_capture_event\b[^;]*to\s+authenticated/i.test(sql);
+if (grantsInternalAppendRpc) {
+  failures.push("append_health_capture_event is an internal helper and must not be granted directly.");
 }
 
 const beginCount = (sql.match(/\bbegin\s*;/gi) || []).length;
