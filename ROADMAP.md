@@ -106,6 +106,14 @@ Aspirational, unscheduled. Each should have its own `IDEA_*.md` in `design/` if 
 - **Interim:** use Linear / Notion / Todoist for collaboration now; don't let this pull scope into unfinished sync work.
 - **Brief:** [`design/IDEA_SHARED_TEAM_BOARD.md`](design/IDEA_SHARED_TEAM_BOARD.md)
 
+### Apple HealthKit integration
+- **Tag:** 🌠 future ambition
+- **Blocked on:** Track B Phase A proving the screenshot capture loop is real and used daily.
+- **Use case:** Read weight, sleep, workouts, heart rate directly from HealthKit instead of screenshot OCR. Lower friction, higher reliability.
+- **Complexity:** moderate-high. iPhone-only (no simulator), strict App Store review, per-type permissions, write-back triggers medical review path.
+- **Approach:** read-only first (weight → sleep → heart rate → workouts). Write-back optional, much later.
+- **Brief:** [`design/IDEA_APPLE_HEALTHKIT_INTEGRATION.md`](design/IDEA_APPLE_HEALTHKIT_INTEGRATION.md)
+
 ---
 
 ## Retired
