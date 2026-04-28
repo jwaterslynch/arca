@@ -22,6 +22,22 @@ Scope: Arca Cloud Sync Phase 1 backend setup
    - `public.board_events`
    - `public.device_checkpoints`
 
+## 2.1) Apply health sync foundation
+
+For the dark-launched health sync foundation, also paste and run:
+
+- `supabase/migrations/20260428180000_health_sync_foundation.sql`
+
+Confirm success and that the following tables exist:
+
+- `public.arca_devices`
+- `public.health_capture_events`
+- `public.health_device_checkpoints`
+- `public.recovery_snapshots`
+- `public.body_measurements`
+
+Health sync is separate from board snapshot sync. The phone capture app should not upload real dogfood data until the rollout boundary in `design/DECISION_REACTIVATE_TRACK_A_HEALTH_SYNC_FOUNDATION.md` is satisfied.
+
 ## 3) Verify RPC functions
 
 Run these checks in SQL Editor:
@@ -35,12 +51,18 @@ where n.nspname = 'public'
     'ensure_user_board',
     'upsert_board_snapshot',
     'append_board_event',
-    'upsert_device_checkpoint'
+    'upsert_device_checkpoint',
+    'register_health_device',
+    'append_health_capture_event',
+    'upsert_recovery_snapshot_from_capture',
+    'upsert_body_measurement_from_capture',
+    'tombstone_health_capture_record',
+    'upsert_health_device_checkpoint'
   )
 order by proname;
 ```
 
-Expected: all 4 function names returned.
+Expected: all function names for the schemas you applied are returned.
 
 ## 4) Enable Auth mode for testing
 

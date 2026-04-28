@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "tauri dev",
     "build": "tauri build",
+    "validate:health-sync-schema": "node scripts/validate_health_sync_schema.mjs",
     "tauri": "tauri"
   },
   "devDependencies": {
