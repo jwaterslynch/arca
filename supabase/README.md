@@ -55,3 +55,19 @@ npm run smoke:health-sync
 ```
 
 The smoke test signs in as the test user, registers a device, upserts one recovery snapshot and one body measurement, verifies duplicate `client_event_id` retries are true no-ops, tombstones both records, and advances a checkpoint.
+
+## Client Contract
+
+The dark-launched client wrapper lives at:
+
+```text
+src/lib/healthSyncClient.js
+```
+
+It is not wired into the desktop app or iOS app yet. It exists so the backend RPC contract can be tested and reused when upload/import work begins.
+
+Run:
+
+```bash
+npm run test:health-sync-client
+```
