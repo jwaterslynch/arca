@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Arca — Identity & Surfaces</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  /* ───────── ARCA TOKENS ───────── */
+  :root {
+    /* Ink & paper */
+    --ink:        #0f1822;   /* deep navy near-black */
+    --ink-2:      #1a2532;
+    --paper:      #f4efe6;   /* warm parchment page */
+    --paper-2:    #ebe4d6;
+    --surface:    #fdfbf6;   /* card surface */
+    --surface-2:  #f7f1e5;
+    --line:       rgba(15,24,34,0.10);
+    --line-2:     rgba(15,24,34,0.06);
+    --text:       #1a2532;
+    --text-2:     #5b6573;
+    --text-3:     #8a8d92;
+
+    /* Accent — bronze (the apex) */
+    --accent:        #b07a3e;
+    --accent-2:      #c9956b;
+    --accent-deep:   #8a5a2a;
+    --accent-soft:   rgba(176,122,62,0.12);
+    --accent-glow:   rgba(176,122,62,0.22);
+
+    /* Domain hues — deeply muted, NOT a rainbow */
+    --d-execute: #2f4a5c;   /* slate teal */
+    --d-health:  #5a6b3a;   /* moss */
+    --d-wealth:  #8a5a2a;   /* deep bronze */
+    --d-wise:    #4a3a5c;   /* aubergine */
+
+    /* Semantic */
+    --danger:    #a94032;
+    --warn:      #b07a3e;
+    --ok:        #4a6b3a;
+
+    /* Depth */
+    --shadow-sm: 0 1px 2px rgba(15,24,34,0.05), 0 1px 1px rgba(15,24,34,0.04);
+    --shadow-md: 0 1px 3px rgba(15,24,34,0.06), 0 8px 24px rgba(15,24,34,0.06);
+    --shadow-lg: 0 2px 6px rgba(15,24,34,0.08), 0 24px 60px rgba(15,24,34,0.10);
+    --shadow-icon: 0 8px 22px rgba(15,24,34,0.18), 0 1px 0 rgba(255,255,255,0.06) inset;
+    --shadow-accent: 0 8px 22px rgba(176,122,62,0.24);
+
+    --radius-sm: 8px;
+    --radius:    12px;
+    --radius-lg: 16px;
+    --radius-xl: 22px;
+  }
+
+  html, body { margin:0; padding:0; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    color: var(--text);
+    background: #f0eee9;
+    font-feature-settings: "ss01","cv11","tnum" 0;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .display { font-family: 'Fraunces', Georgia, serif; font-weight: 500; letter-spacing: -0.02em; }
+  .mono    { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+  .num     { font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1, "ss01" 1; }
+
+  /* Hide scrollbars inside artboards (canvas already does this for cards) */
+  .ab { box-sizing: border-box; }
+  .ab, .ab * { box-sizing: border-box; }
+</style>
+
+<!-- React + Babel -->
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" src="design-canvas.jsx"></script>
+<script type="text/babel" src="ios-frame.jsx"></script>
+<script type="text/babel" src="arca/icons.jsx"></script>
+<script type="text/babel" src="arca/identity.jsx"></script>
+<script type="text/babel" src="arca/ios-capture.jsx"></script>
+<script type="text/babel" src="arca/desktop.jsx"></script>
+<script type="text/babel" src="arca/landing.jsx"></script>
+<script type="text/babel" src="arca/app.jsx"></script>
+
+</body>
+</html>

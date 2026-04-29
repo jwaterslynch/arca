@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg3" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#141420"/>
+      <stop offset="100%" style="stop-color:#1c1c30"/>
+    </linearGradient>
+    <linearGradient id="arch" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#c9956b"/>
+      <stop offset="100%" style="stop-color:#d4a574"/>
+    </linearGradient>
+  </defs>
+  <!-- Background -->
+  <rect width="512" height="512" rx="108" fill="url(#bg3)"/>
+  <g transform="translate(256,268)">
+    <!-- Outer arch -->
+    <path d="M-100,110 L-100,-20 Q-100,-130 0,-130 Q100,-130 100,-20 L100,110"
+          fill="none" stroke="url(#arch)" stroke-width="8" stroke-linecap="round"/>
+    <!-- Inner arch (nested, smaller) -->
+    <path d="M-55,110 L-55,10 Q-55,-60 0,-60 Q55,-60 55,10 L55,110"
+          fill="none" stroke="#e8e0d4" stroke-width="5" stroke-linecap="round"/>
+    <!-- Keystone accent at apex -->
+    <polygon points="0,-138 -14,-118 14,-118" fill="#c9956b" opacity="0.7"/>
+    <!-- Base line -->
+    <line x1="-115" y1="110" x2="115" y2="110" stroke="#c9956b" stroke-width="3" opacity="0.4"/>
+    <!-- Four dots representing the four domains: Execute, Plan, Health, Wealth -->
+    <circle cx="-75" cy="110" r="5" fill="#c9956b" opacity="0.6"/>
+    <circle cx="-25" cy="110" r="5" fill="#c9956b" opacity="0.6"/>
+    <circle cx="25" cy="110" r="5" fill="#c9956b" opacity="0.6"/>
+    <circle cx="75" cy="110" r="5" fill="#c9956b" opacity="0.6"/>
+  </g>
+</svg>

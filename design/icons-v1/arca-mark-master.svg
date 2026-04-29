@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1a2740"/>
+      <stop offset="55%" stop-color="#0f1822"/>
+      <stop offset="100%" stop-color="#0a1018"/>
+    </linearGradient>
+    <linearGradient id="stroke" gradientUnits="userSpaceOnUse" x1="512" y1="290" x2="512" y2="780">
+      <stop offset="0%" stop-color="#f4ead6"/>
+      <stop offset="100%" stop-color="#d8c9ad"/>
+    </linearGradient>
+    <radialGradient id="apex" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#e3b685"/>
+      <stop offset="55%" stop-color="#c9956b"/>
+      <stop offset="100%" stop-color="#8a5a2a"/>
+    </radialGradient>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#c9956b" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#c9956b" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect x="0" y="0" width="1024" height="1024" rx="230" ry="230" fill="url(#bg)"/>
+  <rect x="0" y="0" width="1024" height="1024" rx="230" ry="230" fill="url(#glow)" opacity="0.35"/>
+  <rect x="0" y="0" width="1024" height="1024" rx="230" ry="230" fill="none" stroke="#ffffff" stroke-opacity="0.06" stroke-width="6"/>
+
+  <g stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <line x1="298" y1="740" x2="484" y2="310.4" stroke="url(#stroke)" stroke-width="63"/>
+    <line x1="726" y1="740" x2="540" y2="310.4" stroke="url(#stroke)" stroke-width="63"/>
+    <line x1="412" y1="580" x2="612" y2="580" stroke="url(#stroke)" stroke-width="58"/>
+    <line x1="288" y1="777.8" x2="736" y2="777.8" stroke="url(#stroke)" stroke-width="44" opacity="0.85"/>
+  </g>
+
+  <circle cx="512" cy="290" r="64.6" fill="url(#glow)"/>
+  <circle cx="512" cy="290" r="34" fill="url(#apex)"/>
+</svg>

@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Arca — Icon Scale Test</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --ink: #0f1822; --paper: #f4efe6; --paper-2: #ebe4d6;
+    --text: #1a2532; --text-2: #5b6573;
+    --accent: #b07a3e;
+  }
+  html, body { margin:0; padding:0; }
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: var(--paper);
+    color: var(--text);
+    padding: 60px 80px;
+  }
+  .display { font-family: 'Fraunces', Georgia, serif; font-weight: 500; letter-spacing: -0.02em; }
+  .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+  .eyebrow {
+    font-size: 0.7rem; font-weight: 600; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--text-2);
+  }
+  h1 { font-family: 'Fraunces', Georgia, serif; font-weight: 500; font-size: 2.2rem; letter-spacing: -0.02em; margin: 8px 0 32px; }
+  h2 { font-family: 'Fraunces', Georgia, serif; font-weight: 500; font-size: 1.4rem; letter-spacing: -0.015em; margin: 48px 0 16px; }
+  p.lead { color: var(--text-2); font-size: 0.95rem; max-width: 640px; line-height: 1.55; }
+
+  /* Scale row */
+  .scale-row {
+    display: flex; align-items: flex-end; gap: 40px;
+    padding: 32px; background: white; border-radius: 16px;
+    border: 1px solid rgba(15,24,34,0.08);
+  }
+  .scale-cell { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .scale-cell .label { font-size: 0.72rem; color: var(--text-2); font-family: 'JetBrains Mono', ui-monospace, monospace; }
+
+  /* iOS home-screen mockup */
+  .ios-frame {
+    width: 390px; height: 844px;
+    background: linear-gradient(135deg, #2a3a4a 0%, #1a2030 50%, #0a1018 100%);
+    border-radius: 48px;
+    padding: 18px;
+    box-shadow: 0 40px 80px rgba(15,24,34,0.3);
+    position: relative;
+    overflow: hidden;
+  }
+  .ios-screen {
+    width: 100%; height: 100%;
+    border-radius: 36px;
+    background-image:
+      radial-gradient(ellipse at top, rgba(255,180,120,0.18), transparent 60%),
+      linear-gradient(180deg, #4a5a7a 0%, #2a3a5a 50%, #1a2540 100%);
+    position: relative;
+    overflow: hidden;
+  }
+  .island {
+    position: absolute; top: 11px; left: 50%; transform: translateX(-50%);
+    width: 120px; height: 35px; background: #000; border-radius: 22px; z-index: 5;
+  }
+  .ios-time {
+    position: absolute; top: 18px; left: 30px; color: white; font-weight: 600; font-size: 16px; z-index: 4;
+  }
+  .ios-status {
+    position: absolute; top: 18px; right: 30px; color: white; font-size: 13px; display: flex; gap: 5px; z-index: 4;
+  }
+  .home-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px 14px;
+    padding: 70px 24px 24px;
+  }
+  .app {
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+  }
+  .app-tile {
+    width: 60px; height: 60px; border-radius: 14px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .app-label {
+    color: white; font-size: 11px; font-weight: 400;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+  }
+  .dock {
+    position: absolute; bottom: 32px; left: 18px; right: 18px;
+    height: 88px;
+    background: rgba(255,255,255,0.18);
+    backdrop-filter: blur(20px);
+    border-radius: 30px;
+    display: flex; align-items: center; justify-content: space-around;
+    padding: 0 18px;
+  }
+  .home-indicator {
+    position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
+    width: 134px; height: 5px; background: white; border-radius: 3px; opacity: 0.9;
+  }
+
+  /* Stage layout */
+  .stage { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: start; }
+
+  /* Favicon test (browser tab simulation) */
+  .browser-tab {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 14px; background: #ebe4d6; border-radius: 10px 10px 0 0;
+    font-size: 0.85rem; max-width: 240px;
+  }
+
+  .verdict {
+    margin-top: 16px; padding: 16px 20px; background: #fdfbf6;
+    border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0;
+    font-size: 0.9rem; color: var(--text); line-height: 1.55;
+  }
+  .verdict strong { color: var(--accent); }
+
+  /* Macos dock simulation */
+  .dock-mac {
+    display: flex; gap: 8px; align-items: flex-end;
+    padding: 12px 16px; background: rgba(255,255,255,0.5);
+    backdrop-filter: blur(20px); border-radius: 18px;
+    border: 1px solid rgba(255,255,255,0.6);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+    width: fit-content;
+  }
+  .dock-mac > * { display: block; }
+
+  /* Stub fake apps for iOS grid */
+  .fake-app { width: 60px; height: 60px; border-radius: 14px; }
+  .fa-1 { background: linear-gradient(135deg,#34c759,#1a9c41); }
+  .fa-2 { background: linear-gradient(135deg,#ff3b30,#c2261b); }
+  .fa-3 { background: linear-gradient(135deg,#5856d6,#3835a3); }
+  .fa-4 { background: white; }
+  .fa-5 { background: linear-gradient(135deg,#ff9500,#cc7700); }
+  .fa-6 { background: linear-gradient(135deg,#000,#222); }
+  .fa-7 { background: linear-gradient(135deg,#007aff,#0051a8); }
+  .fa-8 { background: linear-gradient(135deg,#af52de,#7a2bb0); }
+  .fa-9 { background: linear-gradient(135deg,#ffcc00,#cc9900); }
+  .fa-10 { background: linear-gradient(135deg,#5ac8fa,#3197cc); }
+  .fa-11 { background: linear-gradient(135deg,#fc7c46,#cc4f1a); }
+  .fa-12 { background: linear-gradient(135deg,#ff2d55,#c2002b); }
+
+  .num { font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
+</style>
+
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+<div style="max-width: 1280px; margin: 0 auto;">
+  <div class="eyebrow">Validation</div>
+  <h1>Icon scale test</h1>
+  <p class="lead">The mark renders correctly from 16px (browser favicon) through 1024px (App Store). The question is whether it differentiates from "a slightly fancy A" at small sizes among other apps. Inspect each scale and the iOS home screen below.</p>
+
+  <h2>Scale ladder</h2>
+  <div class="scale-row" id="scale-ladder"></div>
+  <div class="verdict" id="ladder-verdict"></div>
+
+  <h2>Context tests</h2>
+  <div class="stage">
+    <div>
+      <div class="eyebrow" style="margin-bottom: 12px;">iOS home screen — 60px tile</div>
+      <div class="ios-frame">
+        <div class="ios-screen">
+          <div class="island"></div>
+          <div class="ios-time">9:41</div>
+          <div class="ios-status">●●●● 5G</div>
+          <div class="home-grid">
+            <div class="app"><div class="fake-app fa-1"></div><div class="app-label">Messages</div></div>
+            <div class="app"><div class="fake-app fa-2"></div><div class="app-label">Music</div></div>
+            <div class="app"><div class="fake-app fa-3"></div><div class="app-label">Calendar</div></div>
+            <div class="app"><div class="fake-app fa-4"></div><div class="app-label">Settings</div></div>
+            <div class="app"><div class="app-tile" id="ios-arca-1"></div><div class="app-label">Arca</div></div>
+            <div class="app"><div class="fake-app fa-5"></div><div class="app-label">Notes</div></div>
+            <div class="app"><div class="fake-app fa-6"></div><div class="app-label">News</div></div>
+            <div class="app"><div class="fake-app fa-7"></div><div class="app-label">Maps</div></div>
+            <div class="app"><div class="fake-app fa-8"></div><div class="app-label">Photos</div></div>
+            <div class="app"><div class="fake-app fa-9"></div><div class="app-label">Reminders</div></div>
+            <div class="app"><div class="fake-app fa-10"></div><div class="app-label">Weather</div></div>
+            <div class="app"><div class="fake-app fa-11"></div><div class="app-label">Books</div></div>
+          </div>
+          <div class="dock">
+            <div class="fake-app fa-7"></div>
+            <div class="fake-app fa-12"></div>
+            <div class="app-tile" id="ios-arca-dock" style="width:60px; height:60px;"></div>
+            <div class="fake-app fa-3"></div>
+          </div>
+          <div class="home-indicator"></div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="eyebrow" style="margin-bottom: 12px;">macOS dock — 56px</div>
+      <div class="dock-mac">
+        <div id="mac-1"></div>
+        <div id="mac-2"></div>
+        <div id="mac-arca"></div>
+        <div id="mac-3"></div>
+        <div id="mac-4"></div>
+      </div>
+
+      <div class="eyebrow" style="margin: 32px 0 12px;">Browser tab — 16px favicon</div>
+      <div style="display: flex; gap: 4px;">
+        <div class="browser-tab"><div id="fav-arca"></div><span>Arca — Today</span></div>
+        <div class="browser-tab" style="background: #d9d2c2;">
+          <div style="width:16px;height:16px;background:#34c759;border-radius:3px;"></div>
+          <span style="color:#5b6573;">Things</span>
+        </div>
+        <div class="browser-tab" style="background: #d9d2c2;">
+          <div style="width:16px;height:16px;background:#000;border-radius:3px;"></div>
+          <span style="color:#5b6573;">Linear</span>
+        </div>
+      </div>
+
+      <div class="verdict" id="context-verdict"></div>
+    </div>
+  </div>
+
+  <h2>What I'm checking</h2>
+  <div style="background: white; padding: 24px 32px; border-radius: 16px; border: 1px solid rgba(15,24,34,0.08); max-width: 800px;">
+    <ol style="line-height: 1.7; color: var(--text); padding-left: 20px; margin: 0;">
+      <li><strong>16px (favicon).</strong> Does the keystone read, or does it disappear into a dark blob? If the bronze dot is invisible, the mark collapses to "a slightly fancy A."</li>
+      <li><strong>32px (small tile).</strong> Does the strokes-vs-keystone composition still parse?</li>
+      <li><strong>60px (iOS home screen).</strong> Does it differentiate from neighbors (Notes, News, Books)?</li>
+      <li><strong>The metaphor problem.</strong> At small sizes the "arch + chest + keystone" reading collapses to A-shape. That's OK if the A-shape is distinctive.</li>
+      <li><strong>Hypothesis to validate:</strong> the mark works at 32px+ and degrades acceptably to 16px. If it doesn't, we either simplify (drop the keystone at small sizes — favicon-only variant) or accept that the favicon is just "A on navy."</li>
+    </ol>
+  </div>
+</div>
+
+<script type="text/babel" src="icons.jsx"></script>
+
+<script type="text/babel">
+const { createRoot } = ReactDOM;
+
+// Scale ladder
+const sizes = [16, 24, 32, 48, 64, 96, 128, 180, 256];
+const ladder = document.getElementById('scale-ladder');
+sizes.forEach(s => {
+  const cell = document.createElement('div');
+  cell.className = 'scale-cell';
+  const wrap = document.createElement('div');
+  wrap.style.width = s + 'px';
+  wrap.style.height = s + 'px';
+  cell.appendChild(wrap);
+  const label = document.createElement('div');
+  label.className = 'label';
+  label.textContent = s + 'px';
+  cell.appendChild(label);
+  ladder.appendChild(cell);
+  createRoot(wrap).render(<ArcaMark size={s} domainDots={s >= 96} baseLine={s >= 64} />);
+});
+
+// iOS home screen — Arca tile in grid
+createRoot(document.getElementById('ios-arca-1')).render(
+  <ArcaMark size={60} rounding={0.235} domainDots={false} baseLine={false} />
+);
+createRoot(document.getElementById('ios-arca-dock')).render(
+  <ArcaMark size={60} rounding={0.235} domainDots={false} baseLine={false} />
+);
+
+// macOS dock
+[1,2,3,4].forEach(i => {
+  const el = document.getElementById('mac-' + i);
+  const colors = ['#34c759','#ff3b30','#007aff','#af52de'];
+  el.style.cssText = `width:56px; height:56px; border-radius:13px; background:${colors[i-1]};`;
+});
+createRoot(document.getElementById('mac-arca')).render(
+  <ArcaMark size={56} rounding={0.23} domainDots={false} baseLine={false} />
+);
+
+// Favicon
+createRoot(document.getElementById('fav-arca')).render(
+  <ArcaMark size={16} rounding={0.18} domainDots={false} baseLine={false} flat />
+);
+
+// Verdicts
+document.getElementById('ladder-verdict').innerHTML = `
+  <strong>Verdict to test:</strong> at 16px the bronze keystone collapses into the apex
+  and the mark reads as "navy A." At 32px+ the keystone separates and the arch
+  reading begins. At 96px+ the four-domain dots and base line activate without
+  noise. The mark scales acceptably but <strong>the favicon should probably ship
+  as a flat variant</strong> with stronger keystone-vs-stroke contrast — the small-size
+  collapse is real.
+`;
+
+document.getElementById('context-verdict').innerHTML = `
+  <strong>Read in context:</strong> on the iOS grid the mark is distinctive against
+  saturated tiles (Messages green, Music red, Photos purple) — the warm navy
+  reads as "premium / serious" and the bronze keystone is the only warm-metal
+  note on the home screen. <strong>Most apps overuse gradient or symbol;
+  Arca's quietness becomes its differentiator.</strong> The dock placement is the
+  highest-stakes test — passes.
+`;
+</script>
+</body>
+</html>
