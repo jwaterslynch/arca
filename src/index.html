@@ -7885,6 +7885,15 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       return new URL(track.src, window.location.href).toString();
     }
 
+    function builtInFocusMusicShouldPlay() {
+      return !!(
+        pomodoro.focusMode &&
+        pomodoro.focusMusicEnabled &&
+        pomodoro.focusMusicSource === "built_in" &&
+        !focusMusicMutedForSession
+      );
+    }
+
     function ensureFocusMusicAudio() {
       if (focusMusicAudio) return focusMusicAudio;
       focusMusicAudio = new Audio();
@@ -7899,6 +7908,16 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       });
       focusMusicAudio.addEventListener("error", () => {
         console.warn("[focus-music] playback error", focusMusicAudio?.error);
+      });
+      ["waiting", "stalled"].forEach(eventName => {
+        focusMusicAudio.addEventListener(eventName, () => {
+          if (!builtInFocusMusicShouldPlay()) return;
+          console.warn(`[focus-music] ${eventName}`, {
+            currentTime: Math.round(focusMusicAudio.currentTime || 0),
+            readyState: focusMusicAudio.readyState,
+            networkState: focusMusicAudio.networkState
+          });
+        });
       });
       return focusMusicAudio;
     }
@@ -7958,6 +7977,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       // earlier play() invocation gets invalidated.
       focusMusicPlayGeneration += 1;
       if (focusMusicCurrentTrackId === track.id && audio.src) {
+        if (!audio.paused && !audio.ended) return true;
         try {
           focusMusicPlayPromise = audio.play();
           await focusMusicPlayPromise;
@@ -14747,6 +14767,9 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       }
       appOpenTracker.lastTickMs = now;
       if (appOpenTracker.dirtySec >= 60) {
+        // Avoid heavy persistence work on the WebView thread while the
+        // built-in focus track is playing; explicit flushes still save.
+        if (builtInFocusMusicShouldPlay()) return;
         appOpenTracker.dirtySec = 0;
         saveState("app_open_time_tick");
       }
@@ -32067,11 +32090,12 @@ You cannot change app state without that JSON block. Do not say something was ad
     // Live tick
     setInterval(()=>{
       tickAppOpenTime();
+      const pomodoroWasRunning = !!pomodoro.running;
       tickPomodoro();
-      if(state.activeTaskId) {
+      if(state.activeTaskId && !pomodoro.focusMode) {
         render();
       } else {
-        renderPomodoro();
+        if (!pomodoroWasRunning) renderPomodoro();
         renderStats();
       }
     },1000);
