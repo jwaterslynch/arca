@@ -1,5 +1,11 @@
 # Arca Changelog
 
+## v0.1.0-beta.14
+
+- Added Continuous Pomodoro mode for uninterrupted focus blocks with focus music.
+- Added editable keyboard shortcuts with saved preferences, reset controls, and conflict protection.
+- Kept the private alpha desktop version aligned with the bundled app build.
+
 ## v0.1.0-beta.4
 
 - Added consistent AI composer state across coach surfaces:

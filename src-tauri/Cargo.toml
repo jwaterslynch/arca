@@ -1,6 +1,6 @@
 [package]
 name = "arca-desktop"
-version = "0.1.0-beta.13"
+version = "0.1.0-beta.14"
 description = "Arca — personal operating system for execution, planning, health, and wealth"
 authors = ["you"]
 edition = "2021"

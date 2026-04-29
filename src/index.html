@@ -2314,13 +2314,51 @@ button.warn {
   line-height:1.45;
   color:var(--text2);
 }
+.settings-shortcut-controls {
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex:0 0 auto;
+}
 .settings-shortcut-key {
+  min-width:76px;
+  padding:6px 10px;
+  border:1px solid var(--line);
+  border-radius:8px;
+  background:var(--surface);
   font-size:.76rem;
   font-weight:700;
   letter-spacing:.04em;
   text-transform:uppercase;
   color:var(--text2);
   white-space:nowrap;
+  text-align:center;
+  cursor:pointer;
+}
+button.settings-shortcut-key:hover {
+  border-color:var(--accent);
+  color:var(--accent);
+}
+button.settings-shortcut-key.recording {
+  border-color:var(--accent);
+  background:var(--accent-light);
+  color:var(--accent);
+}
+.settings-shortcut-reset {
+  border:none;
+  background:transparent;
+  color:var(--text2);
+  font:700 .72rem var(--font);
+  cursor:pointer;
+  padding:6px 0;
+}
+.settings-shortcut-reset:hover {
+  color:var(--accent);
+}
+.settings-shortcut-reset:disabled {
+  opacity:.35;
+  cursor:default;
+  color:var(--text2);
 }
 .settings-status-line {
   display:flex;
@@ -2375,6 +2413,9 @@ button.warn {
   .settings-shortcut-row {
     flex-direction:column;
     gap:6px;
+  }
+  .settings-shortcut-controls {
+    align-self:flex-start;
   }
 }
 .local-ai-modal { max-width:880px; }
@@ -3423,7 +3464,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
                 </button>
                 <button class="settings-nav-btn" type="button" data-settings-section-btn="general">
                   <strong>General</strong>
-                  <span>Core modules, setup replay, and shortcut reference.</span>
+                  <span>Core modules, setup replay, and keyboard shortcuts.</span>
                 </button>
                 <button class="settings-nav-btn" type="button" data-settings-section-btn="data">
                   <strong>Data &amp; Sync</strong>
@@ -3491,6 +3532,15 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
                           <span class="settings-toggle-text">
                             <strong>Auto-enter Focus mode</strong>
                             <span>Jump into the fullscreen focus view whenever a work block starts.</span>
+                          </span>
+                        </label>
+                      </div>
+                      <div class="settings-toggle-copy">
+                        <label class="settings-toggle-label">
+                          <input id="settingsContinuousPomodoroToggle" type="checkbox" />
+                          <span class="settings-toggle-text">
+                            <strong>Continuous Pomodoro</strong>
+                            <span>After a break ends, start the next work block automatically instead of waiting for Start.</span>
                           </span>
                         </label>
                       </div>
@@ -3667,28 +3717,44 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
                   </div>
                   <div class="settings-pane-card">
                     <h3>Keyboard shortcuts</h3>
-                    <div class="settings-shortcuts-list">
-                      <div class="settings-shortcut-row">
+                    <div class="settings-shortcuts-list" id="settingsShortcutList">
+                      <div class="settings-shortcut-row" data-shortcut-row="openSettings">
                         <div class="settings-shortcut-copy"><strong>Open settings</strong><span>Jump to Settings &gt; AI from anywhere in the app.</span></div>
-                        <div class="settings-shortcut-key">⌘,</div>
+                        <div class="settings-shortcut-controls">
+                          <button class="settings-shortcut-key" type="button" data-shortcut-capture="openSettings">⌘,</button>
+                          <button class="settings-shortcut-reset" type="button" data-shortcut-reset="openSettings">Reset</button>
+                        </div>
                       </div>
-                      <div class="settings-shortcut-row">
+                      <div class="settings-shortcut-row" data-shortcut-row="focusAiInput">
                         <div class="settings-shortcut-copy"><strong>Focus AI input</strong><span>Open the most relevant AI composer for the current surface.</span></div>
-                        <div class="settings-shortcut-key">⌘K</div>
+                        <div class="settings-shortcut-controls">
+                          <button class="settings-shortcut-key" type="button" data-shortcut-capture="focusAiInput">⌘K</button>
+                          <button class="settings-shortcut-reset" type="button" data-shortcut-reset="focusAiInput">Reset</button>
+                        </div>
                       </div>
-                      <div class="settings-shortcut-row">
+                      <div class="settings-shortcut-row" data-shortcut-row="startResumeFocus">
                         <div class="settings-shortcut-copy"><strong>Start or resume focus</strong><span>Starts the timer if idle, or resumes and enters Focus mode.</span></div>
-                        <div class="settings-shortcut-key">⌘↩</div>
+                        <div class="settings-shortcut-controls">
+                          <button class="settings-shortcut-key" type="button" data-shortcut-capture="startResumeFocus">⌘↩</button>
+                          <button class="settings-shortcut-reset" type="button" data-shortcut-reset="startResumeFocus">Reset</button>
+                        </div>
                       </div>
-                      <div class="settings-shortcut-row">
+                      <div class="settings-shortcut-row" data-shortcut-row="pauseResumeTimer">
                         <div class="settings-shortcut-copy"><strong>Pause or resume timer</strong><span>Toggles the active timer without leaving the keyboard flow.</span></div>
-                        <div class="settings-shortcut-key">Space</div>
+                        <div class="settings-shortcut-controls">
+                          <button class="settings-shortcut-key" type="button" data-shortcut-capture="pauseResumeTimer">Space</button>
+                          <button class="settings-shortcut-reset" type="button" data-shortcut-reset="pauseResumeTimer">Reset</button>
+                        </div>
                       </div>
-                      <div class="settings-shortcut-row">
+                      <div class="settings-shortcut-row" data-shortcut-row="expandWindow">
                         <div class="settings-shortcut-copy"><strong>Expand window</strong><span>Toggles the same native expand action as the green window button.</span></div>
-                        <div class="settings-shortcut-key">F</div>
+                        <div class="settings-shortcut-controls">
+                          <button class="settings-shortcut-key" type="button" data-shortcut-capture="expandWindow">F</button>
+                          <button class="settings-shortcut-reset" type="button" data-shortcut-reset="expandWindow">Reset</button>
+                        </div>
                       </div>
                     </div>
+                    <div class="settings-note" id="settingsShortcutStatus" style="margin-top:10px">Click a shortcut, press a new key combo, or press Esc to cancel.</div>
                   </div>
                 </section>
                 <section class="settings-pane" data-settings-pane="data">
@@ -5635,6 +5701,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       desktopNotify: false,
       focusMode: false,
       autoFocusMode: true,
+      continuousMode: false,
       focusMusicEnabled: true,
       focusMusicSource: "built_in",
       focusMusicUrl: "https://open.spotify.com/playlist/37i9dQZF1E4v7RvD2voKpl",
@@ -5680,6 +5747,24 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
     const LEGACY_CLOUD_SYNC_PREF_KEYS = ["PPP_CLOUD_SYNC_PREFS_V1"];
     const FOCUS_UI_PREF_KEY = "ARCA_FOCUS_UI_PREFS_V3";
     const LEGACY_FOCUS_UI_PREF_KEYS = ["PPP_FOCUS_UI_PREFS_V3"];
+    const SHORTCUT_PREF_KEY = "ARCA_KEYBOARD_SHORTCUTS_V1";
+    const SHORTCUT_ACTIONS = [
+      { id: "openSettings", label: "Open settings", defaultShortcut: "mod+comma" },
+      { id: "focusAiInput", label: "Focus AI input", defaultShortcut: "mod+k" },
+      { id: "startResumeFocus", label: "Start or resume focus", defaultShortcut: "mod+enter" },
+      { id: "pauseResumeTimer", label: "Pause or resume timer", defaultShortcut: "space" },
+      { id: "expandWindow", label: "Expand window", defaultShortcut: "f" }
+    ];
+    const RESERVED_SHORTCUTS = [
+      { shortcut: "mod+1", label: "Switch to Execute" },
+      { shortcut: "mod+2", label: "Switch to Plan" },
+      { shortcut: "mod+3", label: "Switch to Health" },
+      { shortcut: "mod+4", label: "Switch to Wealth" },
+      { shortcut: "mod+shift+o", label: "Preview setup" }
+    ];
+    let shortcutPrefs = loadShortcutPrefs();
+    let shortcutCaptureActionId = "";
+    let shortcutStatusMessage = "";
     const AI_ALLOWED_STAGES = ["backlog", "next_up", "today"];
     const AI_ALLOWED_GOALS = ["None", "PG1", "PG2"];
     const AI_ALLOWED_IMPORTANCE = ["High", "Low"];
@@ -7453,6 +7538,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         desktopNotify: true,
         focusMode: false,
         autoFocusMode: true,
+        continuousMode: false,
         completedBlocks: 0,
         completedBlocksDay: "",
         focusMusicEnabled: true,
@@ -7477,6 +7563,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           // Never restore the overlay across launches; stale persisted state can strand the UI.
           focusMode: false,
           autoFocusMode: pref.autoFocusMode !== false,
+          continuousMode: pref.continuousMode === true,
           completedBlocks: Math.max(0, Number.parseInt(pref.completedBlocks, 10) || 0),
           completedBlocksDay: String(pref.completedBlocksDay || ""),
           focusMusicEnabled: Object.prototype.hasOwnProperty.call(pref, "focusMusicSource")
@@ -7508,6 +7595,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         desktopNotify: !!pomodoro.desktopNotify,
         focusMode: !!pomodoro.focusMode,
         autoFocusMode: !!pomodoro.autoFocusMode,
+        continuousMode: pomodoro.continuousMode === true,
         completedBlocks: Math.max(0, Number.parseInt(pomodoro.completedBlocks, 10) || 0),
         completedBlocksDay: String(pomodoro.completedBlocksDay || ""),
         focusMusicEnabled: !!pomodoro.focusMusicEnabled,
@@ -7517,6 +7605,268 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         pauseMusicWithTimer: pomodoro.pauseMusicWithTimer !== false
       }));
       clearLegacyLocalStorageKeys(LEGACY_POMO_PREF_KEYS);
+    }
+
+    function shortcutAction(actionId) {
+      return SHORTCUT_ACTIONS.find(action => action.id === actionId) || null;
+    }
+
+    function defaultShortcutPrefs() {
+      return SHORTCUT_ACTIONS.reduce((prefs, action) => {
+        prefs[action.id] = action.defaultShortcut;
+        return prefs;
+      }, {});
+    }
+
+    function normalizeShortcutKeyToken(token) {
+      const raw = String(token || "").trim().toLowerCase();
+      const map = {
+        " ": "space",
+        spacebar: "space",
+        return: "enter",
+        esc: "escape",
+        ",": "comma",
+        ".": "period",
+        "/": "slash",
+        "\\": "backslash",
+        ";": "semicolon",
+        "'": "quote",
+        "`": "backquote",
+        "-": "minus",
+        "=": "equal",
+        "+": "equal"
+      };
+      if (map[raw]) return map[raw];
+      if (/^key[a-z]$/.test(raw)) return raw.slice(3);
+      if (/^digit[0-9]$/.test(raw)) return raw.slice(5);
+      return raw;
+    }
+
+    function normalizeShortcutString(value) {
+      if (typeof value !== "string") return "";
+      const tokens = value.split("+").map(token => token.trim()).filter(Boolean);
+      const modifiers = { mod: false, alt: false, shift: false };
+      let key = "";
+      tokens.forEach(token => {
+        const normalized = normalizeShortcutKeyToken(token);
+        if (["mod", "cmd", "command", "meta", "ctrl", "control"].includes(normalized)) {
+          modifiers.mod = true;
+        } else if (["alt", "option", "opt"].includes(normalized)) {
+          modifiers.alt = true;
+        } else if (normalized === "shift") {
+          modifiers.shift = true;
+        } else {
+          key = normalized;
+        }
+      });
+      if (!key || ["mod", "cmd", "command", "meta", "ctrl", "control", "alt", "option", "opt", "shift"].includes(key)) return "";
+      const ordered = [];
+      if (modifiers.mod) ordered.push("mod");
+      if (modifiers.alt) ordered.push("alt");
+      if (modifiers.shift) ordered.push("shift");
+      ordered.push(key);
+      return ordered.join("+");
+    }
+
+    function shortcutKeyFromKeyboardEvent(event) {
+      const key = String(event.key || "");
+      const code = String(event.code || "");
+      if (code === "Space" || key === " ") return "space";
+      if (code === "Comma" || key === ",") return "comma";
+      if (code === "Period" || key === ".") return "period";
+      if (code === "Slash" || key === "/") return "slash";
+      if (code === "Backslash" || key === "\\") return "backslash";
+      if (code === "Semicolon" || key === ";") return "semicolon";
+      if (code === "Quote" || key === "'") return "quote";
+      if (code === "Backquote" || key === "`") return "backquote";
+      if (code === "Minus" || key === "-") return "minus";
+      if (code === "Equal" || key === "=") return "equal";
+      if (code.startsWith("Key") && code.length === 4) return code.slice(3).toLowerCase();
+      if (code.startsWith("Digit") && code.length === 6) return code.slice(5);
+      const named = {
+        Enter: "enter",
+        Escape: "escape",
+        Backspace: "backspace",
+        Delete: "delete",
+        Tab: "tab",
+        ArrowUp: "arrowup",
+        ArrowDown: "arrowdown",
+        ArrowLeft: "arrowleft",
+        ArrowRight: "arrowright"
+      };
+      if (named[key]) return named[key];
+      if (/^F([1-9]|1[0-2])$/.test(key)) return key.toLowerCase();
+      if (key.length === 1) return normalizeShortcutKeyToken(key);
+      return normalizeShortcutKeyToken(key);
+    }
+
+    function shortcutFromKeyboardEvent(event) {
+      const key = shortcutKeyFromKeyboardEvent(event);
+      if (!key || ["meta", "control", "alt", "shift"].includes(key)) return "";
+      const parts = [];
+      if (event.metaKey || event.ctrlKey) parts.push("mod");
+      if (event.altKey) parts.push("alt");
+      if (event.shiftKey) parts.push("shift");
+      parts.push(key);
+      return normalizeShortcutString(parts.join("+"));
+    }
+
+    function displayShortcut(shortcut) {
+      const normalized = normalizeShortcutString(shortcut);
+      if (!normalized) return "Set";
+      let macLike = true;
+      try { macLike = /mac|iphone|ipad|ipod/i.test(navigator.platform || ""); } catch {}
+      const labels = {
+        mod: macLike ? "⌘" : "Ctrl",
+        alt: macLike ? "⌥" : "Alt",
+        shift: "⇧",
+        enter: "↩",
+        space: "Space",
+        comma: ",",
+        period: ".",
+        slash: "/",
+        backslash: "\\",
+        semicolon: ";",
+        quote: "'",
+        backquote: "`",
+        minus: "-",
+        equal: "=",
+        backspace: "⌫",
+        delete: "Del",
+        tab: "Tab",
+        arrowup: "↑",
+        arrowdown: "↓",
+        arrowleft: "←",
+        arrowright: "→"
+      };
+      return normalized.split("+").map(token => labels[token] || token.toUpperCase()).join("");
+    }
+
+    function loadShortcutPrefs() {
+      const defaults = defaultShortcutPrefs();
+      try {
+        const raw = loadLocalStorageWithFallback(SHORTCUT_PREF_KEY, []);
+        if (!raw) return defaults;
+        const parsed = JSON.parse(raw);
+        return SHORTCUT_ACTIONS.reduce((prefs, action) => {
+          const normalized = normalizeShortcutString(parsed?.[action.id]);
+          prefs[action.id] = normalized || action.defaultShortcut;
+          return prefs;
+        }, {});
+      } catch {
+        return defaults;
+      }
+    }
+
+    function saveShortcutPrefs() {
+      localStorage.setItem(SHORTCUT_PREF_KEY, JSON.stringify(shortcutPrefs));
+    }
+
+    function getShortcutForAction(actionId) {
+      const action = shortcutAction(actionId);
+      if (!action) return "";
+      return normalizeShortcutString(shortcutPrefs[actionId]) || action.defaultShortcut;
+    }
+
+    function findShortcutConflict(shortcut, actionId) {
+      const normalized = normalizeShortcutString(shortcut);
+      if (!normalized) return null;
+      const actionConflict = SHORTCUT_ACTIONS.find(action => action.id !== actionId && getShortcutForAction(action.id) === normalized);
+      if (actionConflict) return actionConflict.label;
+      const reservedConflict = RESERVED_SHORTCUTS.find(item => item.shortcut === normalized);
+      return reservedConflict ? reservedConflict.label : null;
+    }
+
+    function matchesShortcutAction(event, actionId) {
+      if (shortcutCaptureActionId || event.repeat) return false;
+      const shortcut = getShortcutForAction(actionId);
+      return !!shortcut && shortcutFromKeyboardEvent(event) === shortcut;
+    }
+
+    function shortcutHasCommandModifier(actionId) {
+      return getShortcutForAction(actionId).split("+").includes("mod");
+    }
+
+    function shouldIgnoreShortcutInEditable(event, actionId) {
+      return isEditableElement(event.target) && !shortcutHasCommandModifier(actionId);
+    }
+
+    function renderShortcutSettings() {
+      SHORTCUT_ACTIONS.forEach(action => {
+        const shortcut = getShortcutForAction(action.id);
+        const button = document.querySelector(`[data-shortcut-capture="${action.id}"]`);
+        if (button) {
+          const recording = shortcutCaptureActionId === action.id;
+          button.textContent = recording ? "Press keys" : displayShortcut(shortcut);
+          button.classList.toggle("recording", recording);
+          button.setAttribute("aria-label", recording ? `Recording shortcut for ${action.label}` : `Edit shortcut for ${action.label}`);
+        }
+        const reset = document.querySelector(`[data-shortcut-reset="${action.id}"]`);
+        if (reset) reset.disabled = shortcut === action.defaultShortcut;
+      });
+      const status = document.getElementById("settingsShortcutStatus");
+      if (status) {
+        const recordingAction = shortcutAction(shortcutCaptureActionId);
+        status.textContent = recordingAction
+          ? (shortcutStatusMessage || `Press a new shortcut for ${recordingAction.label}, or Esc to cancel.`)
+          : (shortcutStatusMessage || "Click a shortcut, press a new key combo, or press Esc to cancel.");
+      }
+    }
+
+    function beginShortcutCapture(actionId) {
+      if (!shortcutAction(actionId)) return;
+      shortcutCaptureActionId = actionId;
+      shortcutStatusMessage = "";
+      renderShortcutSettings();
+    }
+
+    function resetShortcut(actionId) {
+      const action = shortcutAction(actionId);
+      if (!action) return;
+      const conflict = findShortcutConflict(action.defaultShortcut, action.id);
+      if (conflict) {
+        shortcutStatusMessage = `${displayShortcut(action.defaultShortcut)} is already used by ${conflict}.`;
+        renderShortcutSettings();
+        return;
+      }
+      shortcutPrefs[action.id] = action.defaultShortcut;
+      shortcutCaptureActionId = "";
+      shortcutStatusMessage = `${action.label} reset to ${displayShortcut(action.defaultShortcut)}.`;
+      saveShortcutPrefs();
+      renderShortcutSettings();
+    }
+
+    function handleShortcutCaptureKeydown(event) {
+      if (!shortcutCaptureActionId) return false;
+      event.preventDefault();
+      event.stopPropagation();
+      if (typeof event.stopImmediatePropagation === "function") event.stopImmediatePropagation();
+      const key = shortcutKeyFromKeyboardEvent(event);
+      if (key === "escape") {
+        shortcutCaptureActionId = "";
+        shortcutStatusMessage = "Shortcut edit cancelled.";
+        renderShortcutSettings();
+        return true;
+      }
+      const shortcut = shortcutFromKeyboardEvent(event);
+      if (!shortcut) {
+        shortcutStatusMessage = "Press a letter, number, function key, or key combo.";
+        renderShortcutSettings();
+        return true;
+      }
+      const conflict = findShortcutConflict(shortcut, shortcutCaptureActionId);
+      if (conflict) {
+        shortcutStatusMessage = `${displayShortcut(shortcut)} is already used by ${conflict}.`;
+        renderShortcutSettings();
+        return true;
+      }
+      const action = shortcutAction(shortcutCaptureActionId);
+      shortcutPrefs[action.id] = shortcut;
+      shortcutCaptureActionId = "";
+      shortcutStatusMessage = `${action.label} set to ${displayShortcut(shortcut)}.`;
+      saveShortcutPrefs();
+      renderShortcutSettings();
+      return true;
     }
 
     function builtInFocusMusicTracks() {
@@ -9699,6 +10049,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           desktopNotify: !!pomodoro.desktopNotify,
           focusMode: false,
           autoFocusMode: !!pomodoro.autoFocusMode,
+          continuousMode: pomodoro.continuousMode === true,
           completedBlocks: Math.max(0, Number.parseInt(pomodoro.completedBlocks, 10) || 0),
           completedBlocksDay: String(pomodoro.completedBlocksDay || ""),
           focusMusicEnabled: !!pomodoro.focusMusicEnabled,
@@ -9736,7 +10087,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       const summaries = {
         timer: "Tune work blocks, chimes, notifications, and focus behavior.",
         ai: "Configure providers, local models, and AI review behavior.",
-        general: "Control app structure, setup replay, and keyboard references.",
+        general: "Control app structure, setup replay, and keyboard shortcuts.",
         data: "Check storage state and open the mature sync and backup tools."
       };
       document.querySelectorAll("[data-settings-section-btn]").forEach(btn => {
@@ -9788,6 +10139,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         dataSourceMeta.textContent = parts.filter(Boolean).join(" · ");
       }
       if (runtimeValue) runtimeValue.textContent = appRuntime.version ? `v${appRuntime.version}` : (appRuntime.profile || "desktop");
+      renderShortcutSettings();
     }
     function openSettingsPanel(section = "timer") {
       activeSettingsSection = normalizeSettingsSection(section);
@@ -15676,9 +16028,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
     }
 
     function handleWindowExpandShortcut(e) {
-      const isPlainF = (!e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey)
-        && (e.code === "KeyF" || String(e.key || "").toLowerCase() === "f");
-      if (!isPlainF) return false;
+      if (!matchesShortcutAction(e, "expandWindow")) return false;
       const openModal = document.querySelector(".modal-backdrop:not([hidden])");
       if (openModal) return false;
       if (isEditableElement(e.target)) return false;
@@ -15733,6 +16083,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       const settingsFocusMusicVolumeReadout = document.getElementById("settingsFocusMusicVolumeReadout");
       const settingsPauseMusicWithTimer = document.getElementById("settingsPauseMusicWithTimer");
       const settingsAutoFocusToggle = document.getElementById("settingsAutoFocusToggle");
+      const settingsContinuousPomodoroToggle = document.getElementById("settingsContinuousPomodoroToggle");
       const settingsSoundToggle = document.getElementById("settingsPomoSoundToggle");
       const settingsSoundProfile = document.getElementById("settingsPomoSoundProfile");
       const settingsToneSelect = document.getElementById("settingsPomoTone");
@@ -15867,6 +16218,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       if (focusBtn) focusBtn.textContent = pomodoro.focusMode ? "Exit Focus" : "Enter Focus";
       if (autoFocusToggle) autoFocusToggle.checked = !!pomodoro.autoFocusMode;
       if (settingsAutoFocusToggle) settingsAutoFocusToggle.checked = !!pomodoro.autoFocusMode;
+      if (settingsContinuousPomodoroToggle) settingsContinuousPomodoroToggle.checked = pomodoro.continuousMode === true;
       document.body.classList.toggle("focus-mode", !!pomodoro.focusMode);
 
       completed.textContent = `Completed blocks: ${pomodoro.completedBlocks}`;
@@ -15980,10 +16332,28 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       return true;
     }
 
+    function startContinuousWorkBlockAfterBreak() {
+      const chosenTask = resolveExecuteFocusTask(pomodoro.taskId || state.activeTaskId || "");
+      if (!chosenTask || chosenTask.completedAt) {
+        pomodoro.running = false;
+        pomodoro.paused = true;
+        pomodoro.endsAtMs = null;
+        return false;
+      }
+      pomodoro.taskId = chosenTask.id;
+      pomodoro.remainingSec = Math.max(60, (Math.max(1, Number.parseInt(pomodoro.workMin, 10) || 25) * 60));
+      pomodoro.running = true;
+      pomodoro.paused = false;
+      pomodoro.endsAtMs = Date.now() + (pomodoro.remainingSec * 1000);
+      if (state.activeTaskId !== chosenTask.id) startTask(chosenTask.id);
+      return true;
+    }
+
     function completePomodoroPhase(skipped = false) {
       syncPomodoroDailyCounter();
       const fromPhase = pomodoro.phase;
       let sessionCompleted = false;
+      const continuousMode = pomodoro.continuousMode === true;
       if (pomodoro.phase === "work") {
         if (state.activeTaskId === pomodoro.taskId) stopActiveTask();
         if (!skipped) {
@@ -15992,7 +16362,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
           savePomodoroPrefs();
           sessionCompleted = hasCompletedPomodoroSession(pomodoro.completedBlocks);
         }
-        if (sessionCompleted) {
+        if (sessionCompleted && !continuousMode) {
           pomodoro.phase = "idle";
           pomodoro.remainingSec = pomodoro.workMin * 60;
           pomodoro.running = false;
@@ -16009,9 +16379,13 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       } else if (pomodoro.phase === "break") {
         pomodoro.phase = "work";
         pomodoro.remainingSec = pomodoro.workMin * 60;
-        pomodoro.running = false;
-        pomodoro.paused = true;
-        pomodoro.endsAtMs = null;
+        if (continuousMode) {
+          startContinuousWorkBlockAfterBreak();
+        } else {
+          pomodoro.running = false;
+          pomodoro.paused = true;
+          pomodoro.endsAtMs = null;
+        }
       } else {
         pomodoro.phase = "idle";
         pomodoro.running = false;
@@ -16019,7 +16393,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         pomodoro.endsAtMs = null;
       }
       if (!skipped) {
-        const message = getPhaseTransitionMessage(fromPhase, { sessionCompleted });
+        const message = getPhaseTransitionMessage(fromPhase, { sessionCompleted: sessionCompleted && !continuousMode });
         void playPomodoroChime();
         sendPomodoroNotification(message);
       }
@@ -29725,6 +30099,16 @@ You cannot change app state without that JSON block. Do not say something was ad
     document.getElementById("focusExitBtn").addEventListener("click",()=>{ setFocusMode(false); renderPomodoro(); });
     document.getElementById("autoFocusToggle").addEventListener("change",e=>{ pomodoro.autoFocusMode = !!e.target.checked; savePomodoroPrefs(); renderPomodoro(); });
     document.getElementById("settingsAutoFocusToggle")?.addEventListener("change",e=>{ pomodoro.autoFocusMode = !!e.target.checked; savePomodoroPrefs(); renderPomodoro(); });
+    document.getElementById("settingsContinuousPomodoroToggle")?.addEventListener("change",e=>{ pomodoro.continuousMode = !!e.target.checked; savePomodoroPrefs(); renderPomodoro(); });
+    document.getElementById("settingsShortcutList")?.addEventListener("click", e => {
+      const resetBtn = e.target.closest("[data-shortcut-reset]");
+      if (resetBtn) {
+        resetShortcut(resetBtn.getAttribute("data-shortcut-reset"));
+        return;
+      }
+      const captureBtn = e.target.closest("[data-shortcut-capture]");
+      if (captureBtn) beginShortcutCapture(captureBtn.getAttribute("data-shortcut-capture"));
+    });
     document.getElementById("settingsPomoWorkMin")?.addEventListener("change", e => {
       pomodoro.workMin = Math.min(120, Math.max(1, Number.parseInt(e.target.value, 10) || 25));
       const hiddenInput = document.getElementById("pomoWorkMin");
@@ -31268,8 +31652,13 @@ You cannot change app state without that JSON block. Do not say something was ad
       if (handleWindowExpandShortcut(e)) return;
     }, true);
 
+    document.addEventListener("keydown", e => {
+      if (shortcutCaptureActionId) handleShortcutCaptureKeydown(e);
+    }, true);
+
     // Quick exit from focus mode
     document.addEventListener("keydown",e=>{
+      if (shortcutCaptureActionId && handleShortcutCaptureKeydown(e)) return;
       const quickSwitchModal = document.getElementById("aiQuickSwitchModal");
       if (quickSwitchModal && !quickSwitchModal.hidden && e.key === "Escape") {
         e.preventDefault();
@@ -31401,11 +31790,12 @@ You cannot change app state without that JSON block. Do not say something was ad
         openOnboarding({ mode: "preview" });
         return;
       }
-      if ((e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey && e.key === ",") {
+      if (matchesShortcutAction(e, "openSettings")) {
         const appDataModal = document.getElementById("appDataModal");
         const openModal = document.querySelector(".modal-backdrop:not([hidden])");
         const allowFromCurrentModal = !!appDataModal && !appDataModal.hidden && (!openModal || openModal.id === "appDataModal");
         if (openModal && !allowFromCurrentModal) return;
+        if (shouldIgnoreShortcutInEditable(e, "openSettings")) return;
         e.preventDefault();
         e.stopPropagation();
         openAiSettingsPanel();
@@ -31429,7 +31819,7 @@ You cannot change app state without that JSON block. Do not say something was ad
         }
         return;
       }
-      if ((e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey && String(e.key || "").toLowerCase() === "k") {
+      if (matchesShortcutAction(e, "focusAiInput")) {
         const openModal = document.querySelector(".modal-backdrop:not([hidden])");
         if (openModal) return;
         const targetId = String(e.target?.id || "").trim();
@@ -31443,7 +31833,7 @@ You cannot change app state without that JSON block. Do not say something was ad
       if (handleWindowExpandShortcut(e)) {
         return;
       }
-      if (!e.metaKey && !e.ctrlKey && !e.altKey && !e.shiftKey && (e.code === "Space" || e.key === " ")) {
+      if (matchesShortcutAction(e, "pauseResumeTimer")) {
         const openModal = document.querySelector(".modal-backdrop:not([hidden])");
         if (openModal) return;
         if (isEditableElement(e.target)) return;
@@ -31458,7 +31848,7 @@ You cannot change app state without that JSON block. Do not say something was ad
         }
         return;
       }
-      if ((e.metaKey || e.ctrlKey) && !e.altKey && !e.shiftKey && e.key === "Enter") {
+      if (matchesShortcutAction(e, "startResumeFocus")) {
         const openModal = document.querySelector(".modal-backdrop:not([hidden])");
         if (openModal) return;
         if (isEditableElement(e.target)) return;
