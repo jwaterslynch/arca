@@ -1,0 +1,124 @@
+/* ============================================================
+ * Arca v2 — Focus Mode Lock
+ *
+ * Triggered when user clicks "Enter Focus" (or whichever button
+ * currently fires arca:enter-focus). The workspace transitions
+ * to navy ground; the timer fills the screen; mouse becomes a
+ * hairline. Esc returns. Any input returns.
+ *
+ * This is a TOOL, not punctuation — it stays up for the duration
+ * of the focus session, not 1.4 seconds.
+ * ============================================================ */
+
+.focus-lock {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  background: radial-gradient(
+    ellipse at 50% 30%,
+    #1a2740 0%,
+    #0f1822 50%,
+    #0a1018 100%
+  );
+  cursor: none;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  padding: 40px 56px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 480ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.focus-lock[data-active="true"] {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.focus-lock__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.focus-lock__mark {
+  /* Inline SVG arca-mark sized 48x48. Use the master/flat variant from icons-v1. */
+  width: 48px;
+  height: 48px;
+  color: var(--paper);
+}
+
+.focus-lock__hint {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  color: rgba(244, 239, 230, 0.4);
+  text-transform: uppercase;
+}
+
+.focus-lock__center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+}
+
+.focus-lock__timer {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-weight: 500;
+  font-size: 96px;
+  color: var(--paper);
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 40px rgba(176, 122, 62, 0.15);
+  line-height: 1;
+}
+
+/* On narrow windows or long task names: clamp the timer down */
+@media (max-width: 1100px) {
+  .focus-lock__timer { font-size: 72px; }
+}
+
+.focus-lock__task {
+  font-family: 'Fraunces', Georgia, serif;
+  font-weight: 400;
+  font-size: 22px;
+  color: rgba(244, 239, 230, 0.65);
+  letter-spacing: -0.01em;
+  max-width: 600px;
+  text-align: center;
+  text-wrap: balance;
+}
+
+.focus-lock__bottom {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.focus-lock__progress {
+  flex: 1;
+  height: 1px;
+  background: rgba(244, 239, 230, 0.12);
+  position: relative;
+}
+
+.focus-lock__progress-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--accent);
+  width: 0%;
+  transition: width 1000ms linear;
+}
+
+.focus-lock__remaining {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11px;
+  color: rgba(244, 239, 230, 0.4);
+  letter-spacing: 0.04em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .focus-lock { transition-duration: 0.01ms !important; }
+  .focus-lock__progress-fill { transition: none !important; }
+}

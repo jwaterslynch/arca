@@ -1,0 +1,92 @@
+/* ============================================================
+ * Arca v2 — Session Closed Beat
+ *
+ * 1.4 seconds. Plays once when a focus session completes.
+ * Mark draws in (700ms), duration shows in mono (500ms delay,
+ * 500ms fade), full thing fades over 1400ms total.
+ * Bypassable: any keypress, any mousedown, exits early.
+ *
+ * Trigger:
+ *   window.dispatchEvent(new CustomEvent('arca:session-closed', {
+ *     detail: { duration: '52:00' }
+ *   }))
+ * ============================================================ */
+
+.session-beat {
+  position: fixed;
+  inset: 0;
+  z-index: 9100;
+  background: #0f1822;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.session-beat[data-active="true"] {
+  pointer-events: auto;
+  animation: session-beat-fade 1400ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes session-beat-fade {
+  0%   { opacity: 0; }
+  14%  { opacity: 1; }
+  78%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.session-beat__mark {
+  width: 96px;
+  height: 96px;
+  color: var(--paper);
+  opacity: 0;
+  transform: scale(0.94);
+}
+
+.session-beat[data-active="true"] .session-beat__mark {
+  animation: session-beat-mark 700ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes session-beat-mark {
+  0%   { opacity: 0; transform: scale(0.94); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+.session-beat__meta {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 14px;
+  letter-spacing: 0.18em;
+  color: rgba(244, 239, 230, 0.55);
+  text-transform: uppercase;
+  opacity: 0;
+}
+
+.session-beat[data-active="true"] .session-beat__meta {
+  animation: session-beat-meta 500ms ease-out 400ms forwards;
+}
+
+@keyframes session-beat-meta {
+  0%   { opacity: 0; transform: translateY(4px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .session-beat,
+  .session-beat__mark,
+  .session-beat__meta {
+    animation-duration: 0.01ms !important;
+  }
+  /* Reduced motion users: show then disappear, no animated draw-in */
+  .session-beat[data-active="true"] {
+    animation: none !important;
+    opacity: 1;
+  }
+  .session-beat[data-active="true"] .session-beat__mark,
+  .session-beat[data-active="true"] .session-beat__meta {
+    opacity: 1;
+    transform: none;
+  }
+}

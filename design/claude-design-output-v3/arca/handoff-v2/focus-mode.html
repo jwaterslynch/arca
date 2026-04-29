@@ -1,0 +1,28 @@
+<!-- Arca v2 — Focus Mode Lock overlay markup -->
+<!-- Append once near the end of <body>. Toggled via .focus-lock[data-active] -->
+
+<div class="focus-lock" data-active="false" id="focusLock" role="dialog" aria-modal="true" aria-label="Focus mode">
+  <header class="focus-lock__top">
+    <!-- Replace with the arca-mark inline SVG (master/flat variant, paper-on-navy) -->
+    <svg class="focus-lock__mark" viewBox="0 0 64 64" fill="none" aria-hidden="true">
+      <!-- Vault arch, simplified — full mark from arca/design/icons-v1/arca-mark-master.svg -->
+      <path d="M16 52 L16 24 Q32 8 48 24 L48 52" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round" />
+      <circle cx="32" cy="34" r="4" fill="currentColor" />
+      <line x1="14" y1="52" x2="50" y2="52" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" />
+    </svg>
+
+    <div class="focus-lock__hint">Focus · 25 min · esc to exit</div>
+  </header>
+
+  <div class="focus-lock__center">
+    <div class="focus-lock__timer" id="focusLockTimer">25:00</div>
+    <div class="focus-lock__task" id="focusLockTask">Read the Mounier paper, deeply</div>
+  </div>
+
+  <footer class="focus-lock__bottom">
+    <div class="focus-lock__progress">
+      <div class="focus-lock__progress-fill" id="focusLockProgress"></div>
+    </div>
+    <div class="focus-lock__remaining" id="focusLockRemaining">25:00 remaining</div>
+  </footer>
+</div>

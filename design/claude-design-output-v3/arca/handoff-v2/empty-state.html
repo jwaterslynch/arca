@@ -1,0 +1,50 @@
+<!-- ============================================================
+     Arca v2 — Empty State with Mark
+     Reusable across panels (Today list, Practices, Closures, etc.)
+
+     Notes:
+     - 64px mark, greyscaled slightly, 0.55 opacity (calm, recedes)
+     - Fraunces line, max 320px wide, balanced
+     - Permanent quiet, NOT a stillness moment
+     ============================================================ -->
+
+<style>
+  .empty-mark {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 64px 24px;
+    text-align: center;
+    gap: 20px;
+    opacity: 0.55;
+  }
+
+  .empty-mark__svg {
+    width: 64px;
+    height: 64px;
+    color: var(--ink);
+    filter: grayscale(0.3);
+  }
+
+  .empty-mark__message {
+    font-family: 'Fraunces', Georgia, serif;
+    font-weight: 400;
+    font-size: 16px;
+    color: var(--text-2);
+    max-width: 320px;
+    line-height: 1.5;
+    text-wrap: balance;
+  }
+</style>
+
+<div class="empty-mark">
+  <svg class="empty-mark__svg" viewBox="0 0 64 64" fill="none" aria-hidden="true">
+    <path d="M16 52 L16 24 Q32 8 48 24 L48 52" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round" />
+    <circle cx="32" cy="34" r="4" fill="currentColor" />
+    <line x1="14" y1="52" x2="50" y2="52" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" />
+  </svg>
+  <div class="empty-mark__message">
+    Nothing planned. Capture something, or take the afternoon.
+  </div>
+</div>

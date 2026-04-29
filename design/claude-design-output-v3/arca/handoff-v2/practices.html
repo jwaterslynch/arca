@@ -1,0 +1,134 @@
+<!-- ============================================================
+     Arca v2 — Practices panel markup
+     Drop into arca/src/index.html, replacing the existing
+     `.practice-*` block (~lines 292–346).
+
+     Notes for engineer:
+     - data-ticked / data-expanded attributes drive all visual states
+     - everything is keyboard-reachable: tick is <button>, row label
+       is <button>, chevron is <button>
+     - The week-strip days array would be read from your existing
+       habit-tracker state. M T W T F S S, today is the 4th index here.
+     - Inline SVG check is intentionally dasharray-based, not a glyph.
+     ============================================================ -->
+
+<section class="practices-panel" aria-label="Practices today">
+  <header class="practices-header">
+    <div>
+      <div class="practices-eyebrow">Practices · today</div>
+      <div class="practices-count" id="practicesCount">2 of 5</div>
+    </div>
+
+    <!-- Week strip -->
+    <div class="week-strip" role="img" aria-label="4 of 7 days complete this week">
+      <div class="week-strip__day">
+        <div class="week-strip__dot week-strip__dot--filled"></div>
+        <div class="week-strip__label">M</div>
+      </div>
+      <div class="week-strip__day">
+        <div class="week-strip__dot week-strip__dot--filled"></div>
+        <div class="week-strip__label">T</div>
+      </div>
+      <div class="week-strip__day">
+        <div class="week-strip__dot week-strip__dot--filled"></div>
+        <div class="week-strip__label">W</div>
+      </div>
+      <div class="week-strip__day">
+        <div class="week-strip__dot week-strip__dot--filled week-strip__dot--today"></div>
+        <div class="week-strip__label">T</div>
+      </div>
+      <div class="week-strip__day">
+        <div class="week-strip__dot"></div>
+        <div class="week-strip__label">F</div>
+      </div>
+      <div class="week-strip__day">
+        <div class="week-strip__dot"></div>
+        <div class="week-strip__label">S</div>
+      </div>
+      <div class="week-strip__day">
+        <div class="week-strip__dot"></div>
+        <div class="week-strip__label">S</div>
+      </div>
+    </div>
+  </header>
+
+  <ul class="practices-list">
+    <!-- Template row — duplicate per practice. data-ticked/data-expanded toggle states. -->
+    <li class="practice-row" data-practice-id="meditate" data-ticked="false" data-expanded="false">
+      <div class="practice-row__main">
+        <button class="tick" type="button" aria-label="Mark complete" data-action="tick">
+          <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+            <path class="tick__check" d="M3.2 8.4 L6.6 11.6 L12.8 4.8" />
+          </svg>
+        </button>
+
+        <button class="practice-row__label" type="button" data-action="expand">
+          <span class="practice-row__name">Sit, ten minutes</span>
+          <span class="practice-row__meta">10 min minimum · last yesterday</span>
+        </button>
+
+        <button class="practice-row__chevron" type="button" aria-label="Expand details" data-action="expand">
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
+            <path d="M3 1.5L7 5L3 8.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="practice-row__drawer">
+        <div class="drawer-grid">
+          <div class="drawer-meta">
+            <div class="drawer-meta__label">Kind</div>
+            <div class="drawer-meta__value">Ritual</div>
+          </div>
+          <div class="drawer-meta">
+            <div class="drawer-meta__label">Target</div>
+            <div class="drawer-meta__value">10 min minimum</div>
+          </div>
+          <div class="drawer-meta">
+            <div class="drawer-meta__label">Last</div>
+            <div class="drawer-meta__value">Yesterday</div>
+          </div>
+        </div>
+        <div class="drawer-history">
+          <span class="drawer-history__dots">
+            <span class="drawer-history__dot drawer-history__dot--filled"></span>
+            <span class="drawer-history__dot drawer-history__dot--filled"></span>
+            <span class="drawer-history__dot"></span>
+            <span class="drawer-history__dot drawer-history__dot--filled"></span>
+            <span class="drawer-history__dot drawer-history__dot--filled"></span>
+            <span class="drawer-history__dot"></span>
+            <span class="drawer-history__dot"></span>
+          </span>
+          4 of 7 this week
+        </div>
+      </div>
+    </li>
+
+    <!-- Pre-ticked example -->
+    <li class="practice-row" data-practice-id="walk" data-ticked="true" data-expanded="false">
+      <div class="practice-row__main">
+        <button class="tick" type="button" aria-label="Mark incomplete" data-action="tick">
+          <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
+            <path class="tick__check" d="M3.2 8.4 L6.6 11.6 L12.8 4.8" />
+          </svg>
+        </button>
+        <button class="practice-row__label" type="button" data-action="expand">
+          <span class="practice-row__name">Walk before screens</span>
+          <span class="practice-row__meta">Before 9am · last today, 7:42</span>
+        </button>
+        <button class="practice-row__chevron" type="button" aria-label="Expand details" data-action="expand">
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
+            <path d="M3 1.5L7 5L3 8.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+          </svg>
+        </button>
+      </div>
+      <div class="practice-row__drawer">
+        <!-- ...same structure... -->
+      </div>
+    </li>
+  </ul>
+
+  <button class="practices-add" type="button">
+    <span class="practices-add__plus">+</span> New practice
+  </button>
+</section>

@@ -1,0 +1,362 @@
+/* ============================================================
+ * Arca v2 — Practices panel (plain HTML/CSS+JS, no React)
+ *
+ * Drop this CSS into arca/src/styles.css (or a new partial).
+ * Replace the existing `.practice-*` block in arca/src/index.html
+ * with the markup in practices.html. Wire interactions with
+ * practices.js.
+ *
+ * Tokens used (all already present in v1 handoff):
+ *   --paper, --surface, --ink, --line, --line-2,
+ *   --text, --text-2, --text-3,
+ *   --accent, --accent-soft, --accent-deep
+ * ============================================================ */
+
+.practices-panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 20px 24px 14px;
+}
+
+.practices-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.practices-eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-2);
+  margin-bottom: 4px;
+}
+
+.practices-count {
+  font-family: 'Fraunces', Georgia, serif;
+  font-weight: 500;
+  font-size: 22px;
+  color: var(--ink);
+  letter-spacing: -0.015em;
+}
+
+/* ───── week strip ───── */
+
+.week-strip {
+  display: flex;
+  gap: 6px;
+  align-items: flex-end;
+}
+
+.week-strip__day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.week-strip__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: transparent;
+  border: 1px solid var(--line);
+}
+
+.week-strip__dot--filled {
+  background: var(--accent);
+  border: none;
+}
+
+.week-strip__dot--today {
+  outline: 1px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.week-strip__label {
+  font-size: 9px;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  color: var(--text-3);
+  letter-spacing: 0.04em;
+}
+
+/* ───── list + row ───── */
+
+.practices-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.practice-row {
+  border-bottom: 1px solid var(--line-2);
+  margin-left: -8px;
+  margin-right: -8px;
+  padding: 14px 8px;
+  border-radius: 8px;
+  transition: background 160ms ease-out;
+}
+
+.practice-row:last-child {
+  border-bottom: none;
+}
+
+.practice-row:hover {
+  background: rgba(176, 122, 62, 0.025);
+}
+
+.practice-row__main {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.practice-row__label {
+  flex: 1;
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  text-align: left;
+  font: inherit;
+}
+
+.practice-row__name {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ink);
+  position: relative;
+  transition: color 240ms ease-out;
+}
+
+.practice-row[data-ticked="true"] .practice-row__name {
+  color: var(--text-3);
+}
+
+/* strikethrough — drawn left-to-right on tick */
+.practice-row__name::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 52%;
+  height: 1px;
+  background: var(--text-3);
+  transform-origin: left;
+  transform: scaleX(0);
+  transition: transform 240ms ease-out;
+}
+
+.practice-row[data-ticked="true"] .practice-row__name::after {
+  transform: scaleX(1);
+}
+
+/* meta line — only visible on hover or expand, only when un-ticked */
+.practice-row__meta {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11px;
+  color: var(--text-3);
+  opacity: 0;
+  transition: opacity 200ms ease-out 80ms;
+}
+
+.practice-row:hover .practice-row__meta,
+.practice-row[data-expanded="true"] .practice-row__meta {
+  opacity: 1;
+}
+
+.practice-row[data-ticked="true"] .practice-row__meta {
+  display: none;
+}
+
+/* chevron — rotates 90° when expanded */
+.practice-row__chevron {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-3);
+  padding: 4px;
+  opacity: 0;
+  transition: opacity 200ms, transform 200ms ease-out;
+}
+
+.practice-row:hover .practice-row__chevron,
+.practice-row[data-expanded="true"] .practice-row__chevron {
+  opacity: 0.7;
+}
+
+.practice-row[data-expanded="true"] .practice-row__chevron {
+  transform: rotate(90deg);
+}
+
+/* ───── tick — the hero ───── */
+
+.tick {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background: transparent;
+  border: 1.5px solid var(--line);
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition:
+    background 240ms ease-out,
+    border-color 240ms ease-out,
+    transform 120ms ease-out;
+}
+
+.tick:active {
+  transform: scale(0.94);
+}
+
+.tick__check {
+  stroke: var(--accent-deep);
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 14;
+  stroke-dashoffset: 14;
+  opacity: 0;
+  fill: none;
+  transition:
+    stroke-dashoffset 320ms cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 120ms ease-out;
+}
+
+.practice-row[data-ticked="true"] .tick {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+
+.practice-row[data-ticked="true"] .tick__check {
+  stroke-dashoffset: 0;
+  opacity: 1;
+}
+
+/* ───── drawer ───── */
+
+.practice-row__drawer {
+  display: none;
+  margin-top: 12px;
+  margin-left: 44px;
+  padding-top: 12px;
+  padding-bottom: 4px;
+  border-top: 1px dashed var(--line);
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11px;
+  color: var(--text-2);
+  line-height: 1.7;
+  animation: drawer-down 220ms ease-out;
+}
+
+.practice-row[data-expanded="true"] .practice-row__drawer {
+  display: block;
+}
+
+@keyframes drawer-down {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.drawer-grid {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.drawer-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.drawer-meta__label {
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+.drawer-meta__value {
+  color: var(--ink-2);
+}
+
+.drawer-history {
+  margin-top: 10px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 12px;
+  color: var(--text-3);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.drawer-history__dots {
+  display: inline-flex;
+  gap: 3px;
+}
+
+.drawer-history__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: transparent;
+  border: 1px solid var(--line);
+}
+
+.drawer-history__dot--filled {
+  background: var(--accent);
+  border: none;
+}
+
+/* ───── add new ───── */
+
+.practices-add {
+  margin-top: 8px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 13px;
+  color: var(--text-3);
+  padding: 10px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.practices-add:hover {
+  color: var(--text-2);
+}
+
+.practices-add__plus {
+  font-size: 16px;
+  line-height: 1;
+}
+
+/* ───── reduce motion ───── */
+
+@media (prefers-reduced-motion: reduce) {
+  .practice-row,
+  .practice-row__name,
+  .practice-row__name::after,
+  .practice-row__meta,
+  .practice-row__chevron,
+  .tick,
+  .tick__check,
+  .practice-row__drawer {
+    animation: none !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -3254,6 +3254,87 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
   .wealth-row-actions{grid-column:1 / -1;justify-content:flex-start}
   .wealth-coach-drawer{width:100vw;min-width:0}
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   v2 desktop additions (Claude Design v2 handoff, 2026-04-30)
+   - Practices visual polish: overrides on existing class names so
+     the render function stays untouched. Full markup migration is
+     a follow-up.
+   - Session Closed Beat: 1.4s navy beat when a focus pomodoro
+     completes. Triggered by `arca:session-closed` event.
+   - Focus Mode Lock is intentionally NOT shipped here. Its files
+     live in arca/design/claude-design-output-v3/ until the timer
+     source-of-truth refactor is done.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Practices polish — bigger tick, calmer hover, hide-meta-by-default */
+.practice-check{
+  width:26px;height:26px;border-width:1.5px;
+  transition:background 240ms ease-out,border-color 240ms ease-out,transform 120ms ease-out;
+}
+.practice-check:active{ transform:scale(0.94); }
+.practice-check.done::after{ font-size:.78rem; }
+.practice-meta{
+  opacity:0;
+  transition:opacity 200ms ease-out 80ms;
+}
+.practice-item:hover .practice-meta,
+.practice-item.expanded .practice-meta{ opacity:1; }
+.practice-item{
+  transition:background 160ms ease-out;
+  border-radius:8px;
+}
+.practice-item:hover{ background:rgba(176,122,62,0.025); }
+@media (prefers-reduced-motion: reduce){
+  .practice-check,.practice-meta,.practice-item{
+    transition-duration:0.01ms !important;
+  }
+}
+
+/* Session Closed Beat */
+.session-beat{
+  position:fixed;inset:0;z-index:9100;
+  background:#0f1822;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;
+  opacity:0;pointer-events:none;
+}
+.session-beat[data-active="true"]{
+  pointer-events:auto;
+  animation:session-beat-fade 1400ms cubic-bezier(0.4,0,0.2,1) forwards;
+}
+@keyframes session-beat-fade{
+  0%{opacity:0}14%{opacity:1}78%{opacity:1}100%{opacity:0}
+}
+.session-beat__mark{
+  width:96px;height:96px;color:var(--paper);
+  opacity:0;transform:scale(0.94);
+}
+.session-beat[data-active="true"] .session-beat__mark{
+  animation:session-beat-mark 700ms cubic-bezier(0.4,0,0.2,1) forwards;
+}
+@keyframes session-beat-mark{
+  0%{opacity:0;transform:scale(0.94)}100%{opacity:1;transform:scale(1)}
+}
+.session-beat__meta{
+  font-family:var(--font-mono);
+  font-size:14px;letter-spacing:0.18em;
+  color:rgba(244,239,230,0.55);
+  text-transform:uppercase;
+  opacity:0;
+}
+.session-beat[data-active="true"] .session-beat__meta{
+  animation:session-beat-meta 500ms ease-out 400ms forwards;
+}
+@keyframes session-beat-meta{
+  0%{opacity:0;transform:translateY(4px)}100%{opacity:1;transform:translateY(0)}
+}
+@media (prefers-reduced-motion: reduce){
+  .session-beat[data-active="true"]{animation:none !important;opacity:1}
+  .session-beat[data-active="true"] .session-beat__mark,
+  .session-beat[data-active="true"] .session-beat__meta{
+    animation:none !important;opacity:1;transform:none;
+  }
+}
 </style>
 </head>
 <body>
@@ -16471,6 +16552,12 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         const message = getPhaseTransitionMessage(fromPhase, { sessionCompleted: sessionCompleted && !continuousMode });
         void playPomodoroChime();
         sendPomodoroNotification(message);
+        // Arca v2: navy closure beat fires when a work pomodoro completes
+        if (fromPhase === "work") {
+          const minutes = Math.max(1, Math.round(Number(pomodoro.workMin) || 25));
+          const duration = String(minutes).padStart(2, "0") + ":00";
+          window.dispatchEvent(new CustomEvent("arca:session-closed", { detail: { duration } }));
+        }
       }
       if (pomodoro.running && (pomodoro.phase === "work" || pomodoro.phase === "break")) {
         setFocusMode(true);
@@ -32197,6 +32284,49 @@ You cannot change app state without that JSON block. Do not say something was ad
       flushAppOpenTime("app_open_time_shutdown");
       saveStateImmediate("shutdown");
     });
+  </script>
+
+  <!-- ═══════ Arca v2 desktop overlays ═══════ -->
+  <!-- Session Closed Beat: 1.4s navy moment when a focus pomodoro completes. -->
+  <div class="session-beat" data-active="false" id="sessionBeat" aria-hidden="true">
+    <svg class="session-beat__mark" viewBox="0 0 64 64" fill="none" aria-hidden="true">
+      <path d="M16 52 L16 24 Q32 8 48 24 L48 52" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round"/>
+      <circle cx="32" cy="34" r="4" fill="currentColor"/>
+      <line x1="14" y1="52" x2="50" y2="52" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+    </svg>
+    <div class="session-beat__meta" id="sessionBeatMeta">25:00 · session closed</div>
+  </div>
+
+  <script>
+    // Session Closed Beat — listens for arca:session-closed and plays a
+    // 1.4s navy moment. Any keypress or mousedown skips early.
+    (function initSessionBeat() {
+      const el = document.getElementById('sessionBeat');
+      if (!el) return;
+      const meta = el.querySelector('#sessionBeatMeta');
+      let timer = null;
+
+      function play(detail = {}) {
+        const duration = detail.duration || '25:00';
+        if (meta) meta.textContent = duration + ' · session closed';
+        el.dataset.active = 'false';
+        void el.offsetWidth; // force reflow so animation restarts
+        el.dataset.active = 'true';
+        clearTimeout(timer);
+        timer = setTimeout(end, 1400);
+        document.addEventListener('keydown', skip, { once: true });
+        document.addEventListener('mousedown', skip, { once: true });
+      }
+      function end() {
+        el.dataset.active = 'false';
+        clearTimeout(timer);
+        document.removeEventListener('keydown', skip);
+        document.removeEventListener('mousedown', skip);
+      }
+      function skip() { end(); }
+
+      window.addEventListener('arca:session-closed', (e) => play(e.detail || {}));
+    })();
   </script>
 </body>
 </html>

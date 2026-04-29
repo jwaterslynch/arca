@@ -1,0 +1,11 @@
+<!-- Arca v2 — Session Closed Beat overlay markup -->
+<!-- Append once near the end of <body>. Toggled via .session-beat[data-active] -->
+
+<div class="session-beat" data-active="false" id="sessionBeat" aria-hidden="true">
+  <svg class="session-beat__mark" viewBox="0 0 64 64" fill="none" aria-hidden="true">
+    <path d="M16 52 L16 24 Q32 8 48 24 L48 52" stroke="currentColor" stroke-width="2.5" stroke-linejoin="round" />
+    <circle cx="32" cy="34" r="4" fill="currentColor" />
+    <line x1="14" y1="52" x2="50" y2="52" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" />
+  </svg>
+  <div class="session-beat__meta" id="sessionBeatMeta">52:00 · session closed</div>
+</div>
