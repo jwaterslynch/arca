@@ -14,93 +14,113 @@ function ExecuteV3({ tweaks = {} }) {
   } = tweaks;
 
   const [practices, setPractices] = React.useState(PRACTICES);
+  const [taskDone, setTaskDone] = React.useState({});
   const [drawerOpen, setDrawerOpen] = React.useState(false);
   const [activeTaskId, setActiveTaskId] = React.useState('t1');
   const [focusMode, setFocusMode] = React.useState(false);
 
   const togglePractice = (id) => setPractices(ps => ps.map(p => p.id === id ? { ...p, done: !p.done } : p));
-  const toggleTask = (id) => { /* placeholder */ };
+  const toggleTask = (id) => setTaskDone(s => ({ ...s, [id]: !s[id] }));
   const activeTask = TASKS.find(t => t.id === activeTaskId);
+
+  // Entering focus mode closes the drawer (mutually exclusive surfaces)
+  React.useEffect(() => { if (focusMode) setDrawerOpen(false); }, [focusMode]);
+
+  // Esc closes the drawer (focus mode owns its own Esc handler)
+  React.useEffect(() => {
+    if (!drawerOpen) return;
+    const onKey = (e) => { if (e.key === 'Escape') setDrawerOpen(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [drawerOpen]);
 
   return (
     <div style={{
       width: V3_W, height: V3_H, position: 'relative', overflow: 'hidden',
       background: 'var(--paper)', fontFamily: 'Inter, system-ui',
       borderRadius: 12, color: 'var(--text)',
-      display: 'flex', flexDirection: 'column',
     }}>
-      {/* Top bar */}
-      <TopBar />
-
-      {/* Practices rail — the core move */}
-      <PracticesRail
-        practices={practices}
-        density={practicesDensity}
-        onTick={togglePractice}
-        onManage={() => setDrawerOpen(true)}
-      />
-
-      {/* Main scroll area */}
-      <main style={{
-        flex: 1, overflow: 'auto',
-        display: 'flex', flexDirection: 'column',
-        padding: '32px 64px 0',
-        maxWidth: 880, width: '100%', margin: '0 auto',
+      {/* Workspace shell — hidden while focus mode owns the surface */}
+      <div style={{
+        position: 'absolute', inset: 0,
+        display: focusMode ? 'none' : 'flex',
+        flexDirection: 'column',
       }}>
-        {/* Date eyebrow + greeting */}
-        <header style={{ marginBottom: 28 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--accent-deep)', marginBottom: 6 }}>
-            Wednesday · 30 April
-          </div>
-          <h1 className="display" style={{ fontSize: 30, color: 'var(--ink)', letterSpacing: '-0.02em', margin: 0, fontWeight: 500 }}>
-            The week is half won.
-          </h1>
-        </header>
+        {/* Top bar */}
+        <TopBar />
 
-        {/* Hero timer */}
-        <HeroTimer task={activeTask} onEnterFocus={() => setFocusMode(true)} />
+        {/* Practices rail — the core move */}
+        <PracticesRail
+          practices={practices}
+          density={practicesDensity}
+          onTick={togglePractice}
+          onManage={() => setDrawerOpen(true)}
+        />
 
-        {/* AI bar — between hero and list when above-list */}
-        {aiBarPosition === 'above-list' && <AiBar />}
-
-        {/* Today list */}
-        <section style={{ marginTop: aiBarPosition === 'above-list' ? 24 : 32 }}>
-          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 14 }}>
-            <div>
-              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-2)', marginBottom: 2 }}>Today</div>
-              <div className="display" style={{ fontSize: 18, color: 'var(--ink)' }}>5 tasks · 1 in flight</div>
+        {/* Main scroll area */}
+        <main style={{
+          flex: 1, overflow: 'auto',
+          display: 'flex', flexDirection: 'column',
+          padding: '32px 64px 0',
+          maxWidth: 880, width: '100%', margin: '0 auto',
+        }}>
+          {/* Date eyebrow + greeting */}
+          <header style={{ marginBottom: 28 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--accent-deep)', marginBottom: 6 }}>
+              Wednesday · 30 April
             </div>
-            <button style={ghostBtn}>+ Add</button>
-          </div>
+            <h1 className="display" style={{ fontSize: 30, color: 'var(--ink)', letterSpacing: '-0.02em', margin: 0, fontWeight: 500 }}>
+              The week is half won.
+            </h1>
+          </header>
 
-          <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-            {TASKS.map(t => (
-              <TaskRow
-                key={t.id}
-                task={t}
-                isActive={t.id === activeTaskId}
-                showDepthTags={showDepthTags}
-                onActivate={() => setActiveTaskId(t.id)}
-              />
-            ))}
-          </ul>
-        </section>
+          {/* Hero timer */}
+          <HeroTimer task={activeTask} onEnterFocus={() => setFocusMode(true)} />
 
-        {/* Slim stats footer */}
-        {statsMode !== 'hidden' && <StatsFooter mode={statsMode} />}
+          {/* AI bar — between hero and list when above-list */}
+          {aiBarPosition === 'above-list' && <AiBar />}
 
-        <div style={{ height: 32 }} />
-      </main>
+          {/* Today list */}
+          <section style={{ marginTop: aiBarPosition === 'above-list' ? 24 : 32 }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 14 }}>
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--text-2)', marginBottom: 2 }}>Today</div>
+                <div className="display" style={{ fontSize: 18, color: 'var(--ink)' }}>5 tasks · 1 in flight</div>
+              </div>
+              <button style={ghostBtn}>+ Add</button>
+            </div>
 
-      {/* Drawer */}
-      <PracticesDrawer
-        open={drawerOpen}
-        practices={practices}
-        onTick={togglePractice}
-        onClose={() => setDrawerOpen(false)}
-      />
+            <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+              {TASKS.map(t => (
+                <TaskRow
+                  key={t.id}
+                  task={t}
+                  isActive={t.id === activeTaskId}
+                  showDepthTags={showDepthTags}
+                  checked={!!taskDone[t.id]}
+                  onToggleCheck={() => toggleTask(t.id)}
+                  onActivate={() => setActiveTaskId(t.id)}
+                />
+              ))}
+            </ul>
+          </section>
 
-      {/* Focus mode overlay — shown when active */}
+          {/* Slim stats footer */}
+          {statsMode !== 'hidden' && <StatsFooter mode={statsMode} />}
+
+          <div style={{ height: 32 }} />
+        </main>
+
+        {/* Drawer */}
+        <PracticesDrawer
+          open={drawerOpen}
+          practices={practices}
+          onTick={togglePractice}
+          onClose={() => setDrawerOpen(false)}
+        />
+      </div>
+
+      {/* Focus mode — full-bleed surface, owns timer state */}
       {focusMode && <FocusModeV3 task={activeTask} onExit={() => setFocusMode(false)} />}
     </div>
   );
@@ -230,7 +250,7 @@ function AiBar() {
 }
 
 // ─── Task row ───
-function TaskRow({ task, isActive, showDepthTags, onActivate }) {
+function TaskRow({ task, isActive, showDepthTags, onActivate, checked, onToggleCheck }) {
   const [hovered, setHovered] = React.useState(false);
   const depthHue = task.depth === 'deep' ? 'var(--d-execute)' : 'var(--text-3)';
 
@@ -249,7 +269,7 @@ function TaskRow({ task, isActive, showDepthTags, onActivate }) {
         transition: 'background 160ms',
       }}
     >
-      <Tick checked={false} onClick={(e) => { e.stopPropagation(); }} />
+      <Tick checked={!!checked} onClick={(e) => { e.stopPropagation(); onToggleCheck && onToggleCheck(); }} />
 
       {/* Depth dot — always visible, calm */}
       <span style={{
