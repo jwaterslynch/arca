@@ -3367,6 +3367,210 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
     animation:none !important;opacity:1;transform:none;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════
+   v3 Execute redesign — figure & ground (CD v3 brief response)
+   • Single column, no right rail
+   • Practices as a rail of dots at top, not a panel of rows
+   • Manage button slides out a right-side drawer (rich logging UI)
+   • Slim stats footer line replaces the four stat-boxes
+   • Today list: depth/category tags hidden until hover
+   • Done task: title strikes through and fades to grey
+   ═══════════════════════════════════════════════════════════ */
+
+/* Single column + wider main column */
+.execute-grid.v3-grid{
+  grid-template-columns:1fr;
+  grid-template-rows:auto auto auto auto auto;
+  gap:18px;
+  max-width:920px;
+}
+.execute-grid.v3-grid .hero-timer{ grid-column:1; }
+.execute-grid.v3-grid .ai-bar{ grid-column:1; }
+.execute-grid.v3-grid .today-panel{ grid-column:1;grid-row:auto; }
+
+/* Practices Rail — figure-and-ground at the top of Execute */
+.practices-rail{
+  display:flex;align-items:center;gap:14px;
+  padding:14px 22px;
+  background:var(--surface);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+}
+.practices-rail__eyebrow{
+  font-size:.7rem;font-weight:700;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--text2);
+  min-width:88px;
+}
+.practices-rail__dots{
+  flex:1;display:flex;align-items:center;gap:10px;
+  position:relative;min-height:30px;flex-wrap:wrap;
+}
+.practices-rail__count{
+  display:flex;align-items:center;gap:14px;
+  font-family:var(--font-mono,'JetBrains Mono',monospace);
+  font-size:.78rem;color:var(--text2);letter-spacing:.04em;
+  font-variant-numeric:tabular-nums;
+}
+.practices-rail__manage{
+  background:transparent;border:none;cursor:pointer;
+  color:var(--text2);font-size:.7rem;font-weight:600;
+  letter-spacing:.06em;text-transform:uppercase;
+  padding:5px 10px;border-radius:6px;
+  transition:background 160ms ease-out,color 160ms ease-out;
+  font-family:inherit;
+}
+.practices-rail__manage:hover{ background:rgba(15,24,34,0.05);color:var(--text); }
+
+/* Rail dots */
+.rail-dot{
+  width:25px;height:25px;padding:0;
+  background:transparent;border:none;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  position:relative;flex-shrink:0;
+}
+.rail-dot__inner{
+  width:11px;height:11px;border-radius:50%;
+  background:transparent;
+  border:1.5px solid var(--line);
+  transition:transform 160ms ease-out,background 200ms ease-out,border-color 200ms ease-out,box-shadow 200ms ease-out;
+}
+.rail-dot:hover .rail-dot__inner{
+  transform:scale(1.18);
+  box-shadow:0 0 0 4px rgba(176,122,62,0.12);
+}
+.rail-dot[data-done="true"] .rail-dot__inner{
+  background:var(--accent);
+  border-color:var(--accent);
+}
+.rail-dot__stale{
+  position:absolute;inset:5px;border-radius:50%;
+  border:1px dashed rgba(169,64,50,0.35);
+  pointer-events:none;
+}
+.rail-dot[data-done="true"] .rail-dot__stale,
+.rail-dot:hover .rail-dot__stale{ display:none; }
+
+/* Rail tooltip */
+.rail-dot__tooltip{
+  position:absolute;top:calc(100% + 8px);left:50%;transform:translateX(-50%);
+  background:var(--ink,#0f1822);color:var(--paper,#f4efe6);
+  padding:8px 12px;border-radius:8px;
+  font-size:.72rem;font-family:var(--font);white-space:nowrap;
+  pointer-events:none;z-index:10;
+  box-shadow:0 8px 24px rgba(15,24,34,0.18);
+  opacity:0;transition:opacity 140ms ease-out;
+}
+.rail-dot:hover .rail-dot__tooltip{ opacity:1; }
+.rail-dot__tooltip-name{ font-weight:500; }
+.rail-dot[data-done="true"] .rail-dot__tooltip-name{
+  text-decoration:line-through;
+  opacity:.55;
+}
+.rail-dot__tooltip-meta{
+  font-family:var(--font-mono,'JetBrains Mono',monospace);
+  font-size:.62rem;opacity:.6;letter-spacing:.04em;margin-top:2px;
+}
+
+/* Slide-out Manage drawer */
+.practices-drawer-scrim{
+  position:fixed;inset:0;z-index:9000;
+  background:rgba(15,24,34,0);
+  pointer-events:none;
+  transition:background 240ms ease-out;
+}
+.practices-drawer-scrim[data-open="true"]{
+  background:rgba(15,24,34,0.18);
+  pointer-events:auto;
+}
+.practices-drawer-v3{
+  position:fixed;top:0;bottom:0;right:0;width:440px;max-width:92vw;
+  z-index:9010;
+  background:var(--surface);
+  border-left:1px solid var(--line);
+  box-shadow:none;
+  transform:translateX(100%);
+  transition:transform 280ms cubic-bezier(0.4,0,0.2,1),box-shadow 280ms ease-out;
+  display:flex;flex-direction:column;
+  overflow:hidden;
+}
+.practices-drawer-v3[data-open="true"]{
+  transform:translateX(0);
+  box-shadow:-12px 0 40px rgba(15,24,34,0.12);
+}
+.practices-drawer-v3__header{
+  padding:22px 22px 14px;border-bottom:1px solid var(--line);
+  display:flex;align-items:baseline;justify-content:space-between;gap:12px;
+}
+.practices-drawer-v3__eyebrow{
+  font-size:.7rem;font-weight:700;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--text2);margin-bottom:4px;
+}
+.practices-drawer-v3__title{
+  font-family:var(--font-display,'Fraunces',serif);
+  font-size:1.4rem;font-weight:500;letter-spacing:-.015em;color:var(--text);
+}
+.practices-drawer-v3__close{
+  background:transparent;border:none;cursor:pointer;
+  color:var(--text2);font-size:1rem;padding:4px 8px;line-height:1;
+  border-radius:6px;
+}
+.practices-drawer-v3__close:hover{ background:rgba(15,24,34,0.05);color:var(--text); }
+.practices-drawer-v3__body{
+  flex:1;overflow-y:auto;padding:8px 16px 20px;
+}
+
+/* Slim stats footer line */
+.stats-footer{
+  display:flex;align-items:center;gap:22px;
+  padding:14px 4px 4px;
+  border-top:1px solid var(--line);
+  margin-top:8px;
+  font-family:var(--font-mono,'JetBrains Mono',monospace);
+  font-size:.72rem;color:var(--text2);letter-spacing:.04em;
+}
+.stats-footer__divider{
+  width:1px;height:11px;background:var(--line);
+}
+.stats-footer__strong{ color:var(--text);font-weight:500; }
+.stats-footer__spacer{ flex:1; }
+.stats-footer__leakage{ opacity:.55; }
+
+/* Today list — depth/category tags hidden by default, hover to reveal */
+.today-panel #todayTaskList .task-item .task-tags{
+  opacity:0;
+  max-height:0;
+  margin-top:0;
+  overflow:hidden;
+  transition:opacity 200ms ease-out,max-height 200ms ease-out,margin-top 200ms ease-out;
+}
+.today-panel #todayTaskList .task-item:hover .task-tags,
+.today-panel #todayTaskList .task-item.active-task .task-tags{
+  opacity:1;
+  max-height:24px;
+  margin-top:3px;
+}
+/* Done task: title strikes through and fades to grey */
+.today-panel #todayTaskList .task-item .task-title{
+  transition:color 320ms ease-out,text-decoration-color 320ms ease-out;
+  text-decoration-color:transparent;
+}
+.today-panel #todayTaskList .task-item .task-title.done-text{
+  color:var(--text2);
+  text-decoration:line-through;
+  text-decoration-color:var(--text2);
+  text-decoration-thickness:1px;
+  opacity:1;
+}
+
+@media (prefers-reduced-motion: reduce){
+  .practices-rail__dots,.rail-dot__inner,.rail-dot__tooltip,
+  .practices-drawer-scrim,.practices-drawer-v3,
+  .today-panel #todayTaskList .task-item .task-tags,
+  .today-panel #todayTaskList .task-item .task-title{
+    transition-duration:0.01ms !important;
+  }
+}
 </style>
 </head>
 <body>
@@ -3394,7 +3598,17 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
 
   <!-- ═══════════ EXECUTE SURFACE ═══════════ -->
   <div class="surface active tab-content" id="tab-execute">
-    <div class="execute-grid">
+    <div class="execute-grid v3-grid">
+
+      <!-- v3 Practices Rail — figure & ground at top of Execute -->
+      <div class="practices-rail" aria-label="Practices today">
+        <div class="practices-rail__eyebrow">Practices</div>
+        <div class="practices-rail__dots" id="practicesRailDots"></div>
+        <div class="practices-rail__count">
+          <span id="lifeSummary">0/0</span>
+          <button class="practices-rail__manage" id="manageLifeBtnV3" type="button">Manage</button>
+        </div>
+      </div>
 
       <!-- Hero Timer -->
       <div class="hero-timer" id="heroTimerCard" tabindex="-1">
@@ -3488,40 +3702,50 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         </div>
       </div>
 
-      <!-- Sidebar: Practices + Stats -->
-      <div class="sidebar-panel">
-        <div class="practices-card">
-          <div class="panel-header">
-            <h3>Practices &amp; Domains</h3>
-            <span class="count" id="lifeSummary">0/0 logged</span>
+      <!-- v3 Slim stats footer (replaces the four stat-boxes) -->
+      <div class="stats-footer">
+        <span><span class="stats-footer__strong" id="todayTracked">0m</span> today</span>
+        <span class="stats-footer__divider"></span>
+        <span><span class="stats-footer__strong" id="deepRatio">0%</span> deep ratio</span>
+        <span class="stats-footer__divider"></span>
+        <span><span class="stats-footer__strong" id="weekClosed">0</span> closed this week</span>
+        <span class="stats-footer__divider"></span>
+        <span><span class="stats-footer__strong" id="weekTracked">0h</span> this week</span>
+        <span class="stats-footer__spacer"></span>
+        <span class="stats-footer__leakage" id="openLeakageMeta">App open 0m · Untracked 0m</span>
+      </div>
+
+      <!-- Hidden hooks: existing JS still references these IDs -->
+      <div class="ui-hidden-hook" hidden aria-hidden="true">
+        <button id="manageLifeBtn">Manage</button>
+        <div id="lifeManager" class="life-manager" hidden>
+          <div class="life-add-grid">
+            <input id="lifePracticeTitleInput" placeholder="Practice name" />
+            <input id="lifePracticeMinInput" type="number" min="1" max="240" placeholder="Mins" />
+            <input id="lifePracticeNoteInput" placeholder="Note" />
+            <button id="addLifePracticeBtn" class="primary" type="button">Add</button>
           </div>
-          <div class="ui-hidden-hook" hidden aria-hidden="true">
-            <button id="manageLifeBtn">Manage</button>
-            <div id="lifeManager" class="life-manager" hidden>
-              <div class="life-add-grid">
-                <input id="lifePracticeTitleInput" placeholder="Practice name" />
-                <input id="lifePracticeMinInput" type="number" min="1" max="240" placeholder="Mins" />
-                <input id="lifePracticeNoteInput" placeholder="Note" />
-                <button id="addLifePracticeBtn" class="primary" type="button">Add</button>
-              </div>
-              <div id="lifeConfigList"></div>
-            </div>
-          </div>
-          <div id="lifePracticesList" style="margin-top:8px;"></div>
-        </div>
-        <div class="stats-card">
-          <div class="stats-grid">
-            <div class="stat-box"><div class="stat-val" id="todayTracked">0m</div><div class="stat-label">Today</div></div>
-            <div class="stat-box"><div class="stat-val" id="deepRatio">0%</div><div class="stat-label">Deep Ratio</div></div>
-            <div class="stat-box"><div class="stat-val" id="weekClosed">0</div><div class="stat-label">Closed (Wk)</div></div>
-            <div class="stat-box"><div class="stat-val" id="weekTracked">0h</div><div class="stat-label">This Week</div></div>
-          </div>
-          <div id="openLeakageMeta" class="stats-meta">App open 0m · Untracked 0m</div>
+          <div id="lifeConfigList"></div>
         </div>
       </div>
 
     </div>
   </div>
+
+  <!-- v3 Practices drawer — slides in from right when Manage is clicked -->
+  <div class="practices-drawer-scrim" id="practicesDrawerScrim" aria-hidden="true"></div>
+  <aside class="practices-drawer-v3" id="practicesDrawerV3" aria-hidden="true" aria-label="Practices manager">
+    <header class="practices-drawer-v3__header">
+      <div>
+        <div class="practices-drawer-v3__eyebrow">Practices</div>
+        <div class="practices-drawer-v3__title">The ground.</div>
+      </div>
+      <button class="practices-drawer-v3__close" id="practicesDrawerCloseBtn" type="button" aria-label="Close drawer">✕</button>
+    </header>
+    <div class="practices-drawer-v3__body">
+      <div id="lifePracticesList"></div>
+    </div>
+  </aside>
 
   <!-- Focus Mode Overlay -->
   <div class="focus-overlay" id="focusOverlay">
@@ -6008,6 +6232,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
     let planCoachOpen = false;
     let todayPanelDelegated = false;
     let lifePracticesDelegated = false;
+    let practicesRailDelegated = false;
     let lifePracticeDragId = "";
     let lifePracticeDragKind = "";
     let focusUiPrefs = loadFocusUiPrefs();
@@ -14049,10 +14274,99 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       if (!listEl) return;
 
       const practices = sortPracticesForDisplay(state.life_practices.practices || []);
+
+      /* v3 — render rail dots + update summary count */
+      const railEl = document.getElementById("practicesRailDots");
+      const summaryEl = document.getElementById("lifeSummary");
+      const doneCount = practices.filter(p => log[p.id]?.done).length;
+      if (summaryEl) summaryEl.textContent = `${doneCount} of ${practices.length}`;
+
+      /* v3 rail + drawer wiring (one-time, runs even when practices is empty) */
+      if (!practicesRailDelegated) {
+        const rail = document.getElementById("practicesRailDots");
+        if (rail) {
+          rail.addEventListener("click", e => {
+            const dot = e.target.closest(".rail-dot[data-practice-id]");
+            if (!dot) return;
+            e.preventDefault();
+            e.stopPropagation();
+            const pid = dot.dataset.practiceId || "";
+            const cur = (state.life_practices?.daily_log?.[todayISO()] || {})[pid] || { done: false };
+            updateLifePractice(pid, { done: !cur.done });
+          });
+        }
+        const openDrawer = () => {
+          const drawer = document.getElementById("practicesDrawerV3");
+          const scrim = document.getElementById("practicesDrawerScrim");
+          if (!drawer || !scrim) return;
+          drawer.setAttribute("data-open", "true");
+          drawer.setAttribute("aria-hidden", "false");
+          scrim.setAttribute("data-open", "true");
+        };
+        const closeDrawer = () => {
+          const drawer = document.getElementById("practicesDrawerV3");
+          const scrim = document.getElementById("practicesDrawerScrim");
+          if (!drawer || !scrim) return;
+          drawer.removeAttribute("data-open");
+          drawer.setAttribute("aria-hidden", "true");
+          scrim.removeAttribute("data-open");
+        };
+        const manageBtnV3 = document.getElementById("manageLifeBtnV3");
+        if (manageBtnV3) manageBtnV3.addEventListener("click", openDrawer);
+        const closeBtn = document.getElementById("practicesDrawerCloseBtn");
+        if (closeBtn) closeBtn.addEventListener("click", closeDrawer);
+        const scrim = document.getElementById("practicesDrawerScrim");
+        if (scrim) scrim.addEventListener("click", closeDrawer);
+        document.addEventListener("keydown", e => {
+          if (e.key !== "Escape") return;
+          const drawer = document.getElementById("practicesDrawerV3");
+          if (drawer?.getAttribute("data-open") === "true") closeDrawer();
+        });
+        practicesRailDelegated = true;
+      }
+
+      if (railEl) {
+        if (!practices.length) {
+          railEl.innerHTML = '<span class="tiny" style="color:var(--text2);font-size:.72rem">No practices configured</span>';
+        } else {
+          railEl.innerHTML = practices.map(p => {
+            const entry = practiceLogEntry(p.id, today);
+            const done = !!entry.done;
+            const min = Number.isFinite(Number(p.minimum_minutes)) ? Number(p.minimum_minutes) : 10;
+            const target = `${min} min`;
+            /* Find last done day (walk back up to 30 days) */
+            let lastText = "never logged";
+            let staleDays = 999;
+            if (done) { lastText = "done today"; staleDays = 0; }
+            else {
+              for (let i = 1; i <= 30; i++) {
+                const d = new Date();
+                d.setDate(d.getDate() - i);
+                const key = localDateKey(d);
+                if (state.life_practices.daily_log?.[key]?.[p.id]?.done) {
+                  lastText = i === 1 ? "last yesterday" : `last ${i} days ago`;
+                  staleDays = i;
+                  break;
+                }
+              }
+            }
+            const isStale = !done && staleDays >= 3;
+            const ariaLabel = `${p.title}${done ? " — done today" : ""}`;
+            return `
+              <button class="rail-dot" data-practice-id="${escapeHtml(p.id)}" data-done="${done}" type="button" aria-label="${escapeHtml(ariaLabel)}">
+                <span class="rail-dot__inner"></span>
+                ${isStale ? '<span class="rail-dot__stale" aria-hidden="true"></span>' : ''}
+                <span class="rail-dot__tooltip" role="tooltip">
+                  <span class="rail-dot__tooltip-name">${escapeHtml(p.title)}</span>
+                  <span class="rail-dot__tooltip-meta">${escapeHtml(target)} · ${escapeHtml(lastText)}</span>
+                </span>
+              </button>`;
+          }).join("");
+        }
+      }
+
       if (!practices.length) {
         listEl.innerHTML = '<p class="tiny">No practices configured.</p>';
-        const summaryEl = document.getElementById("lifeSummary");
-        if (summaryEl) summaryEl.textContent = "0/0 logged";
         return;
       }
 
@@ -14252,8 +14566,6 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         lifePracticesDelegated = true;
       }
 
-      const doneCount = practices.filter(p => log[p.id]?.done).length;
-      document.getElementById("lifeSummary").textContent = `${doneCount}/${practices.length} logged`;
       const manageBtn = document.getElementById("manageLifeBtn");
       if (manageBtn) manageBtn.textContent = lifeManagerOpen ? "Done managing" : "Manage practices";
       const manager = document.getElementById("lifeManager");
