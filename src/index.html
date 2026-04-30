@@ -3780,6 +3780,11 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
   transition:background 160ms ease-out,color 160ms ease-out;
 }
 .wise__clear-btn:hover{ background:rgba(15,24,34,0.05);color:var(--text); }
+.wise__clear-btn--armed{
+  background:rgba(169,64,50,0.10);
+  color:var(--danger,#a94032);
+}
+.wise__clear-btn--armed:hover{ background:rgba(169,64,50,0.18);color:var(--danger,#a94032); }
 .wise__close{
   background:transparent;border:none;cursor:pointer;
   color:var(--text2);font-size:1rem;line-height:1;padding:6px 10px;border-radius:6px;
@@ -30941,10 +30946,9 @@ CRITICAL RULES FOR ACTIONS:
     }
 
     /* ═══════════════════════════════════════════════════════════
-       Wise — coach for the life half of the ledger (MVP)
+       Wise — coach for the life half of the ledger
        Curiosity-driven, data-aware, never silently mutates state.
-       Lives at #wiseOverlay; opens from the practices drawer's
-       "Talk to Wise" button.
+       Lives at the #tab-wise top-bar tab.
        See arca/design/WISE_BRIEF.md for the full thesis.
        ═══════════════════════════════════════════════════════════ */
     const WISE_STORAGE_KEY = "arca_wise_conversation_v1";
@@ -30953,6 +30957,8 @@ CRITICAL RULES FOR ACTIONS:
     let wiseSending = false;
     let wiseLastSpokeAt = null;
     let wiseDelegated = false;
+    let wiseClearArmed = false;
+    let wiseClearTimer = null;
 
     /* User-adjustable text zoom for the Wise surface (Cmd+/Cmd-/Cmd+0). */
     const WISE_ZOOM_KEY = "arca_wise_zoom_v1";
@@ -30964,9 +30970,10 @@ CRITICAL RULES FOR ACTIONS:
       return Number.isFinite(v) && v >= WISE_ZOOM_MIN && v <= WISE_ZOOM_MAX ? v : 1;
     })();
     function applyWiseZoom() {
-      const surface = document.getElementById("tab-wise");
-      if (!surface) return;
-      surface.style.zoom = wiseZoom === 1 ? "" : String(wiseZoom);
+      // Zoom only the conversation column — header chrome, last-spoke caption,
+      // Clear button, composer, and hint all stay at constant size like the top bar.
+      const thread = document.getElementById("wiseThread");
+      if (thread) thread.style.zoom = wiseZoom === 1 ? "" : String(wiseZoom);
     }
     function setWiseZoom(value) {
       wiseZoom = Math.max(WISE_ZOOM_MIN, Math.min(WISE_ZOOM_MAX, Math.round(value * 10) / 10));
@@ -31521,7 +31528,24 @@ Most responses are 2-4 sentences. Long when the user is exploring; short when th
       const input = document.getElementById("wiseInput");
       if (openBtn) openBtn.addEventListener("click", openWise);
       if (clearBtn) clearBtn.addEventListener("click", () => {
-        if (confirm("Clear this conversation? Wise will start fresh.")) clearWiseConversation();
+        if (wiseClearArmed) {
+          // Second click — actually clear
+          if (wiseClearTimer) { clearTimeout(wiseClearTimer); wiseClearTimer = null; }
+          wiseClearArmed = false;
+          clearBtn.textContent = "Clear conversation";
+          clearBtn.classList.remove("wise__clear-btn--armed");
+          clearWiseConversation();
+          return;
+        }
+        // First click — arm the button, change label, auto-disarm after 4s
+        wiseClearArmed = true;
+        clearBtn.textContent = "Click again to clear";
+        clearBtn.classList.add("wise__clear-btn--armed");
+        wiseClearTimer = setTimeout(() => {
+          wiseClearArmed = false;
+          clearBtn.textContent = "Clear conversation";
+          clearBtn.classList.remove("wise__clear-btn--armed");
+        }, 4000);
       });
       if (sendBtn) sendBtn.addEventListener("click", () => {
         const inp = document.getElementById("wiseInput");
