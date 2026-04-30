@@ -819,30 +819,10 @@ body{font-family:var(--font);color:var(--text);background:var(--bg);-webkit-font
   align-self:center;
 }
 
-/* ═══════════ FOCUS MODE OVERLAY ═══════════ */
-.focus-overlay{
-  position:fixed;inset:0;z-index:150;
-  background:linear-gradient(160deg,#0f1f1a 0%,#1a2e28 40%,#0d1b16 100%);
-  display:none;flex-direction:column;align-items:center;justify-content:center;
-  gap:24px;
-}
-.focus-overlay.active{display:flex}
-.focus-overlay .focus-task{
-  font-size:1.2rem;font-weight:600;color:rgba(255,255,255,.6);
-  text-align:center;max-width:600px;letter-spacing:-.2px;
-}
-.focus-overlay .focus-task .focus-tags{
-  display:flex;gap:8px;justify-content:center;margin-top:8px;
-}
-.focus-overlay .focus-task .focus-tags .tag{opacity:.8;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.08);color:rgba(255,255,255,.7);font-size:.7rem}
-.focus-overlay .focus-task .focus-tags .tag.deep{border-color:rgba(37,99,235,.5);background:rgba(37,99,235,.15);color:#93b4f5}
-.focus-overlay .focus-task .focus-tags .tag.shallow{border-color:rgba(148,163,184,.5);background:rgba(148,163,184,.15);color:#b0bec5}
-.focus-overlay .focus-task .focus-tags .tag.pg1{border-color:rgba(190,24,93,.5);background:rgba(190,24,93,.15);color:#f48fb1}
-.focus-overlay .focus-timer{
-  font-size:min(18vw, 160px);font-weight:800;color:#fff;
-  font-variant-numeric:tabular-nums;letter-spacing:2px;line-height:1;
-}
-.focus-overlay .focus-session{font-size:.9rem;color:rgba(255,255,255,.4);font-weight:500}
+/* ═══════════ FOCUS MODE OVERLAY (legacy parchment overlay removed in v3) ═══════════
+   The v3 focus overlay is defined further below alongside the rail/drawer/footer
+   styles. The .focus-overlay-v3 selector applies the navy radial ground and
+   typography. No legacy parchment styling remains. */
 /* ─── Ghost pill: floating focus-music control ───
    Top-right of the focus overlay. Translucent capsule with track name + two
    ghost buttons (next, mute). Auto-fades to ~40% opacity after 2.5s; brightens
@@ -3571,6 +3551,161 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
     transition-duration:0.01ms !important;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════
+   v3 Focus Mode — native, owns its own surface
+   • Radial navy ground (no parchment overlay)
+   • 48px mark top-left, "Session N of M · Esc to exit" top-right
+   • 128px JetBrains Mono timer center
+   • Progress bar + controls + music pill bottom
+   • Idle 2s → cursor + controls fade; mousemove restores
+   • Space pause/resume; Esc exit
+   ═══════════════════════════════════════════════════════════ */
+.focus-overlay.focus-overlay-v3{
+  display:none;
+  position:fixed;inset:0;z-index:9050;
+  background:radial-gradient(ellipse at 50% 28%, #1a2740 0%, #0f1822 50%, #0a1018 100%);
+  color:var(--paper,#f4efe6);
+  padding:36px 56px 32px;
+  flex-direction:column;
+  font-family:'Inter','Helvetica Neue',sans-serif;
+  cursor:default;
+  animation:focusV3FadeIn 480ms cubic-bezier(0.4,0,0.2,1);
+}
+.focus-overlay.focus-overlay-v3.active{ display:flex; }
+.focus-overlay.focus-overlay-v3[data-controls="hidden"]{ cursor:none; }
+
+@keyframes focusV3FadeIn{ from{opacity:0} to{opacity:1} }
+
+.focus-v3__header{
+  display:flex;align-items:center;justify-content:space-between;
+  transition:opacity 360ms ease-out;
+}
+.focus-overlay.focus-overlay-v3[data-controls="hidden"] .focus-v3__header{ opacity:0; }
+.focus-v3__mark{ color:var(--paper,#f4efe6); display:flex;align-items:center; }
+.focus-v3__mark svg{ display:block; }
+.focus-v3__caption{
+  font-family:'JetBrains Mono',ui-monospace,monospace;
+  font-size:.72rem;letter-spacing:.16em;text-transform:uppercase;
+  color:rgba(244,239,230,0.42);
+}
+.focus-v3__caption-sep{ margin:0 8px;opacity:.6; }
+.focus-v3__caption-hint{ color:rgba(244,239,230,0.32); }
+
+.focus-v3__center{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:24px;text-align:center;
+}
+.focus-v3__timer{
+  font-family:'JetBrains Mono',ui-monospace,monospace;
+  font-weight:500;font-size:128px;line-height:1;letter-spacing:-.02em;
+  color:var(--paper,#f4efe6);
+  font-variant-numeric:tabular-nums;
+  text-shadow:0 0 60px rgba(176,122,62,0.15);
+  transition:color 240ms ease-out;
+}
+.focus-overlay.focus-overlay-v3.paused .focus-v3__timer{
+  color:rgba(244,239,230,0.5);
+}
+.focus-v3__task{
+  font-family:'Fraunces',Georgia,serif;
+  font-weight:400;font-size:1.4rem;letter-spacing:-.01em;
+  color:rgba(244,239,230,0.7);
+  max-width:680px;text-wrap:balance;
+}
+.focus-v3__paused{
+  font-family:'JetBrains Mono',ui-monospace,monospace;
+  font-size:.72rem;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--accent-2,#c9956b);
+  animation:focusV3Pulse 1800ms ease-in-out infinite;
+}
+@keyframes focusV3Pulse{
+  0%,100%{opacity:.6} 50%{opacity:1}
+}
+
+.focus-v3__footer{
+  display:flex;flex-direction:column;gap:18px;
+  transition:opacity 360ms ease-out;
+}
+.focus-overlay.focus-overlay-v3[data-controls="hidden"] .focus-v3__footer{ opacity:0;pointer-events:none; }
+.focus-v3__progress{
+  display:flex;align-items:center;gap:16px;
+}
+.focus-v3__progress-track{
+  flex:1;height:1px;background:rgba(244,239,230,0.12);position:relative;
+}
+.focus-v3__progress-fill{
+  position:absolute;inset:0;width:0%;
+  background:var(--accent,#b07a3e);
+  transition:width 1000ms linear;
+}
+.focus-v3__progress-meta{
+  font-family:'JetBrains Mono',ui-monospace,monospace;
+  font-size:.72rem;letter-spacing:.04em;
+  color:rgba(244,239,230,0.45);
+  font-variant-numeric:tabular-nums;
+  min-width:120px;text-align:right;
+}
+.focus-v3__controls{
+  display:flex;align-items:center;justify-content:space-between;gap:14px;
+}
+.focus-v3__buttons{ display:flex;gap:8px; }
+.focus-v3__btn{
+  background:rgba(244,239,230,0.08);
+  color:rgba(244,239,230,0.85);
+  border:1px solid rgba(244,239,230,0.12);
+  padding:9px 18px;border-radius:8px;cursor:pointer;
+  font:500 .82rem 'Inter','Helvetica Neue',sans-serif;letter-spacing:.02em;
+  transition:background 160ms ease-out;
+}
+.focus-v3__btn:hover{ background:rgba(244,239,230,0.14); }
+.focus-v3__btn--ghost{ background:transparent; }
+.focus-v3__btn--ghost:hover{ background:rgba(244,239,230,0.06); }
+
+/* Music pill — restyled for the navy ground */
+.focus-overlay.focus-overlay-v3 .focus-music-pill,
+.focus-overlay.focus-overlay-v3 .focus-v3__music{
+  position:static;
+  display:flex;align-items:center;gap:8px;
+  padding:6px 12px;border-radius:999px;
+  background:rgba(244,239,230,0.06);
+  border:1px solid rgba(244,239,230,0.12);
+  color:rgba(244,239,230,0.65);
+  font-family:'JetBrains Mono',ui-monospace,monospace;font-size:.7rem;letter-spacing:.04em;
+  opacity:1;
+}
+.focus-overlay.focus-overlay-v3 .focus-music-pill[hidden],
+.focus-overlay.focus-overlay-v3 .focus-v3__music[hidden]{ display:none; }
+.focus-overlay.focus-overlay-v3 .focus-v3__music-dot{
+  width:6px;height:6px;border-radius:50%;background:var(--accent,#b07a3e);
+}
+.focus-overlay.focus-overlay-v3 .focus-music-track{
+  color:rgba(244,239,230,0.72);
+}
+.focus-overlay.focus-overlay-v3 .focus-music-btn{
+  background:transparent;border:none;color:rgba(244,239,230,0.55);
+  font-size:.7rem;cursor:pointer;padding:2px 4px;
+}
+.focus-overlay.focus-overlay-v3 .focus-music-btn:hover{ color:rgba(244,239,230,0.95); }
+
+/* Smaller viewports clamp the timer */
+@media (max-width:1100px){
+  .focus-v3__timer{ font-size:96px; }
+}
+@media (max-width:780px){
+  .focus-v3__timer{ font-size:72px; }
+  .focus-overlay.focus-overlay-v3{ padding:24px 28px; }
+  .focus-v3__task{ font-size:1.15rem; }
+}
+
+@media (prefers-reduced-motion: reduce){
+  .focus-overlay.focus-overlay-v3{ animation:none; }
+  .focus-v3__header,.focus-v3__footer,.focus-v3__progress-fill,
+  .focus-v3__timer,.focus-v3__paused{
+    transition-duration:0.01ms !important;
+    animation:none !important;
+  }
+}
 </style>
 </head>
 <body>
@@ -3747,27 +3882,63 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
     </div>
   </aside>
 
-  <!-- Focus Mode Overlay -->
-  <div class="focus-overlay" id="focusOverlay">
-    <!-- Ghost pill: floating music control, top-right of focus screen.
-         Auto-fades when idle; brightens on hover. Visible only when built-in
-         focus music is enabled. -->
-    <div class="focus-music-pill" id="focusMusicMeta" hidden>
-      <span class="focus-music-track" id="focusMusicTrackLabel">Arca Focus #1</span>
-      <button class="focus-music-btn" id="focusMusicNextBtn" type="button" title="Next track" aria-label="Next track">↷</button>
-      <button class="focus-music-btn" id="focusMusicToggleBtn" type="button" title="Mute" aria-label="Mute">Mute</button>
+  <!-- v3 Focus Mode Overlay — native, navy ground, owns the surface -->
+  <div class="focus-overlay focus-overlay-v3" id="focusOverlay" data-controls="visible" aria-hidden="true">
+    <!-- Header: 48px mark + session caption -->
+    <header class="focus-v3__header">
+      <div class="focus-v3__mark" aria-hidden="true">
+        <svg viewBox="0 0 1024 1024" width="48" height="48">
+          <g stroke-linecap="round" stroke-linejoin="round" fill="none" stroke="currentColor">
+            <line x1="298" y1="740" x2="484" y2="310.4" stroke-width="63"/>
+            <line x1="726" y1="740" x2="540" y2="310.4" stroke-width="63"/>
+            <line x1="412" y1="580" x2="612" y2="580" stroke-width="58"/>
+            <line x1="288" y1="777.8" x2="736" y2="777.8" stroke-width="44" opacity="0.85"/>
+          </g>
+          <circle cx="512" cy="290" r="34" fill="currentColor" stroke="none" opacity="0.75"/>
+        </svg>
+      </div>
+      <div class="focus-v3__caption">
+        <span id="focusSession">Session 1 of 4</span>
+        <span class="focus-v3__caption-sep">·</span>
+        <span class="focus-v3__caption-hint">esc to exit</span>
+      </div>
+    </header>
+
+    <!-- Center: timer + task + paused indicator -->
+    <div class="focus-v3__center">
+      <div class="focus-v3__timer focus-timer" id="focusTimer">25:00</div>
+      <div class="focus-v3__task focus-task">
+        <span id="focusTaskName">No task selected</span>
+      </div>
+      <div class="focus-v3__paused" id="focusPausedHint" hidden>Paused · space to resume</div>
     </div>
-    <div class="focus-task">
-      <span id="focusTaskName">No task selected</span>
+
+    <!-- Footer: progress bar + controls + music pill -->
+    <footer class="focus-v3__footer">
+      <div class="focus-v3__progress">
+        <div class="focus-v3__progress-track"><div class="focus-v3__progress-fill" id="focusProgressFill"></div></div>
+        <div class="focus-v3__progress-meta" id="focusProgressMeta">25:00 remaining</div>
+      </div>
+      <div class="focus-v3__controls focus-controls">
+        <div class="focus-v3__buttons">
+          <button class="focus-v3__btn focus-pause" id="focusPauseBtn" type="button">Pause</button>
+          <button class="focus-v3__btn focus-done" id="focusDoneBtn" type="button">Done</button>
+          <button class="focus-v3__btn focus-v3__btn--ghost focus-exit" id="focusExitBtn" type="button">Exit</button>
+        </div>
+        <!-- Music pill — existing IDs preserved for the existing music wiring -->
+        <div class="focus-v3__music focus-music-pill" id="focusMusicMeta" hidden>
+          <span class="focus-v3__music-dot" aria-hidden="true"></span>
+          <span class="focus-music-track" id="focusMusicTrackLabel">Arca Focus #1</span>
+          <button class="focus-music-btn" id="focusMusicNextBtn" type="button" title="Next track" aria-label="Next track">↷</button>
+          <button class="focus-music-btn" id="focusMusicToggleBtn" type="button" title="Mute" aria-label="Mute">Mute</button>
+        </div>
+      </div>
+    </footer>
+
+    <!-- Hidden hooks: existing JS still references these IDs -->
+    <div class="ui-hidden-hook" hidden aria-hidden="true">
       <div class="focus-tags" id="focusTags"></div>
-    </div>
-    <div class="focus-timer" id="focusTimer">25:00</div>
-    <div class="focus-session" id="focusSession">Session 1 of 4</div>
-    <div class="pomo-dots" id="pomoDots"></div>
-    <div class="focus-controls">
-      <button class="focus-pause" id="focusPauseBtn">Pause</button>
-      <button class="focus-done" id="focusDoneBtn">✓ Done</button>
-      <button class="focus-exit" id="focusExitBtn">Exit Focus</button>
+      <div class="pomo-dots" id="pomoDots"></div>
     </div>
   </div>
 
@@ -16436,6 +16607,65 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       void syncFocusMusicForFocusMode();
     }
 
+    let _focusV3IdleTimer = null;
+    let _focusV3KeysBound = false;
+
+    function _focusV3PhaseTotalSec() {
+      if (pomodoro.phase === "break") return Math.max(60, (Number.parseInt(pomodoro.breakMin, 10) || 5) * 60);
+      return Math.max(60, (Number.parseInt(pomodoro.workMin, 10) || 25) * 60);
+    }
+
+    function renderFocusV3Progress() {
+      const fill = document.getElementById("focusProgressFill");
+      const meta = document.getElementById("focusProgressMeta");
+      if (!fill && !meta) return;
+      const total = _focusV3PhaseTotalSec();
+      const remaining = Math.max(0, Math.min(total, pomodoro.remainingSec || 0));
+      const elapsed = total - remaining;
+      const pct = total ? Math.min(100, Math.max(0, (elapsed / total) * 100)) : 0;
+      if (fill) fill.style.width = pct + "%";
+      if (meta) meta.textContent = `${fmtClock(remaining)} remaining`;
+    }
+
+    function _focusV3SetControlsVisible(visible) {
+      const overlay = document.getElementById("focusOverlay");
+      if (!overlay) return;
+      overlay.setAttribute("data-controls", visible ? "visible" : "hidden");
+    }
+
+    function _focusV3ResetIdle() {
+      if (_focusV3IdleTimer) clearTimeout(_focusV3IdleTimer);
+      _focusV3SetControlsVisible(true);
+      _focusV3IdleTimer = setTimeout(() => _focusV3SetControlsVisible(false), 2200);
+    }
+
+    function _focusV3OnMove() { _focusV3ResetIdle(); }
+    function _focusV3OnKey(e) {
+      const overlay = document.getElementById("focusOverlay");
+      if (!overlay || !overlay.classList.contains("active")) return;
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setFocusMode(false);
+        return;
+      }
+      if (e.code === "Space" || e.key === " ") {
+        const tag = (e.target && e.target.tagName) || "";
+        if (tag === "INPUT" || tag === "TEXTAREA") return;
+        e.preventDefault();
+        if (pomodoro.running) {
+          pausePomodoro({ keepFocusMode: true });
+        } else {
+          startPomodoro();
+        }
+      }
+    }
+
+    function _focusV3BindKeys() {
+      if (_focusV3KeysBound) return;
+      window.addEventListener("keydown", _focusV3OnKey, { capture: true });
+      _focusV3KeysBound = true;
+    }
+
     function enterFocusMode() {
       const overlay = document.getElementById("focusOverlay");
       if (!overlay) return;
@@ -16443,46 +16673,40 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       const selectedTask = resolveExecuteFocusTask();
       const taskName = document.getElementById("focusTaskName");
       if (taskName) taskName.textContent = selectedTask ? selectedTask.title : "No task selected";
-      const focusTags = document.getElementById("focusTags");
-      if (focusTags) {
-        const parts = selectedTask
-          ? [selectedTask.depth || "Deep", selectedTask.category || "", selectedTask.wig && selectedTask.wig !== "None" ? selectedTask.wig : ""].filter(Boolean)
-          : [];
-        focusTags.innerHTML = parts.map(p => {
-          const lower = String(p).toLowerCase();
-          const cls = lower === "deep"
-            ? "deep"
-            : lower === "shallow"
-              ? "shallow"
-              : lower === "pg2"
-                ? "pg2"
-                : lower === "pg1"
-                  ? "pg1"
-                  : "";
-          return `<span class="tag ${cls}">${p}</span>`;
-        }).join("");
-      }
       const focusTimer = document.getElementById("focusTimer");
       if (focusTimer) focusTimer.textContent = fmtClock(pomodoro.remainingSec);
       const { currentSession, totalSessions } = getPomodoroSessionProgress();
       const sessionEl = document.getElementById("focusSession");
       if (sessionEl) sessionEl.textContent = `Session ${currentSession} of ${totalSessions}`;
-      // Render pomodoro dots
-      const dotsEl = document.getElementById("pomoDots");
-      if (dotsEl) {
-        dotsEl.innerHTML = Array.from({ length: totalSessions }, (_, i) => {
-          const cls = i < currentSession - 1 ? "pomo-dot filled" : i === currentSession - 1 ? "pomo-dot current" : "pomo-dot";
-          return `<div class="${cls}"></div>`;
-        }).join("");
+
+      /* v3: close practices drawer if it's open (mutually exclusive surfaces) */
+      const drawer = document.getElementById("practicesDrawerV3");
+      const scrim = document.getElementById("practicesDrawerScrim");
+      if (drawer?.getAttribute("data-open") === "true") {
+        drawer.removeAttribute("data-open");
+        drawer.setAttribute("aria-hidden", "true");
+        if (scrim) scrim.removeAttribute("data-open");
       }
+
+      renderFocusV3Progress();
       overlay.classList.add("active");
+      overlay.setAttribute("aria-hidden", "false");
+      _focusV3BindKeys();
+      _focusV3ResetIdle();
+      window.addEventListener("mousemove", _focusV3OnMove);
       // Show the music pill at full opacity, then auto-fade after a few seconds.
       if (typeof bumpFocusMusicPillActivity === "function") bumpFocusMusicPillActivity();
     }
 
     function exitFocusMode() {
       const overlay = document.getElementById("focusOverlay");
-      if (overlay) overlay.classList.remove("active");
+      if (overlay) {
+        overlay.classList.remove("active");
+        overlay.setAttribute("aria-hidden", "true");
+        overlay.setAttribute("data-controls", "visible");
+      }
+      window.removeEventListener("mousemove", _focusV3OnMove);
+      if (_focusV3IdleTimer) { clearTimeout(_focusV3IdleTimer); _focusV3IdleTimer = null; }
       document.body.classList.remove("focus-mode");
       pomodoro.focusMode = false;
       requestAnimationFrame(() => { void restoreExecuteKeyboardFocus(); });
@@ -16612,9 +16836,17 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         heroPhase.textContent = phaseText;
       }
       if (heroClock) heroClock.textContent = fmtClock(pomodoro.remainingSec);
+      const focusOverlayActive = document.getElementById("focusOverlay")?.classList.contains("active");
       const focusTimerEl = document.getElementById("focusTimer");
-      if (focusTimerEl && document.getElementById("focusOverlay")?.classList.contains("active")) {
+      if (focusTimerEl && focusOverlayActive) {
         focusTimerEl.textContent = fmtClock(pomodoro.remainingSec);
+      }
+      if (focusOverlayActive) {
+        renderFocusV3Progress();
+        const overlay = document.getElementById("focusOverlay");
+        const pausedHint = document.getElementById("focusPausedHint");
+        if (overlay) overlay.classList.toggle("paused", !!pomodoro.paused);
+        if (pausedHint) pausedHint.hidden = !pomodoro.paused;
       }
       const { currentSession, totalSessions } = getPomodoroSessionProgress();
       const focusSessionEl = document.getElementById("focusSession");
