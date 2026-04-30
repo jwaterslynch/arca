@@ -13,7 +13,7 @@ What's been shipped so far:
 
 - **Identity v1** — parchment / ink / bronze tokens, vault-arch A mark, Fraunces serif, JetBrains Mono numerics. Locked.
 - **Desktop v3** — single-column Execute, practices rail at top, slim stats footer, native focus mode (navy radial ground, 48px mark, 128px mono timer).
-- **Wisdom MVP** (currently called "Wise" in the codebase — to be renamed) — top-bar tab, paper ground, conversation thread in Fraunces, composer at bottom, propose-and-accept practice card, data-aware starter chips, last-spoke caption, ⌘+ zoom. Curiosity-not-guilt system prompt with explicit forbidden phrases.
+- **Wisdom MVP** (visible product copy now says "Wisdom"; some internal ids/storage keys still use `wise` until the Phase 1 migration) — top-bar tab, paper ground, conversation thread in Fraunces, composer at bottom, propose-and-accept practice card, data-aware starter chips, last-spoke caption, ⌘+ zoom. Curiosity-not-guilt system prompt with explicit forbidden phrases.
 - **Existing drawer coaches** — Plan coach, Health coach, Wealth coach. All exist as right-side slide-out drawers (`.wealth-coach-drawer` shared CSS, with messages arrays and system prompts for each). Functional but architecturally cramped. They predate the v3 redesign.
 
 What `HEALTHY_WEALTHY_WISE_IA.md` already establishes:
@@ -29,7 +29,7 @@ What this brief asks for:
 
 ## Naming
 
-**Rename "Wise" → "Wisdom"** through the codebase, the tab label, the system prompt, the brief, the IA doc. *Health, Wealth, Wisdom* is the actual triad — three nouns, Benjamin Franklin's "healthy, wealthy, and wise" anchored as nouns. Mixing two nouns and an adjective in the tab strip will keep snagging. Cosmetic but pervasive — best done as one rename PR.
+**Finish the "Wise" → "Wisdom" migration** through internal ids, storage keys, the IA doc, and any remaining implementation comments. Visible product copy and the system prompt should say Wisdom. *Health, Wealth, Wisdom* is the actual triad — three nouns, Benjamin Franklin's "healthy, wealthy, and wise" anchored as nouns. Mixing two nouns and an adjective in the tab strip will keep snagging. Cosmetic but pervasive — best done as one migration PR so stored conversations are preserved deliberately.
 
 ## Scope: which surfaces use the pattern
 
@@ -159,7 +159,7 @@ Whichever earns its place visually without crowding the conversation.
 
 ## What's domain-specific
 
-### Per-domain data view (the right-half visualisations)
+### Per-domain data view (the left-half visualisations)
 
 This is the **biggest open design problem in this brief.** Each domain needs a canonical data view that:
 - Reads as moleskin (parchment, ink, bronze, Fraunces, JetBrains Mono) — not as a generic dashboard.
@@ -235,7 +235,7 @@ This is load-bearing: Execute is the *doing* surface. Conversation lives elsewhe
 - **`HEALTHY_WEALTHY_WISE_IA.md`** — the IA. Read it. Don't re-litigate the routing or the personalities.
 - **Identity v1** — parchment / ink / bronze tokens, mark, type system. Locked.
 - **Desktop v3** — Execute layout, practices rail, native focus mode. Locked.
-- **Wisdom coach (current "Wise")** — system prompt, propose-and-accept card, data-aware starters, ⌘+ zoom on the conversation column, two-click clear. **This becomes the coach half of the Wisdom domain.** Don't redesign — port.
+- **Wisdom coach** — system prompt, propose-and-accept card, data-aware starters, ⌘+ zoom on the conversation column, two-click clear. **This becomes the coach half of the Wisdom domain.** Don't redesign — port.
 - **Existing drawer coaches** for Plan, Health, Wealth — system prompts, message renderers, action JSON parsers. The plumbing migrates; the surface gets replaced.
 
 ## What we want from Claude Design
@@ -267,7 +267,7 @@ This is load-bearing: Execute is the *doing* surface. Conversation lives elsewhe
 
 ## Success looks like
 
-A user opens the desktop on a quiet evening. They click Health. The right half of the screen shows their week — sleep, exercise, energy — in a register that reads like a doctor's notebook, not a Garmin dashboard. The left coach half says *"Sleep dropped under 6 hours twice this week. Want to look at why?"* The user types back. The conversation goes somewhere. They click Wealth. Same shape, different room. Same calm.
+A user opens the desktop on a quiet evening. They click Health. The left half of the screen shows their week — sleep, exercise, energy — in a register that reads like a doctor's notebook, not a Garmin dashboard. The right coach half says *"Sleep dropped under 6 hours twice this week. Want to look at why?"* The user types back. The conversation goes somewhere. They click Wealth. Same shape, different room. Same calm.
 
 The opposite of how lifestyle/finance/health-tracker apps usually feel. Familiar enough to navigate without thinking, distinct enough per domain that the user can tell where they are.
 
