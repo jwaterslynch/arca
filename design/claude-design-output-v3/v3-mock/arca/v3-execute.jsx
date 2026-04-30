@@ -279,7 +279,15 @@ function TaskRow({ task, isActive, showDepthTags, onActivate, checked, onToggleC
       }} />
 
       <div style={{ flex: 1, display: 'flex', alignItems: 'baseline', gap: 12, minWidth: 0 }}>
-        <span style={{ fontSize: 15, fontWeight: isActive ? 500 : 400, color: 'var(--ink)' }}>
+        <span style={{
+          fontSize: 15,
+          fontWeight: isActive ? 500 : 400,
+          color: checked ? 'var(--text-3)' : 'var(--ink)',
+          textDecoration: checked ? 'line-through' : 'none',
+          textDecorationColor: checked ? 'var(--text-3)' : 'transparent',
+          textDecorationThickness: '1px',
+          transition: 'color 320ms ease-out, text-decoration-color 320ms ease-out',
+        }}>
           {task.title}
         </span>
 
