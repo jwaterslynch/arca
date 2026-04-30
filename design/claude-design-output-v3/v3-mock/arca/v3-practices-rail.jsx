@@ -133,7 +133,12 @@ function RailHoverLabel({ practice }) {
       boxShadow: '0 8px 24px rgba(15,24,34,0.18)',
       animation: 'fadeIn 140ms ease-out',
     }}>
-      <div style={{ fontWeight: 500 }}>{practice.title}</div>
+      <div style={{
+        fontWeight: 500,
+        textDecoration: practice.done ? 'line-through' : 'none',
+        opacity: practice.done ? 0.55 : 1,
+        transition: 'opacity 320ms ease-out',
+      }}>{practice.title}</div>
       <div style={{ fontFamily: 'JetBrains Mono', fontSize: 10, opacity: 0.6, letterSpacing: '0.04em', marginTop: 2 }}>
         {practice.target} · {practice.done ? 'done today' : `last ${practice.last.toLowerCase()}`}
       </div>
