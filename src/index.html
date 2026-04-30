@@ -3909,16 +3909,96 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
   font-size:.62rem;color:var(--text2);opacity:.5;letter-spacing:.04em;
 }
 
+/* Proposal card — inline editable practice review, lands in the rail on accept */
+.wise-proposal{
+  align-self:flex-start;max-width:90%;
+  background:var(--surface,#fdfbf6);
+  border:1px solid var(--accent-soft,rgba(176,122,62,0.18));
+  border-radius:14px;
+  padding:18px 20px;
+  display:flex;flex-direction:column;gap:14px;
+  font-family:'Inter','Helvetica Neue',sans-serif;
+  animation:wiseMsgIn 240ms cubic-bezier(0.4,0,0.2,1);
+}
+.wise-proposal__header{
+  display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;
+}
+.wise-proposal__eyebrow{
+  font-family:'JetBrains Mono',ui-monospace,monospace;
+  font-size:.66rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--accent-deep,#8a5a2a);font-weight:600;
+}
+.wise-proposal__hint{
+  font-size:.75rem;color:var(--text2);font-style:italic;
+}
+.wise-proposal__field{ display:flex;flex-direction:column;gap:4px;flex:1;min-width:0; }
+.wise-proposal__field--narrow{ flex:0 0 110px; }
+.wise-proposal__field label{
+  font-size:.68rem;font-weight:600;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--text2);
+}
+.wise-proposal__field input,
+.wise-proposal__field select{
+  font-family:'Inter','Helvetica Neue',sans-serif;font-size:.92rem;
+  padding:8px 10px;border:1px solid var(--line);border-radius:8px;
+  background:var(--paper,#f4efe6);color:var(--ink,#0f1822);
+  outline:none;transition:border-color 160ms ease-out;
+}
+.wise-proposal__field input:focus,
+.wise-proposal__field select:focus{
+  border-color:var(--accent,#b07a3e);
+}
+.wise-proposal__optional{ color:var(--text2);font-weight:400;font-size:.62rem; }
+.wise-proposal__row{ display:flex;gap:12px;align-items:flex-end; }
+.wise-proposal__actions{ display:flex;gap:8px;justify-content:flex-end;margin-top:4px; }
+.wise-proposal__dismiss,
+.wise-proposal__add{
+  font:600 .82rem 'Inter','Helvetica Neue',sans-serif;
+  letter-spacing:.02em;padding:9px 16px;border-radius:8px;cursor:pointer;
+  transition:background 160ms ease-out,border-color 160ms ease-out,color 160ms ease-out;
+}
+.wise-proposal__dismiss{
+  background:transparent;border:1px solid var(--line);color:var(--text2);
+}
+.wise-proposal__dismiss:hover{ background:rgba(15,24,34,0.05);color:var(--text); }
+.wise-proposal__add{
+  background:var(--accent,#b07a3e);border:1px solid var(--accent,#b07a3e);
+  color:var(--paper,#f4efe6);
+}
+.wise-proposal__add:hover{ background:var(--accent-deep,#8a5a2a);border-color:var(--accent-deep,#8a5a2a); }
+
+.wise-proposal--accepted,
+.wise-proposal--dismissed{
+  align-self:flex-start;max-width:90%;
+  padding:10px 14px;border-radius:10px;
+  font-size:.82rem;
+  font-family:'Inter','Helvetica Neue',sans-serif;
+}
+.wise-proposal--accepted{
+  background:var(--accent-soft,rgba(176,122,62,0.12));
+  color:var(--accent-deep,#8a5a2a);
+  border:1px solid var(--accent-soft,rgba(176,122,62,0.18));
+}
+.wise-proposal--accepted em{ font-style:normal;font-weight:600; }
+.wise-proposal--dismissed{
+  background:rgba(15,24,34,0.04);
+  color:var(--text2);
+  border:1px solid var(--line);
+  font-style:italic;
+}
+
 @media (max-width:780px){
   .wise__header{ padding:14px 18px; }
   .wise__thread-wrap{ padding:20px 18px; }
   .wise__composer-wrap{ padding:10px 18px 14px; }
   .wise__empty-line{ font-size:1.25rem; }
   .wise__msg--assistant{ font-size:.96rem; }
+  .wise-proposal__row{ flex-direction:column;align-items:stretch; }
+  .wise-proposal__field--narrow{ flex:1; }
 }
 
 @media (prefers-reduced-motion: reduce){
-  .wise-overlay,.wise__msg{ animation:none !important; }
+  .wise-overlay,.wise__msg,.wise-proposal{ animation:none !important; }
   .wise__msg--pending::before{ animation:none !important; }
 }
 </style>
@@ -31003,13 +31083,32 @@ GOOD: "I notice Meditation has been hollow most of this week. Walk before screen
 BAD: "You've missed Meditation 4 days in a row. Let's get back on track."
 
 WHAT YOU CAN PROPOSE
-You can propose a new practice OR an edit to an existing one OR pause/retire of a practice. Always frame as offers, not assignments. Always include the user's review step ("Want me to add this? You can edit anything before it lands.").
+You can propose a new practice OR an edit to an existing one OR pause/retire of a practice. Always frame as offers, not assignments.
 
-For now (MVP), DO NOT silently mutate state. If the user accepts a proposal, tell them they can add it via Manage practices in the drawer. Future versions will add a one-click accept card. Suggest specific values for these fields when proposing a new practice:
-- title: short, specific, time-anchored if possible
-- minimum_minutes: realistic (typically 5-30)
-- logging_hint: a short prompt the user answers when they log
-- linked_goal (optional): the goal/aspiration this serves
+When you propose a new daily practice, AFTER your prose response, include a fenced JSON block with this exact shape:
+
+\`\`\`json
+{
+  "propose_practice": {
+    "title": "Sit, ten minutes",
+    "kind": "life_practice",
+    "minimum_minutes": 10,
+    "logging_hint": "What was on your mind before you sat?",
+    "note": "More stillness in the morning"
+  }
+}
+\`\`\`
+
+The user will see your message AND an editable card next to it. They can accept the practice, edit the fields first, or dismiss. You do NOT need to tell them where to go to add it — the card adds it directly to their practices rail. So write your message as an offer ("Want to try this?" or "Here's what I'd suggest, if it sits right.") and let the card do the rest.
+
+Field guidance:
+- title: short, specific, time-anchored if possible (e.g. "Walk before screens", "Pages, by hand", not "exercise more")
+- kind: "life_practice" by default. Use "work_domain" only if it's a work-shaped category like Research or Revenue.
+- minimum_minutes: realistic and small (5-30 typical). Smaller is better for habit formation.
+- logging_hint: a short prompt the user answers when they log (a question, not a fill-in)
+- note: a single short line on why this matters / what aspiration it serves, in the user's words. This shows up later as a reminder of the why.
+
+ONLY emit a propose_practice block when the user has agreed (explicitly or implicitly) that they want to try a new practice. Do NOT propose unsolicited — offer the conversation first, propose when the user is ready. Do NOT include a JSON block when you're just discussing or reframing an existing practice.
 
 WHAT YOU SEE
 Below is the user's current state. Refer to it when relevant. Do NOT recite it back to the user — only mention specific items when it serves the conversation.
@@ -31031,6 +31130,70 @@ Most responses are 2-4 sentences. Long when the user is exploring; short when th
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;");
+    }
+
+    /* Extract a fenced ```json block containing { propose_practice: {...} } from a coach reply.
+       Returns { cleanedText, proposal } — proposal is null if no valid block. */
+    function extractWiseProposal(text) {
+      const raw = String(text || "");
+      const match = raw.match(/```json\s*\n?([\s\S]*?)\n?```/i);
+      if (!match) return { cleanedText: raw, proposal: null };
+      let parsed;
+      try { parsed = JSON.parse(match[1].trim()); }
+      catch (_) { return { cleanedText: raw, proposal: null }; }
+      const p = parsed && parsed.propose_practice;
+      if (!p || typeof p !== "object" || !p.title) {
+        return { cleanedText: raw, proposal: null };
+      }
+      // Strip the JSON block from displayed text so the card carries it
+      const cleanedText = raw.replace(match[0], "").replace(/\n{3,}/g, "\n\n").trim();
+      const proposal = {
+        title: String(p.title || "").trim(),
+        kind: p.kind === "work_domain" ? "work_domain" : "life_practice",
+        minimum_minutes: Math.max(1, Math.min(240, Number.parseInt(p.minimum_minutes, 10) || 10)),
+        logging_hint: String(p.logging_hint || "").trim(),
+        note: String(p.note || p.linked_goal || "").trim(),
+      };
+      return { cleanedText, proposal };
+    }
+
+    /* Add a practice from an accepted Wise proposal. Reuses the existing
+       state mutation pattern — same shape as addLifePractice + Manage flow. */
+    function addLifePracticeFromProposal(proposal) {
+      if (!proposal || !proposal.title) return false;
+      initTodayState();
+      const title = String(proposal.title).trim();
+      const baseId = lifePracticeIdFromTitle(title, "practice");
+      let id = baseId;
+      const existing = new Set((state.life_practices.practices || []).map(p => p.id));
+      while (existing.has(id)) id = `${baseId}_${uid().slice(0, 4)}`;
+      const min = Math.max(1, Math.min(240, Number.parseInt(proposal.minimum_minutes, 10) || 10));
+      state.life_practices.practices.push({
+        id,
+        title,
+        kind: proposal.kind === "work_domain" ? "work_domain" : "life_practice",
+        minimum_minutes: min,
+        default_minutes: min,
+        note: String(proposal.note || "").trim(),
+        coach_enabled: true,
+        coach_key: inferPracticeCoachKey({ title }),
+        target_value: null,
+        target_unit: "sessions",
+        target_period: "week",
+        logging_hint: proposal.logging_hint || defaultPracticeLoggingHint({ title }),
+        linked_goal: "None",
+        default_task_category: null,
+        default_task_depth: null
+      });
+      for (const day of Object.keys(state.life_practices.daily_log || {})) {
+        if (!state.life_practices.daily_log[day]) state.life_practices.daily_log[day] = {};
+        if (!state.life_practices.daily_log[day][id]) {
+          state.life_practices.daily_log[day][id] = { done: false, minutes: min, notes: "", entries: [] };
+        }
+      }
+      saveState("wise_propose_accept");
+      renderLifePractices();
+      return id;
     }
 
     function renderWiseAssistantContent(content) {
@@ -31060,14 +31223,61 @@ Most responses are 2-4 sentences. Long when the user is exploring; short when th
         return;
       }
 
-      const html = wiseConversation.map(msg => {
+      const html = wiseConversation.map((msg, idx) => {
         if (msg.role === "user") {
           return `<div class="wise__msg wise__msg--user">${escapeWiseText(msg.content).replace(/\n/g, "<br>")}</div>`;
         }
         if (msg._isError) {
           return `<div class="wise__msg wise__msg--error">${escapeWiseText(msg.content)}</div>`;
         }
-        return `<div class="wise__msg wise__msg--assistant">${renderWiseAssistantContent(msg.content)}</div>`;
+        const prose = msg.content
+          ? `<div class="wise__msg wise__msg--assistant">${renderWiseAssistantContent(msg.content)}</div>`
+          : "";
+        let proposalCard = "";
+        if (msg._proposal && !msg._proposalAccepted && !msg._proposalDismissed) {
+          const p = msg._proposal;
+          proposalCard = `
+            <form class="wise-proposal" data-wise-proposal-idx="${idx}">
+              <div class="wise-proposal__header">
+                <span class="wise-proposal__eyebrow">A practice to try</span>
+                <span class="wise-proposal__hint">Edit anything before you add it.</span>
+              </div>
+              <div class="wise-proposal__field">
+                <label>Title</label>
+                <input type="text" name="title" value="${escapeWiseText(p.title)}" required>
+              </div>
+              <div class="wise-proposal__row">
+                <div class="wise-proposal__field wise-proposal__field--narrow">
+                  <label>Minutes</label>
+                  <input type="number" name="minimum_minutes" min="1" max="240" value="${Number(p.minimum_minutes) || 10}">
+                </div>
+                <div class="wise-proposal__field">
+                  <label>Kind</label>
+                  <select name="kind">
+                    <option value="life_practice"${p.kind === "life_practice" ? " selected" : ""}>Life practice</option>
+                    <option value="work_domain"${p.kind === "work_domain" ? " selected" : ""}>Work domain</option>
+                  </select>
+                </div>
+              </div>
+              <div class="wise-proposal__field">
+                <label>Logging prompt</label>
+                <input type="text" name="logging_hint" value="${escapeWiseText(p.logging_hint)}" placeholder="A question for the user when they log">
+              </div>
+              <div class="wise-proposal__field">
+                <label>Why this matters <span class="wise-proposal__optional">(optional)</span></label>
+                <input type="text" name="note" value="${escapeWiseText(p.note || '')}" placeholder="What this practice serves">
+              </div>
+              <div class="wise-proposal__actions">
+                <button type="button" class="wise-proposal__dismiss" data-wise-proposal-action="dismiss">Not yet</button>
+                <button type="submit" class="wise-proposal__add" data-wise-proposal-action="add">Add to my practices</button>
+              </div>
+            </form>`;
+        } else if (msg._proposal && msg._proposalAccepted) {
+          proposalCard = `<div class="wise-proposal wise-proposal--accepted">✓ Added <em>${escapeWiseText(msg._proposal.title)}</em> to your practices</div>`;
+        } else if (msg._proposal && msg._proposalDismissed) {
+          proposalCard = `<div class="wise-proposal wise-proposal--dismissed">Practice not added.</div>`;
+        }
+        return prose + proposalCard;
       }).join("");
 
       const pendingHtml = wiseSending ? `<div class="wise__msg wise__msg--pending">Wise is thinking…</div>` : "";
@@ -31119,7 +31329,10 @@ Most responses are 2-4 sentences. Long when the user is exploring; short when th
         const raw = await aiCallProvider(wiseSystemPrompt(), userPrompt, null, { messages: beforeLast, temperature: 0.75 });
         const reply = String(raw || "").trim();
         if (reply) {
-          wiseConversation.push({ role: "assistant", content: reply, ts: Date.now() });
+          const { cleanedText, proposal } = extractWiseProposal(reply);
+          const msg = { role: "assistant", content: cleanedText, ts: Date.now() };
+          if (proposal) msg._proposal = proposal;
+          wiseConversation.push(msg);
           wiseLastSpokeAt = Date.now();
         } else {
           wiseConversation.push({ role: "assistant", content: "(empty response — try again)", ts: Date.now(), _isError: true });
@@ -31170,14 +31383,52 @@ Most responses are 2-4 sentences. Long when the user is exploring; short when th
           }
         });
       }
-      // Starter chip click — delegated on the thread
+      // Starter chip click + proposal accept/dismiss — delegated on the thread
       const thread = document.getElementById("wiseThread");
-      if (thread) thread.addEventListener("click", e => {
-        const starter = e.target.closest("[data-wise-starter]");
-        if (!starter) return;
-        const text = starter.dataset.wiseStarter || "";
-        if (text) void sendWiseMessage(text);
-      });
+      if (thread) {
+        thread.addEventListener("click", e => {
+          const starter = e.target.closest("[data-wise-starter]");
+          if (starter) {
+            const text = starter.dataset.wiseStarter || "";
+            if (text) void sendWiseMessage(text);
+            return;
+          }
+          const dismissBtn = e.target.closest('[data-wise-proposal-action="dismiss"]');
+          if (dismissBtn) {
+            const form = dismissBtn.closest("form.wise-proposal");
+            const idx = Number(form?.dataset.wiseProposalIdx);
+            if (Number.isFinite(idx) && wiseConversation[idx]) {
+              wiseConversation[idx]._proposalDismissed = true;
+              saveWiseConversation();
+              renderWise();
+            }
+            return;
+          }
+        });
+        thread.addEventListener("submit", e => {
+          const form = e.target.closest("form.wise-proposal");
+          if (!form) return;
+          e.preventDefault();
+          const idx = Number(form.dataset.wiseProposalIdx);
+          if (!Number.isFinite(idx) || !wiseConversation[idx]) return;
+          const fd = new FormData(form);
+          const proposal = {
+            title: String(fd.get("title") || "").trim(),
+            kind: String(fd.get("kind") || "life_practice"),
+            minimum_minutes: Number(fd.get("minimum_minutes") || 10),
+            logging_hint: String(fd.get("logging_hint") || "").trim(),
+            note: String(fd.get("note") || "").trim(),
+          };
+          if (!proposal.title) return;
+          const newId = addLifePracticeFromProposal(proposal);
+          if (newId) {
+            wiseConversation[idx]._proposalAccepted = true;
+            wiseConversation[idx]._proposal = proposal; // capture edits
+            saveWiseConversation();
+            renderWise();
+          }
+        });
+      }
       wiseDelegated = true;
     }
 
