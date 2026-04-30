@@ -3736,15 +3736,16 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
 .practices-drawer-v3__wise-btn svg{ display:block;color:var(--accent,#b07a3e); }
 .practices-drawer-v3__wise-btn:hover svg{ color:var(--accent-deep,#8a5a2a); }
 
-/* Wise overlay */
-.wise-overlay{
+/* Wise surface — full-tab content (sibling to Execute/Plan/Health/Wealth) */
+.wise-surface{
   display:none;
-  position:fixed;inset:0;z-index:9100;
-  background:var(--paper,#f4efe6);
   flex-direction:column;
+  background:var(--paper,#f4efe6);
   font-family:'Inter','Helvetica Neue',sans-serif;color:var(--text);
+  height:calc(100vh - 80px);
+  max-width:1320px;margin:0 auto;width:100%;
 }
-.wise-overlay[data-open="true"]{
+.wise-surface.active{
   display:flex;
   animation:wiseFadeIn 280ms cubic-bezier(0.4,0,0.2,1);
 }
@@ -3933,6 +3934,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       <button class="mode-btn tab" data-tab="plan" type="button">Plan</button>
       <button class="mode-btn tab" data-tab="health" type="button">Health</button>
       <button class="mode-btn tab" data-tab="wealth" type="button">Wealth</button>
+      <button class="mode-btn tab" data-tab="wise" type="button">Wise</button>
     </div>
     <div class="top-right">
       <div id="streakDisplay" class="streak-badge streak-flame"></div>
@@ -4108,12 +4110,12 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
     </div>
   </aside>
 
-  <!-- Wise — coach overlay (MVP) -->
-  <div class="wise-overlay" id="wiseOverlay" aria-hidden="true" role="dialog" aria-label="Wise — practice coach">
+  <!-- Wise — coach surface (full tab) -->
+  <div class="surface tab-content wise-surface" id="tab-wise" aria-label="Wise — practice coach">
     <header class="wise__header">
       <div class="wise__brand">
         <div class="wise__mark" aria-hidden="true">
-          <svg viewBox="0 0 1024 1024" width="28" height="28">
+          <svg viewBox="0 0 1024 1024" width="32" height="32">
             <g stroke-linecap="round" stroke-linejoin="round" fill="none" stroke="currentColor">
               <line x1="298" y1="740" x2="484" y2="310.4" stroke-width="63"/>
               <line x1="726" y1="740" x2="540" y2="310.4" stroke-width="63"/>
@@ -4130,7 +4132,6 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       </div>
       <div class="wise__head-actions">
         <button class="wise__clear-btn" id="wiseClearBtn" type="button" hidden>Clear conversation</button>
-        <button class="wise__close" id="wiseCloseBtn" type="button" aria-label="Close Wise">✕</button>
       </div>
     </header>
 
@@ -4143,7 +4144,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         <textarea id="wiseInput" rows="1" placeholder="What's on your mind?" aria-label="Message Wise"></textarea>
         <button class="wise__send" id="wiseSendBtn" type="button" aria-label="Send"><span class="wise__send-arrow">↑</span></button>
       </div>
-      <div class="wise__hint">Esc to close · Shift+Enter for newline</div>
+      <div class="wise__hint">Shift+Enter for newline</div>
     </div>
   </div>
 
@@ -7878,6 +7879,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       const tabs = ["execute", "plan"];
       if (isHealthSurfaceEnabled(snapshot)) tabs.push("health");
       if (isWealthSurfaceEnabled(snapshot)) tabs.push("wealth");
+      tabs.push("wise");
       return tabs;
     }
 
@@ -15768,7 +15770,11 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       const requested = String(tabName || "").trim() || "execute";
       const planTabs = ["focus", "assistant", "review"];
       const topLevelTabs = getVisibleTopLevelTabs(state);
-      let mode = requested === "wealth" ? "wealth" : requested === "health" ? "health" : requested === "execute" ? "execute" : "plan";
+      let mode = requested === "wealth" ? "wealth"
+        : requested === "health" ? "health"
+        : requested === "wise" ? "wise"
+        : requested === "execute" ? "execute"
+        : "plan";
       let planTab = activePlanTab;
       if (planTabs.includes(requested)) { mode = "plan"; planTab = requested; }
       if (mode === "plan") {
@@ -15794,10 +15800,12 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       const planSurface = document.getElementById("surface-plan");
       const healthSurface = document.getElementById("tab-health");
       const wealthSurface = document.getElementById("tab-wealth");
+      const wiseSurface = document.getElementById("tab-wise");
       if (executeSurface) executeSurface.classList.toggle("active", mode === "execute");
       if (planSurface) planSurface.classList.toggle("active", mode === "plan");
       if (healthSurface) healthSurface.classList.toggle("active", mode === "health");
       if (wealthSurface) wealthSurface.classList.toggle("active", mode === "wealth");
+      if (wiseSurface) wiseSurface.classList.toggle("active", mode === "wise");
 
       document.querySelectorAll(".tab-content").forEach(panel => panel.classList.remove("active"));
       if (mode === "execute") {
@@ -15815,6 +15823,15 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         renderHealth();
         return;
       }
+      if (mode === "wise") {
+        if (wiseSurface) wiseSurface.classList.add("active");
+        renderWise();
+        requestAnimationFrame(() => {
+          const input = document.getElementById("wiseInput");
+          if (input) input.focus();
+        });
+        return;
+      }
       const planPanel = document.getElementById(`tab-${planTab}`);
       if (planPanel) planPanel.classList.add("active");
     }
@@ -15826,7 +15843,8 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
         "1": "execute",
         "2": "plan",
         "3": "health",
-        "4": "wealth"
+        "4": "wealth",
+        "5": "wise"
       };
       const targetTab = tabByKey[key] || "";
       if (!targetTab) return "";
@@ -31063,9 +31081,7 @@ Most responses are 2-4 sentences. Long when the user is exploring; short when th
     }
 
     function openWise() {
-      const overlay = document.getElementById("wiseOverlay");
-      if (!overlay) return;
-      // Close practices drawer if open (mutually exclusive)
+      // Wise is now a tab. Close practices drawer if open, then switch.
       const drawer = document.getElementById("practicesDrawerV3");
       const scrim = document.getElementById("practicesDrawerScrim");
       if (drawer?.getAttribute("data-open") === "true") {
@@ -31073,20 +31089,7 @@ Most responses are 2-4 sentences. Long when the user is exploring; short when th
         drawer.setAttribute("aria-hidden", "true");
         if (scrim) scrim.removeAttribute("data-open");
       }
-      overlay.setAttribute("data-open", "true");
-      overlay.setAttribute("aria-hidden", "false");
-      renderWise();
-      requestAnimationFrame(() => {
-        const input = document.getElementById("wiseInput");
-        if (input) input.focus();
-      });
-    }
-
-    function closeWise() {
-      const overlay = document.getElementById("wiseOverlay");
-      if (!overlay) return;
-      overlay.removeAttribute("data-open");
-      overlay.setAttribute("aria-hidden", "true");
+      if (typeof setActiveTab === "function") setActiveTab("wise");
     }
 
     function clearWiseConversation() {
@@ -31146,14 +31149,11 @@ Most responses are 2-4 sentences. Long when the user is exploring; short when th
 
     function wireWiseHandlers() {
       if (wiseDelegated) return;
-      const overlay = document.getElementById("wiseOverlay");
       const openBtn = document.getElementById("openWiseBtn");
-      const closeBtn = document.getElementById("wiseCloseBtn");
       const clearBtn = document.getElementById("wiseClearBtn");
       const sendBtn = document.getElementById("wiseSendBtn");
       const input = document.getElementById("wiseInput");
       if (openBtn) openBtn.addEventListener("click", openWise);
-      if (closeBtn) closeBtn.addEventListener("click", closeWise);
       if (clearBtn) clearBtn.addEventListener("click", () => {
         if (confirm("Clear this conversation? Wise will start fresh.")) clearWiseConversation();
       });
@@ -31170,17 +31170,6 @@ Most responses are 2-4 sentences. Long when the user is exploring; short when th
           }
         });
       }
-      // Esc closes Wise (when open)
-      document.addEventListener("keydown", e => {
-        if (e.key !== "Escape") return;
-        if (overlay?.getAttribute("data-open") !== "true") return;
-        const tag = (e.target && e.target.tagName) || "";
-        if (tag === "TEXTAREA" || tag === "INPUT") {
-          // Allow Esc to close even from the composer
-        }
-        e.preventDefault();
-        closeWise();
-      });
       // Starter chip click — delegated on the thread
       const thread = document.getElementById("wiseThread");
       if (thread) thread.addEventListener("click", e => {
