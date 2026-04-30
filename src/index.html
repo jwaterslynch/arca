@@ -3708,16 +3708,16 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
 }
 
 /* ═══════════════════════════════════════════════════════════
-   Wise — coach overlay (MVP)
+   Wisdom — coach surface (MVP)
    • Paper ground (the reflective register, journal-like)
-   • Mark + "Wise" eyebrow top-left, close top-right
+   • Mark + "Wisdom" eyebrow top-left, close top-right
    • Conversation column max-width 720px centered
    • User bubbles right-aligned (paper-2 background, Inter)
    • Coach bubbles left-aligned (transparent, Fraunces serif)
    • Composer pinned at bottom
    ═══════════════════════════════════════════════════════════ */
 
-/* Drawer "Talk to Wise" button + drawer head reshuffle */
+/* Drawer "Talk to Wisdom" button + drawer head reshuffle */
 .practices-drawer-v3__head-actions{
   display:flex;align-items:center;gap:8px;
 }
@@ -3736,7 +3736,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
 .practices-drawer-v3__wise-btn svg{ display:block;color:var(--accent,#b07a3e); }
 .practices-drawer-v3__wise-btn:hover svg{ color:var(--accent-deep,#8a5a2a); }
 
-/* Wise surface — full-tab content (sibling to Execute/Plan/Health/Wealth) */
+/* Wisdom surface — full-tab content (sibling to Execute/Plan/Health/Wealth) */
 .wise-surface{
   display:none;
   flex-direction:column;
@@ -4019,7 +4019,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       <button class="mode-btn tab" data-tab="plan" type="button">Plan</button>
       <button class="mode-btn tab" data-tab="health" type="button">Health</button>
       <button class="mode-btn tab" data-tab="wealth" type="button">Wealth</button>
-      <button class="mode-btn tab" data-tab="wise" type="button">Wise</button>
+      <button class="mode-btn tab" data-tab="wise" type="button">Wisdom</button>
     </div>
     <div class="top-right">
       <div id="streakDisplay" class="streak-badge streak-flame"></div>
@@ -4177,7 +4177,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         <div class="practices-drawer-v3__title">The ground.</div>
       </div>
       <div class="practices-drawer-v3__head-actions">
-        <button class="practices-drawer-v3__wise-btn" id="openWiseBtn" type="button" aria-label="Talk to Wise">
+        <button class="practices-drawer-v3__wise-btn" id="openWiseBtn" type="button" aria-label="Talk to Wisdom">
           <svg viewBox="0 0 1024 1024" width="14" height="14" aria-hidden="true">
             <g stroke-linecap="round" stroke-linejoin="round" fill="none" stroke="currentColor">
               <line x1="298" y1="740" x2="484" y2="310.4" stroke-width="63"/>
@@ -4185,7 +4185,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
               <line x1="412" y1="580" x2="612" y2="580" stroke-width="58"/>
             </g>
           </svg>
-          <span>Talk to Wise</span>
+          <span>Talk to Wisdom</span>
         </button>
         <button class="practices-drawer-v3__close" id="practicesDrawerCloseBtn" type="button" aria-label="Close drawer">✕</button>
       </div>
@@ -4195,8 +4195,8 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
     </div>
   </aside>
 
-  <!-- Wise — coach surface (full tab) -->
-  <div class="surface tab-content wise-surface" id="tab-wise" aria-label="Wise — practice coach">
+  <!-- Wisdom — coach surface (full tab) -->
+  <div class="surface tab-content wise-surface" id="tab-wise" aria-label="Wisdom — practice coach">
     <header class="wise__header">
       <div class="wise__brand">
         <div class="wise__mark" aria-hidden="true">
@@ -4211,7 +4211,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           </svg>
         </div>
         <div class="wise__brand-text">
-          <div class="wise__eyebrow">Wise</div>
+          <div class="wise__eyebrow">Wisdom</div>
           <div class="wise__last-spoke" id="wiseLastSpoke"></div>
         </div>
       </div>
@@ -4226,7 +4226,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
 
     <div class="wise__composer-wrap">
       <div class="wise__composer">
-        <textarea id="wiseInput" rows="1" placeholder="What's on your mind?" aria-label="Message Wise"></textarea>
+        <textarea id="wiseInput" rows="1" placeholder="What's on your mind?" aria-label="Message Wisdom"></textarea>
         <button class="wise__send" id="wiseSendBtn" type="button" aria-label="Send"><span class="wise__send-arrow">↑</span></button>
       </div>
       <div class="wise__hint">Shift+Enter for newline · ⌘+ / ⌘− / ⌘0 to zoom text</div>
@@ -4616,6 +4616,13 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
                         <div class="tiny" id="settingsExperimentalWealthMeta">Hidden by default until enabled.</div>
                       </div>
                       <button id="settingsExperimentalWealthToggle" class="toggle-switch" type="button" role="switch" aria-checked="false" aria-label="Enable Wealth alpha module"></button>
+                    </div>
+                    <div class="settings-toggle">
+                      <div>
+                        <div class="toggle-label">Wisdom (alpha)</div>
+                        <div class="tiny" id="settingsExperimentalWisdomMeta">Hidden by default until enabled.</div>
+                      </div>
+                      <button id="settingsExperimentalWisdomToggle" class="toggle-switch" type="button" role="switch" aria-checked="false" aria-label="Enable Wisdom alpha module"></button>
                     </div>
                   </div>
                   <div class="settings-pane-card">
@@ -5923,7 +5930,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       <div class="app-data-experimental">
         <h4>Experimental Modules</h4>
         <div class="tiny" style="line-height:1.5">
-          Health and Wealth are still in alpha. Leave them off for the simpler core Execute/Plan workflow, or enable them when you want to test those modules.
+          Health, Wealth, and Wisdom are still in alpha. Leave them off for the simpler core Execute/Plan workflow, or enable them when you want to test those modules.
         </div>
         <div class="settings-toggle">
           <div>
@@ -5939,8 +5946,15 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
           </div>
           <button id="appDataExperimentalWealthToggle" class="toggle-switch" type="button" role="switch" aria-checked="false" aria-label="Enable Wealth alpha module"></button>
         </div>
+        <div class="settings-toggle">
+          <div>
+            <div class="toggle-label">Wisdom (alpha)</div>
+            <div class="tiny" id="appDataExperimentalWisdomMeta">Hidden by default until enabled.</div>
+          </div>
+          <button id="appDataExperimentalWisdomToggle" class="toggle-switch" type="button" role="switch" aria-checked="false" aria-label="Enable Wisdom alpha module"></button>
+        </div>
         <div class="tiny" style="line-height:1.5">
-          Existing boards with Health or Wealth data stay recoverable. You can still turn the tabs back off later if you want a cleaner daily view.
+          Existing boards with Health, Wealth, or Wisdom data stay recoverable. You can still turn the tabs back off later if you want a cleaner daily view.
         </div>
       </div>
       <div class="app-data-grid">
@@ -7775,7 +7789,8 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         },
         experimental: {
           health: null,
-          wealth: null
+          wealth: null,
+          wise: null
         }
       };
     }
@@ -7931,7 +7946,8 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         },
         experimental: {
           health: normalizeExperimentalSurfaceFlag(incoming.experimental?.health),
-          wealth: normalizeExperimentalSurfaceFlag(incoming.experimental?.wealth)
+          wealth: normalizeExperimentalSurfaceFlag(incoming.experimental?.wealth),
+          wise: normalizeExperimentalSurfaceFlag(incoming.experimental?.wise)
         }
       };
       return autoEnableModulesWithData({
@@ -7960,11 +7976,24 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       );
     }
 
+    function snapshotHasWisdomData(snapshot) {
+      // Auto-enable Wisdom for users who already have practices configured —
+      // they have something to talk about. Fresh installs hide it until toggled.
+      return Array.isArray(snapshot?.life_practices?.practices) && snapshot.life_practices.practices.length > 0;
+    }
+
+    function isWisdomSurfaceEnabled(snapshot = state) {
+      return resolveExperimentalSurfaceEnabled(
+        snapshot?.modules?.experimental?.wise,
+        snapshotHasWisdomData(snapshot)
+      );
+    }
+
     function getVisibleTopLevelTabs(snapshot = state) {
       const tabs = ["execute", "plan"];
       if (isHealthSurfaceEnabled(snapshot)) tabs.push("health");
       if (isWealthSurfaceEnabled(snapshot)) tabs.push("wealth");
-      tabs.push("wise");
+      if (isWisdomSurfaceEnabled(snapshot)) tabs.push("wise");
       return tabs;
     }
 
@@ -8265,12 +8294,16 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       const backupPathValue = document.getElementById("appDataBackupPathValue");
       const experimentalHealthToggle = document.getElementById("appDataExperimentalHealthToggle");
       const experimentalWealthToggle = document.getElementById("appDataExperimentalWealthToggle");
+      const experimentalWisdomToggle = document.getElementById("appDataExperimentalWisdomToggle");
       const experimentalHealthMeta = document.getElementById("appDataExperimentalHealthMeta");
       const experimentalWealthMeta = document.getElementById("appDataExperimentalWealthMeta");
+      const experimentalWisdomMeta = document.getElementById("appDataExperimentalWisdomMeta");
       const healthExplicit = modules.experimental?.health;
       const wealthExplicit = modules.experimental?.wealth;
+      const wisdomExplicit = modules.experimental?.wise;
       const healthEnabled = isHealthSurfaceEnabled(state);
       const wealthEnabled = isWealthSurfaceEnabled(state);
+      const wisdomEnabled = isWisdomSurfaceEnabled(state);
       if (versionValue) versionValue.textContent = appRuntime.version ? `Arca ${appRuntime.version}` : "Browser mode";
       if (profileValue) profileValue.textContent = appRuntime.profile || (nativeStore.available ? "desktop" : "browser");
       if (executableValue) executableValue.textContent = appRuntime.executablePath || "Unavailable";
@@ -8296,6 +8329,16 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         experimentalWealthMeta.textContent = wealthExplicit === null
           ? (wealthEnabled ? "Visible automatically because this board already has Wealth data." : "Hidden by default until enabled.")
           : (wealthEnabled ? "Visible. Turn it off if you want a simpler daily app shell." : "Hidden. Turn it on when you want to test Wealth.");
+      }
+      if (experimentalWisdomToggle) {
+        experimentalWisdomToggle.classList.toggle("on", wisdomEnabled);
+        experimentalWisdomToggle.setAttribute("aria-checked", wisdomEnabled ? "true" : "false");
+        experimentalWisdomToggle.title = wisdomEnabled ? "Disable Wisdom alpha module" : "Enable Wisdom alpha module";
+      }
+      if (experimentalWisdomMeta) {
+        experimentalWisdomMeta.textContent = wisdomExplicit === null
+          ? (wisdomEnabled ? "Visible automatically because this board already has practices to reflect on." : "Hidden by default until enabled.")
+          : (wisdomEnabled ? "Visible. Turn it off if you want a simpler daily app shell." : "Hidden. Turn it on when you want to test Wisdom.");
       }
     }
 
@@ -11036,12 +11079,16 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
 
       const healthEnabled = isHealthSurfaceEnabled(state);
       const wealthEnabled = isWealthSurfaceEnabled(state);
+      const wisdomEnabled = isWisdomSurfaceEnabled(state);
       const healthToggle = document.getElementById("settingsExperimentalHealthToggle");
       const wealthToggle = document.getElementById("settingsExperimentalWealthToggle");
+      const wisdomToggle = document.getElementById("settingsExperimentalWisdomToggle");
       const healthMeta = document.getElementById("settingsExperimentalHealthMeta");
       const wealthMeta = document.getElementById("settingsExperimentalWealthMeta");
+      const wisdomMeta = document.getElementById("settingsExperimentalWisdomMeta");
       const healthExplicit = state.modules?.experimental?.health;
       const wealthExplicit = state.modules?.experimental?.wealth;
+      const wisdomExplicit = state.modules?.experimental?.wise;
       if (healthToggle) {
         healthToggle.classList.toggle("on", healthEnabled);
         healthToggle.setAttribute("aria-checked", healthEnabled ? "true" : "false");
@@ -11049,6 +11096,10 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
       if (wealthToggle) {
         wealthToggle.classList.toggle("on", wealthEnabled);
         wealthToggle.setAttribute("aria-checked", wealthEnabled ? "true" : "false");
+      }
+      if (wisdomToggle) {
+        wisdomToggle.classList.toggle("on", wisdomEnabled);
+        wisdomToggle.setAttribute("aria-checked", wisdomEnabled ? "true" : "false");
       }
       if (healthMeta) {
         healthMeta.textContent = healthExplicit === null
@@ -11059,6 +11110,11 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         wealthMeta.textContent = wealthExplicit === null
           ? (wealthEnabled ? "Visible automatically because this board already has Wealth data." : "Hidden by default until enabled.")
           : (wealthEnabled ? "Visible. Turn it off if you want a simpler daily app shell." : "Hidden. Turn it on when you want to test Wealth.");
+      }
+      if (wisdomMeta) {
+        wisdomMeta.textContent = wisdomExplicit === null
+          ? (wisdomEnabled ? "Visible automatically because this board already has practices to reflect on." : "Hidden by default until enabled.")
+          : (wisdomEnabled ? "Visible. Turn it off if you want a simpler daily app shell." : "Hidden. Turn it on when you want to test Wisdom.");
       }
 
       const source = currentDataSourceSummary();
@@ -30946,7 +31002,7 @@ CRITICAL RULES FOR ACTIONS:
     }
 
     /* ═══════════════════════════════════════════════════════════
-       Wise — coach for the life half of the ledger
+       Wisdom — coach for the life half of the ledger
        Curiosity-driven, data-aware, never silently mutates state.
        Lives at the #tab-wise top-bar tab.
        See arca/design/WISE_BRIEF.md for the full thesis.
@@ -30960,7 +31016,7 @@ CRITICAL RULES FOR ACTIONS:
     let wiseClearArmed = false;
     let wiseClearTimer = null;
 
-    /* User-adjustable text zoom for the Wise surface (Cmd+/Cmd-/Cmd+0). */
+    /* User-adjustable text zoom for the Wisdom surface (Cmd+/Cmd-/Cmd+0). */
     const WISE_ZOOM_KEY = "arca_wise_zoom_v1";
     const WISE_ZOOM_MIN = 0.7;
     const WISE_ZOOM_MAX = 2.0;
@@ -31222,7 +31278,7 @@ CRITICAL RULES FOR ACTIONS:
 
     function wiseSystemPrompt() {
       const ctx = buildWisePracticesContext();
-      return `You are Wise — Arca's coach for the user's life practices and the goals/aspirations behind them.
+      return `You are Wisdom — Arca's coach for the user's life practices and the goals/aspirations behind them.
 
 Your job is to help the user:
 1. Notice patterns in what they're logging (and not logging) without judgment.
@@ -31440,7 +31496,7 @@ Most responses are 2-4 sentences. Long when the user is exploring; short when th
         return prose + proposalCard;
       }).join("");
 
-      const pendingHtml = wiseSending ? `<div class="wise__msg wise__msg--pending">Wise is thinking…</div>` : "";
+      const pendingHtml = wiseSending ? `<div class="wise__msg wise__msg--pending">Wisdom is thinking…</div>` : "";
       thread.innerHTML = html + pendingHtml;
 
       if (clearBtn) clearBtn.hidden = !wiseConversation.length;
@@ -31451,7 +31507,7 @@ Most responses are 2-4 sentences. Long when the user is exploring; short when th
     }
 
     function openWise() {
-      // Wise is now a tab. Close practices drawer if open, then switch.
+      // Wisdom is now a tab. Close practices drawer if open, then switch.
       const drawer = document.getElementById("practicesDrawerV3");
       const scrim = document.getElementById("practicesDrawerScrim");
       if (drawer?.getAttribute("data-open") === "true") {
@@ -31498,7 +31554,7 @@ Most responses are 2-4 sentences. Long when the user is exploring; short when th
           wiseConversation.push({ role: "assistant", content: "(empty response — try again)", ts: Date.now(), _isError: true });
         }
       } catch (err) {
-        const msg = String(err?.message || err || "Wise couldn't reach the model.");
+        const msg = String(err?.message || err || "Wisdom couldn't reach the model.");
         wiseConversation.push({ role: "assistant", content: msg, ts: Date.now(), _isError: true });
       } finally {
         wiseSending = false;
@@ -31609,7 +31665,7 @@ Most responses are 2-4 sentences. Long when the user is exploring; short when th
       wiseDelegated = true;
     }
 
-    // Boot Wise on page ready
+    // Boot Wisdom on page ready
     loadWiseConversation();
     wireWiseZoomShortcuts();
     if (document.readyState === "loading") {
@@ -32512,11 +32568,17 @@ You cannot change app state without that JSON block. Do not say something was ad
     document.getElementById("appDataExperimentalWealthToggle")?.addEventListener("click", () => {
       setExperimentalSurfaceEnabled("wealth", !isWealthSurfaceEnabled(state));
     });
+    document.getElementById("appDataExperimentalWisdomToggle")?.addEventListener("click", () => {
+      setExperimentalSurfaceEnabled("wise", !isWisdomSurfaceEnabled(state));
+    });
     document.getElementById("settingsExperimentalHealthToggle")?.addEventListener("click", () => {
       setExperimentalSurfaceEnabled("health", !isHealthSurfaceEnabled(state));
     });
     document.getElementById("settingsExperimentalWealthToggle")?.addEventListener("click", () => {
       setExperimentalSurfaceEnabled("wealth", !isWealthSurfaceEnabled(state));
+    });
+    document.getElementById("settingsExperimentalWisdomToggle")?.addEventListener("click", () => {
+      setExperimentalSurfaceEnabled("wise", !isWisdomSurfaceEnabled(state));
     });
     document.getElementById("settingsPreviewOnboardingBtn")?.addEventListener("click", () => {
       const wasSkipped = state.onboarding?.skipped_at && !state.focus?.wig?.title;
