@@ -3267,26 +3267,58 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
      source-of-truth refactor is done.
    ═══════════════════════════════════════════════════════════════ */
 
-/* Practices polish — bigger tick, calmer hover, hide-meta-by-default */
+/* Practices polish — calm checklist at rest, details on hover/open */
+.practices-card #lifePracticesList{ margin-top:12px !important; }
+.practice-group-heading{
+  padding:12px 0 8px;
+  margin-top:12px;
+  border-top-color:rgba(32,45,38,0.08);
+}
+.practice-item{
+  gap:12px;
+  min-height:46px;
+  margin:0 -6px;
+  padding:8px 6px;
+  border-bottom-color:rgba(32,45,38,0.08);
+  transition:background 160ms ease-out,transform 120ms ease-out;
+  border-radius:10px;
+}
+.practice-item:hover{ background:rgba(176,122,62,0.045); }
 .practice-check{
-  width:26px;height:26px;border-width:1.5px;
-  transition:background 240ms ease-out,border-color 240ms ease-out,transform 120ms ease-out;
+  width:26px;height:26px;border-width:1.5px;flex:0 0 26px;
+  background:rgba(253,251,246,0.72);
+  transition:background 240ms ease-out,border-color 240ms ease-out,box-shadow 240ms ease-out,transform 120ms ease-out;
 }
 .practice-check:active{ transform:scale(0.94); }
-.practice-check.done::after{ font-size:.78rem; }
+.practice-check.done{
+  background:transparent;
+  border-color:var(--accent);
+  box-shadow:inset 0 0 0 1px rgba(176,122,62,0.14);
+}
+.practice-check.done::after{ color:var(--accent);font-size:.95rem;line-height:1; }
+.practice-info{ min-width:0; }
+.practice-kind,
 .practice-meta{
   opacity:0;
-  transition:opacity 200ms ease-out 80ms;
+  max-height:0;
+  margin:0;
+  overflow:hidden;
+  transition:opacity 200ms ease-out 80ms,max-height 200ms ease-out,margin 200ms ease-out;
+}
+.practice-item:hover .practice-kind,
+.practice-item.expanded .practice-kind{
+  opacity:.72;
+  max-height:16px;
+  margin-bottom:2px;
 }
 .practice-item:hover .practice-meta,
-.practice-item.expanded .practice-meta{ opacity:1; }
-.practice-item{
-  transition:background 160ms ease-out;
-  border-radius:8px;
+.practice-item.expanded .practice-meta{
+  opacity:1;
+  max-height:18px;
+  margin-top:2px;
 }
-.practice-item:hover{ background:rgba(176,122,62,0.025); }
 @media (prefers-reduced-motion: reduce){
-  .practice-check,.practice-meta,.practice-item{
+  .practice-check,.practice-kind,.practice-meta,.practice-item{
     transition-duration:0.01ms !important;
   }
 }
@@ -14060,7 +14092,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
 
         return `
         <div class="practice-block" data-practice-id="${escapeHtml(p.id)}" data-practice-kind="${escapeHtml(p.kind === "work_domain" ? "work_domain" : "life_practice")}">
-          <div class="practice-item" data-practice-id="${escapeHtml(p.id)}" draggable="true">
+          <div class="practice-item${isOpen ? " expanded" : ""}" data-practice-id="${escapeHtml(p.id)}" draggable="true">
             <div class="practice-drag-handle" title="Drag to reorder"></div>
             <div class="practice-check ${doneClass}"></div>
             <div class="practice-info">
