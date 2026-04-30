@@ -3803,11 +3803,11 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
 }
 .wise__empty-line{
   font-family:'Fraunces',Georgia,serif;
-  font-size:1.5rem;font-weight:400;letter-spacing:-.01em;
+  font-size:1.7rem;font-weight:400;letter-spacing:-.01em;
   color:var(--ink,#0f1822);line-height:1.4;
 }
 .wise__empty-sub{
-  font-size:.88rem;color:var(--text2);line-height:1.55;max-width:540px;
+  font-size:.98rem;color:var(--text2);line-height:1.6;max-width:580px;
 }
 .wise__starters{
   display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;
@@ -3837,16 +3837,16 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
   align-self:flex-end;
   background:var(--paper-2,#ebe4d6);
   color:var(--ink,#0f1822);
-  padding:12px 16px;border-radius:14px 14px 4px 14px;
-  font-size:.92rem;line-height:1.5;
+  padding:14px 18px;border-radius:14px 14px 4px 14px;
+  font-size:1.04rem;line-height:1.55;
 }
 .wise__msg--assistant{
   align-self:flex-start;
   background:transparent;
   color:var(--ink,#0f1822);
-  padding:6px 4px;
+  padding:8px 4px;
   font-family:'Fraunces',Georgia,serif;
-  font-size:1.02rem;line-height:1.65;font-weight:400;letter-spacing:-.005em;
+  font-size:1.18rem;line-height:1.72;font-weight:400;letter-spacing:-.005em;
 }
 .wise__msg--assistant p{ margin:0 0 .9em; }
 .wise__msg--assistant p:last-child{ margin-bottom:0; }
@@ -3886,9 +3886,9 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
 }
 .wise__composer:focus-within{ border-color:var(--accent,#b07a3e); }
 .wise__composer textarea{
-  flex:1;min-height:24px;max-height:200px;resize:none;
+  flex:1;min-height:24px;max-height:240px;resize:none;
   background:transparent;border:none;outline:none;
-  font:400 .95rem 'Inter','Helvetica Neue',sans-serif;
+  font:400 1.05rem 'Inter','Helvetica Neue',sans-serif;
   color:var(--ink,#0f1822);line-height:1.5;
 }
 .wise__composer textarea::placeholder{ color:var(--text2);opacity:.7; }
@@ -4224,7 +4224,7 @@ body.focus-mode #tab-execute { position:fixed; inset:0; z-index:100; display:fle
         <textarea id="wiseInput" rows="1" placeholder="What's on your mind?" aria-label="Message Wise"></textarea>
         <button class="wise__send" id="wiseSendBtn" type="button" aria-label="Send"><span class="wise__send-arrow">↑</span></button>
       </div>
-      <div class="wise__hint">Shift+Enter for newline</div>
+      <div class="wise__hint">Shift+Enter for newline · ⌘+ / ⌘− / ⌘0 to zoom text</div>
     </div>
   </div>
 
@@ -15906,6 +15906,7 @@ USER QUESTION: ${userQuestion || "Give me a coaching update on my progress."}`;
       if (mode === "wise") {
         if (wiseSurface) wiseSurface.classList.add("active");
         renderWise();
+        applyWiseZoom();
         requestAnimationFrame(() => {
           const input = document.getElementById("wiseInput");
           if (input) input.focus();
@@ -30953,6 +30954,46 @@ CRITICAL RULES FOR ACTIONS:
     let wiseLastSpokeAt = null;
     let wiseDelegated = false;
 
+    /* User-adjustable text zoom for the Wise surface (Cmd+/Cmd-/Cmd+0). */
+    const WISE_ZOOM_KEY = "arca_wise_zoom_v1";
+    const WISE_ZOOM_MIN = 0.7;
+    const WISE_ZOOM_MAX = 2.0;
+    const WISE_ZOOM_STEP = 0.1;
+    let wiseZoom = (() => {
+      const v = parseFloat(localStorage.getItem(WISE_ZOOM_KEY) || "1");
+      return Number.isFinite(v) && v >= WISE_ZOOM_MIN && v <= WISE_ZOOM_MAX ? v : 1;
+    })();
+    function applyWiseZoom() {
+      const surface = document.getElementById("tab-wise");
+      if (!surface) return;
+      surface.style.zoom = wiseZoom === 1 ? "" : String(wiseZoom);
+    }
+    function setWiseZoom(value) {
+      wiseZoom = Math.max(WISE_ZOOM_MIN, Math.min(WISE_ZOOM_MAX, Math.round(value * 10) / 10));
+      try { localStorage.setItem(WISE_ZOOM_KEY, String(wiseZoom)); } catch (_) {}
+      applyWiseZoom();
+    }
+    function wireWiseZoomShortcuts() {
+      window.addEventListener("keydown", e => {
+        if (!(e.metaKey || e.ctrlKey)) return;
+        const surface = document.getElementById("tab-wise");
+        if (!surface || !surface.classList.contains("active")) return;
+        // Cmd+= / Cmd++ → zoom in
+        if (e.key === "=" || e.key === "+") {
+          e.preventDefault();
+          setWiseZoom(wiseZoom + WISE_ZOOM_STEP);
+        // Cmd+- / Cmd+_ → zoom out
+        } else if (e.key === "-" || e.key === "_") {
+          e.preventDefault();
+          setWiseZoom(wiseZoom - WISE_ZOOM_STEP);
+        // Cmd+0 → reset
+        } else if (e.key === "0") {
+          e.preventDefault();
+          setWiseZoom(1);
+        }
+      });
+    }
+
     /* Generic always-on starters (fallback when no practices or shape signal) */
     const WISE_STARTERS_GENERIC = [
       "What's one thing in your non-work life that's been on your mind?",
@@ -31546,10 +31587,12 @@ Most responses are 2-4 sentences. Long when the user is exploring; short when th
 
     // Boot Wise on page ready
     loadWiseConversation();
+    wireWiseZoomShortcuts();
     if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", wireWiseHandlers);
+      document.addEventListener("DOMContentLoaded", () => { wireWiseHandlers(); applyWiseZoom(); });
     } else {
       wireWiseHandlers();
+      applyWiseZoom();
     }
 
     function buildHealthCoachActionSchemaHint() {
