@@ -30953,14 +30953,125 @@ CRITICAL RULES FOR ACTIONS:
     let wiseLastSpokeAt = null;
     let wiseDelegated = false;
 
-    const WISE_STARTERS = [
+    /* Generic always-on starters (fallback when no practices or shape signal) */
+    const WISE_STARTERS_GENERIC = [
       "What's one thing in your non-work life that's been on your mind?",
-      "Show me what's logged this week.",
-      "Pick a practice that hasn't been ticking. Want to talk about it?",
       "I want to start something new.",
       "Is something missing from my practices?",
       "Is there something I used to do that I miss?",
     ];
+
+    /* Classify each practice's recent state from the daily log.
+       - strong:    5+ done in last 7 days
+       - consistent: 3-4 done in last 7 days
+       - slipping:  has logged history but no done in last 4-13 days
+       - dormant:   no done in last 14+ days, or never logged
+       - light:     recent (last 4d) but rare (≤2 in last 7d)
+    */
+    function computePracticeStates() {
+      const today = todayISO();
+      const log = state?.life_practices?.daily_log || {};
+      const practices = (state?.life_practices?.practices || []);
+      const dayKeys = [];
+      for (let i = 0; i < 30; i++) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        dayKeys.push(localDateKey(d));
+      }
+      const last7Keys = dayKeys.slice(0, 7);
+      return practices.map(p => {
+        const last7Done = last7Keys.reduce((n, k) => n + (log[k]?.[p.id]?.done ? 1 : 0), 0);
+        let lastDoneIdx = -1;
+        for (let i = 0; i < dayKeys.length; i++) {
+          if (log[dayKeys[i]]?.[p.id]?.done) { lastDoneIdx = i; break; }
+        }
+        let totalDoneIn30 = 0;
+        for (const k of dayKeys) if (log[k]?.[p.id]?.done) totalDoneIn30++;
+        let stateLabel;
+        if (last7Done >= 5) stateLabel = "strong";
+        else if (lastDoneIdx === -1 || lastDoneIdx >= 14) stateLabel = "dormant";
+        else if (lastDoneIdx >= 4) stateLabel = "slipping";
+        else if (last7Done >= 3) stateLabel = "consistent";
+        else stateLabel = "light";
+        return { practice: p, state: stateLabel, last7Done, lastDoneIdx, totalDoneIn30 };
+      });
+    }
+
+    /* Build starter chips that respond to current adherence state.
+       Mixes: positive (strong/consistent), curious (slipping/dormant),
+       and 1-2 always-on generics. Capped at 6 chips. */
+    function buildWiseStarters() {
+      const states = computePracticeStates();
+      if (!states.length) return WISE_STARTERS_GENERIC.slice(0, 4);
+
+      const strong   = states.filter(s => s.state === "strong");
+      const slipping = states.filter(s => s.state === "slipping");
+      const dormant  = states.filter(s => s.state === "dormant" && s.totalDoneIn30 > 0);
+      const dormantNew = states.filter(s => s.state === "dormant" && s.totalDoneIn30 === 0);
+      const consistent = states.filter(s => s.state === "consistent");
+
+      // Sort slipping/dormant by how-stale (more stale first) so the most pressing get prompted
+      slipping.sort((a, b) => b.lastDoneIdx - a.lastDoneIdx);
+      dormant.sort((a, b) => b.lastDoneIdx - a.lastDoneIdx);
+
+      const chips = [];
+
+      // 1-2 curious prompts for slipping practices (the user's "neglected" case)
+      slipping.slice(0, 2).forEach(s => {
+        const days = s.lastDoneIdx;
+        const t = s.practice.title;
+        const choices = [
+          `${t} has been quiet for ${days} days. What's been showing up instead?`,
+          `What's been getting in the way of ${t}?`,
+          `Is something competing with ${t} right now?`,
+        ];
+        chips.push(choices[Math.floor(Math.random() * choices.length)]);
+      });
+
+      // 1 prompt for the most-dormant practice (worth a bigger conversation)
+      if (dormant.length) {
+        const t = dormant[0].practice.title;
+        const days = dormant[0].lastDoneIdx === -1 ? "a long time" : `${dormant[0].lastDoneIdx} days`;
+        const choices = [
+          `${t} hasn't been logged in ${days}. Want to talk about what changed?`,
+          `What's holding you back from ${t}?`,
+          `Has ${t} done its work, or is it still wanting to be there?`,
+        ];
+        chips.push(choices[Math.floor(Math.random() * choices.length)]);
+      }
+
+      // 1 positive prompt for the strongest practice
+      if (strong.length) {
+        // Prefer the one with the highest last-7 count
+        strong.sort((a, b) => b.last7Done - a.last7Done);
+        const t = strong[0].practice.title;
+        const choices = [
+          `${t} has been steady. Is there something in it lately worth naming?`,
+          `What's working about ${t} right now?`,
+          `${t} has been landing — does it still feel like it's giving you what it used to?`,
+        ];
+        chips.push(choices[Math.floor(Math.random() * choices.length)]);
+      } else if (consistent.length) {
+        // No strong, but something consistent — reflect on it
+        const t = consistent[0].practice.title;
+        chips.push(`${t} has been there reliably. What does it give you?`);
+      }
+
+      // If user has dormant-from-day-one practices, surface that
+      if (dormantNew.length && chips.length < 4) {
+        const t = dormantNew[0].practice.title;
+        chips.push(`${t} is set up but hasn't been logged. Want to look at why?`);
+      }
+
+      // Always include 1-2 generics so the user can break the data-frame
+      const genericsToAdd = Math.max(1, Math.min(2, 6 - chips.length));
+      const genericsCopy = [...WISE_STARTERS_GENERIC].sort(() => Math.random() - 0.5);
+      for (let i = 0; i < genericsToAdd && i < genericsCopy.length; i++) {
+        chips.push(genericsCopy[i]);
+      }
+
+      return chips.slice(0, 6);
+    }
 
     function loadWiseConversation() {
       try {
@@ -31211,12 +31322,13 @@ Most responses are 2-4 sentences. Long when the user is exploring; short when th
       if (lastSpoke) lastSpoke.textContent = wiseFormatLastSpoke();
 
       if (!wiseConversation.length && !wiseSending) {
+        const starters = buildWiseStarters();
         thread.innerHTML = `
           <div class="wise__empty">
             <div class="wise__empty-line">Tell me what's on your mind.</div>
             <div class="wise__empty-sub">I can see what you've been logging this week. Pick a starter or write your own — whatever's actually there.</div>
             <div class="wise__starters">
-              ${WISE_STARTERS.map(s => `<button class="wise__starter" type="button" data-wise-starter="${escapeWiseText(s)}">${escapeWiseText(s)}</button>`).join("")}
+              ${starters.map(s => `<button class="wise__starter" type="button" data-wise-starter="${escapeWiseText(s)}">${escapeWiseText(s)}</button>`).join("")}
             </div>
           </div>`;
         if (clearBtn) clearBtn.hidden = true;
